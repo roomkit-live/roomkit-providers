@@ -2,18 +2,20 @@
 
 use serde_json::Value;
 
-use crate::python::repr;
+use crate::python::{quoted, repr};
 
-/// A value the contract refuses, where `RoomKit`'s Python implementation
-/// raises a `ValueError`.
+/// A value the contract refuses. `RoomKit`'s Python implementation raises a
+/// `ValueError` for each of its cases but one:
+/// [`UnmadeCalls`](Self::UnmadeCalls), where it raises a `RuntimeError`.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum ValueError {
     /// A tool's name is one no vendor accepts (RFC §6.7): an empty one, or
     /// one with a character other than a letter, a digit, `_`, `.`, `:` or
-    /// `-`.
+    /// `-`. The name is quoted as Python's `repr` quotes it.
     #[error(
-        "tool name '{name}' is accepted by no provider: use letters, digits, '_', '.', ':' or '-'"
+        "tool name {} is accepted by no provider: use letters, digits, '_', '.', ':' or '-'",
+        quoted(.name)
     )]
     ToolName {
         /// The name.
@@ -31,7 +33,7 @@ pub enum ValueError {
     },
     /// A response's billed usage counter is no non-negative integer, as
     /// Python's `ModelPricing.cost_for` raises `ValueError`.
-    #[error("usage counter '{name}' must be a non-negative integer")]
+    #[error("usage counter {} must be a non-negative integer", quoted(.name))]
     UsageCounter {
         /// The counter.
         name: String,

@@ -257,6 +257,27 @@ mod tests {
         }
     }
 
+    // Python: _CONTEXT_OVERFLOW_PHRASES, each wording alone, in any case.
+    #[test]
+    fn each_known_wording_reads_as_an_overflow_whatever_its_case() {
+        for phrase in [
+            "context length",
+            "context_length",
+            "maximum context",
+            "context window",
+            "token limit",
+            "too many tokens",
+            "prompt is too long",
+            "exceeds the model",
+            "range of input length",
+            "exceeds the maximum number of tokens",
+        ] {
+            let text = format!("Error 400: {}.", phrase.to_uppercase());
+            assert!(is_context_overflow_message(&text), "{text}");
+        }
+        assert!(!is_context_overflow_message("Error 400: the context."));
+    }
+
     fn failed(message: &str, provider: &str, status_code: Option<u16>) -> ProviderError {
         ProviderError::new(
             message,

@@ -3,7 +3,7 @@
 
 use std::collections::HashSet;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 
 use crate::Metadata;
@@ -19,8 +19,7 @@ const OUT_OF_ROOM: [&str; 4] = [
 
 /// The outcome of a call already executed by the provider (RFC §9.3).
 /// Python's `ServedCall(*, result="", is_error=False)`.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct ServedCall {
     /// The original result, reported whole before its model copy is bounded.
     pub result: String,
@@ -31,7 +30,7 @@ pub struct ServedCall {
 /// A call the model made (RFC §6.4 "What a provider hands the loop for a
 /// call"): Python's `AIToolCall(*, id, name, arguments={}, metadata={},
 /// served=None, partial=False, garbled=False, intent=None)`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AiToolCall {
     /// The wire id. Pending calls use a unique id ([`CallIds`]); provider-served
     /// calls sharing an id are each reported as their own occurrence (RFC §12.4).
@@ -39,25 +38,19 @@ pub struct AiToolCall {
     /// The tool called.
     pub name: String,
     /// Its arguments, a mapping ([`tool_arguments`]).
-    #[serde(default)]
     pub arguments: Metadata,
     /// Provider-owned data of the call.
-    #[serde(default)]
     pub metadata: Metadata,
     /// An outcome the provider already produced; `None` leaves the call pending.
-    #[serde(default)]
     pub served: Option<ServedCall>,
     /// The call never runs: its arguments do not read, or the response cut
     /// them short.
-    #[serde(default)]
     pub partial: bool,
     /// The model wrote the arguments unreadable, where the response did not
     /// cut them: a `partial` call the model is told to write again.
-    #[serde(default)]
     pub garbled: bool,
     /// What the call does, in the sentence the model wrote for the person
     /// (RFC §6.4); a provider leaves it `None`.
-    #[serde(default)]
     pub intent: Option<String>,
 }
 
@@ -232,7 +225,14 @@ mod tests {
 
     #[test]
     fn a_response_out_of_room_is_told_in_every_provider_s_word() {
-        for reason in ["length", "max_tokens", "MAX_TOKENS", "model_length"] {
+        for reason in [
+            "length",
+            "max_tokens",
+            "MAX_TOKENS",
+            "model_length",
+            "model_context_window_exceeded",
+            "MODEL_LENGTH",
+        ] {
             assert!(is_truncation(Some(reason)), "{reason}");
         }
         for reason in [

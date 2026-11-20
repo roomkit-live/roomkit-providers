@@ -13,7 +13,6 @@ mod response;
 
 pub(crate) use self::portable::check_portable_object;
 pub use self::portable::{SchemaMismatchOptions, check_portable_schema, schema_mismatch};
-pub(crate) use self::response::check_schema_answer;
 pub use self::response::{ResponseSchemaError, ResponseSchemaErrorOptions, ResponseSchemaFailure};
 #[doc(hidden)]
-pub use self::response::{checked_stream, schema_for_generate};
+pub use self::response::{check_schema_answer, checked_stream, schema_for_generate};

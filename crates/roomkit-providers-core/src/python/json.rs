@@ -9,7 +9,11 @@ use super::float::python_float;
 /// `value` as Python's `json.dumps(value)` writes it: `", "` and `": "`
 /// between members, every character past ASCII escaped, a float as Python's
 /// `repr` writes it.
-pub(crate) fn dumps(value: &Value) -> String {
+///
+/// For a provider crate: a wire that carries a call's arguments as JSON text
+/// in a string, as Chat Completions does, carries this text.
+#[doc(hidden)]
+pub fn dumps(value: &Value) -> String {
     let mut written = String::new();
     // Writing to a `String` does not fail.
     let _infallible = write_value(&mut written, value);

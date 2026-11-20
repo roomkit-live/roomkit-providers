@@ -9,6 +9,10 @@ The table comes from the Unicode data of the interpreter that runs this
 script, which the file's header records (``make printable-table``): run it
 with the Python version RoomKit is tested with, so that both read one Unicode
 version.
+
+The table is derived from Unicode data, under the Unicode License V3. The
+script writes that license's notice in the table's header and as the license
+file the crate ships beside its own, ``LICENSE-UNICODE``.
 """
 
 from __future__ import annotations
@@ -18,7 +22,9 @@ import unicodedata
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-TABLE = REPOSITORY / "crates/roomkit-providers-core/src/python/printable.rs"
+CRATE = REPOSITORY / "crates/roomkit-providers-core"
+TABLE = CRATE / "src/python/printable.rs"
+LICENSE = CRATE / "LICENSE-UNICODE"
 
 SURROGATES = range(0xD800, 0xE000)
 PER_LINE = 4
@@ -114,10 +120,12 @@ def main() -> None:
     lines.append("];")
     TABLE.parent.mkdir(parents=True, exist_ok=True)
     TABLE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    LICENSE.write_text(UNICODE_NOTICE, encoding="utf-8")
     print(
         f"Wrote {TABLE.relative_to(REPOSITORY)}: {len(items)} ranges, "
         f"Unicode {unicodedata.unidata_version}, Python {python}"
     )
+    print(f"Wrote {LICENSE.relative_to(REPOSITORY)}")
 
 
 if __name__ == "__main__":

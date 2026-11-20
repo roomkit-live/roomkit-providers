@@ -51,6 +51,7 @@ python-forms:
 	$(PYTHON) scripts/generate_python_forms.py
 
 # Rewrites the table of the characters Python's `repr` writes as they are,
-# from the Unicode data of PYTHON: the Python version RoomKit is tested with.
+# from the Unicode data of PYTHON, the Python version RoomKit is tested with,
+# and the license file of that data.
 printable-table:
 	$(PYTHON) scripts/generate_printable_ranges.py

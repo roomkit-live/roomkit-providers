@@ -188,3 +188,66 @@ fn cost_for_rejects_invalid_usage_counters() {
         );
     }
 }
+
+// Python: ModelPricing's defaults beside the two rates and the day.
+#[test]
+fn a_price_built_from_its_two_rates_takes_python_s_defaults() {
+    let pricing = ModelPricing::new(1.0, 2.0, day()).unwrap();
+    assert_eq!(
+        serde_json::to_value(&pricing).unwrap(),
+        json!({
+            "input_per_million": 1.0,
+            "output_per_million": 2.0,
+            "cache_read_per_million": null,
+            "cache_write_per_million": null,
+            "image_input_per_million": null,
+            "image_output_per_million": null,
+            "long_context_threshold_tokens": null,
+            "long_context_input_multiplier": 1.0,
+            "long_context_output_multiplier": 1.0,
+            "currency": "USD",
+            "verified": "2026-08-05",
+        })
+    );
+}
+
+// Python: cost_for applies the multipliers when the input tokens are past
+// the threshold, every input counter counted, and not at the threshold.
+#[test]
+fn the_long_context_multipliers_apply_past_the_threshold_only() {
+    let pricing = ModelPricing {
+        long_context_threshold_tokens: Some(1_000),
+        long_context_input_multiplier: 2.0,
+        long_context_output_multiplier: 3.0,
+        ..ModelPricing::new(1.0, 1.0, day()).unwrap()
+    };
+    let cost = |counters: Value| pricing.cost_for(&usage(counters)).unwrap();
+    // At the threshold: the list price.
+    approx(
+        cost(json!({ "input_tokens": 1_000, "output_tokens": 100 })),
+        1_100.0 / 1e6,
+    );
+    // One token past it: both multipliers.
+    approx(
+        cost(json!({ "input_tokens": 1_001, "output_tokens": 100 })),
+        (1_001.0 * 2.0 + 100.0 * 3.0) / 1e6,
+    );
+    // The cache and image counters count toward the threshold, charged or
+    // not.
+    let spread = json!({
+        "input_tokens": 400,
+        "cache_read_input_tokens": 300,
+        "cache_creation_input_tokens": 200,
+        "input_image_tokens": 101,
+        "output_tokens": 100,
+    });
+    approx(cost(spread), (400.0 * 2.0 + 100.0 * 3.0) / 1e6);
+    let at = json!({
+        "input_tokens": 400,
+        "cache_read_input_tokens": 300,
+        "cache_creation_input_tokens": 200,
+        "input_image_tokens": 100,
+        "output_tokens": 100,
+    });
+    approx(cost(at), 500.0 / 1e6);
+}

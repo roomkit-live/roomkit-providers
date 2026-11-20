@@ -5,10 +5,14 @@ Two fixtures, each recording the RoomKit version it was written from:
 
 - ``python_forms.json``: the JSON forms of the models. Each example holds the
   fields a caller gives a model (``given``) and what the model then dumps with
-  ``model_dump(mode="json")`` (``form``). Each refusal holds fields a model
-  refuses and the words of its ``ValueError``. The Rust test ``python_forms``
-  checks that ``given`` reads as ``form``, that ``form`` reads and writes back
-  unchanged, and that a refusal is refused in the same words.
+  ``model_dump(mode="json")`` (``form``). Each refusal holds an input Python
+  refuses and the words of its ``ValueError``; each rejected input, one Python
+  refuses in pydantic's own words, which the contract only has to refuse too.
+  Each long float holds a number Python writes with 16 or 17 digits, its exact
+  bits, and the JSON text of models that carry it. The Rust test
+  ``python_forms`` checks that ``given`` reads as ``form``, that ``form`` reads
+  and writes back unchanged, that a refusal is refused in the same words, that
+  a rejected input is refused, and that a long float is read to the bit.
 - ``python_call_rules.json``: what the rules on a call's arguments decide for
   each raw value, ending and position, and the mapping an argument text reads
   as. The Rust test ``python_call_rules`` checks that its rules decide the
@@ -21,6 +25,8 @@ Run it with a Python interpreter that has ``roomkit`` installed
 from __future__ import annotations
 
 import json
+import struct
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -305,11 +311,21 @@ EXAMPLES: list[tuple[type, str, dict[str, Any]]] = [
         "request_credential_not_a_string",
         {"metadata": {"api_key": 42, "tenant": "acme"}},
     ),
+    (
+        AIContext,
+        "request_long_floats",
+        {"temperature": 20708.635217891522, "metadata": {"ratio": -948.7292200260417}},
+    ),
     (ServedCall, "served_call_defaults", {}),
     (ServedCall, "served_call_failed", {"result": "Order not found", "is_error": True}),
     (AIToolCall, "call", CALL),
     (AIToolCall, "call_served_by_default", {**CALL, "served": {}}),
     (AIToolCall, "call_with_everything", CALL_WITH_EVERYTHING),
+    (
+        AIToolCall,
+        "call_long_float_arguments",
+        {**CALL, "arguments": {"ratio": 20708.635217891522, "delta": -948.7292200260417}},
+    ),
     (AIResponse, "response_text", {"content": "It shipped on Monday."}),
     (
         AIResponse,
@@ -398,6 +414,11 @@ PORTABLE_SCHEMA = {
     "additionalProperties": False,
 }
 
+# Texts Python's ``repr`` quotes its own way: one holds a quote, one a line
+# break, one a no-break space. A refusal that names what it refuses quotes it
+# so.
+QUOTED = ("it's", "a\n", "x" + chr(0xA0) + "y")
+
 # What a model refuses when it is built: a response schema outside the
 # portable subset, a tool name no vendor accepts.
 REFUSALS: list[tuple[type, str, dict[str, Any]]] = [
@@ -430,7 +451,92 @@ REFUSALS: list[tuple[type, str, dict[str, Any]]] = [
         {"response_schema": {**PORTABLE_SCHEMA, "required": ["label"]}},
     ),
     (AITool, "tool_name_no_vendor_accepts", {"name": "not allowed", "description": "Unused"}),
+    *(
+        (AITool, f"tool_name_quoted_{at}", {"name": text, "description": "Unused"})
+        for at, text in enumerate(QUOTED)
+    ),
 ]
+
+# Texts that write no day, or a day that does not exist.
+REFUSED_DAYS = (*QUOTED, "2026-8-05", "2026-13-01", "2026-02-30", "0000-01-01")
+
+# The union of the events of a stream: an input is one of them when one of its
+# models takes it.
+STREAM_EVENTS = (
+    StreamTextDelta,
+    StreamThinkingDelta,
+    StreamToolCall,
+    StreamToolCallDelta,
+    StreamUsage,
+    StreamDone,
+)
+MODELS: dict[str, tuple[type, ...]] = {
+    model.__name__: (model,)
+    for model in (
+        AIContext,
+        AIImagePart,
+        AIMessage,
+        AIResponse,
+        AITextPart,
+        AIThinkingPart,
+        AITool,
+        AIToolCall,
+        AIToolCallPart,
+        AIToolResultPart,
+        ModelInfo,
+        ModelPricing,
+        ServedCall,
+        *STREAM_EVENTS,
+    )
+} | {"StreamEvent": STREAM_EVENTS}
+
+TOOL_RESULT = {"tool_call_id": "call_1", "name": "lookup_order", "result": "done"}
+
+# Inputs Python refuses in pydantic's own words: a model given as a list of
+# its values, a name or a `type` given as anything but a text.
+REJECTED: list[tuple[str, str, Any]] = [
+    ("AIContext", "request_as_its_values", [[], "Answer briefly.", 0.1]),
+    ("AIToolCall", "call_as_its_values", ["call_1", "lookup_order"]),
+    ("AIMessage", "message_as_its_values", ["user", "hi"]),
+    ("StreamEvent", "event_as_its_type", ["done"]),
+    ("StreamEvent", "event_type_a_number", {"type": 2}),
+    (
+        "ModelPricing",
+        "pricing_as_its_values",
+        [1.0, 2.0, None, None, None, None, None, 1.0, 1.0, "USD", "2026-08-05"],
+    ),
+    ("AITextPart", "part_type_a_mapping", {"type": {"text": None}, "text": "hi"}),
+    ("AITextPart", "part_type_a_number", {"type": 0, "text": "hi"}),
+    ("AIMessage", "message_role_a_mapping", {"role": {"user": None}, "content": "hi"}),
+    ("AIMessage", "message_role_a_number", {"role": 1, "content": "hi"}),
+    (
+        "AIToolResultPart",
+        "tool_result_outcome_a_mapping",
+        {**TOOL_RESULT, "outcome": {"served": None}},
+    ),
+    (
+        "AIMessage",
+        "message_part_type_a_number",
+        {"role": "user", "content": [{"type": 0, "text": "hi"}]},
+    ),
+    (
+        "AIMessage",
+        "message_tool_result_part_type_a_number",
+        {
+            "role": "tool",
+            "content": [
+                {**TOOL_RESULT, "type": "tool_result", "result": [{"type": 0, "text": "x"}]}
+            ],
+        },
+    ),
+    *((label, f"{label}_from_a_list", []) for label in MODELS),
+    *((label, f"{label}_from_null", None) for label in MODELS),
+]
+
+# Floats Python writes with 16 or 17 significant digits, which a parser reads
+# as a neighbouring float unless it rounds correctly. None is written with an
+# exponent, so the text Python writes is the text the contract writes.
+LONG_FLOATS = (20708.635217891522, -948.7292200260417, 0.30000000000000004, 123456789.12345679)
 
 # The raw arguments a wire can carry for a call: nothing, a mapping, a text
 # that reads, one that does not, another JSON value.
@@ -470,6 +576,9 @@ EDGE_TEXTS: list[str] = [
 ]
 EDGE_ENDINGS: list[tuple[str | None, bool]] = [("stop", True), ("length", True)]
 
+# Argument texts beside the ones above: numbers of 16 and 17 digits.
+ARGUMENT_TEXTS: list[str] = ['{"ratio": 20708.635217891522, "delta": -948.7292200260417}']
+
 
 # The models whose dump is restricted to what the contract carries.
 DUMPED = {
@@ -491,6 +600,59 @@ def refusal(model: type, given: dict[str, Any]) -> str:
         (error,) = refused.errors()
         return str(error["ctx"]["error"])
     raise AssertionError(f"{model.__name__} takes {given!r}")
+
+
+def refuses(model: type, given: Any) -> bool:
+    """Whether ``model`` refuses ``given``."""
+    try:
+        model.model_validate(given)
+    except ValueError:
+        return True
+    return False
+
+
+def refused_day(text: str) -> str:
+    """The words ``date.fromisoformat`` refuses ``text`` with."""
+    try:
+        date.fromisoformat(text)
+    except ValueError as refused:
+        return str(refused)
+    raise AssertionError(f"{text!r} writes a day")
+
+
+def refused_counter(name: str) -> dict[str, Any]:
+    """A response whose usage counter ``name`` is no integer, which Python
+    refuses in pydantic's words. The contract's words name the counter, quoted
+    as Python quotes a text."""
+    given = {"content": "", "usage": {name: 1.5}}
+    if not refuses(AIResponse, given):
+        raise AssertionError(f"AIResponse takes {given!r}")
+    return {"given": given, "error": f"usage counter {name!r} must be an integer"}
+
+
+def rejected(label: str, name: str, given: Any) -> dict[str, Any]:
+    """An input every model of ``label`` refuses."""
+    if not all(refuses(model, given) for model in MODELS[label]):
+        raise AssertionError(f"{label} takes {given!r}")
+    return {"model": label, "name": name, "given": given}
+
+
+def compact(value: Any) -> str:
+    """``value`` as JSON text without spaces, as the contract writes it."""
+    return json.dumps(value, separators=(",", ":"))
+
+
+def long_float(value: float) -> dict[str, Any]:
+    """A float with its exact bits, and the JSON text of models carrying it."""
+    request = {"temperature": value, "metadata": {"ratio": value}}
+    call = {"id": "call_1", "name": "lookup_order", "arguments": {"ratio": value}}
+    return {
+        "text": repr(value),
+        "bits": int.from_bytes(struct.pack(">d", value), "big"),
+        "request": compact(form(AIContext, request)),
+        "call": compact(form(AIToolCall, call)),
+        "arguments": json.dumps({"ratio": value}),
+    }
 
 
 def call_rule(raw: Any, finish_reason: str | None, last: bool) -> dict[str, Any]:
@@ -517,9 +679,30 @@ def forms() -> dict[str, Any]:
             for model, name, given in EXAMPLES
         ],
         "refusals": [
-            {"model": model.__name__, "name": name, "given": given, "error": refusal(model, given)}
-            for model, name, given in REFUSALS
+            *(
+                {
+                    "model": model.__name__,
+                    "name": name,
+                    "given": given,
+                    "error": refusal(model, given),
+                }
+                for model, name, given in REFUSALS
+            ),
+            *(
+                {"model": "date", "name": f"day_{at}", "given": text, "error": refused_day(text)}
+                for at, text in enumerate(REFUSED_DAYS)
+            ),
+            *(
+                {
+                    "model": "AIResponse",
+                    "name": f"usage_counter_quoted_{at}",
+                    **refused_counter(text),
+                }
+                for at, text in enumerate(QUOTED)
+            ),
         ],
+        "rejected": [rejected(label, name, given) for label, name, given in REJECTED],
+        "long_floats": [long_float(value) for value in LONG_FLOATS],
     }
 
 
@@ -527,6 +710,7 @@ def call_rules() -> dict[str, Any]:
     cases = [(raw, ending) for raw in RAW_ARGUMENTS for ending in ENDINGS]
     cases += [(text, ending) for text in EDGE_TEXTS for ending in EDGE_ENDINGS]
     texts = [raw for raw in [*RAW_ARGUMENTS, *EDGE_TEXTS] if isinstance(raw, str)]
+    texts += ARGUMENT_TEXTS
     return {
         "generator": "scripts/generate_python_forms.py",
         "roomkit_version": roomkit.__version__,

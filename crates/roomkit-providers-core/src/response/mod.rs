@@ -12,10 +12,10 @@
 //!   [`tool_call_of`] between a call and its streamed event.
 
 mod calls;
-mod event_forms;
+mod forms;
 mod stream;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 pub use self::calls::{AiToolCall, CallIds, ServedCall, is_truncation, tool_arguments};
 pub(crate) use self::calls::{arguments_or_raw, blank, read_arguments};
@@ -31,37 +31,30 @@ use crate::request::AiThinkingPart;
 /// thinking_parts=None, finish_reason=None, usage={}, metadata={},
 /// tool_calls=[])`. Python's `tasks` and `observations`, which a host
 /// attaches, are not part of it: read from JSON, they are left out.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AiResponse {
     /// Its text.
     pub content: String,
     /// All the model's reasoning text (RFC §6.7), none when it showed none.
-    #[serde(default)]
     pub thinking: Option<String>,
     /// The last signature of its reasoning (RFC §6.4).
-    #[serde(default)]
     pub thinking_signature: Option<String>,
     /// The reasoning blocks to replay, in the order the vendor sent them,
     /// each with its signature or redacted data (RFC §6.4); `None` for a
     /// provider whose reasoning has no blocks. A block the response cut before
     /// its signature is not among them.
-    #[serde(default)]
     pub thinking_parts: Option<Vec<AiThinkingPart>>,
     /// Why it stopped, in the provider's own word (`stop`, `tool_calls`,
     /// `length`...); `None` when it gave none.
-    #[serde(default)]
     pub finish_reason: Option<String>,
     /// What it used: integer counters by name (`input_tokens`,
     /// `output_tokens`...).
-    #[serde(default, deserialize_with = "crate::usage::read")]
     pub usage: Metadata,
     /// What the response says of itself, `model` the model that answered
     /// and `refusal` the refusal it carried, and provider-owned data for
     /// replaying a tool round.
-    #[serde(default)]
     pub metadata: Metadata,
     /// The calls it made, in order.
-    #[serde(default)]
     pub tool_calls: Vec<AiToolCall>,
 }
 

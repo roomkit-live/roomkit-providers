@@ -3,6 +3,9 @@
 //! `tests/test_providers/test_stream_adapter.py` and the base provider's
 //! catalogue tests of `tests/test_providers/test_ai_models.py`.
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use serde_json::json;
 
 use super::*;
@@ -152,16 +155,69 @@ fn a_provider_that_does_not_stream_text_fails_its_text_stream() {
     assert!(!error.retryable);
 }
 
-// Python: AIProvider.name is the class name by default; its type name is
-// what an object of the provider says too.
+/// A provider none of whose answers is the trait's default, and whose close
+/// can be seen.
+struct Held {
+    closed: Arc<AtomicBool>,
+}
+
+impl AiProvider for Held {
+    fn name(&self) -> &'static str {
+        "held-provider"
+    }
+
+    fn model_name(&self) -> &'static str {
+        "held-model"
+    }
+
+    fn supports_vision(&self) -> bool {
+        true
+    }
+
+    fn supports_deferred_tools(&self) -> bool {
+        true
+    }
+
+    fn available_models() -> Vec<ModelInfo> {
+        vec![
+            ModelInfo::new("another-model"),
+            ModelInfo {
+                context_window: Some(1234),
+                ..ModelInfo::new("held-model")
+            },
+        ]
+    }
+
+    fn generate<'a>(
+        &'a self,
+        _request: &'a AiRequest,
+    ) -> impl Future<Output = Result<AiResponse, ProviderError>> + Send + 'a {
+        std::future::ready(Ok(AiResponse::new("held")))
+    }
+
+    async fn close(&self) {
+        self.closed.store(true, Ordering::SeqCst);
+    }
+}
+
+// Python takes any `AIProvider` where it takes a provider: held as an object,
+// a provider answers as it answers itself, and closes when its holder closes
+// it.
 #[test]
-fn a_provider_is_named_after_its_type_and_held_as_an_object() {
-    let provider = Generating {
-        response: AiResponse::new("held"),
-        streams_text: false,
+fn a_provider_held_as_an_object_answers_as_itself() {
+    let closed = Arc::new(AtomicBool::new(false));
+    let provider = Held {
+        closed: Arc::clone(&closed),
     };
-    assert_eq!(provider.name(), "Generating");
-    let held: std::sync::Arc<dyn DynAiProvider> = std::sync::Arc::new(provider);
+    let request = asking(false);
+    let own = events(&provider, &request);
+    let entry = provider.catalog_entry();
+    assert_eq!(
+        entry.as_ref().map(|entry| entry.id.as_str()),
+        Some("held-model")
+    );
+
+    let held: Arc<dyn DynAiProvider> = Arc::new(provider);
     assert_eq!(
         (
             held.dyn_name(),
@@ -173,19 +229,110 @@ fn a_provider_is_named_after_its_type_and_held_as_an_object() {
             held.dyn_catalog_entry(),
         ),
         (
-            "Generating",
-            "Generating",
-            "generating",
-            false,
-            false,
-            None,
-            None
+            "held-provider",
+            "Held",
+            "held-model",
+            true,
+            true,
+            Some(1234),
+            entry
         )
     );
-    let request = asking(false);
-    let read = collected(held.dyn_generate_structured_stream(&request));
+    let read: Vec<StreamEvent> = collected(held.dyn_generate_structured_stream(&request))
+        .into_iter()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(read, own);
     assert_eq!(read.len(), 2, "a text and its end: {read:?}");
+
+    assert!(!closed.load(Ordering::SeqCst));
     block_on(held.dyn_close());
+    assert!(closed.load(Ordering::SeqCst));
+}
+
+// Python: AIProvider's defaults: its class name for a name, no capability,
+// and a close that does nothing.
+#[test]
+fn a_provider_that_says_nothing_of_itself_takes_python_s_defaults() {
+    assert_eq!(Bare.name(), "Bare");
+    assert_eq!(
+        [
+            Bare.supports_vision(),
+            Bare.supports_streaming(),
+            Bare.supports_structured_streaming(),
+            Bare.supports_response_schema(),
+            Bare.supports_response_schema_with_tools(),
+            Bare.supports_deferred_tools(),
+        ],
+        [false; 6]
+    );
+    block_on(Bare.close());
+    let held: Arc<dyn DynAiProvider> = Arc::new(Bare);
+    assert_eq!(
+        (
+            held.dyn_name(),
+            held.dyn_supports_vision(),
+            held.dyn_supports_deferred_tools(),
+            held.dyn_context_window(),
+        ),
+        ("Bare", false, false, None)
+    );
+}
+
+/// A provider whose text stream fails after `said` pieces, and whose
+/// `generate` fails.
+struct Failing {
+    said: usize,
+}
+
+impl AiProvider for Failing {
+    fn model_name(&self) -> &'static str {
+        "failing"
+    }
+
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    fn generate<'a>(
+        &'a self,
+        _request: &'a AiRequest,
+    ) -> impl Future<Output = Result<AiResponse, ProviderError>> + Send + 'a {
+        std::future::ready(Err(ProviderError::from("no whole answer")))
+    }
+
+    fn generate_stream<'a>(&'a self, _request: &'a AiRequest) -> TextStream<'a> {
+        Box::pin(items(
+            move |out: Yielder<Result<String, ProviderError>>| async move {
+                for _ in 0..self.said {
+                    out.give(Ok("Hel".to_owned())).await;
+                }
+                out.give(Err(ProviderError::from("connection reset"))).await;
+                // A reader that went on past a failure would read this.
+                out.give(Ok("never read".to_owned())).await;
+            },
+        ))
+    }
+}
+
+// Python: the default structured stream lets a failure of the text stream
+// or of `generate` through: the stream ends on it, with no done event.
+#[test]
+fn a_failure_ends_the_default_structured_stream() {
+    let reset = || Err(ProviderError::from("connection reset"));
+    let streamed = collected(Failing { said: 1 }.generate_structured_stream(&asking(false)));
+    assert_eq!(
+        streamed,
+        [
+            Ok(StreamEvent::TextDelta(StreamTextDelta::new("Hel"))),
+            reset()
+        ]
+    );
+    let at_once = collected(Failing { said: 0 }.generate_structured_stream(&asking(false)));
+    assert_eq!(at_once, [reset()]);
+    // With tools, the whole answer is asked: its failure is the stream's.
+    let whole = collected(Failing { said: 1 }.generate_structured_stream(&asking(true)));
+    assert_eq!(whole, [Err(ProviderError::from("no whole answer"))]);
 }
 
 /// A provider no catalogue carries, as Python's `_Bare`.

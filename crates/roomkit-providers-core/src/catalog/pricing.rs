@@ -1,12 +1,13 @@
 //! The list price of one model (RFC §6.7): Python's `ModelPricing`, and
 //! what a response's usage costs at it.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
 use super::date::Date;
 use crate::Metadata;
 use crate::error::ValueError;
+use crate::strict::ObjectOnly;
 
 /// The list price of one model, per million tokens, as its vendor
 /// published it on `verified`: Python's `ModelPricing(*, input_per_million,
@@ -23,8 +24,7 @@ use crate::error::ValueError;
 /// Python's pydantic checks the fields as it builds the price:
 /// [`ModelPricing::new`] checks the two rates it takes, and
 /// [`cost_for`](Self::cost_for) and a read from JSON check them all.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(try_from = "PricingFields")]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ModelPricing {
     /// The price of a million uncached input tokens.
     pub input_per_million: f64,
@@ -221,9 +221,19 @@ fn refused(field: &'static str, reason: &str) -> ValueError {
     }
 }
 
+impl<'de> Deserialize<'de> for ModelPricing {
+    /// Reads a price from an object only, and checks its fields as Python's
+    /// pydantic checks them when it builds one.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let fields = PricingFields::deserialize(ObjectOnly(deserializer))?;
+        Self::try_from(fields).map_err(serde::de::Error::custom)
+    }
+}
+
 /// [`ModelPricing`]'s fields as JSON states them, Python's defaults for
 /// the ones it leaves out, checked before they become a price.
 #[derive(Deserialize)]
+#[serde(expecting = "a model's price, as a JSON object")]
 struct PricingFields {
     input_per_million: f64,
     output_per_million: f64,

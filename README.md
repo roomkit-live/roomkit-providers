@@ -30,6 +30,9 @@ contract.
   are explicit host configuration. A credential never appears in an error, a
   log or a result.
 
+Section numbers in the code and its documentation (`RFC §6.7`) refer to the
+[RoomKit RFC](https://github.com/roomkit-live/roomkit-specs).
+
 ## Planned
 
 In this order:
@@ -63,4 +66,8 @@ vulnerability.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE).
+
+`roomkit-providers-core` is `MIT AND Unicode-3.0`: it holds a table derived
+from Unicode data, under the
+[Unicode License V3](crates/roomkit-providers-core/LICENSE-UNICODE).

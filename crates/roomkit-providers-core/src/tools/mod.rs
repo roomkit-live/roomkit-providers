@@ -14,6 +14,7 @@ use serde_json::{Map, Value};
 
 pub use self::result::{ToolResult, ToolResultPart};
 use crate::error::ValueError;
+use crate::strict::{read_as_object, read_name};
 
 /// A tool as the model is told of it (RFC §6.7): Python's `AITool(*, name,
 /// description, parameters={}, tags=[], defer_loading=False,
@@ -21,33 +22,60 @@ use crate::error::ValueError;
 ///
 /// Read from JSON, a name no vendor accepts is refused, as Python refuses
 /// it when the model is built.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AiTool {
     /// The tool's name: one tool per name among a request's tools (RFC
     /// §21.1).
-    #[serde(deserialize_with = "accepted_name")]
     pub name: String,
     /// What it does, for the model.
     pub description: String,
     /// Its parameters: a JSON Schema object, empty for a tool that takes
     /// none.
-    #[serde(default)]
     pub parameters: Map<String, Value>,
     /// Keywords a tool search reads beside the name and the description
     /// (RFC §6.4).
-    #[serde(default)]
     pub tags: Vec<String>,
     /// Declared but unseen: the provider holds the definition out of the
     /// model's view until a tool result references it
     /// ([`AiToolResultPart::references`](crate::AiToolResultPart::references),
     /// RFC §6.4). False by default.
-    #[serde(default)]
     pub defer_loading: bool,
     /// A call it answers may change what later calls read (a file edited,
     /// a row written), so a host that counts repeated calls starts again
     /// from it (RFC §6.4). False by default.
-    #[serde(default)]
     pub changes_state: bool,
+}
+
+read_as_object!(ToolForm => AiTool);
+
+/// [`AiTool`] as it is read.
+#[derive(Deserialize)]
+#[serde(expecting = "a tool, as a JSON object")]
+struct ToolForm {
+    #[serde(deserialize_with = "accepted_name")]
+    name: String,
+    description: String,
+    #[serde(default)]
+    parameters: Map<String, Value>,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default)]
+    defer_loading: bool,
+    #[serde(default)]
+    changes_state: bool,
+}
+
+impl From<ToolForm> for AiTool {
+    fn from(form: ToolForm) -> Self {
+        Self {
+            name: form.name,
+            description: form.description,
+            parameters: form.parameters,
+            tags: form.tags,
+            defer_loading: form.defer_loading,
+            changes_state: form.changes_state,
+        }
+    }
 }
 
 impl AiTool {
@@ -152,7 +180,7 @@ fn accepted_name<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D
 
 /// How a tool call ended (RFC §5.3, §6.4): Python's `ToolCallOutcome`, one
 /// of `served`, `refused`, `failed`, `blocked`, `unserved` and `cancelled`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum ToolCallOutcome {
@@ -168,6 +196,26 @@ pub enum ToolCallOutcome {
     Unserved,
     /// The call was cut before its outcome.
     Cancelled,
+}
+
+impl<'de> Deserialize<'de> for ToolCallOutcome {
+    /// Reads an outcome from its name, a string.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        read_name(
+            deserializer,
+            "one of the outcomes `served`, `refused`, `failed`, `blocked`, `unserved` and \
+             `cancelled`",
+            |name| match name {
+                "served" => Some(Self::Served),
+                "refused" => Some(Self::Refused),
+                "failed" => Some(Self::Failed),
+                "blocked" => Some(Self::Blocked),
+                "unserved" => Some(Self::Unserved),
+                "cancelled" => Some(Self::Cancelled),
+                _ => None,
+            },
+        )
+    }
 }
 
 #[cfg(test)]

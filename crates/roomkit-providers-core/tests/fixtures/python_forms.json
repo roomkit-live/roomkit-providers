@@ -1161,6 +1161,30 @@
             }
         },
         {
+            "model": "AIContext",
+            "name": "request_long_floats",
+            "given": {
+                "temperature": 20708.635217891522,
+                "metadata": {
+                    "ratio": -948.7292200260417
+                }
+            },
+            "form": {
+                "messages": [],
+                "system_prompt": null,
+                "temperature": 20708.635217891522,
+                "max_tokens": null,
+                "thinking_budget": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "tools": [],
+                "response_schema": null,
+                "metadata": {
+                    "ratio": -948.7292200260417
+                }
+            }
+        },
+        {
             "model": "ServedCall",
             "name": "served_call_defaults",
             "given": {},
@@ -1269,6 +1293,31 @@
                 "partial": true,
                 "garbled": true,
                 "intent": "Look the order up"
+            }
+        },
+        {
+            "model": "AIToolCall",
+            "name": "call_long_float_arguments",
+            "given": {
+                "id": "call_1",
+                "name": "lookup_order",
+                "arguments": {
+                    "ratio": 20708.635217891522,
+                    "delta": -948.7292200260417
+                }
+            },
+            "form": {
+                "id": "call_1",
+                "name": "lookup_order",
+                "arguments": {
+                    "ratio": 20708.635217891522,
+                    "delta": -948.7292200260417
+                },
+                "metadata": {},
+                "served": null,
+                "partial": false,
+                "garbled": false,
+                "intent": null
             }
         },
         {
@@ -1927,6 +1976,477 @@
                 "description": "Unused"
             },
             "error": "tool name 'not allowed' is accepted by no provider: use letters, digits, '_', '.', ':' or '-'"
+        },
+        {
+            "model": "AITool",
+            "name": "tool_name_quoted_0",
+            "given": {
+                "name": "it's",
+                "description": "Unused"
+            },
+            "error": "tool name \"it's\" is accepted by no provider: use letters, digits, '_', '.', ':' or '-'"
+        },
+        {
+            "model": "AITool",
+            "name": "tool_name_quoted_1",
+            "given": {
+                "name": "a\n",
+                "description": "Unused"
+            },
+            "error": "tool name 'a\\n' is accepted by no provider: use letters, digits, '_', '.', ':' or '-'"
+        },
+        {
+            "model": "AITool",
+            "name": "tool_name_quoted_2",
+            "given": {
+                "name": "x\u00a0y",
+                "description": "Unused"
+            },
+            "error": "tool name 'x\\xa0y' is accepted by no provider: use letters, digits, '_', '.', ':' or '-'"
+        },
+        {
+            "model": "date",
+            "name": "day_0",
+            "given": "it's",
+            "error": "Invalid isoformat string: \"it's\""
+        },
+        {
+            "model": "date",
+            "name": "day_1",
+            "given": "a\n",
+            "error": "Invalid isoformat string: 'a\\n'"
+        },
+        {
+            "model": "date",
+            "name": "day_2",
+            "given": "x\u00a0y",
+            "error": "Invalid isoformat string: 'x\\xa0y'"
+        },
+        {
+            "model": "date",
+            "name": "day_3",
+            "given": "2026-8-05",
+            "error": "Invalid isoformat string: '2026-8-05'"
+        },
+        {
+            "model": "date",
+            "name": "day_4",
+            "given": "2026-13-01",
+            "error": "month must be in 1..12"
+        },
+        {
+            "model": "date",
+            "name": "day_5",
+            "given": "2026-02-30",
+            "error": "day is out of range for month"
+        },
+        {
+            "model": "date",
+            "name": "day_6",
+            "given": "0000-01-01",
+            "error": "year 0 is out of range"
+        },
+        {
+            "model": "AIResponse",
+            "name": "usage_counter_quoted_0",
+            "given": {
+                "content": "",
+                "usage": {
+                    "it's": 1.5
+                }
+            },
+            "error": "usage counter \"it's\" must be an integer"
+        },
+        {
+            "model": "AIResponse",
+            "name": "usage_counter_quoted_1",
+            "given": {
+                "content": "",
+                "usage": {
+                    "a\n": 1.5
+                }
+            },
+            "error": "usage counter 'a\\n' must be an integer"
+        },
+        {
+            "model": "AIResponse",
+            "name": "usage_counter_quoted_2",
+            "given": {
+                "content": "",
+                "usage": {
+                    "x\u00a0y": 1.5
+                }
+            },
+            "error": "usage counter 'x\\xa0y' must be an integer"
+        }
+    ],
+    "rejected": [
+        {
+            "model": "AIContext",
+            "name": "request_as_its_values",
+            "given": [
+                [],
+                "Answer briefly.",
+                0.1
+            ]
+        },
+        {
+            "model": "AIToolCall",
+            "name": "call_as_its_values",
+            "given": [
+                "call_1",
+                "lookup_order"
+            ]
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_as_its_values",
+            "given": [
+                "user",
+                "hi"
+            ]
+        },
+        {
+            "model": "StreamEvent",
+            "name": "event_as_its_type",
+            "given": [
+                "done"
+            ]
+        },
+        {
+            "model": "StreamEvent",
+            "name": "event_type_a_number",
+            "given": {
+                "type": 2
+            }
+        },
+        {
+            "model": "ModelPricing",
+            "name": "pricing_as_its_values",
+            "given": [
+                1.0,
+                2.0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1.0,
+                1.0,
+                "USD",
+                "2026-08-05"
+            ]
+        },
+        {
+            "model": "AITextPart",
+            "name": "part_type_a_mapping",
+            "given": {
+                "type": {
+                    "text": null
+                },
+                "text": "hi"
+            }
+        },
+        {
+            "model": "AITextPart",
+            "name": "part_type_a_number",
+            "given": {
+                "type": 0,
+                "text": "hi"
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_role_a_mapping",
+            "given": {
+                "role": {
+                    "user": null
+                },
+                "content": "hi"
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_role_a_number",
+            "given": {
+                "role": 1,
+                "content": "hi"
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_outcome_a_mapping",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "outcome": {
+                    "served": null
+                }
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_part_type_a_number",
+            "given": {
+                "role": "user",
+                "content": [
+                    {
+                        "type": 0,
+                        "text": "hi"
+                    }
+                ]
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_tool_result_part_type_a_number",
+            "given": {
+                "role": "tool",
+                "content": [
+                    {
+                        "tool_call_id": "call_1",
+                        "name": "lookup_order",
+                        "result": [
+                            {
+                                "type": 0,
+                                "text": "x"
+                            }
+                        ],
+                        "type": "tool_result"
+                    }
+                ]
+            }
+        },
+        {
+            "model": "AIContext",
+            "name": "AIContext_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIImagePart",
+            "name": "AIImagePart_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIMessage",
+            "name": "AIMessage_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIResponse",
+            "name": "AIResponse_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AITextPart",
+            "name": "AITextPart_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIThinkingPart",
+            "name": "AIThinkingPart_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AITool",
+            "name": "AITool_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIToolCall",
+            "name": "AIToolCall_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIToolCallPart",
+            "name": "AIToolCallPart_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "AIToolResultPart_from_a_list",
+            "given": []
+        },
+        {
+            "model": "ModelInfo",
+            "name": "ModelInfo_from_a_list",
+            "given": []
+        },
+        {
+            "model": "ModelPricing",
+            "name": "ModelPricing_from_a_list",
+            "given": []
+        },
+        {
+            "model": "ServedCall",
+            "name": "ServedCall_from_a_list",
+            "given": []
+        },
+        {
+            "model": "StreamTextDelta",
+            "name": "StreamTextDelta_from_a_list",
+            "given": []
+        },
+        {
+            "model": "StreamThinkingDelta",
+            "name": "StreamThinkingDelta_from_a_list",
+            "given": []
+        },
+        {
+            "model": "StreamToolCall",
+            "name": "StreamToolCall_from_a_list",
+            "given": []
+        },
+        {
+            "model": "StreamToolCallDelta",
+            "name": "StreamToolCallDelta_from_a_list",
+            "given": []
+        },
+        {
+            "model": "StreamUsage",
+            "name": "StreamUsage_from_a_list",
+            "given": []
+        },
+        {
+            "model": "StreamDone",
+            "name": "StreamDone_from_a_list",
+            "given": []
+        },
+        {
+            "model": "StreamEvent",
+            "name": "StreamEvent_from_a_list",
+            "given": []
+        },
+        {
+            "model": "AIContext",
+            "name": "AIContext_from_null",
+            "given": null
+        },
+        {
+            "model": "AIImagePart",
+            "name": "AIImagePart_from_null",
+            "given": null
+        },
+        {
+            "model": "AIMessage",
+            "name": "AIMessage_from_null",
+            "given": null
+        },
+        {
+            "model": "AIResponse",
+            "name": "AIResponse_from_null",
+            "given": null
+        },
+        {
+            "model": "AITextPart",
+            "name": "AITextPart_from_null",
+            "given": null
+        },
+        {
+            "model": "AIThinkingPart",
+            "name": "AIThinkingPart_from_null",
+            "given": null
+        },
+        {
+            "model": "AITool",
+            "name": "AITool_from_null",
+            "given": null
+        },
+        {
+            "model": "AIToolCall",
+            "name": "AIToolCall_from_null",
+            "given": null
+        },
+        {
+            "model": "AIToolCallPart",
+            "name": "AIToolCallPart_from_null",
+            "given": null
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "AIToolResultPart_from_null",
+            "given": null
+        },
+        {
+            "model": "ModelInfo",
+            "name": "ModelInfo_from_null",
+            "given": null
+        },
+        {
+            "model": "ModelPricing",
+            "name": "ModelPricing_from_null",
+            "given": null
+        },
+        {
+            "model": "ServedCall",
+            "name": "ServedCall_from_null",
+            "given": null
+        },
+        {
+            "model": "StreamTextDelta",
+            "name": "StreamTextDelta_from_null",
+            "given": null
+        },
+        {
+            "model": "StreamThinkingDelta",
+            "name": "StreamThinkingDelta_from_null",
+            "given": null
+        },
+        {
+            "model": "StreamToolCall",
+            "name": "StreamToolCall_from_null",
+            "given": null
+        },
+        {
+            "model": "StreamToolCallDelta",
+            "name": "StreamToolCallDelta_from_null",
+            "given": null
+        },
+        {
+            "model": "StreamUsage",
+            "name": "StreamUsage_from_null",
+            "given": null
+        },
+        {
+            "model": "StreamDone",
+            "name": "StreamDone_from_null",
+            "given": null
+        },
+        {
+            "model": "StreamEvent",
+            "name": "StreamEvent_from_null",
+            "given": null
+        }
+    ],
+    "long_floats": [
+        {
+            "text": "20708.635217891522",
+            "bits": 4671421560260194683,
+            "request": "{\"messages\":[],\"system_prompt\":null,\"temperature\":20708.635217891522,\"max_tokens\":null,\"thinking_budget\":null,\"enable_thinking\":null,\"reasoning_effort\":null,\"tools\":[],\"response_schema\":null,\"metadata\":{\"ratio\":20708.635217891522}}",
+            "call": "{\"id\":\"call_1\",\"name\":\"lookup_order\",\"arguments\":{\"ratio\":20708.635217891522},\"metadata\":{},\"served\":null,\"partial\":false,\"garbled\":false,\"intent\":null}",
+            "arguments": "{\"ratio\": 20708.635217891522}"
+        },
+        {
+            "text": "-948.7292200260417",
+            "bits": 13874928363145993088,
+            "request": "{\"messages\":[],\"system_prompt\":null,\"temperature\":-948.7292200260417,\"max_tokens\":null,\"thinking_budget\":null,\"enable_thinking\":null,\"reasoning_effort\":null,\"tools\":[],\"response_schema\":null,\"metadata\":{\"ratio\":-948.7292200260417}}",
+            "call": "{\"id\":\"call_1\",\"name\":\"lookup_order\",\"arguments\":{\"ratio\":-948.7292200260417},\"metadata\":{},\"served\":null,\"partial\":false,\"garbled\":false,\"intent\":null}",
+            "arguments": "{\"ratio\": -948.7292200260417}"
+        },
+        {
+            "text": "0.30000000000000004",
+            "bits": 4599075939470750516,
+            "request": "{\"messages\":[],\"system_prompt\":null,\"temperature\":0.30000000000000004,\"max_tokens\":null,\"thinking_budget\":null,\"enable_thinking\":null,\"reasoning_effort\":null,\"tools\":[],\"response_schema\":null,\"metadata\":{\"ratio\":0.30000000000000004}}",
+            "call": "{\"id\":\"call_1\",\"name\":\"lookup_order\",\"arguments\":{\"ratio\":0.30000000000000004},\"metadata\":{},\"served\":null,\"partial\":false,\"garbled\":false,\"intent\":null}",
+            "arguments": "{\"ratio\": 0.30000000000000004}"
+        },
+        {
+            "text": "123456789.12345679",
+            "bits": 4728057454355442549,
+            "request": "{\"messages\":[],\"system_prompt\":null,\"temperature\":123456789.12345679,\"max_tokens\":null,\"thinking_budget\":null,\"enable_thinking\":null,\"reasoning_effort\":null,\"tools\":[],\"response_schema\":null,\"metadata\":{\"ratio\":123456789.12345679}}",
+            "call": "{\"id\":\"call_1\",\"name\":\"lookup_order\",\"arguments\":{\"ratio\":123456789.12345679},\"metadata\":{},\"served\":null,\"partial\":false,\"garbled\":false,\"intent\":null}",
+            "arguments": "{\"ratio\": 123456789.12345679}"
         }
     ]
 }

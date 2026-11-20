@@ -1,14 +1,15 @@
 //! One message of the conversation a request carries.
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::parts::{AiContentPart, AiToolCallPart, AiToolResultPart};
 use crate::Metadata;
+use crate::strict::read_name;
 use crate::text_or_list::TextOrList;
 
 /// One message of the conversation: Python's `AIMessage(*, role, content,
 /// metadata={})`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct AiMessage {
     /// Whose message it is.
     pub role: AiRole,
@@ -16,7 +17,6 @@ pub struct AiMessage {
     pub content: AiMessageContent,
     /// Provider-owned data carried within the current tool loop (RFC §6.7),
     /// apart from the visible text and the conversation's history.
-    #[serde(default)]
     pub metadata: Metadata,
 }
 
@@ -88,8 +88,7 @@ impl AiMessage {
 
 /// Whose a message is: Python's `role`, `system`, `user`, `assistant` or
 /// `tool`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum AiRole {
     /// The application's instructions.
     System,
@@ -111,6 +110,32 @@ impl AiRole {
             Self::Assistant => "assistant",
             Self::Tool => "tool",
         }
+    }
+}
+
+/// Every role.
+const ROLES: [AiRole; 4] = [
+    AiRole::System,
+    AiRole::User,
+    AiRole::Assistant,
+    AiRole::Tool,
+];
+
+impl Serialize for AiRole {
+    /// Writes the role as Python writes it.
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for AiRole {
+    /// Reads a role from its name, a string.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        read_name(
+            deserializer,
+            "one of the roles `system`, `user`, `assistant` and `tool`",
+            |name| ROLES.into_iter().find(|role| role.as_str() == name),
+        )
     }
 }
 

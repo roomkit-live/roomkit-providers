@@ -88,7 +88,7 @@ fn a_call_read_from_its_wire_is_marked_as_the_rules_decide() {
 #[test]
 fn an_argument_text_reads_as_the_mapping_python_reads() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
-    assert_eq!(fixture.arguments.len(), 14, "the fixture lost texts");
+    assert_eq!(fixture.arguments.len(), 15, "the fixture lost texts");
     for text in &fixture.arguments {
         assert_eq!(tool_arguments(&text.raw), text.arguments, "{:?}", text.raw);
     }

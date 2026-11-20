@@ -21,6 +21,7 @@ pub use self::model_tags::{
     SPEECH_CAPABILITY, TRANSCRIPTION_CAPABILITY, speech_tags, with_speech_tags,
 };
 pub use self::pricing::ModelPricing;
+use crate::strict::read_as_object;
 
 /// Metadata describing one model a provider offers: Python's
 /// `ModelInfo(*, id, display_name=None, context_window=None,
@@ -30,28 +31,57 @@ pub use self::pricing::ModelPricing;
 /// it states nothing. A curated catalogue's `capabilities` may hold a
 /// provider's own routing tags (`chat_tools_refused`,
 /// `tools_reasoning_none`); empty means unknown, not none.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ModelInfo {
     /// The model's exact identifier, as the provider's API takes it.
     pub id: String,
     /// A name for people.
-    #[serde(default)]
     pub display_name: Option<String>,
     /// The model's input context window, in tokens.
-    #[serde(default)]
     pub context_window: Option<u64>,
     /// Whether the model takes images.
-    #[serde(default)]
     pub supports_vision: Option<bool>,
     /// Whether the provider marks the model deprecated.
-    #[serde(default)]
     pub deprecated: bool,
     /// The model's capability tags.
-    #[serde(default)]
     pub capabilities: Vec<String>,
     /// The vendor's list price, where it publishes one.
-    #[serde(default)]
     pub pricing: Option<ModelPricing>,
+}
+
+read_as_object!(ModelForm => ModelInfo);
+
+/// [`ModelInfo`] as it is read.
+#[derive(Deserialize)]
+#[serde(expecting = "a model entry, as a JSON object")]
+struct ModelForm {
+    id: String,
+    #[serde(default)]
+    display_name: Option<String>,
+    #[serde(default)]
+    context_window: Option<u64>,
+    #[serde(default)]
+    supports_vision: Option<bool>,
+    #[serde(default)]
+    deprecated: bool,
+    #[serde(default)]
+    capabilities: Vec<String>,
+    #[serde(default)]
+    pricing: Option<ModelPricing>,
+}
+
+impl From<ModelForm> for ModelInfo {
+    fn from(form: ModelForm) -> Self {
+        Self {
+            id: form.id,
+            display_name: form.display_name,
+            context_window: form.context_window,
+            supports_vision: form.supports_vision,
+            deprecated: form.deprecated,
+            capabilities: form.capabilities,
+            pricing: form.pricing,
+        }
+    }
 }
 
 impl ModelInfo {

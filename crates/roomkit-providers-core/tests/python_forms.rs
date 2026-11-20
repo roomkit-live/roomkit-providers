@@ -4,8 +4,10 @@
 //!
 //! Each example holds the fields a caller gives a Python model (`given`) and
 //! what the model dumps with `model_dump(mode="json")` (`form`). Each
-//! refusal holds fields a Python model refuses, and the words of its
-//! `ValueError`.
+//! refusal holds an input Python refuses, and the words of its `ValueError`;
+//! each rejected input, one Python refuses in pydantic's own words. Each
+//! long float holds a number Python writes with 16 or 17 digits, its exact
+//! bits, and the JSON text of models that carry it.
 
 use std::collections::BTreeSet;
 
@@ -14,7 +16,7 @@ use roomkit_providers_core::{
     AiTextPart, AiThinkingPart, AiTool, AiToolCall, AiToolCallPart, AiToolResultPart, Date,
     ModelInfo, ModelPricing, ServedCall, StreamDone, StreamEvent, StreamTextDelta,
     StreamThinkingDelta, StreamToolCall, StreamToolCallDelta, StreamUsage, ToolCallOutcome,
-    ToolResult, ToolResultPart,
+    ToolResult, ToolResultPart, tool_arguments,
 };
 use serde::de::{DeserializeOwned, Error};
 use serde::{Deserialize, Serialize};
@@ -26,6 +28,24 @@ const FIXTURE: &str = include_str!("fixtures/python_forms.json");
 struct Fixture {
     examples: Vec<Example>,
     refusals: Vec<Refusal>,
+    rejected: Vec<Rejected>,
+    long_floats: Vec<LongFloat>,
+}
+
+#[derive(Deserialize)]
+struct Rejected {
+    model: String,
+    name: String,
+    given: Value,
+}
+
+#[derive(Deserialize)]
+struct LongFloat {
+    text: String,
+    bits: u64,
+    request: String,
+    call: String,
+    arguments: String,
 }
 
 #[derive(Deserialize)]
@@ -51,9 +71,18 @@ impl Example {
     }
 }
 
-/// The JSON text `T` writes once it has read `value`.
+/// The JSON text `T` writes once it has read `value`. A value and its JSON
+/// text are two readers: both must read alike.
 fn rewritten<T: DeserializeOwned + Serialize>(value: &Value) -> serde_json::Result<String> {
-    serde_json::to_string(&T::deserialize(value)?)
+    let from_value = T::deserialize(value).and_then(|read| serde_json::to_string(&read));
+    let from_text =
+        serde_json::from_str::<T>(&value.to_string()).and_then(|read| serde_json::to_string(&read));
+    assert_eq!(
+        from_value.as_ref().ok(),
+        from_text.as_ref().ok(),
+        "a value and its JSON text read alike: {value}"
+    );
+    from_value
 }
 
 /// The JSON text the Rust type of the Python `model` writes once it has
@@ -81,6 +110,10 @@ fn rewritten_as(model: &str, value: &Value) -> serde_json::Result<String> {
         "StreamDone" => rewritten::<StreamDone>(value),
         "ModelInfo" => rewritten::<ModelInfo>(value),
         "ModelPricing" => rewritten::<ModelPricing>(value),
+        // Python has no model for these two: the union of its event models,
+        // and the day `date.fromisoformat` reads.
+        "StreamEvent" => rewritten::<StreamEvent>(value),
+        "date" => rewritten::<Date>(value),
         other => Err(Error::custom(format!(
             "no Rust type for the Python model {other}"
         ))),
@@ -141,7 +174,50 @@ fn the_fields_python_refuses_are_refused_in_its_words() {
         })
         .collect();
     assert_eq!(refused, expected);
-    assert!(refused.len() >= 5, "the fixture lost its refusals");
+    assert!(refused.len() >= 18, "the fixture lost its refusals");
+}
+
+/// What Python refuses in pydantic's own words is refused too: a model given
+/// as a list of its values, a name or a `type` given as anything but a
+/// text.
+#[test]
+fn the_inputs_python_rejects_are_rejected() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
+    let taken: Vec<String> = fixture
+        .rejected
+        .iter()
+        .filter(|input| rewritten_as(&input.model, &input.given).is_ok())
+        .map(|input| format!("{} `{}`", input.model, input.name))
+        .collect();
+    assert_eq!(taken, Vec::<String>::new(), "taken where Python refuses");
+    assert!(fixture.rejected.len() >= 53, "the fixture lost inputs");
+}
+
+/// A float Python writes with 16 or 17 digits is read to the bit, in a
+/// request's temperature, in metadata and in a call's arguments, and is
+/// written back as Python wrote it.
+#[test]
+fn a_long_float_is_read_to_the_bit_and_written_back() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
+    let bits = |value: &Value| value.as_f64().map(f64::to_bits);
+    for float in &fixture.long_floats {
+        let text = &float.text;
+        let request: AiRequest = serde_json::from_str(&float.request).unwrap();
+        assert_eq!(request.temperature.to_bits(), float.bits, "{text}");
+        assert_eq!(bits(&request.metadata["ratio"]), Some(float.bits), "{text}");
+        assert_eq!(serde_json::to_string(&request).unwrap(), float.request);
+
+        let call: AiToolCall = serde_json::from_str(&float.call).unwrap();
+        assert_eq!(bits(&call.arguments["ratio"]), Some(float.bits), "{text}");
+        assert_eq!(serde_json::to_string(&call).unwrap(), float.call);
+
+        let arguments = tool_arguments(&float.arguments);
+        assert_eq!(bits(&arguments["ratio"]), Some(float.bits), "{text}");
+    }
+    assert!(
+        fixture.long_floats.len() >= 4,
+        "the fixture lost its floats"
+    );
 }
 
 /// The types Python has no model for hold the same JSON: a message's content

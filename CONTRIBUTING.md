@@ -75,6 +75,11 @@ Python,
 - A new contract type or field brings its examples to the script, and the
   regenerated fixture is committed with it. The fixture records the RoomKit
   version it was written from.
+- A public type never derives `Deserialize`: a derived reader also takes a
+  list of a model's values for the model, and an object or a number for a
+  name. A model is read as a private form through `read_as_object!`, a name
+  through `read_name`, a union of models through `read_tagged`
+  (`src/strict/`), and joins the lists of `tests/strict_input.rs`.
 - The same script writes `python_call_rules.json`, what RoomKit's Python
   decides of a call's arguments, which the `python_call_rules` test compares
   the Rust rules with.
@@ -90,7 +95,9 @@ make printable-table PYTHON=path/to/venv/bin/python
 
 Run it with the Python version RoomKit is tested with; the table's header
 records the Python and Unicode versions it was written from, and carries
-the notice of the Unicode data it is derived from.
+the notice of the Unicode data it is derived from. The same command writes
+that notice as `crates/roomkit-providers-core/LICENSE-UNICODE`, the license
+file the crate ships beside its own: the crate is `MIT AND Unicode-3.0`.
 
 ## Implementation boundaries
 

@@ -19,7 +19,7 @@ pub(crate) fn repr(value: &Value) -> String {
             number.as_f64().map_or_else(String::new, python_float)
         }
         Value::Number(number) => number.to_string(),
-        Value::String(text) => repr_text(text),
+        Value::String(text) => quoted(text),
         Value::Array(items) => {
             let items: Vec<String> = items.iter().map(repr).collect();
             format!("[{}]", items.join(", "))
@@ -27,7 +27,7 @@ pub(crate) fn repr(value: &Value) -> String {
         Value::Object(members) => {
             let members: Vec<String> = members
                 .iter()
-                .map(|(name, value)| format!("{}: {}", repr_text(name), repr(value)))
+                .map(|(name, value)| format!("{}: {}", quoted(name), repr(value)))
                 .collect();
             format!("{{{}}}", members.join(", "))
         }
@@ -40,7 +40,7 @@ pub(crate) fn repr(value: &Value) -> String {
 /// `str.isprintable()` refuses as `\xNN` under U+0100, `\uNNNN` under
 /// U+10000, `\UNNNNNNNN` past it (a no-break space as `\xa0`, a
 /// right-to-left override as `\u202e`).
-fn repr_text(text: &str) -> String {
+pub(crate) fn quoted(text: &str) -> String {
     let quote = if text.contains('\'') && !text.contains('"') {
         '"'
     } else {
@@ -120,7 +120,7 @@ mod tests {
             ("\u{0}\u{1f}\u{7f}\\", "'\\x00\\x1f\\x7f\\\\'"),
             ("tab\tline\nend\r", "'tab\\tline\\nend\\r'"),
         ];
-        let written: Vec<String> = cases.iter().map(|(text, _)| repr_text(text)).collect();
+        let written: Vec<String> = cases.iter().map(|(text, _)| quoted(text)).collect();
         let expected: Vec<String> = cases.iter().map(|(_, repr)| (*repr).to_owned()).collect();
         assert_eq!(written, expected);
     }

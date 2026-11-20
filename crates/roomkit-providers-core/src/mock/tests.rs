@@ -181,50 +181,162 @@ fn a_scripted_text_ends_stop_with_the_mock_s_usage() {
 }
 
 // Python: MockAIProvider(tool_call_delta_chunks=n): a streaming mock splits
-// `json.dumps(arguments)` into fragments before the complete call; one that
-// does not stream emits none.
+// `json.dumps(arguments)` into that many fragments before the complete call,
+// each naming its call; no fragment for a count of zero or less, nor from a
+// mock that does not stream.
 #[test]
-fn a_streaming_mock_splits_a_call_s_arguments_into_fragments() {
-    let mut call = AiToolCall::new("c1", "lookup");
-    call.arguments.insert("order".into(), json!("A-1001"));
-    call.arguments.insert("note".into(), json!("caf\u{e9}"));
-    let scripted = AiResponse {
-        finish_reason: Some("tool_calls".to_owned()),
-        tool_calls: vec![call],
-        ..AiResponse::new("")
+fn mock_fragments_keep_python_json_and_complete_call() {
+    // Python's json.dumps writes ASCII escapes, spaces and surrogate pairs.
+    let payload = r#"{"q": "\u00e9\u732b\ud83d\ude42"}"#;
+    for streaming in [false, true] {
+        for chunks in [-1, 0, 1, 4, 100] {
+            let arguments = json!({ "q": "\u{e9}\u{732b}\u{1f642}" });
+            let arguments = arguments.as_object().cloned().unwrap_or_default();
+            let scripted = AiResponse {
+                tool_calls: vec![AiToolCall {
+                    arguments: arguments.clone(),
+                    ..AiToolCall::new("c1", "lookup")
+                }],
+                ..AiResponse::new("")
+            };
+            let model = MockAiProvider::new(MockAiProviderOptions {
+                streaming,
+                tool_call_delta_chunks: chunks,
+                ai_responses: Some(vec![scripted]),
+                ..MockAiProviderOptions::default()
+            });
+            let (events, failed) = drained(&model, &AiRequest::default());
+            assert!(failed.is_none());
+            let mut fragments = Vec::new();
+            let mut calls = Vec::new();
+            for event in events {
+                match event {
+                    StreamEvent::ToolCallDelta(delta) => {
+                        assert_eq!((&*delta.id, &*delta.name, delta.index), ("c1", "lookup", 0));
+                        // A fragment comes before its complete call.
+                        assert_eq!(calls.len(), 0);
+                        fragments.push(delta.arguments_delta);
+                    }
+                    StreamEvent::ToolCall(call) => calls.push(call),
+                    StreamEvent::TextDelta(_)
+                    | StreamEvent::Done(_)
+                    | StreamEvent::ThinkingDelta(_)
+                    | StreamEvent::Usage(_) => {}
+                }
+            }
+            let expected: Vec<String> = match usize::try_from(chunks) {
+                Ok(count) if streaming && count > 0 => payload
+                    .as_bytes()
+                    .chunks(payload.len().div_ceil(count))
+                    .map(|fragment| String::from_utf8(fragment.to_vec()).unwrap())
+                    .collect(),
+                Ok(_) | Err(_) => Vec::new(),
+            };
+            assert_eq!(
+                fragments, expected,
+                "streaming={streaming}, chunks={chunks}"
+            );
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].arguments, arguments);
+        }
+    }
+}
+
+// Python: MockAIProvider's properties: each says what its keyword said.
+#[test]
+fn the_mock_says_of_itself_what_its_options_say() {
+    let said = |options: MockAiProviderOptions| {
+        let model = MockAiProvider::new(options);
+        [
+            model.supports_vision(),
+            model.supports_streaming(),
+            model.supports_structured_streaming(),
+            model.supports_response_schema(),
+            model.supports_response_schema_with_tools(),
+        ]
     };
-    let fragments = |streaming: bool| -> Vec<String> {
-        let model = MockAiProvider::new(MockAiProviderOptions {
-            ai_responses: Some(vec![scripted.clone()]),
+    let options = MockAiProviderOptions::default;
+    assert_eq!(said(options()), [false; 5]);
+    assert_eq!(
+        said(MockAiProviderOptions {
+            vision: true,
+            ..options()
+        }),
+        [true, false, false, false, false]
+    );
+    assert_eq!(
+        said(MockAiProviderOptions {
+            streaming: true,
+            ..options()
+        }),
+        [false, true, true, false, false]
+    );
+    assert_eq!(
+        said(MockAiProviderOptions {
+            response_schema: true,
+            ..options()
+        }),
+        [false, false, false, true, false]
+    );
+    assert_eq!(
+        said(MockAiProviderOptions {
+            response_schema_with_tools: true,
+            ..options()
+        }),
+        [false, false, false, false, true]
+    );
+}
+
+// RFC §6.4: a response that calls a tool is no answer. Under a schema, a
+// provider that takes one beside tools hands the calls on, its text
+// unchecked, whole or streamed.
+#[test]
+fn a_constrained_round_that_calls_a_tool_is_not_checked_as_an_answer() {
+    let calling = AiResponse {
+        finish_reason: Some("tool_calls".to_owned()),
+        tool_calls: vec![AiToolCall::new("c1", "lookup")],
+        ..AiResponse::new("Let me check.")
+    };
+    let tool = AiTool::new("lookup", "Look it up").unwrap();
+    let request = asking(Some(verdict()), vec![tool]);
+    for streaming in [false, true] {
+        let provider = MockAiProvider::new(MockAiProviderOptions {
+            ai_responses: Some(vec![calling.clone()]),
+            response_schema: true,
+            response_schema_with_tools: true,
             streaming,
-            tool_call_delta_chunks: 3,
             ..MockAiProviderOptions::default()
         });
-        let (events, failed) = drained(&model, &asking(None, Vec::new()));
-        assert!(failed.is_none());
+        let response = block_on(provider.generate(&request)).expect("a round of calls");
+        assert_eq!(response.tool_calls.len(), 1);
+        let (events, failed) = drained(&provider, &request);
+        assert_eq!(failed, None, "streaming={streaming}");
         assert!(matches!(
             events.as_slice(),
-            [.., StreamEvent::ToolCall(_), StreamEvent::Done(_)]
+            [
+                StreamEvent::TextDelta(_),
+                StreamEvent::ToolCall(_),
+                StreamEvent::Done(_)
+            ]
         ));
-        events
-            .into_iter()
-            .filter_map(|event| match event {
-                StreamEvent::ToolCallDelta(delta) => Some(delta.arguments_delta),
-                StreamEvent::TextDelta(_)
-                | StreamEvent::ToolCall(_)
-                | StreamEvent::Done(_)
-                | StreamEvent::ThinkingDelta(_)
-                | StreamEvent::Usage(_) => None,
-            })
-            .collect()
-    };
-    let streamed = fragments(true);
-    assert_eq!(streamed.len(), 3);
-    assert_eq!(
-        streamed.concat(),
-        r#"{"order": "A-1001", "note": "caf\u00e9"}"#
-    );
-    assert_eq!(fragments(false), Vec::<String>::new());
+    }
+}
+
+// RFC §6.4: a response that ended on a call its provider could not hand
+// over is no answer either: its empty text is not refused as no document.
+#[test]
+fn a_constrained_round_that_ends_on_a_malformed_call_is_not_checked_as_an_answer() {
+    let request = asking(Some(verdict()), Vec::new());
+    for streaming in [false, true] {
+        for ending in ["MALFORMED_FUNCTION_CALL", "unexpected_tool_call"] {
+            let provider = mock(vec![said("", ending)], true, streaming);
+            let response = block_on(provider.generate(&request)).expect("no answer to check");
+            assert_eq!(response.finish_reason.as_deref(), Some(ending));
+            let (events, failed) = drained(&provider, &request);
+            assert_eq!(failed, None, "streaming={streaming} {ending}");
+            assert!(matches!(events.as_slice(), [StreamEvent::Done(_)]));
+        }
+    }
 }
 
 // Python: tests/test_response_schema.py::TestMockHonoursTheContract::test_generate_returns_the_json_document

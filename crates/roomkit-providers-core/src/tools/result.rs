@@ -4,6 +4,7 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::request::{AiImagePart, AiTextPart};
+use crate::strict::{Tagged, read_tagged};
 use crate::text_or_list::TextOrList;
 
 /// What stands for an image in a result's text: Python's
@@ -45,13 +46,32 @@ pub enum ToolResult {
 
 /// One part of a tool's result: Python's `AITextPart | AIImagePart`, told
 /// apart by its `type`.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ToolResultPart {
     /// A text.
     Text(AiTextPart),
     /// An image (RFC §6.4).
     Image(AiImagePart),
+}
+
+impl Tagged for ToolResultPart {
+    const EXPECTING: &'static str = "a text or image part, as a JSON object with its `type`";
+    const TYPES: &'static [&'static str] = &["text", "image"];
+
+    fn read<'de, D: Deserializer<'de>>(tag: &str, rest: D) -> Option<Result<Self, D::Error>> {
+        Some(match tag {
+            "text" => AiTextPart::deserialize(rest).map(Self::Text),
+            "image" => AiImagePart::deserialize(rest).map(Self::Image),
+            _ => return None,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for ToolResultPart {
+    /// Reads a part from an object, its `type` a string saying which.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        read_tagged(deserializer)
+    }
 }
 
 impl Serialize for ToolResultPart {

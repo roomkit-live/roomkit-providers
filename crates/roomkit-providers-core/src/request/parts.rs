@@ -5,19 +5,16 @@
 //! a part takes a missing `type` as its own and refuses any other; read
 //! among others, its `type` says which part it is.
 
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use super::part_forms::{
-    ImagePartForm, TextPartForm, ThinkingPartForm, ToolCallPartForm, ToolResultPartForm,
-};
 use crate::Metadata;
+use crate::strict::{Tagged, read_tagged};
 use crate::tools::{ToolCallOutcome, ToolResult};
 
 /// One part of a message: Python's `AITextPart`, `AIImagePart`,
 /// `AIToolCallPart`, `AIToolResultPart` or `AIThinkingPart`, told apart by
 /// its `type`.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AiContentPart {
     /// A text.
     Text(AiTextPart),
@@ -45,9 +42,33 @@ impl Serialize for AiContentPart {
     }
 }
 
+impl Tagged for AiContentPart {
+    const EXPECTING: &'static str = "a content part, as a JSON object with its `type`";
+    const TYPES: &'static [&'static str] =
+        &["text", "image", "tool_call", "tool_result", "thinking"];
+
+    fn read<'de, D: Deserializer<'de>>(tag: &str, rest: D) -> Option<Result<Self, D::Error>> {
+        Some(match tag {
+            "text" => AiTextPart::deserialize(rest).map(Self::Text),
+            "image" => AiImagePart::deserialize(rest).map(Self::Image),
+            "tool_call" => AiToolCallPart::deserialize(rest).map(Self::ToolCall),
+            "tool_result" => AiToolResultPart::deserialize(rest).map(Self::ToolResult),
+            "thinking" => AiThinkingPart::deserialize(rest).map(Self::Thinking),
+            _ => return None,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for AiContentPart {
+    /// Reads a part from an object, its `type` a string saying which.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        read_tagged(deserializer)
+    }
+}
+
 /// A text part: Python's `AITextPart(*, text)`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "text", from = "TextPartForm")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "text")]
 pub struct AiTextPart {
     /// The text.
     pub text: String,
@@ -62,8 +83,8 @@ impl AiTextPart {
 
 /// An image part: Python's `AIImagePart(*, url, mime_type=None)`, a data or
 /// HTTP URL the host resolved (RFC §6.4).
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "image", from = "ImagePartForm")]
+#[derive(Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "image")]
 pub struct AiImagePart {
     /// Where the image is: a `data:` or `https:` URL.
     pub url: String,
@@ -94,8 +115,8 @@ impl std::fmt::Debug for AiImagePart {
 /// A reasoning block in the conversation (RFC §6.4): Python's
 /// `AIThinkingPart(*, thinking, signature=None, redacted=None)`, kept across a
 /// turn's rounds, as a vendor that signs its blocks requires.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "thinking", from = "ThinkingPartForm")]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "thinking")]
 pub struct AiThinkingPart {
     /// The reasoning text the model wrote.
     pub thinking: String,
@@ -118,8 +139,8 @@ impl AiThinkingPart {
 
 /// A call the assistant made: Python's `AIToolCallPart(*, id, name,
 /// arguments={}, metadata={})`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "tool_call", from = "ToolCallPartForm")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "tool_call")]
 pub struct AiToolCallPart {
     /// The call's id.
     pub id: String,
@@ -145,8 +166,8 @@ impl AiToolCallPart {
 
 /// A tool's result: Python's `AIToolResultPart(*, tool_call_id, name,
 /// result, is_error=False, structured_content=None, outcome=None, references=[])`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "tool_result", from = "ToolResultPartForm")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "tool_result")]
 pub struct AiToolResultPart {
     /// The call the result answers.
     pub tool_call_id: String,

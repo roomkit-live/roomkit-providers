@@ -13,6 +13,10 @@ exceptions = [
     { crate = "unicode-ident", allow = ["Unicode-3.0"] },
     # The hasher of serde_json's ordered map (its `preserve_order` feature).
     { crate = "foldhash", allow = ["Zlib"] },
+    # This repository's contract crate, MIT AND Unicode-3.0: its table of the
+    # characters Python's `repr` writes as they are is derived from Unicode
+    # data, and ships that data's notice (LICENSE-UNICODE).
+    { crate = "roomkit-providers-core", allow = ["Unicode-3.0"] },
 ]
 confidence-threshold = 0.9
 

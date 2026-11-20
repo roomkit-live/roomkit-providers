@@ -9,15 +9,15 @@
 //! - [`image_part_payload`], [`image_part_base64`] and [`image_part_uri`]:
 //!   the readings of an image part every provider needs.
 
+mod forms;
 mod image_parts;
 mod message;
-mod part_forms;
 mod parts;
 
 use std::fmt;
 
 use serde::ser::SerializeMap;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 use serde_json::{Map, Value};
 
 pub use self::image_parts::{image_part_base64, image_part_payload, image_part_uri};
@@ -27,7 +27,6 @@ pub use self::parts::{
 };
 use crate::Metadata;
 use crate::provider::API_KEY_METADATA_KEY as API_KEY;
-use crate::schema::check_portable_object;
 use crate::tools::AiTool;
 
 /// What stands for the credential in a request's JSON form: what Python
@@ -71,8 +70,7 @@ const MASK: &str = "**********";
 /// request is read from JSON, and again in a provider before it sends
 /// anything. A request built or changed in Rust is not checked until then:
 /// a struct's field cannot refuse a value.
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct AiRequest {
     /// The conversation, oldest first, the turn's rounds so far included.
     pub messages: Vec<AiMessage>,
@@ -101,25 +99,10 @@ pub struct AiRequest {
     /// provider handed one answers with one JSON document or fails with a
     /// [`ResponseSchemaError`](crate::ResponseSchemaError); it never ignores
     /// it.
-    #[serde(deserialize_with = "portable_schema")]
     pub response_schema: Option<Map<String, Value>>,
     /// The turn's data for the provider.
     #[serde(serialize_with = "with_credential_masked")]
     pub metadata: Metadata,
-}
-
-/// Reads a request's response schema, refusing one outside the portable
-/// subset in the words of
-/// [`check_portable_schema`](crate::check_portable_schema), as Python
-/// refuses it when a context is built.
-fn portable_schema<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Option<Map<String, Value>>, D::Error> {
-    let schema = Option::<Map<String, Value>>::deserialize(deserializer)?;
-    if let Some(schema) = &schema {
-        check_portable_object(schema).map_err(serde::de::Error::custom)?;
-    }
-    Ok(schema)
 }
 
 /// Writes a request's metadata with its credential masked, as Python does:

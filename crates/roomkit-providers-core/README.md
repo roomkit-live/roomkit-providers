@@ -8,6 +8,9 @@ The crate has no I/O and no async runtime, and depends on neither Python nor
 RoomKit. Provider implementations own their HTTP; hosts own their
 conversations.
 
+Section numbers in its documentation (`RFC §6.7`) refer to the
+[RoomKit RFC](https://github.com/roomkit-live/roomkit-specs).
+
 **Early development.** The crate defines today:
 
 - what a provider implements, the `AiProvider` trait, with the events and
@@ -54,6 +57,14 @@ assert_eq!(
 );
 ```
 
+A model is read from a JSON object only, and a name or a `type` from a JSON
+string only. The crate's documentation lists where input is stricter than
+Python's, and what the JSON parser reads differently.
+
 ## License
 
-MIT
+`MIT AND Unicode-3.0`.
+
+The crate is under the MIT license (`LICENSE`). Its table of the characters
+Python's `repr` writes as they are (`src/python/printable.rs`) is derived
+from Unicode data, under the Unicode License V3 (`LICENSE-UNICODE`).

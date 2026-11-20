@@ -38,6 +38,15 @@ nothing has been released yet.
   list, for tests and examples.
 - Each of these types that is a model in RoomKit's Python implementation
   reads and writes the JSON that model gives with `model_dump(mode="json")`,
-  checked against examples written by RoomKit's Python. As in Python, a
-  request's JSON form never carries the credential of one request: it is
-  written masked.
+  checked against examples written by RoomKit's Python. A number is read to
+  the float Python wrote, a number of 16 or 17 digits included. As in
+  Python, a request's JSON form never carries the credential of one request:
+  it is written masked.
+- A model is read from a JSON object only, and a name or a `type` from a
+  JSON string only, as Python reads them. A refusal that names a value quotes
+  it as Python's `repr` does. The crate's documentation lists where input is
+  stricter than Python's and what the JSON parser reads differently.
+- `roomkit-providers-core` is licensed `MIT AND Unicode-3.0`: its table of
+  the characters Python's `repr` writes as they are is derived from Unicode
+  data, and the crate ships that data's license, `LICENSE-UNICODE`, beside
+  its own.

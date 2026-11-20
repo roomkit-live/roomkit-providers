@@ -4,18 +4,15 @@
 //! an event takes a missing `type` as its own and refuses any other; read as
 //! a [`StreamEvent`], its `type` says which event it is.
 
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::calls::{AiToolCall, ServedCall};
-use super::event_forms::{
-    DoneForm, TextDeltaForm, ThinkingDeltaForm, ToolCallDeltaForm, ToolCallForm, UsageForm,
-};
 use crate::Metadata;
+use crate::strict::{Tagged, read_tagged};
 
 /// One event of a structured stream (RFC §6.7, Appendix A.9): Python's
 /// `StreamEvent`, its classes told apart by their `type`.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum StreamEvent {
     /// Text the model wrote, as it came.
     TextDelta(StreamTextDelta),
@@ -46,11 +43,42 @@ impl Serialize for StreamEvent {
     }
 }
 
+impl Tagged for StreamEvent {
+    const EXPECTING: &'static str = "a stream event, as a JSON object with its `type`";
+    const TYPES: &'static [&'static str] = &[
+        "text_delta",
+        "tool_call",
+        "done",
+        "thinking_delta",
+        "tool_call_delta",
+        "usage",
+    ];
+
+    fn read<'de, D: Deserializer<'de>>(tag: &str, rest: D) -> Option<Result<Self, D::Error>> {
+        Some(match tag {
+            "text_delta" => StreamTextDelta::deserialize(rest).map(Self::TextDelta),
+            "tool_call" => StreamToolCall::deserialize(rest).map(Self::ToolCall),
+            "done" => StreamDone::deserialize(rest).map(Self::Done),
+            "thinking_delta" => StreamThinkingDelta::deserialize(rest).map(Self::ThinkingDelta),
+            "tool_call_delta" => StreamToolCallDelta::deserialize(rest).map(Self::ToolCallDelta),
+            "usage" => StreamUsage::deserialize(rest).map(Self::Usage),
+            _ => return None,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for StreamEvent {
+    /// Reads an event from an object, its `type` a string saying which.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        read_tagged(deserializer)
+    }
+}
+
 /// A streaming call fragment: Python's `StreamToolCallDelta(*, id, name,
 /// index=0, arguments_delta="")`. The whole [`StreamToolCall`] still
 /// follows and remains what runs.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "tool_call_delta", from = "ToolCallDeltaForm")]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "tool_call_delta")]
 pub struct StreamToolCallDelta {
     /// The stable identity of the call throughout this response.
     pub id: String,
@@ -77,8 +105,8 @@ impl StreamToolCallDelta {
 
 /// A piece of a model's reasoning: Python's `StreamThinkingDelta(*, thinking,
 /// signature=None, block=None, redacted=None)`.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "thinking_delta", from = "ThinkingDeltaForm")]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "thinking_delta")]
 pub struct StreamThinkingDelta {
     /// The reasoning text; empty for a delta that only carries a signature.
     pub thinking: String,
@@ -104,8 +132,8 @@ impl StreamThinkingDelta {
 }
 
 /// Text the model wrote: Python's `StreamTextDelta(*, text)`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "text_delta", from = "TextDeltaForm")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "text_delta")]
 pub struct StreamTextDelta {
     /// The text.
     pub text: String,
@@ -120,8 +148,8 @@ impl StreamTextDelta {
 
 /// A call the model made: Python's `StreamToolCall`, the fields of
 /// [`AiToolCall`].
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "tool_call", from = "ToolCallForm")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "tool_call")]
 pub struct StreamToolCall {
     /// The call's id.
     pub id: String,
@@ -213,8 +241,8 @@ impl From<StreamToolCall> for AiToolCall {
 /// counters as its stream starts yields them here; a generation cut before
 /// its end counts them, and the usage of its [`StreamDone`], when it comes,
 /// replaces them (RFC §6.4).
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "usage", from = "UsageForm")]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "usage")]
 pub struct StreamUsage {
     /// What it used so far: integer counters by name.
     pub usage: Metadata,
@@ -222,8 +250,8 @@ pub struct StreamUsage {
 
 /// How a generation ended: Python's `StreamDone(*, finish_reason=None,
 /// usage={}, metadata={})`.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "done", from = "DoneForm")]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename = "done")]
 pub struct StreamDone {
     /// Why it stopped.
     pub finish_reason: Option<String>,

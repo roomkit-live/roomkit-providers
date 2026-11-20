@@ -209,11 +209,15 @@ pub fn schema_for_generate<'a>(
 /// server that takes the constraint and ignores it answers JSON of
 /// another shape.
 ///
+/// For a provider crate: its `generate` checks the whole answer it returns
+/// with it, as [`checked_stream`] checks a streamed one.
+///
 /// # Errors
 ///
 /// [`ResponseSchemaFailure::Refusal`], [`ResponseSchemaFailure::Truncated`]
 /// or [`ResponseSchemaFailure::InvalidJson`].
-pub(crate) fn check_schema_answer(
+#[doc(hidden)]
+pub fn check_schema_answer(
     content: &str,
     schema: &Map<String, Value>,
     provider: &str,
@@ -303,3 +307,7 @@ pub fn checked_stream<'a>(
         },
     ))
 }
+
+#[cfg(test)]
+#[path = "response_tests.rs"]
+mod tests;

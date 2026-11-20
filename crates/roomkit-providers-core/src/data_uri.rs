@@ -42,8 +42,11 @@ pub(crate) fn to_data_uri(data: &[u8], kind: &str) -> String {
 
 /// Why a `data:` URI does not read: Python's `ValueError` of
 /// `parse_data_uri`.
+///
+/// For a provider crate, with [`parse_data_uri`].
+#[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum DataUriError {
+pub enum DataUriError {
     /// The URL is no `data:` URI.
     NotADataUri,
     /// It carries no payload, whitespace aside.
@@ -71,11 +74,16 @@ impl std::error::Error for DataUriError {}
 /// (an encoder that wrapped its lines) and a missing padding are repaired;
 /// anything else is refused. Python's `parse_data_uri`.
 ///
+/// For a provider crate that reads an image's bytes itself, where its wire
+/// takes neither of the readings of an image part
+/// ([`image_part_payload`](crate::image_part_payload)).
+///
 /// # Errors
 ///
 /// [`DataUriError`] for a URL that is no `data:` URI, carries no payload,
 /// or whose payload is no base64.
-pub(crate) fn parse_data_uri(
+#[doc(hidden)]
+pub fn parse_data_uri(
     url: &str,
     fallback: Option<&str>,
 ) -> Result<(String, Vec<u8>), DataUriError> {

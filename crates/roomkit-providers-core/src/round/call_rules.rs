@@ -242,6 +242,41 @@ mod tests {
         }
     }
 
+    // Python: call_cut, call_partial and call_garbled take `last=True` by
+    // default: a call is its response's last unless told otherwise.
+    #[test]
+    fn a_call_is_the_last_of_its_response_by_default() {
+        assert!(CallCutOptions::default().last);
+        assert!(CallPartialOptions::default().last);
+        assert!(CallGarbledOptions::default().last);
+        let nothing = json!("");
+        assert!(call_cut(
+            &nothing,
+            Some("length"),
+            CallCutOptions::default()
+        ));
+        assert!(!call_cut(
+            &nothing,
+            Some("length"),
+            CallCutOptions { last: false }
+        ));
+        assert!(call_partial(
+            &nothing,
+            Some("length"),
+            CallPartialOptions::default()
+        ));
+        assert!(!call_garbled(
+            &json!("[1]"),
+            Some("length"),
+            CallGarbledOptions::default()
+        ));
+        assert!(call_garbled(
+            &json!("[1]"),
+            Some("length"),
+            CallGarbledOptions { last: false }
+        ));
+    }
+
     // Python: is_malformed_call, the endings of a call a provider did not
     // hand over, in any case.
     #[test]

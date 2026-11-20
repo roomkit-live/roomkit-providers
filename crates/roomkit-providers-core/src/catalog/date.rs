@@ -7,6 +7,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::error::ValueError;
+use crate::python::quoted;
 
 /// A day of the proleptic Gregorian calendar, the years 1 to 9999 as
 /// Python's `date` takes them, written `2026-08-05` as Python's
@@ -91,7 +92,7 @@ impl FromStr for Date {
     /// are refused.
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let invalid = || ValueError::Date {
-            reason: format!("Invalid isoformat string: '{value}'"),
+            reason: format!("Invalid isoformat string: {}", quoted(value)),
         };
         let mut parts = value.split('-');
         let (Some(year), Some(month), Some(day), None) =
@@ -147,6 +148,18 @@ mod tests {
         assert!(Date::new(0, 1, 1).is_err());
         assert!("2026-8-05".parse::<Date>().is_err());
         assert!("2026-08-05T00:00".parse::<Date>().is_err());
+    }
+
+    #[test]
+    fn each_month_has_its_days() {
+        let last_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        for (month, last) in (1..=12).zip(last_days) {
+            assert!(Date::new(2026, month, last).is_ok(), "{month}");
+            assert!(Date::new(2026, month, last + 1).is_err(), "{month}");
+            assert!(Date::new(2026, month, 0).is_err(), "{month}");
+        }
+        assert!(Date::new(9999, 12, 31).is_ok());
+        assert!(Date::new(10_000, 1, 1).is_err());
     }
 
     #[test]

@@ -4,10 +4,15 @@ description = "Runtime-independent contracts for model providers: requests, resp
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+# MIT, and the Unicode License V3 for the table of printable characters,
+# which is derived from Unicode data (src/python/printable.rs).
+license = "MIT AND Unicode-3.0"
 repository.workspace = true
 publish.workspace = true
 readme = "README.md"
+# What a published crate carries, both license files by name: the MIT
+# license, and the notice of the Unicode data its table is derived from.
+include = ["/LICENSE", "/LICENSE-UNICODE", "/README.md", "/src", "/tests"]
 keywords = ["llm", "ai", "provider", "model", "streaming"]
 categories = ["api-bindings"]
 
@@ -16,8 +21,10 @@ categories = ["api-bindings"]
 futures-core = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 # A JSON object keeps its members in the order they were written, as a
-# Python dict does.
-serde_json = { workspace = true, features = ["preserve_order"] }
+# Python dict does, and a number is read as the float nearest to its digits,
+# as Python reads it: the default reading is off by one bit on some numbers
+# of 16 or 17 digits.
+serde_json = { workspace = true, features = ["float_roundtrip", "preserve_order"] }
 thiserror = { workspace = true }
 # The random half of an id minted for a call its server gave none.
 uuid = { workspace = true, features = ["v4"] }

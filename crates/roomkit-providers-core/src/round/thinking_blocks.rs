@@ -13,6 +13,8 @@
 //! cap): it is not replayed, since the vendor refuses an unsigned block and
 //! accepts a round without it.
 
+use std::collections::HashMap;
+
 use crate::request::AiThinkingPart;
 use crate::response::StreamThinkingDelta;
 
@@ -47,7 +49,11 @@ impl Block {
 /// The reasoning blocks of one response, in the order they opened.
 #[derive(Clone, Debug, Default)]
 pub struct ThinkingBlocks {
+    /// The blocks, each with its name, in the order they opened.
     blocks: Vec<(Option<u32>, Block)>,
+    /// Where each block is among `blocks`, by its name: a delta finds its
+    /// block at once, however many blocks a server names.
+    places: HashMap<Option<u32>, usize>,
     last_signature: Option<String>,
 }
 
@@ -60,15 +66,11 @@ impl ThinkingBlocks {
 
     /// Folds `delta` into its block; whether it opened one.
     pub fn add(&mut self, delta: &StreamThinkingDelta) -> bool {
-        let found = self
-            .blocks
-            .iter()
-            .position(|(block, _)| *block == delta.block);
-        let opened = found.is_none();
-        let at = found.unwrap_or_else(|| {
+        let opened = !self.places.contains_key(&delta.block);
+        let at = *self.places.entry(delta.block).or_insert(self.blocks.len());
+        if opened {
             self.blocks.push((delta.block, Block::default()));
-            self.blocks.len() - 1
-        });
+        }
         let Some((_, held)) = self.blocks.get_mut(at) else {
             return opened;
         };
@@ -111,16 +113,16 @@ impl ThinkingBlocks {
     /// counts.
     #[must_use]
     pub fn keyed(&self) -> bool {
-        self.blocks.iter().any(|(block, _)| block.is_some())
+        let unnamed = usize::from(self.places.contains_key(&None));
+        self.places.len() > unnamed
     }
 
     /// The part a block replays as, `None` for one with nothing to replay.
     #[must_use]
     pub fn part(&self, block: Option<u32>) -> Option<AiThinkingPart> {
-        self.blocks
-            .iter()
-            .find(|(held, _)| *held == block)
-            .and_then(|(_, held)| held.part(block.is_some()))
+        let at = *self.places.get(&block)?;
+        let (_, held) = self.blocks.get(at)?;
+        held.part(block.is_some())
     }
 
     /// Every block's part, in the order the blocks opened.
@@ -203,6 +205,46 @@ mod tests {
         assert_eq!(blocks.part(Some(2)), None);
         assert_eq!(blocks.text(), "keptcut");
         assert_eq!(blocks.last_signature(), Some("S0"));
+    }
+
+    // Python holds its blocks in a dict: a delta finds its block whatever
+    // their number and the order they are named in, and the blocks keep the
+    // order they opened in.
+    #[test]
+    fn many_blocks_named_out_of_order_keep_their_text_and_the_order_they_opened_in() {
+        const COUNT: u32 = 2_000;
+        // Every name once, in an order that is neither rising nor falling.
+        let names: Vec<u32> = (0..COUNT).map(|at| (at * 7_919) % COUNT).collect();
+        let mut blocks = ThinkingBlocks::new();
+        assert!(blocks.add(&delta(None, "unnamed")));
+        for name in &names {
+            assert!(blocks.add(&delta(Some(*name), &format!("b{name} "))));
+        }
+        for name in names.iter().rev() {
+            let more = StreamThinkingDelta {
+                signature: Some(format!("S{name}")),
+                ..delta(Some(*name), "more")
+            };
+            assert!(!blocks.add(&more), "block {name} is open already");
+        }
+        assert!(!blocks.add(&delta(None, " block")));
+
+        let parts = blocks.parts();
+        assert_eq!(parts.len(), names.len() + 1);
+        assert_eq!(parts[0], part("unnamed block", None, None));
+        for (replayed, name) in parts.iter().skip(1).zip(&names) {
+            let signature = format!("S{name}");
+            assert_eq!(
+                replayed,
+                &part(&format!("b{name} more"), Some(&signature), None)
+            );
+            assert_eq!(blocks.part(Some(*name)).as_ref(), Some(replayed));
+        }
+        assert_eq!(blocks.part(Some(COUNT)), None);
+        assert_eq!(blocks.part(None), Some(part("unnamed block", None, None)));
+        assert!(blocks.keyed());
+        assert_eq!(blocks.last_signature(), Some("S0"));
+        assert!(blocks.text().starts_with("unnamed blockb0 more"));
     }
 
     // Python: tests/test_providers/test_thinking_blocks.py::TestThinkingBlocks::test_reasoning_without_blocks_is_one_block
