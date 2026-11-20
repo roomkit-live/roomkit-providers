@@ -10,6 +10,8 @@ conversations.
 
 **Early development.** The crate defines today:
 
+- what a provider implements, the `AiProvider` trait, with the events and
+  the text of a generation as streams;
 - the request a provider is given, `AiRequest`, with its messages
   (`AiMessage`) and their parts: text, image, reasoning, tool call and tool
   result, and the readings of an image part a provider needs;
@@ -17,13 +19,19 @@ conversations.
   `ToolResult`, and how it ended, `ToolCallOutcome`;
 - what a generation answers, `AiResponse`, the calls it makes, `AiToolCall`,
   and the events of a structured stream, `StreamEvent`;
+- how a round of a turn is replayed, `RoundTranscript` and
+  `ThinkingBlocks`, and the reading of a call's arguments every provider
+  applies;
+- the portable subset of JSON Schema a response schema stays within,
+  `check_portable_schema`, and the failure of one, `ResponseSchemaError`;
 - what a provider knows of its models, `ModelInfo`, and their list price,
   `ModelPricing`, which prices a response's usage;
 - a provider's call that failed, `ProviderError`, and `ValueError`, the
-  error for a value the contract refuses.
+  error for a value the contract refuses;
+- a provider answering from a list, `MockAiProvider`, for tests and
+  examples.
 
-The provider trait itself, with its streams and the checks of a response
-schema, is not defined yet. See the
+No provider for a model service is part of this crate. See the
 [repository](https://github.com/roomkit-live/roomkit-providers) for the state
 of the project.
 

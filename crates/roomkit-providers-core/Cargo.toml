@@ -12,6 +12,8 @@ keywords = ["llm", "ai", "provider", "model", "streaming"]
 categories = ["api-bindings"]
 
 [dependencies]
+# The `Stream` a provider's events and text come as.
+futures-core = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 # A JSON object keeps its members in the order they were written, as a
 # Python dict does.

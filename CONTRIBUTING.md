@@ -75,6 +75,22 @@ Python,
 - A new contract type or field brings its examples to the script, and the
   regenerated fixture is committed with it. The fixture records the RoomKit
   version it was written from.
+- The same script writes `python_call_rules.json`, what RoomKit's Python
+  decides of a call's arguments, which the `python_call_rules` test compares
+  the Rust rules with.
+
+The words of a refusal are Python's too, which quote a value with `repr`.
+`repr` escapes the characters `str.isprintable()` refuses, so the crate
+carries that table, generated from Python's Unicode data rather than read
+from Rust's standard library:
+
+```sh
+make printable-table PYTHON=path/to/venv/bin/python
+```
+
+Run it with the Python version RoomKit is tested with; the table's header
+records the Python and Unicode versions it was written from, and carries
+the notice of the Unicode data it is derived from.
 
 ## Implementation boundaries
 

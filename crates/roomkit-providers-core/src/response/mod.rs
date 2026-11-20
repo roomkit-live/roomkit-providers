@@ -18,6 +18,7 @@ mod stream;
 use serde::{Deserialize, Serialize};
 
 pub use self::calls::{AiToolCall, CallIds, ServedCall, is_truncation, tool_arguments};
+pub(crate) use self::calls::{arguments_or_raw, blank, read_arguments};
 pub use self::stream::{
     StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta, StreamToolCall,
     StreamToolCallDelta, StreamUsage, stream_call_of, tool_call_of,
@@ -102,13 +103,6 @@ pub fn thinking_parts_of(response: &AiResponse) -> Vec<AiThinkingPart> {
 /// The events `response` stands for: each reasoning block with its signature
 /// or redacted data (a signature alone too), its text, its calls, then its
 /// end, as Python's `response_stream_events` wraps a whole response.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "what calls it, a provider's default structured stream, is not defined yet"
-    )
-)]
 pub(crate) fn response_events(response: AiResponse) -> Vec<StreamEvent> {
     let blocks = thinking_parts_of(&response);
     let named = response.thinking_parts.is_some();

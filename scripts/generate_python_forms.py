@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
-"""Write the JSON forms of RoomKit's Python models, for the contract's tests.
+"""Write what RoomKit's Python gives, for the contract's tests to compare with.
 
-Each example holds the fields a caller gives a model (``given``) and what the
-model then dumps with ``model_dump(mode="json")`` (``form``). The Rust test
-``python_forms`` checks, for each one, that ``given`` reads as ``form`` and
-that ``form`` reads and writes back unchanged.
+Two fixtures, each recording the RoomKit version it was written from:
+
+- ``python_forms.json``: the JSON forms of the models. Each example holds the
+  fields a caller gives a model (``given``) and what the model then dumps with
+  ``model_dump(mode="json")`` (``form``). Each refusal holds fields a model
+  refuses and the words of its ``ValueError``. The Rust test ``python_forms``
+  checks that ``given`` reads as ``form``, that ``form`` reads and writes back
+  unchanged, and that a refusal is refused in the same words.
+- ``python_call_rules.json``: what the rules on a call's arguments decide for
+  each raw value, ending and position, and the mapping an argument text reads
+  as. The Rust test ``python_call_rules`` checks that its rules decide the
+  same.
 
 Run it with a Python interpreter that has ``roomkit`` installed
-(``make python-forms``). The fixture records the RoomKit version it was
-written from.
+(``make python-forms``).
 """
 
 from __future__ import annotations
@@ -38,10 +45,17 @@ from roomkit.providers.ai import (
     StreamToolCall,
     StreamToolCallDelta,
     StreamUsage,
+    call_cut,
+    call_garbled,
+    call_partial,
+    tool_arguments,
+    unreadable_arguments,
 )
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-FIXTURE = REPOSITORY / "crates/roomkit-providers-core/tests/fixtures/python_forms.json"
+FIXTURES = REPOSITORY / "crates/roomkit-providers-core/tests/fixtures"
+FORMS = FIXTURES / "python_forms.json"
+CALL_RULES = FIXTURES / "python_call_rules.json"
 
 # The fields of ``AIContext`` a provider reads: the contract's request.
 REQUEST_FIELDS = (
@@ -377,6 +391,86 @@ EXAMPLES: list[tuple[type, str, dict[str, Any]]] = [
 ]
 
 
+PORTABLE_SCHEMA = {
+    "type": "object",
+    "properties": {"label": {"type": "string"}, "count": {"type": "integer"}},
+    "required": ["label", "count"],
+    "additionalProperties": False,
+}
+
+# What a model refuses when it is built: a response schema outside the
+# portable subset, a tool name no vendor accepts.
+REFUSALS: list[tuple[type, str, dict[str, Any]]] = [
+    (
+        AIContext,
+        "request_schema_root_not_an_object",
+        {"response_schema": {"type": "array", "items": {"type": "string"}}},
+    ),
+    (
+        AIContext,
+        "request_schema_object_left_open",
+        {"response_schema": {**PORTABLE_SCHEMA, "additionalProperties": True}},
+    ),
+    (
+        AIContext,
+        "request_schema_keyword_not_portable",
+        {
+            "response_schema": {
+                **PORTABLE_SCHEMA,
+                "properties": {
+                    "label": {"type": "string"},
+                    "count": {"type": "integer", "minimum": 0},
+                },
+            }
+        },
+    ),
+    (
+        AIContext,
+        "request_schema_property_not_required",
+        {"response_schema": {**PORTABLE_SCHEMA, "required": ["label"]}},
+    ),
+    (AITool, "tool_name_no_vendor_accepts", {"name": "not allowed", "description": "Unused"}),
+]
+
+# The raw arguments a wire can carry for a call: nothing, a mapping, a text
+# that reads, one that does not, another JSON value.
+RAW_ARGUMENTS: list[Any] = [
+    None,
+    {},
+    {"city": "Lisbon"},
+    " ",
+    "null",
+    '{"k": 1}',
+    "[]",
+    '{"x":',
+    9,
+    True,
+    ["one"],
+]
+ENDINGS: list[tuple[str | None, bool]] = [
+    ("stop", True),
+    ("MAX_TOKENS", True),
+    ("content_filter", False),
+    (None, True),
+]
+
+# Texts Python's reading of whitespace and of numbers decides: a no-break
+# space is no blank, a unit separator is one, and a number JSON does not name
+# makes the arguments unreadable.
+EDGE_TEXTS: list[str] = [
+    chr(0xA0) + "{}" + chr(0xA0),
+    chr(0x1F),
+    '{"record":[{"amount":NaN}]}',
+    '{"record":[{"amount":Infinity}]}',
+    '{"record":[{"amount":-Infinity}]}',
+    '{"record":[{"amount":1e900}]}',
+    '{"record":[{"amount":-1e900}]}',
+    '{"record":[{"amount":1e300}]}',
+    '{"record":[{"amount":"NaN"}]}',
+]
+EDGE_ENDINGS: list[tuple[str | None, bool]] = [("stop", True), ("length", True)]
+
+
 # The models whose dump is restricted to what the contract carries.
 DUMPED = {
     AIContext: {"include": set(REQUEST_FIELDS)},
@@ -389,8 +483,31 @@ def form(model: type, given: dict[str, Any]) -> Any:
     return model.model_validate(given).model_dump(mode="json", **DUMPED.get(model, {}))
 
 
-def main() -> None:
-    fixture = {
+def refusal(model: type, given: dict[str, Any]) -> str:
+    """The words of the ``ValueError`` ``model`` refuses ``given`` with."""
+    try:
+        model.model_validate(given)
+    except ValueError as refused:
+        (error,) = refused.errors()
+        return str(error["ctx"]["error"])
+    raise AssertionError(f"{model.__name__} takes {given!r}")
+
+
+def call_rule(raw: Any, finish_reason: str | None, last: bool) -> dict[str, Any]:
+    """What the rules decide for the arguments ``raw`` of a call."""
+    return {
+        "raw": raw,
+        "finish_reason": finish_reason,
+        "last": last,
+        "unreadable": unreadable_arguments(raw),
+        "partial": call_partial(raw, finish_reason, last=last),
+        "cut": call_cut(raw, finish_reason, last=last),
+        "garbled": call_garbled(raw, finish_reason, last=last),
+    }
+
+
+def forms() -> dict[str, Any]:
+    return {
         "generator": "scripts/generate_python_forms.py",
         "roomkit_version": roomkit.__version__,
         "request_fields": list(REQUEST_FIELDS),
@@ -399,11 +516,36 @@ def main() -> None:
             {"model": model.__name__, "name": name, "given": given, "form": form(model, given)}
             for model, name, given in EXAMPLES
         ],
+        "refusals": [
+            {"model": model.__name__, "name": name, "given": given, "error": refusal(model, given)}
+            for model, name, given in REFUSALS
+        ],
     }
-    FIXTURE.parent.mkdir(parents=True, exist_ok=True)
-    text = json.dumps(fixture, indent=4, ensure_ascii=False)
-    FIXTURE.write_text(text + "\n", encoding="utf-8")
-    print(f"Wrote {FIXTURE.relative_to(REPOSITORY)} from roomkit {roomkit.__version__}")
+
+
+def call_rules() -> dict[str, Any]:
+    cases = [(raw, ending) for raw in RAW_ARGUMENTS for ending in ENDINGS]
+    cases += [(text, ending) for text in EDGE_TEXTS for ending in EDGE_ENDINGS]
+    texts = [raw for raw in [*RAW_ARGUMENTS, *EDGE_TEXTS] if isinstance(raw, str)]
+    return {
+        "generator": "scripts/generate_python_forms.py",
+        "roomkit_version": roomkit.__version__,
+        "cases": [call_rule(raw, finish_reason, last) for raw, (finish_reason, last) in cases],
+        "arguments": [{"raw": text, "arguments": tool_arguments(text)} for text in texts],
+    }
+
+
+def write(path: Path, fixture: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # Escaped, so that a no-break space or a control character shows.
+    text = json.dumps(fixture, indent=4)
+    path.write_text(text + "\n", encoding="utf-8")
+    print(f"Wrote {path.relative_to(REPOSITORY)} from roomkit {roomkit.__version__}")
+
+
+def main() -> None:
+    write(FORMS, forms())
+    write(CALL_RULES, call_rules())
 
 
 if __name__ == "__main__":

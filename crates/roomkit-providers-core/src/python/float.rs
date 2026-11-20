@@ -1,0 +1,137 @@
+//! A float as Python writes it.
+
+/// `value` as Python's `repr` of a `float` writes it, which is also how
+/// `json.dumps` writes a finite float: the shortest digits that read back,
+/// positional for an exponent from -4 to 15 (`0.0`, `-1.5`, `0.0001`),
+/// scientific otherwise with a sign and two digits at least (`1e-05`,
+/// `1e+16`), and `nan`, `inf`, `-inf`, which a `serde_json::Number` never
+/// holds.
+pub(super) fn python_float(value: f64) -> String {
+    if value.is_nan() {
+        return "nan".to_owned();
+    }
+    if value.is_infinite() {
+        return if value > 0.0 { "inf" } else { "-inf" }.to_owned();
+    }
+    // Rust's `{:e}` writes the shortest digits that read back. At 16 or 17
+    // digits, the value exactly halfway between two that both read back, it
+    // rounds up where Python keeps the even one: `{:.*e}` writes as many
+    // digits rounded half to even, kept when they read back (beside a power
+    // of two the lower one may not). Fewer digits never tie.
+    let mut scientific = format!("{value:e}");
+    let digits = significant_digits(&scientific);
+    if digits >= 16 {
+        let even = format!("{value:.*e}", digits - 1);
+        if even.parse::<f64>() == Ok(value) {
+            scientific = even;
+        }
+    }
+    let (mantissa, exponent) = scientific.split_once('e').unwrap_or((&scientific, "0"));
+    let exponent: i32 = exponent.parse().unwrap_or(0);
+    if (-4..16).contains(&exponent) {
+        return positional(mantissa, exponent);
+    }
+    let sign = if exponent < 0 { '-' } else { '+' };
+    format!("{mantissa}e{sign}{:02}", exponent.unsigned_abs())
+}
+
+/// How many significant digits `scientific` (`-d.ddde-x`) writes.
+fn significant_digits(scientific: &str) -> usize {
+    scientific
+        .split('e')
+        .next()
+        .unwrap_or_default()
+        .chars()
+        .filter(char::is_ascii_digit)
+        .count()
+}
+
+/// `mantissa` (`-d.ddd`) times ten to `exponent`, from -4 to 15, written
+/// without an exponent as Python's `repr` writes it: `.0` after a whole
+/// number (`1000.0`, `0.0001`, `-1.5`).
+fn positional(mantissa: &str, exponent: i32) -> String {
+    let (sign, unsigned) = mantissa
+        .strip_prefix('-')
+        .map_or(("", mantissa), |unsigned| ("-", unsigned));
+    let digits: Vec<char> = unsigned.chars().filter(char::is_ascii_digit).collect();
+    let whole = usize::try_from(exponent + 1).unwrap_or(0);
+    if whole == 0 {
+        let zeros = usize::try_from(-(exponent + 1)).unwrap_or(0);
+        let digits: String = digits.into_iter().collect();
+        return format!("{sign}0.{}{digits}", "0".repeat(zeros));
+    }
+    let integer: String = digits.iter().take(whole).collect();
+    let fraction: String = digits.iter().skip(whole).collect();
+    let padding = "0".repeat(whole.saturating_sub(digits.len()));
+    if fraction.is_empty() {
+        format!("{sign}{integer}{padding}.0")
+    } else {
+        format!("{sign}{integer}.{fraction}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Python: repr() of each value.
+    #[test]
+    #[expect(
+        clippy::excessive_precision,
+        reason = "the exact values of the ties, halfway between two 16- or 17-digit forms"
+    )]
+    fn a_float_is_written_as_python_s_repr_writes_it() {
+        let values = [
+            0.0,
+            -1.0,
+            1e-310,
+            1.5,
+            1e16,
+            1e-5,
+            0.0001,
+            123_456_789_012_345.6,
+            -0.0,
+            f64::NAN,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            2.5e-7,
+            1e15,
+            0.300_000_000_000_000_04,
+            // Halfway between two 17-digit, then 16-digit, forms that both
+            // read back: Python keeps the even one; beside a power of two
+            // the even one may not read back.
+            -1_548_782_250_018_927.25,
+            -155_559_142_687_939.625,
+            842_093_581_598_402.25,
+            820.833_068_847_656_25,
+            6.151_199_340_820_312_5e-5,
+            5.960_464_477_539_062_5e-8,
+        ];
+        assert_eq!(
+            values.map(python_float),
+            [
+                "0.0",
+                "-1.0",
+                "1e-310",
+                "1.5",
+                "1e+16",
+                "1e-05",
+                "0.0001",
+                "123456789012345.6",
+                "-0.0",
+                "nan",
+                "inf",
+                "-inf",
+                "2.5e-07",
+                "1000000000000000.0",
+                "0.30000000000000004",
+                "-1548782250018927.2",
+                "-155559142687939.62",
+                "842093581598402.2",
+                "820.8330688476562",
+                "6.151199340820312e-05",
+                "5.960464477539063e-08"
+            ]
+        );
+    }
+}

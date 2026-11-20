@@ -23,6 +23,19 @@ nothing has been released yet.
   `ModelPricing` with `cost_for`, `Date`, and the speech tags of a listing.
 - `roomkit-providers-core`: the readings of an image part a provider needs,
   `image_part_payload`, `image_part_base64` and `image_part_uri`.
+- `roomkit-providers-core`: what a provider implements, the `AiProvider`
+  trait, with `DynAiProvider`, the `ProviderStream` and `TextStream` of a
+  generation, and where a host leaves the credential of one request
+  (`API_KEY_METADATA_KEY`).
+- `roomkit-providers-core`: the response schema, `check_portable_schema`,
+  `schema_mismatch` and `ResponseSchemaError`; a request read from JSON
+  refuses a schema outside the portable subset.
+- `roomkit-providers-core`: the replay of a round, `round_parts`,
+  `RoundTranscript` and `ThinkingBlocks`, the rules on a call's arguments
+  (`unreadable_arguments`, `call_partial`, `call_cut`, `call_garbled`) and
+  `declared_parameters`.
+- `roomkit-providers-core`: `MockAiProvider`, a provider answering from a
+  list, for tests and examples.
 - Each of these types that is a model in RoomKit's Python implementation
   reads and writes the JSON that model gives with `model_dump(mode="json")`,
   checked against examples written by RoomKit's Python. As in Python, a

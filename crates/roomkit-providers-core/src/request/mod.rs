@@ -17,7 +17,7 @@ mod parts;
 use std::fmt;
 
 use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Value};
 
 pub use self::image_parts::{image_part_base64, image_part_payload, image_part_uri};
@@ -26,11 +26,9 @@ pub use self::parts::{
     AiContentPart, AiImagePart, AiTextPart, AiThinkingPart, AiToolCallPart, AiToolResultPart,
 };
 use crate::Metadata;
+use crate::provider::API_KEY_METADATA_KEY as API_KEY;
+use crate::schema::check_portable_object;
 use crate::tools::AiTool;
-
-/// The key of [`AiRequest::metadata`] that holds the credential of one
-/// request.
-const API_KEY: &str = "api_key";
 
 /// What stands for the credential in a request's JSON form: what Python
 /// writes for a secret string.
@@ -57,10 +55,22 @@ const MASK: &str = "**********";
 /// # The credential of one request
 ///
 /// A host may leave the credential to use for one request under `api_key`
-/// in [`metadata`](Self::metadata). The JSON form of a request never
-/// carries it: a non-empty string there is written as `"**********"`, as
-/// Python writes it, and the `Debug` form masks it too. A host that passes
-/// a request across a boundary as JSON passes the key apart.
+/// in [`metadata`](Self::metadata)
+/// ([`API_KEY_METADATA_KEY`](crate::API_KEY_METADATA_KEY)), which a provider
+/// reads. The JSON form of
+/// a request never carries it: a non-empty string there is written as
+/// `"**********"`, as Python writes it, and the `Debug` form masks it too. A
+/// host that passes a request across a boundary as JSON passes the key
+/// apart.
+///
+/// # Where a response schema is checked
+///
+/// Python checks `response_schema` against the portable subset
+/// ([`check_portable_schema`](crate::check_portable_schema)) when a context
+/// is built and when the field is assigned. Here the check runs when a
+/// request is read from JSON, and again in a provider before it sends
+/// anything. A request built or changed in Rust is not checked until then:
+/// a struct's field cannot refuse a value.
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AiRequest {
@@ -86,13 +96,30 @@ pub struct AiRequest {
     pub reasoning_effort: Option<String>,
     /// The tools the model may call, in the toolset's order.
     pub tools: Vec<AiTool>,
-    /// The JSON Schema the answer satisfies (RFC §6.7), within the subset of
-    /// JSON Schema the RFC names portable. A provider handed one answers
-    /// with one JSON document or fails; it never ignores it.
+    /// The JSON Schema the answer satisfies (RFC §6.7), within the portable
+    /// subset of [`check_portable_schema`](crate::check_portable_schema). A
+    /// provider handed one answers with one JSON document or fails with a
+    /// [`ResponseSchemaError`](crate::ResponseSchemaError); it never ignores
+    /// it.
+    #[serde(deserialize_with = "portable_schema")]
     pub response_schema: Option<Map<String, Value>>,
     /// The turn's data for the provider.
     #[serde(serialize_with = "with_credential_masked")]
     pub metadata: Metadata,
+}
+
+/// Reads a request's response schema, refusing one outside the portable
+/// subset in the words of
+/// [`check_portable_schema`](crate::check_portable_schema), as Python
+/// refuses it when a context is built.
+fn portable_schema<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Map<String, Value>>, D::Error> {
+    let schema = Option::<Map<String, Value>>::deserialize(deserializer)?;
+    if let Some(schema) = &schema {
+        check_portable_object(schema).map_err(serde::de::Error::custom)?;
+    }
+    Ok(schema)
 }
 
 /// Writes a request's metadata with its credential masked, as Python does:
@@ -182,6 +209,39 @@ mod tests {
         );
         // Masking changes what is shown, never the request.
         assert_eq!(request.metadata.get(API_KEY), Some(&json!(PLACEHOLDER)));
+    }
+
+    // Python: tests/test_response_schema.py::TestAIContextField::test_refuses_a_non_portable_schema_at_construction
+    // and test_keeps_a_portable_schema: read from JSON, a request's schema
+    // is checked as Python checks it when a context is built.
+    #[test]
+    fn a_schema_outside_the_portable_subset_is_refused_on_input() {
+        let portable = json!({
+            "type": "object",
+            "properties": { "label": { "type": "string" } },
+            "required": ["label"],
+            "additionalProperties": false,
+        });
+        let read = |schema: Value| {
+            serde_json::from_value::<AiRequest>(json!({ "response_schema": schema }))
+        };
+        assert_eq!(
+            read(portable.clone()).unwrap().response_schema,
+            portable.as_object().cloned()
+        );
+        assert_eq!(read(Value::Null).unwrap().response_schema, None);
+        let mut open = portable;
+        open["additionalProperties"] = json!(true);
+        assert_eq!(
+            read(open).unwrap_err().to_string(),
+            "$: an object must set 'additionalProperties' to false"
+        );
+        assert_eq!(
+            read(json!({ "type": "array", "items": { "type": "string" } }))
+                .unwrap_err()
+                .to_string(),
+            "a response schema must be a JSON Schema whose root type is 'object'"
+        );
     }
 
     // Python: AIContext(metadata={"api_key": ...}) keeps the key for its

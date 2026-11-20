@@ -8,6 +8,8 @@
 //!
 //! The crate defines today:
 //!
+//! - [`provider`]: what a provider implements, [`AiProvider`], with its
+//!   streams and the credential a host lends one request;
 //! - [`request`]: what one generation is asked, [`AiRequest`], and its
 //!   messages, [`AiMessage`], with their content parts and the readings of
 //!   an image part;
@@ -16,13 +18,18 @@
 //! - [`response`]: what a generation answers, [`AiResponse`], the calls it
 //!   makes, [`AiToolCall`], and the events of a structured stream,
 //!   [`StreamEvent`];
+//! - [`round`]: how a round of a turn is read and replayed, its reasoning
+//!   blocks ([`ThinkingBlocks`]), its parts ([`RoundTranscript`]) and the
+//!   reading of a call's arguments;
+//! - [`schema`]: the portable subset of JSON Schema a response schema stays
+//!   within ([`check_portable_schema`]) and the failure of one
+//!   ([`ResponseSchemaError`]);
 //! - [`catalog`]: what a provider knows of its models, [`ModelInfo`], and
 //!   their list price, [`ModelPricing`];
 //! - [`error`]: a provider's call that failed, [`ProviderError`], and
-//!   [`ValueError`], the error for a value the contract refuses.
-//!
-//! The provider trait itself, with its streams and the checks of a response
-//! schema, is not defined yet.
+//!   [`ValueError`], the error for a value the contract refuses;
+//! - [`mock`]: a provider answering from a list, [`MockAiProvider`], for
+//!   tests and examples.
 //!
 //! # Names and JSON forms
 //!
@@ -36,8 +43,8 @@
 //! parts, every field is written, a `null` and an empty list or object
 //! included, and a field left out on input takes its default. As in Python,
 //! the JSON form of a request never carries the credential of one request:
-//! see [`AiRequest`]. [`ProviderError`] is an exception in Python and has no
-//! JSON form.
+//! see [`AiRequest`]. [`ProviderError`] and [`ResponseSchemaError`] are
+//! exceptions in Python and have no JSON form.
 //!
 //! ```
 //! use roomkit_providers_core::{AiMessage, AiRole};
@@ -63,8 +70,16 @@
 pub mod catalog;
 mod data_uri;
 pub mod error;
+pub mod mock;
+pub mod provider;
+mod python;
 pub mod request;
 pub mod response;
+pub mod round;
+pub mod schema;
+mod stream;
+#[cfg(test)]
+mod testing;
 mod text_or_list;
 pub mod tools;
 mod type_tag;
@@ -79,6 +94,10 @@ pub use self::catalog::{
 pub use self::error::{
     ProviderError, ProviderErrorOptions, ValueError, is_context_overflow_message,
 };
+pub use self::mock::{MockAiProvider, MockAiProviderOptions};
+pub use self::provider::{
+    API_KEY_METADATA_KEY, AiProvider, DynAiProvider, ProviderStream, TextStream, request_api_key,
+};
 pub use self::request::{
     AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRequest, AiRole, AiTextPart,
     AiThinkingPart, AiToolCallPart, AiToolResultPart, image_part_base64, image_part_payload,
@@ -89,8 +108,21 @@ pub use self::response::{
     StreamThinkingDelta, StreamToolCall, StreamToolCallDelta, StreamUsage, is_truncation,
     stream_call_of, thinking_parts_of, tool_arguments, tool_call_of,
 };
+#[doc(hidden)]
+pub use self::round::read_tool_calls;
+pub use self::round::{
+    CallCutOptions, CallGarbledOptions, CallPartialOptions, RoundTranscript, ThinkingBlocks,
+    call_cut, call_garbled, call_partial, round_parts, unreadable_arguments,
+};
+pub use self::schema::{
+    ResponseSchemaError, ResponseSchemaErrorOptions, ResponseSchemaFailure, SchemaMismatchOptions,
+    check_portable_schema, schema_mismatch,
+};
+#[doc(hidden)]
+pub use self::schema::{checked_stream, schema_for_generate};
 pub use self::tools::{
-    AiTool, ToolCallOutcome, ToolResult, ToolResultPart, some_vendor_accepts_tool_name,
+    AiTool, ToolCallOutcome, ToolResult, ToolResultPart, declared_parameters,
+    some_vendor_accepts_tool_name,
 };
 
 /// A JSON object, its members in the order they were written: Python's

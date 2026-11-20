@@ -3,7 +3,9 @@
 //! `scripts/generate_python_forms.py` (`make python-forms`).
 //!
 //! Each example holds the fields a caller gives a Python model (`given`) and
-//! what the model dumps with `model_dump(mode="json")` (`form`).
+//! what the model dumps with `model_dump(mode="json")` (`form`). Each
+//! refusal holds fields a Python model refuses, and the words of its
+//! `ValueError`.
 
 use std::collections::BTreeSet;
 
@@ -23,6 +25,15 @@ const FIXTURE: &str = include_str!("fixtures/python_forms.json");
 #[derive(Deserialize)]
 struct Fixture {
     examples: Vec<Example>,
+    refusals: Vec<Refusal>,
+}
+
+#[derive(Deserialize)]
+struct Refusal {
+    model: String,
+    name: String,
+    given: Value,
+    error: String,
 }
 
 #[derive(Deserialize)]
@@ -104,6 +115,33 @@ fn the_fields_a_caller_gives_read_as_the_form_python_dumps() {
             .unwrap_or_else(|error| panic!("{label}: {error}"));
         assert_is_form(&written, &example.form, &label);
     }
+}
+
+/// What Python refuses when it builds a model is refused when it is read,
+/// in Python's words: a response schema outside the portable subset, a tool
+/// name no vendor accepts.
+#[test]
+fn the_fields_python_refuses_are_refused_in_its_words() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
+    let refused: Vec<(String, Option<String>)> = fixture
+        .refusals
+        .iter()
+        .map(|refusal| {
+            let label = format!("{} `{}`", refusal.model, refusal.name);
+            let error = rewritten_as(&refusal.model, &refusal.given).err();
+            (label, error.map(|error| error.to_string()))
+        })
+        .collect();
+    let expected: Vec<(String, Option<String>)> = fixture
+        .refusals
+        .iter()
+        .map(|refusal| {
+            let label = format!("{} `{}`", refusal.model, refusal.name);
+            (label, Some(refusal.error.clone()))
+        })
+        .collect();
+    assert_eq!(refused, expected);
+    assert!(refused.len() >= 5, "the fixture lost its refusals");
 }
 
 /// The types Python has no model for hold the same JSON: a message's content

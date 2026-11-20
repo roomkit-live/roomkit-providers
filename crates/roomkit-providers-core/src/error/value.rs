@@ -1,5 +1,9 @@
 //! The contract's error for a value it refuses.
 
+use serde_json::Value;
+
+use crate::python::repr;
+
 /// A value the contract refuses, where `RoomKit`'s Python implementation
 /// raises a `ValueError`.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -39,4 +43,24 @@ pub enum ValueError {
         /// Python's words.
         reason: String,
     },
+    /// A response schema outside the portable subset (RFC §6.7), as
+    /// Python's `check_portable_schema` raises `ValueError`, in its words:
+    /// the path of the first subschema that is not portable, and why.
+    #[error("{reason}")]
+    ResponseSchema {
+        /// Python's words.
+        reason: String,
+    },
+    /// A round is asked to replay calls it never made (RFC §6.4), where
+    /// Python raises `RuntimeError`, in its words.
+    #[error("replaying calls the round never made: {}", listed(.ids))]
+    UnmadeCalls {
+        /// The ids of the calls the round never made, sorted.
+        ids: Vec<String>,
+    },
+}
+
+/// `ids` as Python writes a list of texts.
+fn listed(ids: &[String]) -> String {
+    repr(&Value::from(ids))
 }

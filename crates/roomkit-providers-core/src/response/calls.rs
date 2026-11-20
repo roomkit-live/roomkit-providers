@@ -139,7 +139,13 @@ fn minted_call_id(name: &str) -> String {
 /// assert_eq!(json!(tool_arguments("[1, 2]")), json!({ "raw": "[1, 2]" }));
 /// ```
 pub fn tool_arguments(raw: &str) -> Metadata {
-    read_arguments(raw).unwrap_or_else(|| {
+    arguments_or_raw(raw, read_arguments(raw))
+}
+
+/// `read`, the mapping `raw` reads as, or `raw` kept whole under `raw` when
+/// it reads as none.
+pub(crate) fn arguments_or_raw(raw: &str, read: Option<Metadata>) -> Metadata {
+    read.unwrap_or_else(|| {
         let mut kept = Metadata::new();
         kept.insert("raw".to_owned(), Value::String(raw.to_owned()));
         kept
@@ -147,7 +153,7 @@ pub fn tool_arguments(raw: &str) -> Metadata {
 }
 
 /// `raw` as a mapping, `None` when it does not read as one.
-fn read_arguments(raw: &str) -> Option<Metadata> {
+pub(crate) fn read_arguments(raw: &str) -> Option<Metadata> {
     if blank(raw) {
         return Some(Metadata::new());
     }
@@ -160,7 +166,7 @@ fn read_arguments(raw: &str) -> Option<Metadata> {
 
 /// Whether `text` is nothing but space as Python's `str.strip()` reads it,
 /// which also treats the four ASCII separators as space.
-fn blank(text: &str) -> bool {
+pub(crate) fn blank(text: &str) -> bool {
     text.chars()
         .all(|c| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
 }

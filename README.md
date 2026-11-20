@@ -11,9 +11,9 @@ RoomKit Providers is where the clients of model services live for the
 implementation per service, written once in Rust, behind a provider-neutral
 contract.
 
-> **Early development.** The contract crate defines what a provider is asked,
-> what it answers, its failures and its model catalogue, but not yet the
-> provider trait; no provider exists, so nothing is usable yet. The
+> **Early development.** The contract crate is written: what a provider
+> implements, what it is asked and what it answers. No provider implements
+> it yet beside a scripted one for tests, and nothing is released. The
 > [changelog](CHANGELOG.md) says what exists; the rest of this page says
 > where the project is going.
 
@@ -34,11 +34,7 @@ contract.
 
 In this order:
 
-1. the contract crate, `roomkit-providers-core`. The request, its messages
-   and tools, the response, the events of a streamed answer, the provider
-   failure and the model catalogue exist, with their JSON forms; the
-   provider trait, with its streams and the checks of a response schema,
-   does not yet;
+1. the contract crate, `roomkit-providers-core`: written, not released;
 2. a provider for OpenAI-compatible Chat Completions endpoints;
 3. a Python package calling the same implementation through a native
    extension;
@@ -50,8 +46,9 @@ Items 2 to 4 are not started.
 
 | Path | Contents |
 | --- | --- |
-| `crates/roomkit-providers-core` | The contract crate: the request, the response and its stream events, the provider failure and the model catalogue, with their JSON forms |
-| `scripts/generate_python_forms.py` | Writes the examples of RoomKit's Python JSON forms that the contract's tests read |
+| `crates/roomkit-providers-core` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests |
+| `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
+| `scripts/generate_printable_ranges.py` | Writes the table of the characters Python's `repr` writes as they are |
 
 ## Development
 

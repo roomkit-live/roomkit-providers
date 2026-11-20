@@ -1,7 +1,8 @@
 //! The tools of a request (RFC §6.4, §6.7): what the model is told of a
 //! tool, and what a call answered.
 //!
-//! - [`AiTool`]: a tool as the model is told of it.
+//! - [`AiTool`]: a tool as the model is told of it, and
+//!   [`declared_parameters`], the schema a provider declares it with.
 //! - [`ToolResult`] and [`ToolResultPart`]: what a call answered, a text or
 //!   content parts.
 //! - [`ToolCallOutcome`]: how a call ended.
@@ -98,6 +99,39 @@ pub fn some_vendor_accepts_tool_name(name: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, b'_' | b'.' | b':' | b'-'))
 }
 
+/// The schema a tool is declared with (RFC §6.7): Python's
+/// `declared_parameters(parameters)`. A tool's own schema, its root an
+/// object; for a tool that takes no parameters, `None` or an empty schema,
+/// an object with none, which every vendor accepts. A root without a type,
+/// or whose type is `null`, is said an object's. The schema returned is the
+/// caller's own to edit.
+///
+/// ```
+/// use roomkit_providers_core::{AiTool, declared_parameters};
+/// use serde_json::json;
+///
+/// let tool = AiTool::new("now", "The time it is")?;
+/// assert_eq!(
+///     json!(declared_parameters(Some(&tool.parameters))),
+///     json!({ "type": "object", "properties": {} })
+/// );
+/// # Ok::<(), roomkit_providers_core::ValueError>(())
+/// ```
+#[must_use]
+pub fn declared_parameters(parameters: Option<&Map<String, Value>>) -> Map<String, Value> {
+    let Some(parameters) = parameters.filter(|schema| !schema.is_empty()) else {
+        let mut none = Map::new();
+        none.insert("type".to_owned(), Value::from("object"));
+        none.insert("properties".to_owned(), Value::Object(Map::new()));
+        return none;
+    };
+    let mut schema = parameters.clone();
+    if schema.get("type").is_none_or(Value::is_null) {
+        schema.insert("type".to_owned(), Value::from("object"));
+    }
+    schema
+}
+
 /// Refuses `name` when no vendor accepts it (RFC §6.7).
 fn checked(name: &str) -> Result<(), ValueError> {
     if some_vendor_accepts_tool_name(name) {
@@ -172,6 +206,32 @@ mod tests {
             "tool name 'not allowed' is accepted by no provider: \
              use letters, digits, '_', '.', ':' or '-'"
         );
+    }
+
+    #[test]
+    fn absent_empty_and_untyped_schemas_get_an_object_root() {
+        let schema = |value: Value| value.as_object().cloned().unwrap_or_default();
+        let empty = json!({ "type": "object", "properties": {} });
+        assert_eq!(json!(declared_parameters(None)), empty);
+        assert_eq!(json!(declared_parameters(Some(&Map::new()))), empty);
+        let untyped = schema(json!({ "type": null, "required": ["q"] }));
+        assert_eq!(
+            json!(declared_parameters(Some(&untyped))),
+            json!({ "type": "object", "required": ["q"] })
+        );
+        let typed = schema(json!({ "type": "array", "items": { "type": "string" } }));
+        assert_eq!(declared_parameters(Some(&typed)), typed);
+    }
+
+    #[test]
+    fn a_declared_schema_is_the_caller_s_own_to_edit() {
+        let mut tool = AiTool::new("lookup", "Find a value").unwrap();
+        tool.parameters
+            .insert("properties".into(), json!({ "q": ["original"] }));
+        let mut declared = declared_parameters(Some(&tool.parameters));
+        declared["properties"]["q"][0] = json!("edited");
+        assert_eq!(tool.parameters["properties"], json!({ "q": ["original"] }));
+        assert_eq!(declared["type"], "object");
     }
 
     #[test]

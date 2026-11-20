@@ -26,6 +26,9 @@ allowed=(
     # The error types.
     thiserror
     thiserror-impl
+    # The `Stream` a provider's events and text come as: the trait alone,
+    # no executor.
+    futures-core
     # The random half of an id minted for a call its server gave none: uuid
     # and the system's random source, with what it is reached through on
     # each platform.
