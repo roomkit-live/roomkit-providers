@@ -6,7 +6,10 @@
 //!   conversation.
 //! - [`AiContentPart`] and its five parts: [`AiTextPart`], [`AiImagePart`],
 //!   [`AiThinkingPart`], [`AiToolCallPart`] and [`AiToolResultPart`].
+//! - [`image_part_payload`], [`image_part_base64`] and [`image_part_uri`]:
+//!   the readings of an image part every provider needs.
 
+mod image_parts;
 mod message;
 mod part_forms;
 mod parts;
@@ -17,6 +20,7 @@ use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 
+pub use self::image_parts::{image_part_base64, image_part_payload, image_part_uri};
 pub use self::message::{AiMessage, AiMessageContent, AiRole};
 pub use self::parts::{
     AiContentPart, AiImagePart, AiTextPart, AiThinkingPart, AiToolCallPart, AiToolResultPart,

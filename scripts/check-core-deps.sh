@@ -26,6 +26,14 @@ allowed=(
     # The error types.
     thiserror
     thiserror-impl
+    # The random half of an id minted for a call its server gave none: uuid
+    # and the system's random source, with what it is reached through on
+    # each platform.
+    uuid
+    getrandom
+    cfg-if
+    libc
+    r-efi
 )
 
 dependencies=$(

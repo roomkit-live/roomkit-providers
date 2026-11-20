@@ -22,11 +22,22 @@ from roomkit.providers.ai import (
     AIContext,
     AIImagePart,
     AIMessage,
+    AIResponse,
     AITextPart,
     AIThinkingPart,
     AITool,
+    AIToolCall,
     AIToolCallPart,
     AIToolResultPart,
+    ModelInfo,
+    ModelPricing,
+    ServedCall,
+    StreamDone,
+    StreamTextDelta,
+    StreamThinkingDelta,
+    StreamToolCall,
+    StreamToolCallDelta,
+    StreamUsage,
 )
 
 REPOSITORY = Path(__file__).resolve().parent.parent
@@ -45,6 +56,10 @@ REQUEST_FIELDS = (
     "response_schema",
     "metadata",
 )
+
+# The fields of ``AIResponse`` a host attaches, which no provider fills: the
+# contract's response leaves them out.
+HOST_RESPONSE_FIELDS = ("tasks", "observations")
 
 OUTCOMES = ("served", "refused", "failed", "blocked", "unserved", "cancelled")
 
@@ -108,6 +123,34 @@ CONVERSATION = [
     {"role": "tool", "content": [TEXT_RESULT]},
     {"role": "assistant", "content": "It shipped on Monday."},
 ]
+
+
+CALL = {"id": "call_1", "name": "lookup_order"}
+CALL_WITH_EVERYTHING = {
+    "id": "call_2",
+    "name": "lookup_order",
+    "arguments": {"order": "A-1001", "include": ["items"]},
+    "metadata": {"index": 1, "vendor": {"item_id": "fc_2"}},
+    "served": {"result": "Order not found", "is_error": True},
+    "partial": True,
+    "garbled": True,
+    "intent": "Look the order up",
+}
+USAGE = {"input_tokens": 1200, "output_tokens": 45, "cache_read_input_tokens": 800}
+PRICING = {"input_per_million": 1.25, "output_per_million": 10, "verified": "2026-08-05"}
+PRICING_WITH_EVERY_RATE = {
+    "input_per_million": 2.5,
+    "output_per_million": 15.0,
+    "cache_read_per_million": 0.25,
+    "cache_write_per_million": 3.125,
+    "image_input_per_million": 5.0,
+    "image_output_per_million": 30.0,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 1.5,
+    "currency": "EUR",
+    "verified": "2024-02-29",
+}
 
 
 def result(**fields: Any) -> dict[str, Any]:
@@ -248,15 +291,102 @@ EXAMPLES: list[tuple[type, str, dict[str, Any]]] = [
         "request_credential_not_a_string",
         {"metadata": {"api_key": 42, "tenant": "acme"}},
     ),
+    (ServedCall, "served_call_defaults", {}),
+    (ServedCall, "served_call_failed", {"result": "Order not found", "is_error": True}),
+    (AIToolCall, "call", CALL),
+    (AIToolCall, "call_served_by_default", {**CALL, "served": {}}),
+    (AIToolCall, "call_with_everything", CALL_WITH_EVERYTHING),
+    (AIResponse, "response_text", {"content": "It shipped on Monday."}),
+    (
+        AIResponse,
+        "response_with_calls",
+        {
+            "content": "",
+            "finish_reason": "tool_calls",
+            "usage": USAGE,
+            "metadata": {"model": "example-large-1"},
+            "tool_calls": [CALL, CALL_WITH_EVERYTHING],
+        },
+    ),
+    (
+        AIResponse,
+        "response_with_thinking_blocks",
+        {
+            "content": "It shipped on Monday.",
+            "thinking": "Look the order up first.",
+            "thinking_signature": "c2lnbmF0dXJl",
+            "thinking_parts": [
+                {"thinking": "Look the order up first.", "signature": "c2lnbmF0dXJl"},
+                {"type": "thinking", "thinking": "", "redacted": "b3BhcXVlIGRhdGE="},
+            ],
+            "finish_reason": "stop",
+            "usage": {"output_tokens": 30, "reasoning_tokens": 12},
+            "metadata": {"model": "example-large-1", "refusal": "I cannot help with that."},
+        },
+    ),
+    (AIResponse, "response_no_thinking_block", {"content": "", "thinking_parts": []}),
+    (StreamTextDelta, "text_delta", {"text": "It shipped"}),
+    (StreamThinkingDelta, "thinking_delta", {"thinking": "Look the order up first."}),
+    (
+        StreamThinkingDelta,
+        "thinking_delta_signature_alone",
+        {"thinking": "", "signature": "c2lnbmF0dXJl", "block": 0},
+    ),
+    (
+        StreamThinkingDelta,
+        "thinking_delta_redacted",
+        {"type": "thinking_delta", "thinking": "", "block": 1, "redacted": "b3BhcXVlIGRhdGE="},
+    ),
+    (StreamToolCallDelta, "tool_call_delta_opening", CALL),
+    (
+        StreamToolCallDelta,
+        "tool_call_delta_fragment",
+        {**CALL, "index": 2, "arguments_delta": '{"order": "A-'},
+    ),
+    (StreamToolCall, "stream_tool_call", CALL),
+    (StreamToolCall, "stream_tool_call_with_everything", CALL_WITH_EVERYTHING),
+    (StreamUsage, "stream_usage_defaults", {}),
+    (StreamUsage, "stream_usage", {"usage": {"input_tokens": 1200}}),
+    (StreamDone, "stream_done_defaults", {}),
+    (
+        StreamDone,
+        "stream_done",
+        {"finish_reason": "stop", "usage": USAGE, "metadata": {"model": "example-large-1"}},
+    ),
+    (ModelPricing, "pricing", PRICING),
+    (ModelPricing, "pricing_with_every_rate", PRICING_WITH_EVERY_RATE),
+    (ModelInfo, "model", {"id": "example-small-1"}),
+    (
+        ModelInfo,
+        "model_with_everything",
+        {
+            "id": "example-large-1",
+            "display_name": "Example Large 1",
+            "context_window": 400000,
+            "supports_vision": True,
+            "deprecated": True,
+            "capabilities": ["tools", "vision"],
+            "pricing": PRICING_WITH_EVERY_RATE,
+        },
+    ),
+    (
+        ModelInfo,
+        "model_without_vision_at_a_flat_price",
+        {"id": "example-text-1", "supports_vision": False, "pricing": PRICING},
+    ),
 ]
+
+
+# The models whose dump is restricted to what the contract carries.
+DUMPED = {
+    AIContext: {"include": set(REQUEST_FIELDS)},
+    AIResponse: {"exclude": set(HOST_RESPONSE_FIELDS)},
+}
 
 
 def form(model: type, given: dict[str, Any]) -> Any:
     """What ``model`` dumps once built from ``given``."""
-    built = model.model_validate(given)
-    if model is AIContext:
-        return built.model_dump(mode="json", include=set(REQUEST_FIELDS))
-    return built.model_dump(mode="json")
+    return model.model_validate(given).model_dump(mode="json", **DUMPED.get(model, {}))
 
 
 def main() -> None:
@@ -264,6 +394,7 @@ def main() -> None:
         "generator": "scripts/generate_python_forms.py",
         "roomkit_version": roomkit.__version__,
         "request_fields": list(REQUEST_FIELDS),
+        "response_fields_left_out": list(HOST_RESPONSE_FIELDS),
         "examples": [
             {"model": model.__name__, "name": name, "given": given, "form": form(model, given)}
             for model, name, given in EXAMPLES

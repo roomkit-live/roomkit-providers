@@ -56,9 +56,10 @@ for a raised exception.
 
 ## JSON forms
 
-Every contract type reads and writes the JSON its model in RoomKit's Python
-implementation gives with `model_dump(mode="json")`: no form is specific to
-one language. The proof is a fixture written by RoomKit's Python,
+Every contract type that is a model in RoomKit's Python implementation reads
+and writes the JSON that model gives with `model_dump(mode="json")`: no form
+is specific to one language. The proof is a fixture written by RoomKit's
+Python,
 `crates/roomkit-providers-core/tests/fixtures/python_forms.json`, which the
 `python_forms` test reads into the Rust types and writes back.
 

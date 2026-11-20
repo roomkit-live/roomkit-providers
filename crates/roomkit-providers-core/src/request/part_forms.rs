@@ -6,25 +6,13 @@ use serde::Deserialize;
 use super::parts::{AiImagePart, AiTextPart, AiThinkingPart, AiToolCallPart, AiToolResultPart};
 use crate::Metadata;
 use crate::tools::{ToolCallOutcome, ToolResult};
+use crate::type_tag::type_tag;
 
-/// Declares what a part's `type` reads as: its one literal, which is also
-/// what a missing `type` stands for, as each Python part model defaults it.
-macro_rules! part_type {
-    ($name:ident, $literal:literal) => {
-        #[derive(Default, Deserialize)]
-        enum $name {
-            #[default]
-            #[serde(rename = $literal)]
-            Literal,
-        }
-    };
-}
-
-part_type!(TextType, "text");
-part_type!(ImageType, "image");
-part_type!(ThinkingType, "thinking");
-part_type!(ToolCallType, "tool_call");
-part_type!(ToolResultType, "tool_result");
+type_tag!(TextType, "text");
+type_tag!(ImageType, "image");
+type_tag!(ThinkingType, "thinking");
+type_tag!(ToolCallType, "tool_call");
+type_tag!(ToolResultType, "tool_result");
 
 /// [`AiTextPart`] as it is read.
 #[derive(Deserialize)]

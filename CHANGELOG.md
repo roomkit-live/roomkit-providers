@@ -13,7 +13,18 @@ nothing has been released yet.
 - `roomkit-providers-core`: a tool as the model is told of it, `AiTool`, what
   a call answered, `ToolResult`, how it ended, `ToolCallOutcome`, and
   `ValueError` for a value the contract refuses.
-- Each of these types reads and writes the JSON its model in RoomKit's Python
-  implementation gives with `model_dump(mode="json")`, checked against
-  examples written by RoomKit's Python. As in Python, a request's JSON form
-  never carries the credential of one request: it is written masked.
+- `roomkit-providers-core`: what a generation answers, `AiResponse`, with
+  its calls (`AiToolCall`, `ServedCall`), the events of a structured stream
+  (`StreamEvent`), and the reading of a call's id and arguments every
+  provider applies (`CallIds`, `tool_arguments`, `is_truncation`).
+- `roomkit-providers-core`: a provider's call that failed, `ProviderError`,
+  with `is_context_overflow_message`.
+- `roomkit-providers-core`: the model catalogue, `ModelInfo` and
+  `ModelPricing` with `cost_for`, `Date`, and the speech tags of a listing.
+- `roomkit-providers-core`: the readings of an image part a provider needs,
+  `image_part_payload`, `image_part_base64` and `image_part_uri`.
+- Each of these types that is a model in RoomKit's Python implementation
+  reads and writes the JSON that model gives with `model_dump(mode="json")`,
+  checked against examples written by RoomKit's Python. As in Python, a
+  request's JSON form never carries the credential of one request: it is
+  written masked.

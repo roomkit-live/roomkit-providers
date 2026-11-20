@@ -17,6 +17,8 @@ serde = { workspace = true, features = ["derive"] }
 # Python dict does.
 serde_json = { workspace = true, features = ["preserve_order"] }
 thiserror = { workspace = true }
+# The random half of an id minted for a call its server gave none.
+uuid = { workspace = true, features = ["v4"] }
 
 [lints]
 workspace = true

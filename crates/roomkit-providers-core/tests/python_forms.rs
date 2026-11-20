@@ -8,9 +8,11 @@
 use std::collections::BTreeSet;
 
 use roomkit_providers_core::{
-    AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRequest, AiRole, AiTextPart,
-    AiThinkingPart, AiTool, AiToolCallPart, AiToolResultPart, ToolCallOutcome, ToolResult,
-    ToolResultPart,
+    AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRequest, AiResponse, AiRole,
+    AiTextPart, AiThinkingPart, AiTool, AiToolCall, AiToolCallPart, AiToolResultPart, Date,
+    ModelInfo, ModelPricing, ServedCall, StreamDone, StreamEvent, StreamTextDelta,
+    StreamThinkingDelta, StreamToolCall, StreamToolCallDelta, StreamUsage, ToolCallOutcome,
+    ToolResult, ToolResultPart,
 };
 use serde::de::{DeserializeOwned, Error};
 use serde::{Deserialize, Serialize};
@@ -56,6 +58,18 @@ fn rewritten_as(model: &str, value: &Value) -> serde_json::Result<String> {
         "AIMessage" => rewritten::<AiMessage>(value),
         // The request is the fields a provider reads of Python's context.
         "AIContext" => rewritten::<AiRequest>(value),
+        // The response is the fields a provider fills of Python's response.
+        "AIResponse" => rewritten::<AiResponse>(value),
+        "AIToolCall" => rewritten::<AiToolCall>(value),
+        "ServedCall" => rewritten::<ServedCall>(value),
+        "StreamTextDelta" => rewritten::<StreamTextDelta>(value),
+        "StreamThinkingDelta" => rewritten::<StreamThinkingDelta>(value),
+        "StreamToolCall" => rewritten::<StreamToolCall>(value),
+        "StreamToolCallDelta" => rewritten::<StreamToolCallDelta>(value),
+        "StreamUsage" => rewritten::<StreamUsage>(value),
+        "StreamDone" => rewritten::<StreamDone>(value),
+        "ModelInfo" => rewritten::<ModelInfo>(value),
+        "ModelPricing" => rewritten::<ModelPricing>(value),
         other => Err(Error::custom(format!(
             "no Rust type for the Python model {other}"
         ))),
@@ -93,8 +107,9 @@ fn the_fields_a_caller_gives_read_as_the_form_python_dumps() {
 }
 
 /// The types Python has no model for hold the same JSON: a message's content
-/// and each of its parts, a tool's result and each of its parts, a role and
-/// an outcome.
+/// and each of its parts, a tool's result and each of its parts, a role, an
+/// outcome, an event of a stream and a price's day. So do the models a form
+/// holds: a response's calls and reasoning blocks, a model's price.
 #[test]
 fn a_form_s_members_read_and_write_back_unchanged() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
@@ -129,35 +144,72 @@ fn a_form_s_members_read_and_write_back_unchanged() {
                 &label,
             );
         }
+        if example.model.starts_with("Stream") {
+            check(
+                rewritten::<StreamEvent>(&example.form),
+                &example.form,
+                &label,
+            );
+        }
+        if example.model == "AIResponse" {
+            for call in example.form["tool_calls"].as_array().into_iter().flatten() {
+                check(rewritten::<AiToolCall>(call), call, &label);
+            }
+            let blocks = &example.form["thinking_parts"];
+            for block in blocks.as_array().into_iter().flatten() {
+                check(rewritten::<AiThinkingPart>(block), block, &label);
+            }
+        }
+        if example.model == "ModelInfo" {
+            let pricing = &example.form["pricing"];
+            check(rewritten::<Option<ModelPricing>>(pricing), pricing, &label);
+        }
+        if example.model == "ModelPricing" {
+            let verified = &example.form["verified"];
+            check(rewritten::<Date>(verified), verified, &label);
+        }
     }
 }
 
-/// The fixture holds what the tests above are for: every model, every part
-/// among a message's content, both shapes of a content and of a result,
-/// every role, every outcome, and what Python dumps under a request's
-/// `api_key`.
-#[test]
-fn the_fixture_covers_every_model_and_every_shape() {
-    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
-    let strings = |values: Vec<&Value>| -> BTreeSet<String> {
-        values
-            .into_iter()
-            .filter_map(Value::as_str)
-            .map(str::to_owned)
-            .collect()
-    };
-    let of = |model: &str| -> Vec<&Value> {
-        fixture
-            .examples
-            .iter()
-            .filter(|example| example.model == model)
-            .map(|example| &example.form)
-            .collect()
-    };
-    let named = |names: &[&str]| -> BTreeSet<String> {
-        names.iter().map(|&name| name.to_owned()).collect()
-    };
+/// The forms the fixture holds of the Python `model`.
+fn forms_of<'a>(fixture: &'a Fixture, model: &str) -> Vec<&'a Value> {
+    fixture
+        .examples
+        .iter()
+        .filter(|example| example.model == model)
+        .map(|example| &example.form)
+        .collect()
+}
 
+/// The strings among `values`.
+fn strings<'a>(values: impl IntoIterator<Item = &'a Value>) -> BTreeSet<String> {
+    values
+        .into_iter()
+        .filter_map(Value::as_str)
+        .map(str::to_owned)
+        .collect()
+}
+
+/// `names` as a set.
+fn named(names: &[&str]) -> BTreeSet<String> {
+    names.iter().map(|&name| name.to_owned()).collect()
+}
+
+/// The members of the lists the `forms` hold under `field`.
+fn listed<'a>(forms: &[&'a Value], field: &str) -> Vec<&'a Value> {
+    forms
+        .iter()
+        .filter_map(|form| form[field].as_array())
+        .flatten()
+        .collect()
+}
+
+// The four tests below keep the fixture holding what the tests above are
+// for: a regenerated fixture that lost a model or a shape fails here.
+
+#[test]
+fn the_fixture_covers_every_model() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
     let models: BTreeSet<String> = fixture
         .examples
         .iter()
@@ -169,17 +221,34 @@ fn the_fixture_covers_every_model_and_every_shape() {
             "AIContext",
             "AIImagePart",
             "AIMessage",
+            "AIResponse",
             "AITextPart",
             "AIThinkingPart",
             "AITool",
+            "AIToolCall",
             "AIToolCallPart",
             "AIToolResultPart",
+            "ModelInfo",
+            "ModelPricing",
+            "ServedCall",
+            "StreamDone",
+            "StreamTextDelta",
+            "StreamThinkingDelta",
+            "StreamToolCall",
+            "StreamToolCallDelta",
+            "StreamUsage",
         ])
     );
+}
 
-    let messages = of("AIMessage");
+/// Every role, both shapes of a content and of a result, every part among
+/// them, every outcome and none.
+#[test]
+fn the_fixture_covers_every_shape_of_a_message_and_of_a_result() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
+    let messages = forms_of(&fixture, "AIMessage");
     assert_eq!(
-        strings(messages.iter().map(|message| &message["role"]).collect()),
+        strings(messages.iter().map(|message| &message["role"])),
         named(&["assistant", "system", "tool", "user"])
     );
     assert!(
@@ -187,29 +256,21 @@ fn the_fixture_covers_every_model_and_every_shape() {
             .iter()
             .any(|message| message["content"].is_string())
     );
-    let parts: Vec<&Value> = messages
-        .iter()
-        .filter_map(|message| message["content"].as_array())
-        .flatten()
-        .collect();
+    let parts = listed(&messages, "content");
     assert_eq!(
-        strings(parts.iter().map(|part| &part["type"]).collect()),
+        strings(parts.iter().map(|part| &part["type"])),
         named(&["image", "text", "thinking", "tool_call", "tool_result"])
     );
 
-    let results = of("AIToolResultPart");
+    let results = forms_of(&fixture, "AIToolResultPart");
     assert!(results.iter().any(|result| result["result"].is_string()));
-    let result_parts: Vec<&Value> = results
-        .iter()
-        .filter_map(|result| result["result"].as_array())
-        .flatten()
-        .collect();
+    let result_parts = listed(&results, "result");
     assert_eq!(
-        strings(result_parts.iter().map(|part| &part["type"]).collect()),
+        strings(result_parts.iter().map(|part| &part["type"])),
         named(&["image", "text"])
     );
     assert_eq!(
-        strings(results.iter().map(|result| &result["outcome"]).collect()),
+        strings(results.iter().map(|result| &result["outcome"])),
         named(&[
             "blocked",
             "cancelled",
@@ -220,10 +281,14 @@ fn the_fixture_covers_every_model_and_every_shape() {
         ])
     );
     assert!(results.iter().any(|result| result["outcome"].is_null()));
+}
 
-    // A credential, dumped masked; an empty string and a value that is no
-    // string, dumped as they are.
-    let requests = of("AIContext");
+/// A credential, dumped masked; an empty string and a value that is no
+/// string, dumped as they are.
+#[test]
+fn the_fixture_covers_what_python_dumps_under_a_request_s_api_key() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
+    let requests = forms_of(&fixture, "AIContext");
     let credentials: Vec<&Value> = requests
         .iter()
         .filter_map(|request| request["metadata"].get("api_key"))
@@ -235,4 +300,43 @@ fn the_fixture_covers_every_model_and_every_shape() {
     );
     assert!(credentials.iter().any(|key| key.as_str() == Some("")));
     assert!(credentials.iter().any(|key| !key.is_string()));
+}
+
+/// Every event of a stream, a response with and without calls and reasoning
+/// blocks, a call served or not, a model with and without a price.
+#[test]
+fn the_fixture_covers_every_event_and_every_shape_of_a_response_and_of_a_model() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).unwrap();
+    let events = fixture
+        .examples
+        .iter()
+        .filter(|example| example.model.starts_with("Stream"))
+        .map(|example| &example.form["type"]);
+    assert_eq!(
+        strings(events),
+        named(&[
+            "done",
+            "text_delta",
+            "thinking_delta",
+            "tool_call",
+            "tool_call_delta",
+            "usage",
+        ])
+    );
+
+    let responses = forms_of(&fixture, "AIResponse");
+    assert_ne!(listed(&responses, "tool_calls").len(), 0);
+    assert_ne!(listed(&responses, "thinking_parts").len(), 0);
+    assert!(
+        responses
+            .iter()
+            .any(|response| response["thinking_parts"].is_null())
+    );
+    let calls = forms_of(&fixture, "AIToolCall");
+    assert!(calls.iter().any(|call| call["served"].is_null()));
+    assert!(calls.iter().any(|call| call["served"].is_object()));
+
+    let models = forms_of(&fixture, "ModelInfo");
+    assert!(models.iter().any(|model| model["pricing"].is_null()));
+    assert!(models.iter().any(|model| model["pricing"].is_object()));
 }

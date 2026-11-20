@@ -12,13 +12,18 @@ conversations.
 
 - the request a provider is given, `AiRequest`, with its messages
   (`AiMessage`) and their parts: text, image, reasoning, tool call and tool
-  result;
+  result, and the readings of an image part a provider needs;
 - a tool as the model is told of it, `AiTool`, what a call answered,
   `ToolResult`, and how it ended, `ToolCallOutcome`;
-- `ValueError`, the error for a value the contract refuses.
+- what a generation answers, `AiResponse`, the calls it makes, `AiToolCall`,
+  and the events of a structured stream, `StreamEvent`;
+- what a provider knows of its models, `ModelInfo`, and their list price,
+  `ModelPricing`, which prices a response's usage;
+- a provider's call that failed, `ProviderError`, and `ValueError`, the
+  error for a value the contract refuses.
 
-The response, the events of a streamed answer, the typed failures and the
-model catalogues are not defined yet. See the
+The provider trait itself, with its streams and the checks of a response
+schema, is not defined yet. See the
 [repository](https://github.com/roomkit-live/roomkit-providers) for the state
 of the project.
 
@@ -28,8 +33,8 @@ A type that RoomKit's Python API names keeps that name in Rust's casing:
 Python's `AIMessage` is `AiMessage`. The request is `AiRequest`: the fields a
 provider reads of Python's `AIContext`.
 
-Every type reads and writes the JSON its Python model gives with
-`model_dump(mode="json")`:
+Every type that is a model in Python reads and writes the JSON its Python
+model gives with `model_dump(mode="json")`:
 
 ```rust
 use roomkit_providers_core::{AiMessage, AiRole};
