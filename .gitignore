@@ -1,0 +1,19 @@
+/target/
+/adapters/roomkit/target/
+/bindings/python/target/
+/.venv/
+/dist/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# Local credentials must not be published.
+.env
+.env.*
+!.env.example
+
+# Local planning notes.
+/AGENTS.md
+/docs/

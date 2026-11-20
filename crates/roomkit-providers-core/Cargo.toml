@@ -1,0 +1,15 @@
+[package]
+name = "roomkit-providers-core"
+description = "Runtime-independent contracts for model providers: requests, responses, streams and failures"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+readme = "README.md"
+keywords = ["llm", "ai", "provider", "model", "streaming"]
+categories = ["api-bindings"]
+
+[lints]
+workspace = true
