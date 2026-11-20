@@ -11,9 +11,10 @@ RoomKit Providers is where the clients of model services live for the
 implementation per service, written once in Rust, behind a provider-neutral
 contract.
 
-> **Early development.** The workspace is being set up and nothing is usable
-> yet. The [changelog](CHANGELOG.md) says what exists; the rest of this page
-> says where the project is going.
+> **Early development.** The contract crate defines the request a provider is
+> given and its tools; no provider exists, so nothing is usable yet. The
+> [changelog](CHANGELOG.md) says what exists; the rest of this page says
+> where the project is going.
 
 ## Goals
 
@@ -30,19 +31,24 @@ contract.
 
 ## Planned
 
-In this order, none of it available yet:
+In this order:
 
-1. the contract crate, `roomkit-providers-core`;
+1. the contract crate, `roomkit-providers-core`. Its request, message and
+   tool types exist, with their JSON forms; the response, the events of a
+   streamed answer, the typed failures and the model catalogues do not yet;
 2. a provider for OpenAI-compatible Chat Completions endpoints;
 3. a Python package calling the same implementation through a native
    extension;
 4. adapters for RoomKit, in Rust and in Python.
 
+Items 2 to 4 are not started.
+
 ## Layout
 
 | Path | Contents |
 | --- | --- |
-| `crates/roomkit-providers-core` | The contract crate; defines no item yet |
+| `crates/roomkit-providers-core` | The contract crate: the request, its messages and its tools, with their JSON forms |
+| `scripts/generate_python_forms.py` | Writes the examples of RoomKit's Python JSON forms that the contract's tests read |
 
 ## Development
 

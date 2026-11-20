@@ -5,6 +5,27 @@ set -euo pipefail
 
 allowed=(
     roomkit-providers-core
+    # The JSON forms: serde, and what the derive macros are built with.
+    serde
+    serde_core
+    serde_derive
+    proc-macro2
+    quote
+    syn
+    unicode-ident
+    # JSON values, and the ordered map that keeps an object's members in
+    # the order they were written (serde_json's `preserve_order`).
+    serde_json
+    itoa
+    memchr
+    zmij
+    indexmap
+    equivalent
+    hashbrown
+    foldhash
+    # The error types.
+    thiserror
+    thiserror-impl
 )
 
 dependencies=$(

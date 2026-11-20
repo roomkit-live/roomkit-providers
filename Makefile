@@ -1,8 +1,11 @@
 CARGO ?= cargo
 MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' Cargo.toml).0
 DENY_FLAGS ?=
+# An interpreter with RoomKit's Python package installed, for python-forms.
+PYTHON ?= python3
 
-.PHONY: all fmt fmt-check clippy test doc deny check-core-deps msrv msrv-toolchain hooks
+.PHONY: all fmt fmt-check clippy test doc deny check-core-deps msrv msrv-toolchain hooks \
+	python-forms
 
 all: fmt-check clippy test doc deny check-core-deps
 
@@ -38,3 +41,8 @@ msrv-toolchain:
 
 hooks:
 	git config core.hooksPath .githooks
+
+# Rewrites the fixture of the JSON forms RoomKit's Python models give. The
+# tests only read the fixture: `make all` needs no Python.
+python-forms:
+	$(PYTHON) scripts/generate_python_forms.py

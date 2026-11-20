@@ -1,0 +1,1160 @@
+{
+    "generator": "scripts/generate_python_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "request_fields": [
+        "messages",
+        "system_prompt",
+        "temperature",
+        "max_tokens",
+        "thinking_budget",
+        "enable_thinking",
+        "reasoning_effort",
+        "tools",
+        "response_schema",
+        "metadata"
+    ],
+    "examples": [
+        {
+            "model": "AITextPart",
+            "name": "text",
+            "given": {
+                "text": "The order shipped on Monday."
+            },
+            "form": {
+                "type": "text",
+                "text": "The order shipped on Monday."
+            }
+        },
+        {
+            "model": "AITextPart",
+            "name": "text_empty_with_its_type",
+            "given": {
+                "type": "text",
+                "text": ""
+            },
+            "form": {
+                "type": "text",
+                "text": ""
+            }
+        },
+        {
+            "model": "AIImagePart",
+            "name": "image_url_alone",
+            "given": {
+                "url": "https://example.com/chart.png"
+            },
+            "form": {
+                "type": "image",
+                "url": "https://example.com/chart.png",
+                "mime_type": null
+            }
+        },
+        {
+            "model": "AIImagePart",
+            "name": "image_data_url_with_its_media_type",
+            "given": {
+                "url": "data:image/png;base64,iVBORw0KGgo=",
+                "mime_type": "image/png"
+            },
+            "form": {
+                "type": "image",
+                "url": "data:image/png;base64,iVBORw0KGgo=",
+                "mime_type": "image/png"
+            }
+        },
+        {
+            "model": "AIThinkingPart",
+            "name": "thinking",
+            "given": {
+                "thinking": "Look the order up first."
+            },
+            "form": {
+                "type": "thinking",
+                "thinking": "Look the order up first.",
+                "signature": null,
+                "redacted": null
+            }
+        },
+        {
+            "model": "AIThinkingPart",
+            "name": "thinking_signed",
+            "given": {
+                "thinking": "Look the order up first.",
+                "signature": "c2lnbmF0dXJl"
+            },
+            "form": {
+                "type": "thinking",
+                "thinking": "Look the order up first.",
+                "signature": "c2lnbmF0dXJl",
+                "redacted": null
+            }
+        },
+        {
+            "model": "AIThinkingPart",
+            "name": "thinking_redacted",
+            "given": {
+                "thinking": "",
+                "redacted": "b3BhcXVlIGRhdGE="
+            },
+            "form": {
+                "type": "thinking",
+                "thinking": "",
+                "signature": null,
+                "redacted": "b3BhcXVlIGRhdGE="
+            }
+        },
+        {
+            "model": "AIToolCallPart",
+            "name": "tool_call",
+            "given": {
+                "id": "call_1",
+                "name": "lookup_order"
+            },
+            "form": {
+                "type": "tool_call",
+                "id": "call_1",
+                "name": "lookup_order",
+                "arguments": {},
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIToolCallPart",
+            "name": "tool_call_with_arguments",
+            "given": {
+                "id": "call_2",
+                "name": "lookup_order",
+                "arguments": {
+                    "order": "A-1001",
+                    "include": [
+                        "items",
+                        "tracking"
+                    ],
+                    "limit": 3,
+                    "ratio": 0.5,
+                    "verbose": false,
+                    "note": null,
+                    "filter": {
+                        "status": "open"
+                    }
+                },
+                "metadata": {
+                    "index": 0,
+                    "vendor": {
+                        "item_id": "fc_1"
+                    }
+                }
+            },
+            "form": {
+                "type": "tool_call",
+                "id": "call_2",
+                "name": "lookup_order",
+                "arguments": {
+                    "order": "A-1001",
+                    "include": [
+                        "items",
+                        "tracking"
+                    ],
+                    "limit": 3,
+                    "ratio": 0.5,
+                    "verbose": false,
+                    "note": null,
+                    "filter": {
+                        "status": "open"
+                    }
+                },
+                "metadata": {
+                    "index": 0,
+                    "vendor": {
+                        "item_id": "fc_1"
+                    }
+                }
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_text",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "{\"status\": \"shipped\"}"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "{\"status\": \"shipped\"}",
+                "is_error": false,
+                "structured_content": null,
+                "outcome": null,
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_text_and_image",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": [
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    },
+                    {
+                        "type": "image",
+                        "url": "data:image/png;base64,iVBORw0KGgo=",
+                        "mime_type": "image/png"
+                    }
+                ]
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": [
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    },
+                    {
+                        "type": "image",
+                        "url": "data:image/png;base64,iVBORw0KGgo=",
+                        "mime_type": "image/png"
+                    }
+                ],
+                "is_error": false,
+                "structured_content": null,
+                "outcome": null,
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_text_parts_alone",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": [
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    },
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    }
+                ]
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": [
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    },
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    }
+                ],
+                "is_error": false,
+                "structured_content": null,
+                "outcome": null,
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_image_alone",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": [
+                    {
+                        "type": "image",
+                        "url": "https://example.com/label.png"
+                    }
+                ]
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": [
+                    {
+                        "type": "image",
+                        "url": "https://example.com/label.png",
+                        "mime_type": null
+                    }
+                ],
+                "is_error": false,
+                "structured_content": null,
+                "outcome": null,
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_no_part",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": []
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": [],
+                "is_error": false,
+                "structured_content": null,
+                "outcome": null,
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_error",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "{\"error\": \"Order not found\"}",
+                "is_error": true,
+                "outcome": "failed"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "{\"error\": \"Order not found\"}",
+                "is_error": true,
+                "structured_content": null,
+                "outcome": "failed",
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_with_structured_content_and_references",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "2 items",
+                "structured_content": {
+                    "order": {
+                        "id": "A-1001",
+                        "items": 2
+                    }
+                },
+                "references": [
+                    "cancel_order",
+                    "refund_order"
+                ]
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "2 items",
+                "is_error": false,
+                "structured_content": {
+                    "order": {
+                        "id": "A-1001",
+                        "items": 2
+                    }
+                },
+                "outcome": null,
+                "references": [
+                    "cancel_order",
+                    "refund_order"
+                ]
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_served",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "outcome": "served"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "is_error": false,
+                "structured_content": null,
+                "outcome": "served",
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_refused",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "outcome": "refused"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "is_error": false,
+                "structured_content": null,
+                "outcome": "refused",
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_failed",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "outcome": "failed"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "is_error": false,
+                "structured_content": null,
+                "outcome": "failed",
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_blocked",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "outcome": "blocked"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "is_error": false,
+                "structured_content": null,
+                "outcome": "blocked",
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_unserved",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "outcome": "unserved"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "is_error": false,
+                "structured_content": null,
+                "outcome": "unserved",
+                "references": []
+            }
+        },
+        {
+            "model": "AIToolResultPart",
+            "name": "tool_result_cancelled",
+            "given": {
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "outcome": "cancelled"
+            },
+            "form": {
+                "type": "tool_result",
+                "tool_call_id": "call_1",
+                "name": "lookup_order",
+                "result": "done",
+                "is_error": false,
+                "structured_content": null,
+                "outcome": "cancelled",
+                "references": []
+            }
+        },
+        {
+            "model": "AITool",
+            "name": "tool",
+            "given": {
+                "name": "lookup_order",
+                "description": "Find an order by its number"
+            },
+            "form": {
+                "name": "lookup_order",
+                "description": "Find an order by its number",
+                "parameters": {},
+                "tags": [],
+                "defer_loading": false,
+                "changes_state": false
+            }
+        },
+        {
+            "model": "AITool",
+            "name": "tool_with_parameters_tags_and_flags",
+            "given": {
+                "name": "orders.lookup:v2-beta_1",
+                "description": "Find an order by its number",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "order": {
+                            "type": "string",
+                            "description": "The order number"
+                        },
+                        "include": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": [
+                        "order"
+                    ]
+                },
+                "tags": [
+                    "order",
+                    "tracking"
+                ],
+                "defer_loading": true,
+                "changes_state": true
+            },
+            "form": {
+                "name": "orders.lookup:v2-beta_1",
+                "description": "Find an order by its number",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "order": {
+                            "type": "string",
+                            "description": "The order number"
+                        },
+                        "include": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": [
+                        "order"
+                    ]
+                },
+                "tags": [
+                    "order",
+                    "tracking"
+                ],
+                "defer_loading": true,
+                "changes_state": true
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_system_text",
+            "given": {
+                "role": "system",
+                "content": "Answer in one sentence."
+            },
+            "form": {
+                "role": "system",
+                "content": "Answer in one sentence.",
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_user_text",
+            "given": {
+                "role": "user",
+                "content": "Where is my order A-1001?"
+            },
+            "form": {
+                "role": "user",
+                "content": "Where is my order A-1001?",
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_user_text_and_image",
+            "given": {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    },
+                    {
+                        "type": "image",
+                        "url": "https://example.com/label.png"
+                    }
+                ]
+            },
+            "form": {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Here is the tracking page."
+                    },
+                    {
+                        "type": "image",
+                        "url": "https://example.com/label.png",
+                        "mime_type": null
+                    }
+                ],
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_assistant_thinking_text_and_call",
+            "given": {
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "thinking",
+                        "thinking": "The user asks where the order is; look it up first.",
+                        "signature": "c2lnbmF0dXJl"
+                    },
+                    {
+                        "type": "text",
+                        "text": "Let me check."
+                    },
+                    {
+                        "type": "tool_call",
+                        "id": "call_1",
+                        "name": "lookup_order",
+                        "arguments": {
+                            "order": "A-1001"
+                        }
+                    }
+                ],
+                "metadata": {
+                    "response_id": "resp_1"
+                }
+            },
+            "form": {
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "thinking",
+                        "thinking": "The user asks where the order is; look it up first.",
+                        "signature": "c2lnbmF0dXJl",
+                        "redacted": null
+                    },
+                    {
+                        "type": "text",
+                        "text": "Let me check."
+                    },
+                    {
+                        "type": "tool_call",
+                        "id": "call_1",
+                        "name": "lookup_order",
+                        "arguments": {
+                            "order": "A-1001"
+                        },
+                        "metadata": {}
+                    }
+                ],
+                "metadata": {
+                    "response_id": "resp_1"
+                }
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_tool_results",
+            "given": {
+                "role": "tool",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_call_id": "call_1",
+                        "name": "lookup_order",
+                        "result": "{\"status\": \"shipped\"}",
+                        "outcome": "served"
+                    },
+                    {
+                        "type": "tool_result",
+                        "tool_call_id": "call_2",
+                        "name": "open_tracking_page",
+                        "result": [
+                            {
+                                "type": "text",
+                                "text": "Here is the tracking page."
+                            },
+                            {
+                                "type": "image",
+                                "url": "data:image/png;base64,iVBORw0KGgo=",
+                                "mime_type": "image/png"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "form": {
+                "role": "tool",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_call_id": "call_1",
+                        "name": "lookup_order",
+                        "result": "{\"status\": \"shipped\"}",
+                        "is_error": false,
+                        "structured_content": null,
+                        "outcome": "served",
+                        "references": []
+                    },
+                    {
+                        "type": "tool_result",
+                        "tool_call_id": "call_2",
+                        "name": "open_tracking_page",
+                        "result": [
+                            {
+                                "type": "text",
+                                "text": "Here is the tracking page."
+                            },
+                            {
+                                "type": "image",
+                                "url": "data:image/png;base64,iVBORw0KGgo=",
+                                "mime_type": "image/png"
+                            }
+                        ],
+                        "is_error": false,
+                        "structured_content": null,
+                        "outcome": null,
+                        "references": []
+                    }
+                ],
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_assistant_empty_text",
+            "given": {
+                "role": "assistant",
+                "content": ""
+            },
+            "form": {
+                "role": "assistant",
+                "content": "",
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIMessage",
+            "name": "message_user_no_part",
+            "given": {
+                "role": "user",
+                "content": []
+            },
+            "form": {
+                "role": "user",
+                "content": [],
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIContext",
+            "name": "request_defaults",
+            "given": {},
+            "form": {
+                "messages": [],
+                "system_prompt": null,
+                "temperature": 0.7,
+                "max_tokens": null,
+                "thinking_budget": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "tools": [],
+                "response_schema": null,
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIContext",
+            "name": "request",
+            "given": {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You answer in one sentence."
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Where is this order?"
+                            },
+                            {
+                                "type": "image",
+                                "url": "data:image/png;base64,iVBORw0KGgo=",
+                                "mime_type": "image/png"
+                            }
+                        ]
+                    },
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "thinking",
+                                "thinking": "The user asks where the order is; look it up first.",
+                                "signature": "c2lnbmF0dXJl"
+                            },
+                            {
+                                "type": "text",
+                                "text": "Let me check."
+                            },
+                            {
+                                "type": "tool_call",
+                                "id": "call_1",
+                                "name": "lookup_order",
+                                "arguments": {
+                                    "order": "A-1001"
+                                }
+                            }
+                        ],
+                        "metadata": {
+                            "response_id": "resp_1"
+                        }
+                    },
+                    {
+                        "role": "tool",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_call_id": "call_1",
+                                "name": "lookup_order",
+                                "result": "{\"status\": \"shipped\"}",
+                                "outcome": "served"
+                            }
+                        ]
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "It shipped on Monday."
+                    }
+                ],
+                "system_prompt": "You help customers track their orders.",
+                "temperature": 0.2,
+                "max_tokens": 1024,
+                "thinking_budget": 2048,
+                "enable_thinking": true,
+                "reasoning_effort": "high",
+                "tools": [
+                    {
+                        "name": "lookup_order",
+                        "description": "Find an order by its number"
+                    },
+                    {
+                        "name": "cancel_order",
+                        "description": "Find an order by its number",
+                        "changes_state": true
+                    }
+                ],
+                "response_schema": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string"
+                        },
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": [
+                        "status",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                },
+                "metadata": {
+                    "tenant": "acme",
+                    "trace": {
+                        "id": "trace-1",
+                        "sampled": true
+                    }
+                }
+            },
+            "form": {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You answer in one sentence.",
+                        "metadata": {}
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Where is this order?"
+                            },
+                            {
+                                "type": "image",
+                                "url": "data:image/png;base64,iVBORw0KGgo=",
+                                "mime_type": "image/png"
+                            }
+                        ],
+                        "metadata": {}
+                    },
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "thinking",
+                                "thinking": "The user asks where the order is; look it up first.",
+                                "signature": "c2lnbmF0dXJl",
+                                "redacted": null
+                            },
+                            {
+                                "type": "text",
+                                "text": "Let me check."
+                            },
+                            {
+                                "type": "tool_call",
+                                "id": "call_1",
+                                "name": "lookup_order",
+                                "arguments": {
+                                    "order": "A-1001"
+                                },
+                                "metadata": {}
+                            }
+                        ],
+                        "metadata": {
+                            "response_id": "resp_1"
+                        }
+                    },
+                    {
+                        "role": "tool",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_call_id": "call_1",
+                                "name": "lookup_order",
+                                "result": "{\"status\": \"shipped\"}",
+                                "is_error": false,
+                                "structured_content": null,
+                                "outcome": "served",
+                                "references": []
+                            }
+                        ],
+                        "metadata": {}
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "It shipped on Monday.",
+                        "metadata": {}
+                    }
+                ],
+                "system_prompt": "You help customers track their orders.",
+                "temperature": 0.2,
+                "max_tokens": 1024,
+                "thinking_budget": 2048,
+                "enable_thinking": true,
+                "reasoning_effort": "high",
+                "tools": [
+                    {
+                        "name": "lookup_order",
+                        "description": "Find an order by its number",
+                        "parameters": {},
+                        "tags": [],
+                        "defer_loading": false,
+                        "changes_state": false
+                    },
+                    {
+                        "name": "cancel_order",
+                        "description": "Find an order by its number",
+                        "parameters": {},
+                        "tags": [],
+                        "defer_loading": false,
+                        "changes_state": true
+                    }
+                ],
+                "response_schema": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string"
+                        },
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": [
+                        "status",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                },
+                "metadata": {
+                    "tenant": "acme",
+                    "trace": {
+                        "id": "trace-1",
+                        "sampled": true
+                    }
+                }
+            }
+        },
+        {
+            "model": "AIContext",
+            "name": "request_reasoning_off_whole_temperature",
+            "given": {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Hello"
+                    }
+                ],
+                "temperature": 1,
+                "thinking_budget": 0,
+                "enable_thinking": false,
+                "reasoning_effort": "none"
+            },
+            "form": {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Hello",
+                        "metadata": {}
+                    }
+                ],
+                "system_prompt": null,
+                "temperature": 1.0,
+                "max_tokens": null,
+                "thinking_budget": 0,
+                "enable_thinking": false,
+                "reasoning_effort": "none",
+                "tools": [],
+                "response_schema": null,
+                "metadata": {}
+            }
+        },
+        {
+            "model": "AIContext",
+            "name": "request_credential_masked",
+            "given": {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Hello",
+                        "metadata": {
+                            "api_key": "not-a-key-either"
+                        }
+                    }
+                ],
+                "metadata": {
+                    "tenant": "acme",
+                    "api_key": "placeholder-not-a-key",
+                    "upstream": {
+                        "api_key": "nested-not-a-key"
+                    }
+                }
+            },
+            "form": {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Hello",
+                        "metadata": {
+                            "api_key": "not-a-key-either"
+                        }
+                    }
+                ],
+                "system_prompt": null,
+                "temperature": 0.7,
+                "max_tokens": null,
+                "thinking_budget": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "tools": [],
+                "response_schema": null,
+                "metadata": {
+                    "tenant": "acme",
+                    "api_key": "**********",
+                    "upstream": {
+                        "api_key": "nested-not-a-key"
+                    }
+                }
+            }
+        },
+        {
+            "model": "AIContext",
+            "name": "request_credential_empty",
+            "given": {
+                "metadata": {
+                    "api_key": ""
+                }
+            },
+            "form": {
+                "messages": [],
+                "system_prompt": null,
+                "temperature": 0.7,
+                "max_tokens": null,
+                "thinking_budget": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "tools": [],
+                "response_schema": null,
+                "metadata": {
+                    "api_key": ""
+                }
+            }
+        },
+        {
+            "model": "AIContext",
+            "name": "request_credential_not_a_string",
+            "given": {
+                "metadata": {
+                    "api_key": 42,
+                    "tenant": "acme"
+                }
+            },
+            "form": {
+                "messages": [],
+                "system_prompt": null,
+                "temperature": 0.7,
+                "max_tokens": null,
+                "thinking_budget": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "tools": [],
+                "response_schema": null,
+                "metadata": {
+                    "api_key": 42,
+                    "tenant": "acme"
+                }
+            }
+        }
+    ]
+}

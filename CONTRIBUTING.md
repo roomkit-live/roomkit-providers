@@ -54,6 +54,27 @@ for a raised exception.
 - A type that RoomKit's Python API already names keeps that name here.
 - Any other difference needs a maintainer's decision before it is written.
 
+## JSON forms
+
+Every contract type reads and writes the JSON its model in RoomKit's Python
+implementation gives with `model_dump(mode="json")`: no form is specific to
+one language. The proof is a fixture written by RoomKit's Python,
+`crates/roomkit-providers-core/tests/fixtures/python_forms.json`, which the
+`python_forms` test reads into the Rust types and writes back.
+
+- `make all` and CI only read the fixture: they need no Python.
+- `make python-forms` rewrites it with `scripts/generate_python_forms.py`. It
+  needs an interpreter that has the `roomkit` package installed, named by
+  `PYTHON` (`python3` by default):
+
+  ```sh
+  make python-forms PYTHON=path/to/venv/bin/python
+  ```
+
+- A new contract type or field brings its examples to the script, and the
+  regenerated fixture is committed with it. The fixture records the RoomKit
+  version it was written from.
+
 ## Implementation boundaries
 
 - Keep `roomkit-providers-core` free of I/O, async runtimes, Python and

@@ -11,5 +11,12 @@ readme = "README.md"
 keywords = ["llm", "ai", "provider", "model", "streaming"]
 categories = ["api-bindings"]
 
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+# A JSON object keeps its members in the order they were written, as a
+# Python dict does.
+serde_json = { workspace = true, features = ["preserve_order"] }
+thiserror = { workspace = true }
+
 [lints]
 workspace = true
