@@ -11,7 +11,8 @@ mod repr;
 
 #[doc(hidden)]
 pub use self::json::dumps;
-pub(crate) use self::repr::{quoted, repr};
+pub(crate) use self::repr::quoted;
+pub use self::repr::repr;
 
 #[cfg(test)]
 mod tests {

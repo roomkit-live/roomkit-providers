@@ -12,7 +12,7 @@ use std::error::Error;
 use std::fmt;
 
 use roomkit_providers_core::{
-    ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions,
+    ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions, repr,
 };
 
 use super::{Built, Failure, MESSAGE_LIMIT, Said};
@@ -25,76 +25,128 @@ pub(crate) const SECRET_MIN: usize = 8;
 /// holds none, and each removal shortens the text.
 pub(crate) const MARK: &str = "[***]";
 
-/// Whether a failure's text leaves `character` out: a control character,
-/// or a control of the direction of a text, which a terminal or a log
-/// viewer acts on.
-fn is_hidden(character: char) -> bool {
-    character.is_control()
-        || matches!(character, '\u{61c}' | '\u{200e}' | '\u{200f}')
+/// Whether `character` shows nothing: a soft hyphen, a zero-width or
+/// format character, a control of the direction of a text, a tag character.
+/// A failure's text drops each, so that a secret one of them splits is
+/// still found, and nothing a viewer acts on is left.
+fn shows_nothing(character: char) -> bool {
+    matches!(character, '\u{ad}' | '\u{61c}' | '\u{180e}' | '\u{feff}')
+        || ('\u{200b}'..='\u{200f}').contains(&character)
         || ('\u{202a}'..='\u{202e}').contains(&character)
-        || ('\u{2066}'..='\u{2069}').contains(&character)
+        || ('\u{2060}'..='\u{206f}').contains(&character)
+        || ('\u{fff9}'..='\u{fffb}').contains(&character)
+        || ('\u{e0000}'..='\u{e007f}').contains(&character)
 }
 
-/// `text` on one line: each hidden character and each run of white space
-/// one space, none at its ends.
+/// `text` without the characters that show nothing.
+fn shown(text: &str) -> String {
+    text.chars().filter(|c| !shows_nothing(*c)).collect()
+}
+
+/// `text` on one line: without the characters that show nothing, each
+/// control character and each run of white space one space, none at its
+/// ends.
 pub(crate) fn one_line(text: &str) -> String {
-    let spaced = text.chars().map(|c| if is_hidden(c) { ' ' } else { c });
+    let shown = shown(text);
+    let spaced = shown.chars().map(|c| if c.is_control() { ' ' } else { c });
     let spaced: String = spaced.collect();
     spaced.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// `text` as the code that builds a failure may write it: as it is, as a
+/// JSON string writes it (an error object or a call's id written as JSON),
+/// as a reader quotes a text it refuses, and as the contract quotes a value,
+/// Python's `repr`, whose quote depends on the text around: with a single
+/// quote left as it is, and escaped.
+fn written_forms(text: &str) -> Vec<String> {
+    let inside = |quoted: String| {
+        let mut inside = quoted.chars();
+        inside.next();
+        inside.next_back();
+        inside.as_str().to_owned()
+    };
+    let json = serde_json::to_string(text).unwrap_or_default();
+    let beside_a_double_quote = inside(repr(&format!("{text}\"").into()));
+    let escaped = beside_a_double_quote.strip_suffix('"');
+    vec![
+        text.to_owned(),
+        inside(json),
+        inside(format!("{text:?}")),
+        inside(repr(&text.into())),
+        escaped.unwrap_or_default().to_owned(),
+    ]
+}
+
 /// The secrets of a configuration: what no failure's text may repeat.
 #[derive(Clone, Default)]
-pub(crate) struct Secrets(Vec<String>);
+pub(crate) struct Secrets {
+    /// The forms a text holds only before it is put on one line.
+    before: Vec<String>,
+    /// The forms a text on one line holds.
+    after: Vec<String>,
+}
 
 impl fmt::Debug for Secrets {
-    /// How many: never one of them.
+    /// How many forms: never one of them.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Secrets({})", self.0.len())
+        write!(f, "Secrets({})", self.after.len())
     }
 }
 
 impl Secrets {
     /// The secrets among `texts`: each of [`SECRET_MIN`] characters or
-    /// more, as it is written and as it reads on one line.
+    /// more, in every form a failure's text may hold it in.
     pub(crate) fn of(texts: impl IntoIterator<Item = String>) -> Self {
-        let mut held: Vec<String> = Vec::new();
-        for text in texts {
-            for form in [one_line(&text), text] {
-                if form.chars().count() >= SECRET_MIN && !held.contains(&form) {
-                    held.push(form);
+        let (mut before, mut after) = (Vec::new(), Vec::new());
+        let keep = |held: &mut Vec<String>, form: String| {
+            if form.chars().count() >= SECRET_MIN && !held.contains(&form) {
+                held.push(form);
+            }
+        };
+        let secrets = texts.into_iter().map(|text| shown(&text));
+        for secret in secrets.filter(|secret| secret.chars().count() >= SECRET_MIN) {
+            for form in written_forms(&secret) {
+                let line = one_line(&form);
+                if line != form {
+                    keep(&mut before, form);
                 }
+                keep(&mut after, line);
             }
         }
         // The longest first: a secret that holds another goes whole.
-        held.sort_by_key(|secret| std::cmp::Reverse(secret.len()));
-        Self(held)
+        before.sort_by_key(|secret| std::cmp::Reverse(secret.len()));
+        after.sort_by_key(|secret| std::cmp::Reverse(secret.len()));
+        Self { before, after }
     }
 
-    /// `text` with no secret in it. Removing one may bring the pieces of
-    /// another together, so the text is searched until none is found; it
-    /// gets shorter each time, which ends the search.
-    fn removed(&self, text: &str) -> String {
+    /// `text` with none of `secrets` in it. Removing one may bring the
+    /// pieces of another together, so the text is searched until none is
+    /// found; it gets shorter each time, which ends the search.
+    fn removed(text: &str, secrets: &[String]) -> String {
         let mut text = text.to_owned();
-        while let Some(secret) = self.0.iter().find(|secret| text.contains(secret.as_str())) {
+        while let Some(secret) = secrets.iter().find(|secret| text.contains(secret.as_str())) {
             text = text.replace(secret.as_str(), MARK);
         }
         text
     }
 
-    /// Whether `text` needs no cleaning: it holds no secret and no hidden
-    /// character.
+    /// Whether `text` needs no cleaning: it holds no secret, no control
+    /// character and no character that shows nothing.
     fn is_free(&self, text: &str) -> bool {
-        !text.chars().any(is_hidden) && self.removed(text) == text
+        let cleaned = Self::removed(&Self::removed(text, &self.before), &self.after);
+        !text.chars().any(|c| c.is_control() || shows_nothing(c)) && cleaned == text
     }
 
     /// What a server, a reader or the contract said, as a failure carries
     /// it: without a secret, on one line, within `limit` characters. The
-    /// secrets are removed before and after the text is put on one line,
-    /// which may itself bring one together.
+    /// characters that show nothing go first, so that none hides a secret.
+    /// The secrets are then looked for twice: before the text is put on
+    /// one line, in the forms that step would lose, and after it, in every
+    /// form, a secret sent back with other white space included.
     pub(crate) fn clean(&self, text: &str, limit: usize) -> String {
-        let line = one_line(&self.removed(text));
-        self.removed(&line).chars().take(limit).collect()
+        let text = Self::removed(&shown(text), &self.before);
+        let line = Self::removed(&one_line(&text), &self.after);
+        line.chars().take(limit).collect()
     }
 }
 

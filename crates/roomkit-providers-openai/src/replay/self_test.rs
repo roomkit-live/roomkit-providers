@@ -1,6 +1,8 @@
 //! The replay held to what it says it compares: for each thing, a case is
 //! replayed, found to be as Python, then one thing of what was replayed is
-//! made wrong, and the replay must say so.
+//! made wrong, and the replay must say so. So is what it says of its fake,
+//! which is made to serve a stream in one piece, and of a named case,
+//! which is made to differ or to do otherwise than its entry states.
 
 use roomkit_providers_core::{
     ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions,
@@ -8,8 +10,9 @@ use roomkit_providers_core::{
 };
 
 use super::compare::differences;
-use super::fake::Door;
-use super::{Case, Outcome, Replayed, fixture, replay};
+use super::fake::{Body, Door, Reply};
+use super::named::named;
+use super::{Case, Outcome, Replayed, fixture, judged, replay, replay_served, reply_of};
 
 /// One thing made wrong in what a case replayed: its name, and the word of
 /// the difference the replay must find.
@@ -120,6 +123,154 @@ async fn the_replay_refuses_a_request_that_is_not_python_s() {
         r.seen[0].headers.insert("content-type".to_owned(), json);
     })];
     refuses(&cases, "list_models", &listing).await;
+}
+
+// The fake serves a stream cut as its case records it, and the replay says
+// so when it does not: the reads of a case are joined into one, which the
+// provider reads to the same events.
+#[tokio::test]
+async fn the_replay_refuses_a_stream_served_in_one_piece() {
+    let cases = fixture().cases;
+    let door = Door::open().await;
+    let in_one_piece = |answered: &super::Answered| match reply_of(answered) {
+        Reply::Answer {
+            status,
+            headers,
+            body: Body::Reads(reads, ending),
+        } => Reply::Answer {
+            status,
+            headers,
+            body: Body::Reads(vec![reads.concat()], ending),
+        },
+        other @ (Reply::Answer { .. } | Reply::Refused | Reply::Silent) => other,
+    };
+    for (name, reads) in [
+        ("stream", 7),
+        ("stream_as_text", 7),
+        ("stream_cut_before_its_end", 2),
+    ] {
+        let case = cases.iter().find(|case| case.name == name).unwrap();
+        let as_recorded = replay(case, &door).await;
+        assert_eq!(as_recorded.seen[0].reads, reads, "{name}");
+        assert_eq!(
+            differences(case, &as_recorded),
+            Vec::<String>::new(),
+            "{name}"
+        );
+        let joined = replay_served(case, &door, &in_one_piece).await;
+        let said =
+            format!("request 0: its answer was served in 1 reads, where the case records {reads}");
+        assert_eq!(differences(case, &joined), vec![said], "{name}");
+    }
+    // A whole answer is served in no read: one served as a stream is
+    // refused too.
+    let wrongs: [Wrong; 1] = [("served as a stream", "served in 1 reads", |r| {
+        r.seen[0].reads = 1;
+    })];
+    refuses(&cases, "plain_answer", &wrongs).await;
+}
+
+/// Replays the named case `name`, requires that it differs and does as its
+/// entry states, then requires each of `wrongs` to be refused, with `word`
+/// in what is said.
+async fn held_to_its_entry(cases: &[Case], name: &str, wrongs: &[Wrong]) {
+    let case = cases.iter().find(|case| case.name == name);
+    let case = case.unwrap_or_else(|| panic!("no case {name}"));
+    let named = named();
+    let stated = named.get(name);
+    assert!(stated.is_some(), "{name} is not named");
+    let door = Door::open().await;
+    for (what, word, wrong) in wrongs {
+        let mut replayed = replay(case, &door).await;
+        assert_eq!(judged(case, stated, &replayed), Ok(false), "{name}");
+        wrong(&mut replayed);
+        let said = judged(case, stated, &replayed).unwrap_err();
+        assert!(said.contains(word), "{name}, {what}: {said}");
+    }
+}
+
+// A named case is held to its entry: it differs from Python in what the
+// entry states and in nothing else, and does what the entry states and
+// nothing else.
+#[tokio::test]
+async fn a_named_case_is_held_to_what_its_entry_states() {
+    const OTHERWISE: &str = "it differs from Python otherwise than its entry states";
+    let cases = fixture().cases;
+    let answer: [Wrong; 6] = [
+        // What its entry states of what it does.
+        ("another text", "not Instead", |r| {
+            let Some(Outcome::Response(Ok(response))) = &mut r.outcome else {
+                panic!("no response");
+            };
+            response.content.push('!');
+        }),
+        ("another ending", "not Instead", |r| {
+            let Some(Outcome::Response(Ok(response))) = &mut r.outcome else {
+                panic!("no response");
+            };
+            response.finish_reason = Some("length".to_owned());
+        }),
+        ("a count", "not Instead", |r| {
+            let Some(Outcome::Response(Ok(response))) = &mut r.outcome else {
+                panic!("no response");
+            };
+            response.usage.insert("input_tokens".to_owned(), 12.into());
+        }),
+        // A difference its entry does not state, the provider doing what
+        // the entry states.
+        ("a header more", OTHERWISE, |r| {
+            let line = ("x-api-key".to_owned(), "placeholder-not-a-key".to_owned());
+            r.seen[0].lines.push(line);
+        }),
+        ("another body sent", OTHERWISE, |r| {
+            r.seen[0].body = b"{}".to_vec();
+        }),
+        ("a wait", OTHERWISE, |r| r.waits.push(0.5)),
+    ];
+    held_to_its_entry(&cases, "usage_counts_below_zero", &answer).await;
+
+    let stream: [Wrong; 3] = [
+        ("another text", "not Instead", |r| {
+            events_of(r).remove(0);
+        }),
+        ("served in one piece", OTHERWISE, |r| r.seen[0].reads = 1),
+        ("a failure at its end", OTHERWISE, |r| {
+            let Some(Outcome::Events(_, failure)) = &mut r.outcome else {
+                panic!("no events");
+            };
+            *failure = Some(ProviderError::new("no", ProviderErrorOptions::default()));
+        }),
+    ];
+    held_to_its_entry(&cases, "stream_event_with_no_data", &stream).await;
+
+    let failure: [Wrong; 4] = [
+        ("retried", "not Instead", |r| failure_of(r).retryable = true),
+        ("other words", "not Instead", |r| {
+            failure_of(r).message.push('!');
+        }),
+        ("another status", "not Instead", |r| {
+            failure_of(r).status_code = Some(308);
+        }),
+        ("a request more", OTHERWISE, |r| {
+            r.seen.push(r.seen[0].clone());
+        }),
+    ];
+    held_to_its_entry(&cases, "redirect", &failure).await;
+
+    // A difference less than its entry states is refused as one more is.
+    let fewer: [Wrong; 1] = [("the status Python's failure has", OTHERWISE, |r| {
+        failure_of(r).status_code = None;
+    })];
+    held_to_its_entry(&cases, "redirects_past_the_hop_limit", &fewer).await;
+    let unbuilt: [Wrong; 1] = [("other words", "not Instead", |r| {
+        r.unbuilt.as_mut().unwrap().message.push('!');
+    })];
+    held_to_its_entry(
+        &cases,
+        "base_url_with_a_trailing_slash_and_a_query",
+        &unbuilt,
+    )
+    .await;
 }
 
 #[tokio::test]

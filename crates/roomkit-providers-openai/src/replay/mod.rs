@@ -4,12 +4,14 @@
 //! read by read, and what the provider sends and gives is compared with
 //! Python's: the requests, the waits between two tries, and the response,
 //! the events, the text or the models, a failure by the rule its case
-//! gives.
+//! gives. The fake says in how many reads it wrote each answer, which is
+//! compared with the reads the case records.
 //!
 //! No case is left out silently. A case the provider answers otherwise than
-//! Python is named in [`named`], with the reason and what the provider does
-//! instead, which is asserted; a named case that starts to replay as Python
-//! fails the test.
+//! Python is named in [`named`], with the reason, how its replay differs
+//! from Python's and what the provider does instead: the replay must differ
+//! in that and in nothing else, and the provider must do exactly that. A
+//! named case that starts to replay as Python fails the test.
 
 mod compare;
 pub(crate) mod fake;
@@ -31,7 +33,7 @@ use serde_json::Value;
 
 use self::compare::differences;
 use self::fake::{Body, Door, Ending, Fake, Reply, Seen};
-use self::named::named;
+use self::named::{Stated, named};
 use crate::exchange::Pace;
 use crate::provider::Timeouts;
 use crate::{OpenAiAiProvider, OpenAiConfig};
@@ -292,6 +294,16 @@ async fn driven<T>(
 /// pointed at a fake behind `door` that answers with the case's exchanges,
 /// its clock set to the fixture's and its waits kept instead of taken.
 async fn replay(case: &Case, door: &Door) -> Replayed {
+    replay_served(case, door, &reply_of).await
+}
+
+/// As [`replay`], the fake answering each exchange with what `reply` makes
+/// of its answer.
+async fn replay_served(
+    case: &Case,
+    door: &Door,
+    reply: &(dyn Fn(&Answered) -> Reply + Sync),
+) -> Replayed {
     let config: OpenAiConfig = serde_json::from_value(case.config.clone()).unwrap();
     let mut replayed = Replayed {
         config: config.clone(),
@@ -311,7 +323,7 @@ async fn replay(case: &Case, door: &Door) -> Replayed {
     };
     replayed.timeouts = Some(provider.timeouts);
     replayed.vision = Some(provider.supports_vision());
-    let replies = case.exchanges.iter().map(|e| reply_of(&e.response));
+    let replies = case.exchanges.iter().map(|e| reply(&e.response));
     let fake = Fake::behind(door, replies.collect());
     provider.point_at(fake.address);
     let waits = Arc::new(Mutex::new(Vec::new()));
@@ -329,6 +341,7 @@ async fn replay(case: &Case, door: &Door) -> Replayed {
     let before = expected.events.as_ref().map_or(0, Vec::len);
     let before = before.max(expected.text.as_ref().map_or(0, Vec::len));
     let given = Mutex::new(0);
+    let timeout = provider.timeouts.read;
     let call = async {
         match case.call.as_str() {
             "generate" => Outcome::Response(provider.generate(&request).await),
@@ -346,9 +359,13 @@ async fn replay(case: &Case, door: &Door) -> Replayed {
             other => panic!("{}: an unknown call {other}", case.name),
         }
     };
-    let call = std::pin::pin!(call);
-    let outcome = driven(call, &fake, &given, before, provider.timeouts.read).await;
+    let outcome = driven(std::pin::pin!(call), &fake, &given, before, timeout).await;
     replayed.outcome = Some(outcome);
+    // The provider gone, every connection is closed, and the fake ends
+    // serving each: what it saw then says how it wrote each answer.
+    drop(provider);
+    let served = tokio::time::timeout(Duration::from_secs(30), fake.served());
+    served.await.expect("the fake still serves a connection");
     replayed.seen = fake.seen();
     replayed.waits = waits.lock().unwrap().clone();
     replayed
@@ -358,10 +375,24 @@ fn fixture() -> Fixture {
     serde_json::from_str(FIXTURE).unwrap()
 }
 
+/// How a replayed case stands: `Ok(true)` as Python, `Ok(false)` as its
+/// entry among the named cases states, else what is wrong: a difference
+/// from Python of a case that is not named, a named case that replays as
+/// Python, or one that does not differ or do as its entry states.
+fn judged(case: &Case, stated: Option<&Stated>, replayed: &Replayed) -> Result<bool, String> {
+    let differing = differences(case, replayed);
+    match stated {
+        None if differing.is_empty() => Ok(true),
+        None => Err(differing.join("; ")),
+        Some(_) if differing.is_empty() => Err("named, and it replays as Python".to_owned()),
+        Some(stated) => stated.holds(&differing, replayed).map(|()| false),
+    }
+}
+
 /// Replays every case of the fixture whose call is `call`: how many
-/// replayed as Python, and how many are named and did what their name says.
-/// Fails for a case that is neither, and for a named case that replays as
-/// Python.
+/// replayed as Python, and how many are named and differ and do as their
+/// entry states. Fails for a case that is neither, and for a named case
+/// that replays as Python.
 async fn replayed_or_named(call: &str) -> (usize, usize) {
     let fixture = fixture();
     assert_eq!(fixture.clock, "2026-01-01T00:00:00Z");
@@ -371,21 +402,10 @@ async fn replayed_or_named(call: &str) -> (usize, usize) {
     let door = Door::open().await;
     for case in fixture.cases.iter().filter(|case| case.call == call) {
         let replayed = replay(case, &door).await;
-        let differing = differences(case, &replayed);
-        match named.get(case.name.as_str()) {
-            None if differing.is_empty() => as_python += 1,
-            None => failures.push(format!("{}: {}", case.name, differing.join("; "))),
-            Some(_) if differing.is_empty() => {
-                failures.push(format!("{}: named, and it replays as Python", case.name));
-            }
-            Some(instead) if !instead.is_done(&replayed) => {
-                let (unbuilt, outcome) = (replayed.unbuilt, replayed.outcome);
-                failures.push(format!(
-                    "{}: not {instead:?}: {unbuilt:?} {outcome:?}",
-                    case.name
-                ));
-            }
-            Some(_) => otherwise += 1,
+        match judged(case, named.get(case.name.as_str()), &replayed) {
+            Ok(true) => as_python += 1,
+            Ok(false) => otherwise += 1,
+            Err(wrong) => failures.push(format!("{}: {wrong}", case.name)),
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
@@ -396,7 +416,7 @@ async fn replayed_or_named(call: &str) -> (usize, usize) {
 /// what the provider does instead.
 #[tokio::test]
 async fn every_generate_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named("generate").await, (185, 23));
+    assert_eq!(replayed_or_named("generate").await, (186, 23));
 }
 
 /// Every `generate_structured_stream` case, the same way: the events in

@@ -12,7 +12,7 @@ use roomkit_providers_core::{
     AiRequest, AiResponse, AiToolCall, DataUriError, MockAiProvider, ModelInfo, ObjectOnly,
     ProviderError, ResponseSchemaError, ResponseSchemaFailure, StreamDone, StreamEvent, Yielder,
     check_schema_answer, checked_stream, dumps, items, listing, next, parse_data_uri, read_name,
-    read_tool_calls, request_api_key, schema_for_generate,
+    read_tool_calls, repr, request_api_key, schema_for_generate,
 };
 use serde::{Deserialize, Deserializer};
 use serde_json::{Map, Value, json};
@@ -240,4 +240,21 @@ fn a_stream_is_written_as_a_producer_and_read_item_by_item() {
         read.push(item);
     }
     assert_eq!(read, [1, 2, 3]);
+}
+
+// The contract quotes a value in a failure's text as Python's `repr` writes
+// it: a provider that removes a secret from a failure knows the form.
+#[test]
+fn a_value_is_quoted_in_a_failure_as_python_s_repr_writes_it() {
+    let quoted = repr(&json!([
+        "pa\\ss",
+        "it's",
+        "a \"b\"",
+        "both ' and \"",
+        "tab\there\u{2028}"
+    ]));
+    assert_eq!(
+        quoted,
+        r#"['pa\\ss', "it's", 'a "b"', 'both \' and "', 'tab\there\u2028']"#
+    );
 }

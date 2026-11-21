@@ -57,6 +57,9 @@ pub(crate) struct Seen {
     /// Every header line, in the order sent, its name in lower case.
     pub(crate) lines: Vec<(String, String)>,
     pub(crate) body: Vec<u8>,
+    /// How many reads its answer was written in, each flushed before the
+    /// next: none for an answer sent whole.
+    pub(crate) reads: usize,
 }
 
 pub(crate) struct Fake {
@@ -65,6 +68,8 @@ pub(crate) struct Fake {
     /// Told what the connections live: a request received, a connection
     /// its client closed.
     told: Arc<Told>,
+    /// The connections being served.
+    serving: Arc<Mutex<Vec<JoinHandle<()>>>>,
     server: JoinHandle<()>,
 }
 
@@ -104,6 +109,8 @@ impl Fake {
         let kept = Arc::clone(&seen);
         let told = Arc::new(Told::default());
         let telling = Arc::clone(&told);
+        let serving = Arc::new(Mutex::new(Vec::new()));
+        let accepted = Arc::clone(&serving);
         let server = tokio::spawn(async move {
             let mut replies = replies.into_iter();
             while let Ok((socket, _)) = listener.accept().await {
@@ -116,14 +123,30 @@ impl Fake {
                 // Each read goes out as it is written.
                 socket.set_nodelay(true).ok();
                 let telling = Arc::clone(&telling);
-                tokio::spawn(answer(socket, reply, Arc::clone(&kept), telling));
+                let answer = answer(socket, reply, Arc::clone(&kept), telling);
+                // Kept before it can end: a connection that was answered
+                // is one `served` waits for.
+                let mut accepted = accepted.lock().unwrap();
+                accepted.push(tokio::spawn(answer));
             }
         });
         Self {
             address,
             seen,
             told,
+            serving,
             server,
+        }
+    }
+
+    /// Returns once every connection accepted so far was served to its
+    /// end: its answer written, and its client gone where the fake keeps
+    /// the connection open. What was [`seen`](Self::seen) then says in how
+    /// many reads each answer was written.
+    pub(crate) async fn served(&self) {
+        let serving = std::mem::take(&mut *self.serving.lock().unwrap());
+        for connection in serving {
+            connection.await.ok();
         }
     }
 
@@ -161,7 +184,17 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
     let Some(request) = read_request(&mut socket).await else {
         return;
     };
-    seen.lock().unwrap().push(request);
+    let at = {
+        let mut seen = seen.lock().unwrap();
+        seen.push(request);
+        seen.len() - 1
+    };
+    // Each read is counted as it is written.
+    let wrote = || {
+        if let Some(seen) = seen.lock().unwrap().get_mut(at) {
+            seen.reads += 1;
+        }
+    };
     told.received.notify_one();
     let closed = &*told;
     let (status, headers, body) = match reply {
@@ -190,7 +223,7 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
             socket.shutdown().await.ok();
         }
         Body::Reads(reads, ending) => {
-            send_reads(&mut socket, head, &reads, None).await;
+            send_reads(&mut socket, head, &reads, None, &wrote).await;
             match ending {
                 Ending::Ends => end_reads(socket).await,
                 Ending::Lost => {}
@@ -198,7 +231,7 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
             }
         }
         Body::Stepped(reads, steps) => {
-            send_reads(&mut socket, head, &reads, Some(&steps)).await;
+            send_reads(&mut socket, head, &reads, Some(&steps), &wrote).await;
             end_reads(socket).await;
         }
     }
@@ -206,12 +239,13 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
 
 /// Sends the head of a chunked answer, then each of `reads` as one chunk of
 /// the transfer, flushed before the next, each once `steps` says so when
-/// steps are given.
+/// steps are given. `wrote` is told of each read as it is written.
 async fn send_reads(
     socket: &mut TcpStream,
     mut head: Vec<String>,
     reads: &[Vec<u8>],
     steps: Option<&Notify>,
+    wrote: &(dyn Fn() + Sync),
 ) {
     head.push("transfer-encoding: chunked\r\n\r\n".to_owned());
     socket.write_all(head.join("\r\n").as_bytes()).await.ok();
@@ -223,6 +257,7 @@ async fn send_reads(
         let mut chunk = format!("{:x}\r\n", read.len()).into_bytes();
         chunk.extend_from_slice(read);
         chunk.extend_from_slice(b"\r\n");
+        wrote();
         socket.write_all(&chunk).await.ok();
         socket.flush().await.ok();
     }

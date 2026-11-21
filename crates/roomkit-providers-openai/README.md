@@ -82,17 +82,22 @@ catalogue, with no request.
 ## What the provider guarantees
 
 - **Secrets.** No failure's text repeats a secret of the configuration that
-  a server's answer holds as it is: the key, the value of each default
-  header (and, where the value names a scheme such as `Bearer`, what follows
-  it), and the user information of the base URL, as it is written, as it
-  reads once decoded, and as the `Authorization` the client writes from it.
-  Each is replaced by `[***]`. This holds whatever built the failure: the
-  provider, the contract's check of a response schema, or a reader. Two
-  limits:
+  a server's answer holds: the key, the value of each default header (and,
+  where the value names a scheme such as `Bearer`, what follows it), and the
+  user information of the base URL, as it is written, as it reads once
+  decoded, and as the `Authorization` the client writes from it. Each is
+  replaced by `[***]`. This holds whatever built the failure: the provider,
+  the contract's check of a response schema, or a reader. A secret is found
+  as the server sent it and as the code that builds a failure writes it
+  again, with its quotes, its backslashes and its other characters escaped:
+  as a JSON string, as a reader quotes a text it refuses, and as the
+  contract quotes a value. A character that shows nothing is dropped from a
+  failure's text before the secrets are looked for, so one put inside a
+  secret does not hide it. Two limits:
   - a secret shorter than 8 characters is not searched for: it would be
     found in ordinary words;
-  - a secret a server sends back in another form (encoded again, cut in
-    pieces, in another case) cannot be recognised.
+  - a secret a server itself sends back in another form (encoded again,
+    cut in pieces, in another case) cannot be recognised.
 
   The `Debug` forms print none of them, and the provider logs none.
 - **What a failure repeats of an answer.** Only this, each on one line and
@@ -110,9 +115,12 @@ catalogue, with no request.
   - of an answer a response schema refuses, the contract's sentence, which
     quotes the refusal or names the member that does not fit.
 
-  The whole text is within 500 characters. No control character and no
-  control of the direction of a text is left in it: each becomes a space,
-  and a run of spaces is one.
+  The failure's message is within 500 characters. Shown, a failure leads
+  its message with the provider's name and the status, `openai (401): `, as
+  Python's does. No control character is left in the message: each becomes
+  a space, and a run of white space is one space. A character that shows
+  nothing is dropped: a soft hyphen, a zero-width or a format character, a
+  control of the direction of a text, a tag character.
 - **Sizes.** Every size a server controls is bounded:
   - an answer read whole past 4 MiB fails the request;
   - a stream fails at a line past 1 MiB, at an event past 1 MiB, and past
@@ -125,19 +133,28 @@ catalogue, with no request.
   reasoning of a stream are handed on as they come and kept nowhere; under
   a response schema the contract keeps the answer's text to check it, within
   the stream's bound. Folding a streamed call costs in proportion to its
-  bytes, whatever shape a server gives it.
+  bytes and to the number of its fragments, never to their product,
+  whatever shape a server gives it: a fragment that brings no arguments
+  costs nothing that grows with the call.
 - **Where a request goes.** To the base URL of the configuration, OpenAI's
-  own when it names none, followed by `/chat/completions` or `/models`. A
+  own when it names none, followed by `/chat/completions` or `/models`. The
+  path follows the base URL as Python's client writes it: after the one
+  slash that ends the base URL, when one does (`/v1` and `/v1/` give
+  `/v1/chat/completions`, `/v1//` gives `/v1//chat/completions`). A
   redirect is not followed: the request fails. A base URL is refused when
   the provider is built if it has a query or a fragment, if it holds white
-  space, a control character or a backslash, or if its scheme is not
-  followed by `//` and a host: Python's client and this one would not send
-  such a URL to the same place. The `Debug` forms show the origin the client
-  dials, as the client's own URL parser reads it.
+  space, a control character or a backslash, if its scheme is not followed
+  by `//` and a host, if its path holds a dot segment (`.` or `..`, written
+  or percent-encoded), or if its user information is no UTF-8 once decoded
+  (`%FF`): Python's client and this one would not send the same request for
+  such a URL. The `Debug` forms show the origin the client dials, as the
+  client's own URL parser reads it.
 - **A base URL with user information** (`https://user:password@host/v1`) is
   sent with it as Basic credentials, `Authorization: Basic ...`, as Python's
   client sends it: they take the place of the key and of a configured
-  `Authorization` header, neither of which is sent.
+  `Authorization` header, neither of which is sent. The credentials are the
+  user information once decoded, which must be UTF-8: a base URL whose user
+  information is not is refused, as said above.
 - **The environment.** Nothing is read from it: no key, no base URL, no
   proxy.
 - **No compressed answer.** The client sends no `accept-encoding`, whatever
@@ -172,7 +189,7 @@ read in the whole body, repeated in the failure or not.
 ## Where the provider differs from Python's
 
 The provider does as `OpenAIAIProvider` of RoomKit's Python implementation on
-292 of the 333 captured cases: 185 of the 208 of a whole answer, 98 of the
+293 of the 334 captured cases: 186 of the 209 of a whole answer, 98 of the
 111 of a stream of events, the 4 of a stream of text, and 5 of the 10 of a
 model listing. It differs on the others, each for a reason:
 
@@ -183,7 +200,12 @@ model listing. It differs on the others, each for a reason:
   built, where Python sends to a path written after the query. So are the
   forms listed above: Python sends one with a backslash to another host
   than this client would, one with no `//` or with white space to no host,
-  and refuses one with a control character.
+  and refuses one with a control character. Python sends one whose path
+  holds a dot segment to that path as it is written
+  (`/v1/%2e%2e/chat/completions`), where this client would take the segment
+  out of the path; and for user information that is no UTF-8, Python sends
+  credentials with replaced characters, where this client would send none
+  or half of them.
 - **An empty key** builds a provider that sends no `Authorization`, for a
   local server that asks for none, where Python's SDK refuses to build a
   client.
@@ -212,6 +234,15 @@ model listing. It differs on the others, each for a reason:
   an event of any length, and its provider any number of calls.
 - **A call's index** in a stream is a whole number; another fails the
   stream, where Python takes any value as the call's key.
+- **Whether a call's arguments are whole**, which the fold of a stream's
+  calls asks to tell whether a fragment on the same index starts another
+  call, is asked of the JSON parser the contract reads with, and that
+  parser's differences from Python's hold here. Arguments that hold a lone
+  surrogate escape (`{"s": "\ud83d"}`), that nest 128 levels or more, or
+  that are a whole number past what a float holds are whole to Python and
+  not here: a fragment that names another tool after them starts another
+  call in Python, and goes on with the same call here. The white space
+  around arguments is read as Python reads it.
 - **`list_models`** fails with a `ProviderError`, as a completion does, where
   Python's raises the openai SDK's error or a raw exception as it is: a
   status, a connection that failed, a body that is no page of models.
@@ -242,10 +273,13 @@ call's arguments of the wrong type.
 The rules of a try, which Python leaves to the openai SDK, are the SDK's: a
 connection that failed, a timeout, an answer that says `x-should-retry`, or a
 status of 408, 409, 429 or 500 and above is tried again, after the wait
-`retry-after-ms` or `retry-after` asks within two minutes, else 0.5 s
-doubling to 8 s, up to a quarter less. A whole answer is read inside its
-try; a stream is tried until its head came. A `retry-after` is read as the
-SDK reads it but for these:
+`retry-after-ms` or `retry-after` asks, or, when they ask none above zero
+that reads, after the backoff: 0.5 s doubling to 8 s, up to a quarter less.
+An answer that asks a wait past two minutes is not tried again: the request
+is given up with that answer's failure, as in Python's SDK. A whole answer
+is read inside its try; a stream is tried until its head came. A
+`retry-after` is read as the SDK reads it but for these, where "the
+backoff" is a new try after the backoff's wait:
 
 | The header says | Python's SDK | Here |
 | --- | --- | --- |
@@ -321,11 +355,14 @@ fails. Every case is replayed against the provider: the requests it sends,
 the tries and the waits, and what it gives are compared with Python's: the
 response, the events in their order, the text, the models, and a failure
 with what the stream gave before it. The fake serves a stream read by read,
-each read the bytes of one recorded chunk, so the provider sees the cuts
-Python saw. An id the provider mints for a call is compared by its shape. A
-case the provider answers otherwise is named in the test with its reason and
-with what the provider does, which is asserted; a named case that starts to
-replay as Python fails the test.
+each read the bytes of one recorded chunk, written and flushed before the
+next; the replay requires that it wrote as many reads as the case records.
+An id the provider mints for a call is compared by its shape. A case the
+provider answers otherwise is named in the test with its reason, the
+differences from Python its replay shows and what the provider does: the
+replay must differ in those and in nothing else, and the provider must do
+that and nothing else. A named case that starts to replay as Python fails
+the test.
 
 ## License
 

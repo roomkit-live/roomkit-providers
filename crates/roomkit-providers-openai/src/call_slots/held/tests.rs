@@ -6,27 +6,40 @@ use serde_json::Value;
 
 use super::Held;
 
-/// The rule: the text, without the white space around it, is empty or
-/// reads as JSON.
+/// Whether Python's `str.strip()` strips `character`.
+fn stripped(character: char) -> bool {
+    character.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&character)
+}
+
+/// Whether Python's `str.strip()` leaves nothing of `text`.
+fn blank(text: &str) -> bool {
+    text.chars().all(stripped)
+}
+
+/// The rule, Python's `not arguments_cut(text)`: the text is nothing but
+/// what `str.strip()` strips, or it reads as JSON, which takes a space, a
+/// tab and a line break around a document and no other white space.
 fn reads_whole(text: &str) -> bool {
-    let held = text.trim();
-    held.is_empty() || serde_json::from_str::<Value>(held).is_ok()
+    blank(text) || serde_json::from_str::<Value>(text).is_ok()
 }
 
 /// Reads `text` in the pieces `cuts` make of it, and requires the rule's
 /// answer after each piece.
 fn check(text: &str, cuts: &[usize]) {
     let mut held = Held::default();
-    let (mut parsed, mut from) = (0, 0);
+    let (mut examined, mut from) = (0, 0);
     let ends = cuts.iter().copied().chain([text.len()]);
     for to in ends.filter(|to| text.is_char_boundary(*to)) {
-        held.push(text.get(from..to).unwrap());
+        held.push(text.get(from..to).unwrap(), &mut examined);
         let read = text.get(..to).unwrap();
-        assert_eq!(held.is_blank(), read.trim().is_empty(), "blank: {read:?}");
-        let whole = held.is_whole(read, &mut parsed);
+        assert_eq!(held.is_blank(), blank(read), "blank: {read:?}");
+        let whole = held.is_whole(read, &mut examined);
         assert_eq!(whole, reads_whole(read), "whole: {read:?}");
-        // Asked again, the answer is the same.
-        assert_eq!(held.is_whole(read, &mut parsed), whole, "again: {read:?}");
+        // Asked again, the answer is the same, and nothing more is looked
+        // at to give it.
+        let before = examined;
+        assert_eq!(held.is_whole(read, &mut examined), whole, "again: {read:?}");
+        assert_eq!(examined, before, "asked twice: {read:?}");
         from = to;
     }
 }
@@ -150,6 +163,61 @@ fn a_document_reads_whole_as_the_parser_says_however_it_is_cut() {
     }
 }
 
+// White space is Python's: a text of nothing but what `str.strip()` strips
+// is whole, the four separators of information included, and a document
+// reads with a space, a tab or a line break around it and with no other
+// white space, a no-break space or a line separator no more than a letter.
+#[test]
+fn the_white_space_around_a_document_is_python_s() {
+    let documents = [
+        "\u{a0}",
+        "\u{b}\u{c}\u{85}",
+        "\u{1c}",
+        " \u{1d}\u{1e}\u{1f} ",
+        "\u{200b}",
+        " \t\r\n{}\n\r\t ",
+        "\u{a0}{}",
+        "{}\u{a0}",
+        " \u{a0} {}",
+        "{} \u{a0} ",
+        "\u{b}{}",
+        "{}\u{c}",
+        "{}\u{85}",
+        "{}\u{2028}",
+        "\u{1c}{}",
+        "{}\u{1f}",
+        "{}\u{3000}",
+        "\u{a0}12",
+        "\u{a0}true",
+        "\u{a0}\"text\"",
+        "\"text\"\u{a0}",
+        "true\u{a0}",
+        "true\u{1c}",
+        "null\u{2028}",
+        "12\u{b}",
+        "12\u{1c}",
+        "{\u{a0}}",
+        "[1,\u{a0}2]",
+        "{\"a\u{a0}b\": \"\u{a0}\"}",
+    ];
+    for document in documents {
+        check_every_way(document);
+    }
+    // What the rule itself says of them, so that the rule is Python's.
+    for (text, whole) in [
+        ("\u{a0}", true),
+        ("\u{1c}", true),
+        ("\u{a0}{}", false),
+        ("{}\u{a0}", false),
+        ("\u{1c}{}", false),
+        ("{}\u{b}", false),
+        (" {}\n", true),
+        ("\u{feff}", false),
+    ] {
+        assert_eq!(reads_whole(text), whole, "{text:?}");
+    }
+}
+
 // Numbers at the edge of what a float holds, where the parser's answer
 // turns: as long as the largest float, a digit more or less, with digits
 // after the point, and around the number halfway to the next power of two.
@@ -211,26 +279,80 @@ fn a_number_at_the_edge_of_a_float_reads_whole_as_the_parser_says() {
 #[test]
 fn a_number_s_reading_gives_the_parser_no_more_than_its_edge() {
     let mut held = Held::default();
-    let mut parsed = 0;
+    let mut examined = 0;
     let mut text = String::new();
-    let mut asked = 0;
     let digits = "9".repeat(309) + "." + &"9".repeat(4000);
     for digit in digits.chars() {
         let piece = digit.to_string();
-        held.push(&piece);
+        held.push(&piece, &mut examined);
         text.push(digit);
-        held.is_whole(&text, &mut parsed);
-        asked += 1;
+        held.is_whole(&text, &mut examined);
     }
+    // Each digit is read once as it comes, and the parser is asked once,
+    // of the short form: the digits after the first 309 change nothing.
     assert!(
-        parsed <= 330 * asked,
-        "{parsed} bytes for {asked} questions"
+        examined <= text.len() + SHORT_FORM,
+        "{examined} bytes looked at for {} bytes",
+        text.len()
     );
     // Before the edge and past it, nothing is parsed at all.
     for digits in ["9".repeat(308), "9".repeat(4000)] {
-        let (mut held, mut parsed) = (Held::default(), 0);
-        held.push(&digits);
-        held.is_whole(&digits, &mut parsed);
-        assert_eq!(parsed, 0);
+        let (mut held, mut examined) = (Held::default(), 0);
+        held.push(&digits, &mut examined);
+        held.is_whole(&digits, &mut examined);
+        assert_eq!(examined, digits.len());
+    }
+}
+
+/// The most bytes of the short form a number at the edge is asked as.
+const SHORT_FORM: usize = 330;
+
+/// What is looked at to read `text` whole, then to answer `questions`
+/// times whether it is whole.
+fn examined_asking(text: &str, questions: usize) -> usize {
+    let (mut held, mut examined) = (Held::default(), 0);
+    held.push(text, &mut examined);
+    let whole = held.is_whole(text, &mut examined);
+    assert_eq!(whole, reads_whole(text), "{}", text.len());
+    for _ in 0..questions {
+        assert_eq!(held.is_whole(text, &mut examined), whole);
+    }
+    examined
+}
+
+// A question costs what came since the last one: asked again and again of
+// the same text, whatever its size and its shape, it looks at nothing more.
+#[test]
+fn a_question_asked_again_of_the_same_text_looks_at_nothing_more() {
+    let zeros = "0".repeat(250_000);
+    let members: Vec<String> = (0..2_000).map(|at| format!("\"k{at}\": {at}")).collect();
+    let document = format!("{{{}}}", members.join(", "));
+    let texts = [
+        // A number at the edge of a float, its first digit far in.
+        format!("0.{zeros}2e250309"),
+        format!("-0.{zeros}17976931348623157E+250309"),
+        format!("0.{zeros}17976931348623159e250309"),
+        // The same below the edge and past it.
+        format!("0.{zeros}2e250308"),
+        format!("0.{zeros}2e250310"),
+        // A number as long as the largest float, and one with a fraction.
+        largest(),
+        format!("{}.{zeros}", largest()),
+        format!("{}9.5", "9".repeat(308)),
+        // A document that ended, one that reads and one that does not.
+        document.clone(),
+        format!("{document} \n"),
+        format!("{} ", document.replacen(':', "", 1)),
+        format!("{zeros} "),
+        // A document still open, white space, and what is no document.
+        document.trim_end_matches('}').to_owned(),
+        " ".repeat(250_000),
+        format!("{document}{document}"),
+    ];
+    for text in &texts {
+        let once = examined_asking(text, 0);
+        // Read once as it came, and given to the parser once at most.
+        assert!(once <= 2 * text.len() + SHORT_FORM, "{}", text.len());
+        assert_eq!(examined_asking(text, 1_000), once, "{}", text.len());
     }
 }

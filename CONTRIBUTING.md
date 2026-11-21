@@ -172,11 +172,14 @@ fails when the catalogue of the crate says otherwise.
   decision.
 - A stream's body is a list of reads, each any bytes: a read that is UTF-8
   is written as its text, any other in hexadecimal.
-- The provider replays every case (`src/replay`). A case it answers
-  otherwise than Python is never skipped: it is named there, in the list its
-  case belongs to (questioned in the fixture, a failure no provider
-  reproduces, or a rule of the provider's own), with the reason and with
-  what the provider does instead, which is asserted.
+- The provider replays every case (`src/replay`), its fake serving a stream
+  in the reads the case records, which the replay checks. A case the
+  provider answers otherwise than Python is never skipped: it is named
+  there, in the list its case belongs to (questioned in the fixture, a
+  failure no provider reproduces, or a rule of the provider's own), with
+  the reason, the differences from Python its replay shows, and what the
+  provider does instead. Both are asserted: a named case that differs
+  otherwise than its entry states fails as one that does otherwise.
 
 ## Implementation boundaries
 
@@ -187,8 +190,11 @@ fails when the catalogue of the crate says otherwise.
   only the features they need.
 - The host sets endpoints, credentials, timeouts and limits explicitly. A
   provider reads no environment variable and no global state for them.
-- A credential never appears in an error, a log, a debug representation or a
-  result.
+- A credential appears in no log, no debug representation and no result,
+  and an error's text carries none of 8 characters or more that a server
+  sent back, as it is or as the code that builds the error writes it again
+  (as JSON, as a quoted value); a provider's README states what it cannot
+  recognise.
 - Document public items; return typed failures instead of panicking on what a
   caller or a service sends.
 - Prefer `#[expect(lint, reason = "...")]` for a justified lint exception.

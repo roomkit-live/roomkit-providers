@@ -8629,6 +8629,112 @@
    }
   },
   {
+   "name": "base_url_with_two_trailing_slashes",
+   "kinds": [
+    "plain"
+   ],
+   "call": "generate",
+   "sdk": "The openai SDK joins the path of a request to the base URL.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/gateway/v1//"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/gateway/v1//chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "local-model",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "local-model"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
    "name": "usage_with_cached_and_reasoning_tokens",
    "kinds": [
     "usage_cached",

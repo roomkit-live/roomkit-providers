@@ -65,11 +65,18 @@ impl Timeouts {
 /// does not repeat: it may carry credentials.
 ///
 /// A base URL is refused where Python's client and this one would not send
-/// to the same place: one that holds white space or a control character
+/// the same request: one that holds white space or a control character
 /// (Python refuses a control character, and writes a space into the path),
 /// one that holds a backslash (which ends the host for this client and not
-/// for Python's), and one whose scheme is not followed by `//` and a host
-/// (Python sends such a request to no host).
+/// for Python's), one whose scheme is not followed by `//` and a host
+/// (Python sends such a request to no host), one whose path holds a dot
+/// segment, written or percent-encoded (this client takes it out of the
+/// path, Python's sends it), and one whose user information is no UTF-8
+/// once decoded (Python sends replaced characters, this client none or
+/// half of them).
+///
+/// The path follows the base URL as Python's client writes it: after the
+/// one slash that ends the base URL, when one does.
 pub(super) fn joined(base_url: &str, path: &str) -> Result<reqwest::Url, Failure> {
     let not_http = || refused("its base URL is not an http or https URL");
     if base_url
@@ -95,12 +102,33 @@ pub(super) fn joined(base_url: &str, path: &str) -> Result<reqwest::Url, Failure
             "its base URL has a query or a fragment, which the path of the API cannot follow",
         ));
     }
-    let joined = format!("{}{path}", base_url.trim_end_matches('/'));
+    if let Some(reason) = read_otherwise(&lowered, &base) {
+        return Err(refused(reason));
+    }
+    let joined = format!("{}{path}", base_url.strip_suffix('/').unwrap_or(base_url));
     let url = reqwest::Url::parse(&joined).map_err(|_| not_http())?;
     match url.scheme() {
         "http" | "https" => Ok(url),
         _ => Err(not_http()),
     }
+}
+
+/// Why Python's client would not send the request this one sends for
+/// `base`, a base URL written `lowered` in lower case, when it would not:
+/// its path holds a dot segment, written or percent-encoded, or its user
+/// information is no UTF-8 once decoded.
+fn read_otherwise(lowered: &str, base: &reqwest::Url) -> Option<&'static str> {
+    let written = lowered.split_once("://").map_or("", |(_, rest)| rest);
+    let segments = written.split_once('/').map_or("", |(_, path)| path);
+    let is_dot = |segment: &str| matches!(segment.replace("%2e", ".").as_str(), "." | "..");
+    if segments.split('/').any(is_dot) {
+        return Some("its base URL holds a dot segment");
+    }
+    let reads = |part: &str| String::from_utf8(percent_decoded_bytes(part)).is_ok();
+    if !reads(base.username()) || !base.password().is_none_or(reads) {
+        return Some("its base URL holds user information that is no UTF-8");
+    }
+    None
 }
 
 /// Whether `url` holds user information, which the client sends as Basic
@@ -109,8 +137,8 @@ fn has_user_information(url: &reqwest::Url) -> bool {
     !url.username().is_empty() || url.password().is_some()
 }
 
-/// `text` with each `%XX` read as the byte it writes.
-fn percent_decoded(text: &str) -> String {
+/// The bytes of `text` with each `%XX` read as the byte it writes.
+fn percent_decoded_bytes(text: &str) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(text.len());
     let mut rest = text.as_bytes();
     while let Some((first, after)) = rest.split_first() {
@@ -124,7 +152,12 @@ fn percent_decoded(text: &str) -> String {
             rest = after;
         }
     }
-    String::from_utf8_lossy(&bytes).into_owned()
+    bytes
+}
+
+/// `text` with each `%XX` read as the byte it writes.
+fn percent_decoded(text: &str) -> String {
+    String::from_utf8_lossy(&percent_decoded_bytes(text)).into_owned()
 }
 
 /// What no failure may repeat of `config`: the key, the value of each

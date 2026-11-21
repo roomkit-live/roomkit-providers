@@ -134,8 +134,11 @@ pub use self::mock::{MockAiProvider, MockAiProviderOptions};
 pub use self::provider::{
     API_KEY_METADATA_KEY, AiProvider, DynAiProvider, ProviderStream, TextStream, request_api_key,
 };
+// For a provider crate: a call's arguments as a wire writes them, and a
+// value as the contract quotes it in a failure's text, which a provider
+// must recognise a secret in.
 #[doc(hidden)]
-pub use self::python::dumps;
+pub use self::python::{dumps, repr};
 pub use self::request::{
     AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRequest, AiRole, AiTextPart,
     AiThinkingPart, AiToolCallPart, AiToolResultPart, image_part_base64, image_part_payload,

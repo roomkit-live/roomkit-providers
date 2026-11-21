@@ -1,6 +1,8 @@
 //! The cases the provider answers otherwise than Python: each with the
-//! reason, and exactly what the provider does instead, which the replay
-//! asserts: how many requests it sends, and what the call gives.
+//! reason, how its replay then differs from Python's, and exactly what the
+//! provider does instead. The replay asserts both: it differs in what the
+//! entry states and in nothing else, and the provider sends as many
+//! requests and gives what the entry states.
 
 use std::collections::BTreeMap;
 
@@ -26,11 +28,10 @@ enum Does {
     /// The call fails: with this status, retried or not, saying whether
     /// the context overflowed, in these words.
     Fails(Option<u16>, bool, Option<bool>, Says),
-    /// The call is answered, with this usage.
-    Usage(&'static str),
-    /// The stream ends without a failure: it said this text, and stopped
-    /// for this reason.
-    Stream(&'static str, &'static str),
+    /// The call is answered, whole or as a stream that ends without a
+    /// failure: it says this text, stops for this reason, and counts this
+    /// usage.
+    Answers(&'static str, &'static str, &'static str),
     /// It is built where Python's is not, and asks with no `Authorization`:
     /// the fake, which the case gives no answer, answers its 599.
     AsksWithoutAKey,
@@ -50,16 +51,61 @@ const fn fails(status: Option<u16>, retryable: bool, says: &'static str) -> Inst
     Instead { requests: 1, does }
 }
 
-/// An answer after one request, with this usage.
+/// A whole answer after one request, the one the cases of a usage give,
+/// with this usage.
 const fn counts(usage: &'static str) -> Instead {
-    let does = Does::Usage(usage);
+    let does = Does::Answers("Hello there.", "stop", usage);
     Instead { requests: 1, does }
 }
 
-/// A stream after one request, which says this and stops for this reason.
-const fn streams(text: &'static str, finish: &'static str) -> Instead {
-    let does = Does::Stream(text, finish);
+/// A stream after one request, which says this, stops for `stop` and
+/// counts this usage.
+const fn streams(text: &'static str, usage: &'static str) -> Instead {
+    let does = Does::Answers(text, "stop", usage);
     Instead { requests: 1, does }
+}
+
+/// A stream after one request, the one the cases of a usage give, with
+/// this usage.
+const fn stream_counts(usage: &'static str) -> Instead {
+    streams("Hello.", usage)
+}
+
+/// A named case as its entry states it: how its replay differs from
+/// Python's, each difference by the words it starts with, and what the
+/// provider does instead.
+#[derive(Clone, Copy, Debug)]
+pub(super) struct Stated {
+    differs: &'static [&'static str],
+    instead: Instead,
+}
+
+impl Stated {
+    /// Whether the replay is what the entry states: `differing`, the
+    /// differences found from Python, are the ones stated, each of them
+    /// and no other, and `replayed` did what is stated.
+    ///
+    /// # Errors
+    ///
+    /// What is not as stated.
+    pub(super) fn holds(&self, differing: &[String], replayed: &Replayed) -> Result<(), String> {
+        let as_stated = differing.len() == self.differs.len()
+            && differing
+                .iter()
+                .zip(self.differs)
+                .all(|(found, stated)| found.starts_with(stated));
+        if !as_stated {
+            return Err(format!(
+                "it differs from Python otherwise than its entry states, {:?}: {differing:?}",
+                self.differs
+            ));
+        }
+        if !self.instead.is_done(replayed) {
+            let (unbuilt, outcome) = (&replayed.unbuilt, &replayed.outcome);
+            return Err(format!("not {:?}: {unbuilt:?} {outcome:?}", self.instead));
+        }
+        Ok(())
+    }
 }
 
 /// The done event of `events`.
@@ -112,22 +158,49 @@ impl Instead {
                 let nothing = Says::Exactly("the provider answered HTTP 599: no message");
                 no_key && failed(error, Does::Fails(Some(599), true, None, nothing))
             }
-            (Does::Usage(usage), None, Some(Outcome::Response(Ok(response)))) => {
-                serde_json::to_string(&response.usage).unwrap() == usage
+            (Does::Answers(text, finish, usage), None, Some(Outcome::Response(Ok(response)))) => {
+                response.content == text
+                    && response.finish_reason.as_deref() == Some(finish)
+                    && serde_json::to_string(&response.usage).unwrap() == usage
             }
-            (Does::Usage(usage), None, Some(Outcome::Events(events, None))) => {
+            (Does::Answers(text, finish, usage), None, Some(Outcome::Events(events, None))) => {
                 let done = done_of(events);
+                let stopped = done.and_then(|done| done.finish_reason.as_deref());
                 let counted = done.map(|done| serde_json::to_string(&done.usage).unwrap());
-                counted.as_deref() == Some(usage)
-            }
-            (Does::Stream(text, finish), None, Some(Outcome::Events(events, None))) => {
-                let stopped = done_of(events).and_then(|done| done.finish_reason.as_deref());
-                text_of(events) == text && stopped == Some(finish)
+                text_of(events) == text
+                    && stopped == Some(finish)
+                    && counted.as_deref() == Some(usage)
             }
             _ => false,
         }
     }
 }
+
+/// A named case: its name in the fixture, why the provider answers it
+/// otherwise than Python, how its replay then differs from Python's, each
+/// difference by the words it starts with, and what the provider does
+/// instead.
+type Entry = (&'static str, &'static str, &'static [&'static str], Instead);
+
+/// The response differs from Python's.
+const ANOTHER_RESPONSE: &[&str] = &["the response: "];
+/// A response, where Python raises.
+const A_RESPONSE_NOT_AN_ERROR: &[&str] = &[
+    "the response where Python gives none: ",
+    "an answer where Python fails: ",
+];
+/// The events differ from Python's.
+const OTHER_EVENTS: &[&str] = &["the events: "];
+/// The events differ from Python's, whose stream fails.
+const EVENTS_NOT_AN_ERROR: &[&str] = &["the events: ", "an answer where Python fails: "];
+/// One request and a failure, where Python follows to a second request
+/// and answers.
+const NOT_FOLLOWED: &[&str] = &[
+    "1 requests sent, where Python sent 2",
+    "a failure where Python answers: ",
+];
+/// The failure's words are the provider's, where Python's hold the body.
+const OTHER_WORDS: &[&str] = &["the failure says "];
 
 const REDIRECT: &str = "A redirect is not followed: the maintainer's decision.";
 
@@ -144,11 +217,12 @@ const COUNTED: &str = r#"{"input_tokens":1200,"output_tokens":45}"#;
 
 /// The questioned cases the provider answers otherwise than Python: the
 /// reason, and what it does instead.
-const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
+const QUESTIONED_OTHERWISE: &[Entry] = &[
     (
         "base_url_with_a_trailing_slash_and_a_query",
         "A base URL with a query is refused when the provider is built: the maintainer's \
          decision. Python sends to a path written after the query.",
+        &["the provider is not built: "],
         Instead {
             requests: 0,
             does: Does::Unbuilt(
@@ -160,6 +234,7 @@ const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
     (
         "redirect",
         REDIRECT,
+        NOT_FOLLOWED,
         not_followed(
             307,
             "the endpoint answered with a redirect (307), which is not followed",
@@ -168,6 +243,7 @@ const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
     (
         "redirect_301",
         REDIRECT,
+        NOT_FOLLOWED,
         not_followed(
             301,
             "the endpoint answered with a redirect (301), which is not followed",
@@ -176,6 +252,7 @@ const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
     (
         "redirect_302_to_another_host",
         REDIRECT,
+        NOT_FOLLOWED,
         not_followed(
             302,
             "the endpoint answered with a redirect (302), which is not followed",
@@ -184,6 +261,7 @@ const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
     (
         "redirect_303",
         REDIRECT,
+        NOT_FOLLOWED,
         not_followed(
             303,
             "the endpoint answered with a redirect (303), which is not followed",
@@ -192,6 +270,7 @@ const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
     (
         "redirect_308",
         REDIRECT,
+        NOT_FOLLOWED,
         not_followed(
             308,
             "the endpoint answered with a redirect (308), which is not followed",
@@ -200,6 +279,13 @@ const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
     (
         "redirects_past_the_hop_limit",
         REDIRECT,
+        // Python follows twenty times, then fails with no status, a
+        // failure worth a retry.
+        &[
+            "1 requests sent, where Python sent 21",
+            "the failure's status_code differs: ",
+            "the failure's retryable differs: ",
+        ],
         not_followed(
             307,
             "the endpoint answered with a redirect (307), which is not followed",
@@ -208,38 +294,74 @@ const QUESTIONED_OTHERWISE: &[(&str, &str, Instead)] = &[
     (
         "usage_completion_tokens_as_text",
         COUNT,
+        ANOTHER_RESPONSE,
         counts(r#"{"input_tokens":12}"#),
     ),
-    ("usage_counts_that_are_true", COUNT, counts("{}")),
-    ("usage_cached_tokens_as_text", COUNT, counts(COUNTED)),
-    ("usage_reasoning_tokens_as_text", COUNT, counts(COUNTED)),
+    (
+        "usage_counts_that_are_true",
+        COUNT,
+        ANOTHER_RESPONSE,
+        counts("{}"),
+    ),
+    (
+        "usage_cached_tokens_as_text",
+        COUNT,
+        ANOTHER_RESPONSE,
+        counts(COUNTED),
+    ),
+    (
+        "usage_reasoning_tokens_as_text",
+        COUNT,
+        ANOTHER_RESPONSE,
+        counts(COUNTED),
+    ),
     (
         "usage_cache_write_written_as_text_in_the_details",
         COUNT,
+        ANOTHER_RESPONSE,
         counts(COUNTED),
     ),
-    ("usage_counts_below_zero", COUNT, counts("{}")),
+    (
+        "usage_counts_below_zero",
+        COUNT,
+        ANOTHER_RESPONSE,
+        counts("{}"),
+    ),
     (
         "stream_usage_completion_tokens_as_text",
         COUNT,
-        counts(r#"{"input_tokens":12}"#),
+        OTHER_EVENTS,
+        stream_counts(r#"{"input_tokens":12}"#),
     ),
-    ("stream_usage_counts_that_are_true", COUNT, counts("{}")),
-    ("stream_usage_cached_tokens_as_text", COUNT, counts(COUNTED)),
+    (
+        "stream_usage_counts_that_are_true",
+        COUNT,
+        OTHER_EVENTS,
+        stream_counts("{}"),
+    ),
+    (
+        "stream_usage_cached_tokens_as_text",
+        COUNT,
+        OTHER_EVENTS,
+        stream_counts(COUNTED),
+    ),
     (
         "stream_usage_reasoning_tokens_as_text",
         COUNT,
-        counts(COUNTED),
+        OTHER_EVENTS,
+        stream_counts(COUNTED),
     ),
     (
         "stream_last_event_without_its_blank_line",
         LAST_EVENT,
-        streams("Hello.", "stop"),
+        OTHER_EVENTS,
+        streams("Hello.", "{}"),
     ),
     (
         "stream_last_event_without_its_line_end",
         LAST_EVENT,
-        streams("Hello.", "stop"),
+        OTHER_EVENTS,
+        streams("Hello.", "{}"),
     ),
 ];
 
@@ -255,11 +377,15 @@ const NO_LISTING: Instead = fails(
 
 /// The cases whose failure no provider reproduces: the openai SDK's own, or
 /// a raw Python exception. What the provider does instead.
-const ONLY_PYTHON: &[(&str, &str, Instead)] = &[
+const ONLY_PYTHON: &[Entry] = &[
     (
         "empty_key",
         "The openai SDK builds no client without a key. The provider is built, as the \
          source's, and sends no Authorization.",
+        &[
+            "1 requests sent, where Python sent 0",
+            "a OpenAIError no provider reproduces",
+        ],
         Instead {
             requests: 1,
             does: Does::AsksWithoutAKey,
@@ -268,6 +394,7 @@ const ONLY_PYTHON: &[(&str, &str, Instead)] = &[
     (
         "choices_that_are_no_list",
         "Python raises a raw AttributeError. The body is no completion.",
+        &["a AttributeError no provider reproduces"],
         fails(
             None,
             false,
@@ -277,31 +404,37 @@ const ONLY_PYTHON: &[(&str, &str, Instead)] = &[
     (
         "usage_prompt_tokens_as_text",
         "Python raises a raw TypeError. The count stays unknown.",
+        A_RESPONSE_NOT_AN_ERROR,
         counts(r#"{"output_tokens":5}"#),
     ),
     (
         "usage_cached_tokens_as_a_word",
         "Python raises a raw TypeError. The count stays unknown.",
+        A_RESPONSE_NOT_AN_ERROR,
         counts(COUNTED),
     ),
     (
         "usage_completion_tokens_as_a_word",
         "Python raises a raw ValidationError. The count stays unknown.",
+        A_RESPONSE_NOT_AN_ERROR,
         counts(r#"{"input_tokens":12}"#),
     ),
     (
         "usage_counts_with_a_fraction",
         "Python raises a raw ValidationError. The counts stay unknown.",
+        A_RESPONSE_NOT_AN_ERROR,
         counts("{}"),
     ),
     (
         "usage_reasoning_tokens_as_a_word",
         "Python raises a raw ValidationError. The count stays unknown.",
+        A_RESPONSE_NOT_AN_ERROR,
         counts(COUNTED),
     ),
     (
         "list_models_status_401",
         SDK_S_OWN,
+        &["a AuthenticationError no provider reproduces"],
         fails(
             Some(401),
             false,
@@ -312,11 +445,27 @@ const ONLY_PYTHON: &[(&str, &str, Instead)] = &[
     (
         "list_models_connection_refused",
         SDK_S_OWN,
+        &["a APIConnectionError no provider reproduces"],
         fails(None, true, "the connection to the provider failed"),
     ),
-    ("list_models_page_without_its_models", RAW, NO_LISTING),
-    ("list_models_entry_without_an_id", RAW, NO_LISTING),
-    ("list_models_answered_with_a_page", RAW, NO_LISTING),
+    (
+        "list_models_page_without_its_models",
+        RAW,
+        &["a TypeError no provider reproduces"],
+        NO_LISTING,
+    ),
+    (
+        "list_models_entry_without_an_id",
+        RAW,
+        &["a ValidationError no provider reproduces"],
+        NO_LISTING,
+    ),
+    (
+        "list_models_answered_with_a_page",
+        RAW,
+        &["a AttributeError no provider reproduces"],
+        NO_LISTING,
+    ),
 ];
 
 const NO_ECHO: &str = "A body that is no JSON is not echoed into the failure: the message is \
@@ -327,10 +476,11 @@ const STREAM_COUNT: &str = "Python fails the stream on a count that is no whole 
 /// The cases the provider answers otherwise by a rule of its own, where the
 /// fixture questions nothing and Python fails with a `ProviderError` or
 /// answers: the reason, and what the provider does instead.
-const BY_ITS_OWN_RULE: &[(&str, &str, Instead)] = &[
+const BY_ITS_OWN_RULE: &[Entry] = &[
     (
         "status_502_with_a_page",
         NO_ECHO,
+        OTHER_WORDS,
         fails(
             Some(502),
             true,
@@ -340,6 +490,7 @@ const BY_ITS_OWN_RULE: &[(&str, &str, Instead)] = &[
     (
         "status_400_with_a_plain_text",
         NO_ECHO,
+        OTHER_WORDS,
         fails(
             Some(400),
             false,
@@ -351,6 +502,7 @@ const BY_ITS_OWN_RULE: &[(&str, &str, Instead)] = &[
         "The failure says the context overflowed: its text does not repeat the body, which \
          says so outside its error's message, so the body is read for it. Python leaves the \
          question open, for a reader of its message, which holds the body.",
+        &["the failure's context_overflow differs: "],
         Instead {
             requests: 1,
             does: Does::Fails(
@@ -364,38 +516,47 @@ const BY_ITS_OWN_RULE: &[(&str, &str, Instead)] = &[
     (
         "stream_usage_prompt_tokens_as_text",
         STREAM_COUNT,
-        counts(r#"{"output_tokens":5}"#),
+        EVENTS_NOT_AN_ERROR,
+        stream_counts(r#"{"output_tokens":5}"#),
     ),
     (
         "stream_usage_completion_tokens_as_a_word",
         STREAM_COUNT,
-        counts(r#"{"input_tokens":12}"#),
+        EVENTS_NOT_AN_ERROR,
+        stream_counts(r#"{"input_tokens":12}"#),
     ),
     (
         "stream_usage_counts_with_a_fraction",
         STREAM_COUNT,
-        counts("{}"),
+        EVENTS_NOT_AN_ERROR,
+        stream_counts("{}"),
     ),
     (
         "stream_usage_cached_tokens_as_a_word",
         STREAM_COUNT,
-        counts(COUNTED),
+        EVENTS_NOT_AN_ERROR,
+        stream_counts(COUNTED),
     ),
     (
         "stream_usage_reasoning_tokens_as_a_word",
         STREAM_COUNT,
-        counts(COUNTED),
+        EVENTS_NOT_AN_ERROR,
+        stream_counts(COUNTED),
     ),
     (
         "stream_event_with_no_data",
         "An event that holds no data is no event, as the format of a stream of events \
          says. Python's client reads it as JSON and fails.",
-        streams("Hello.", "stop"),
+        EVENTS_NOT_AN_ERROR,
+        streams("Hello.", r#"{"input_tokens":12,"output_tokens":5}"#),
     ),
     (
         "stream_call_index_that_is_a_text",
         "A call's index is a whole number: another fails the stream. Python takes any \
          value as the key of the call.",
+        // No event is given before the failure, where Python gives the
+        // call's.
+        &["the events: []", "a failure where Python answers: "],
         Instead {
             requests: 1,
             does: Does::Fails(
@@ -408,11 +569,16 @@ const BY_ITS_OWN_RULE: &[(&str, &str, Instead)] = &[
     ),
 ];
 
-/// The cases the provider answers otherwise than Python, by name.
-pub(super) fn named() -> BTreeMap<&'static str, Instead> {
+/// The cases the provider answers otherwise than Python, by name: what
+/// the entry of each states.
+pub(super) fn named() -> BTreeMap<&'static str, Stated> {
     let lists = [QUESTIONED_OTHERWISE, ONLY_PYTHON, BY_ITS_OWN_RULE];
     let named = lists.into_iter().flatten();
-    named.map(|(name, _, instead)| (*name, *instead)).collect()
+    let stated = |(name, _, differs, instead): &Entry| {
+        let (differs, instead) = (*differs, *instead);
+        (*name, Stated { differs, instead })
+    };
+    named.map(stated).collect()
 }
 
 /// Each named case is a case of the fixture, in the list its case belongs
@@ -429,17 +595,17 @@ fn each_named_case_is_one_the_fixture_sets_apart() {
         let compare = case(name).compare.as_ref();
         compare.is_some_and(|compare| compare.exactly.is_empty())
     };
-    for (name, reason, _) in QUESTIONED_OTHERWISE {
+    for (name, reason, differs, _) in QUESTIONED_OTHERWISE {
         assert!(case(name).questioned.is_some(), "{name}");
-        assert!(reason.ends_with('.'), "{name}");
+        assert!(reason.ends_with('.') && !differs.is_empty(), "{name}");
     }
-    for (name, reason, _) in ONLY_PYTHON {
+    for (name, reason, differs, _) in ONLY_PYTHON {
         assert!(raw(name), "{name}");
-        assert!(reason.ends_with('.'), "{name}");
+        assert!(reason.ends_with('.') && !differs.is_empty(), "{name}");
     }
-    for (name, reason, _) in BY_ITS_OWN_RULE {
+    for (name, reason, differs, _) in BY_ITS_OWN_RULE {
         assert!(case(name).questioned.is_none() && !raw(name), "{name}");
-        assert!(reason.ends_with('.'), "{name}");
+        assert!(reason.ends_with('.') && !differs.is_empty(), "{name}");
     }
     let listed = QUESTIONED_OTHERWISE.len() + ONLY_PYTHON.len() + BY_ITS_OWN_RULE.len();
     assert_eq!(named().len(), listed);

@@ -887,6 +887,14 @@ case(
     HELLO,
     answer(completion(model="local-model")),
 )
+case(
+    "base_url_with_two_trailing_slashes",
+    "plain",
+    GENERATE,
+    {**LOCAL, "base_url": "https://llm.example/gateway/v1//"},
+    HELLO,
+    answer(completion(model="local-model")),
+)
 
 # -- Usage, endings and empty answers --------------------------------------------------
 
@@ -3235,6 +3243,9 @@ ALSO_DECIDED_BY_THE_SDK = {
         "The openai SDK lets a default header replace the header it writes the key in."
     ),
     "base_url_with_a_trailing_slash_and_a_query": (
+        "The openai SDK joins the path of a request to the base URL."
+    ),
+    "base_url_with_two_trailing_slashes": (
         "The openai SDK joins the path of a request to the base URL."
     ),
     "status_500_with_an_empty_body": "No body came: the message is the openai SDK's.",

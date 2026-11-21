@@ -199,6 +199,16 @@ async fn an_overflow_said_anywhere_in_the_body_is_an_overflow() {
             Some(true),
             "the provider answered HTTP 400: Bad Request",
         ),
+        // The code alone says so, written with an escape: the body's text
+        // does not hold the code as it reads.
+        (
+            json_reply(
+                400,
+                r#"{"error": {"message": "No.", "code": "context\u005flength_exceeded"}}"#,
+            ),
+            Some(true),
+            "the provider answered HTTP 400 (context_length_exceeded): No.",
+        ),
         (
             json(json!({"error": {"message": "No.", "code": "invalid_api_key"}})),
             None,
@@ -227,10 +237,13 @@ async fn an_overflow_said_anywhere_in_the_body_is_an_overflow() {
 /// Whether a failure's text may hold `character`: no control character and
 /// no control of the direction of a text.
 fn may_leave(character: char) -> bool {
-    let directional = matches!(character, '\u{61c}' | '\u{200e}' | '\u{200f}')
+    let shows_nothing = matches!(character, '\u{ad}' | '\u{61c}' | '\u{180e}' | '\u{feff}')
+        || ('\u{200b}'..='\u{200f}').contains(&character)
         || ('\u{202a}'..='\u{202e}').contains(&character)
-        || ('\u{2066}'..='\u{2069}').contains(&character);
-    !character.is_control() && !directional
+        || ('\u{2060}'..='\u{206f}').contains(&character)
+        || ('\u{fff9}'..='\u{fffb}').contains(&character)
+        || ('\u{e0000}'..='\u{e007f}').contains(&character);
+    !character.is_control() && !shows_nothing
 }
 
 // What a terminal acts on reaches no failure: each control character and
@@ -330,6 +343,199 @@ async fn a_base_url_s_user_information_is_sent_as_basic_credentials() {
                 "{key:?}"
             );
             assert!(!seen.target.contains("user"), "{}", seen.target);
+        }
+    }
+}
+
+/// A configuration whose key is `secret`.
+fn keyed(secret: &str) -> OpenAiConfig {
+    with_key(secret)
+}
+
+// A secret that a JSON string, a reader's quote or the contract's quote
+// writes otherwise than it is leaves in none of those forms. Each of the
+// four ways a failure quotes an answer is asked: an error object with no
+// message, the JSON reader's refusal of a member, a call's id that is a
+// list, and the member a response schema does not expect. The secrets are
+// such that each form is the only one that finds one of them: a control
+// character is written three ways (`\u0001` in JSON, `\u{1}` by the
+// reader, `\x01` by the contract), and the contract escapes a single
+// quote only beside a double one.
+#[tokio::test]
+async fn a_secret_leaves_in_no_form_a_failure_writes_it_in() {
+    // A password with a control character, which a key cannot hold.
+    let behind = OpenAiConfig {
+        base_url: Some("http://user:pass%01word-1x@llm.example/v1".to_owned()),
+        ..with_key(KEY)
+    };
+    let secrets = [
+        (keyed("pa\"ss\\word1x"), "pa\"ss\\word1x", "word1x"),
+        (keyed("it's a\tsecret1"), "it's a\tsecret1", "secret1"),
+        (
+            keyed("both ' and \" quotes1"),
+            "both ' and \" quotes1",
+            "quotes1",
+        ),
+        (
+            keyed("line\u{2028}break-secret"),
+            "line\u{2028}break-secret",
+            "break-secret",
+        ),
+        (
+            keyed("it's\u{2028}secret-1x"),
+            "it's\u{2028}secret-1x",
+            "secret-1x",
+        ),
+        (
+            keyed("{\"k\":\"abcdefgh\"}"),
+            "{\"k\":\"abcdefgh\"}",
+            "abcdefgh",
+        ),
+        (behind, "pass\u{1}word-1x", "word-1x"),
+    ];
+    for (config, secret, piece) in secrets {
+        let fits = |error: &ProviderError| {
+            let shown = printed(error);
+            assert!(!shown.contains(piece), "{secret:?}: {shown}");
+            assert!(
+                error.message.contains("[***]"),
+                "{secret:?}: {}",
+                error.message
+            );
+        };
+        // An error object with no message, written as JSON.
+        let object = json!({"error": {"detail": format!("refused: {secret}")}});
+        let replies = [
+            json_reply(200, object.to_string()),
+            events(std::slice::from_ref(&object)),
+        ];
+        let [whole, _] = failures(&config, replies, &hello()).await;
+        fits(&whole);
+        // The JSON reader's refusal, and a call's id that is a list.
+        let index = json!({"tool_calls": [{"index": secret, "function": {"name": "now"}}]});
+        let id = json!({"tool_calls": [{"index": 0, "id": [secret], "function": {"name": "now"}}]});
+        for delta in [index, id] {
+            let fake = Fake::serving(vec![events(&[chunk(&delta)])]).await;
+            let provider = pointed(config.clone(), &fake);
+            let (_, failure) = drained(provider.generate_structured_stream(&hello())).await;
+            fits(&failure.unwrap());
+        }
+        // The member a response schema does not expect, whole and streamed:
+        // named by the secret, then by the secret between double quotes.
+        for member in [secret.to_owned(), format!("\"{secret}\"")] {
+            let content = json!({"label": "yes", member: 1}).to_string();
+            let replies = answers(&json!({"role": "assistant", "content": content}));
+            for failure in failures(&config, replies, &asking()).await {
+                fits(&failure);
+            }
+        }
+    }
+}
+
+// A character that shows nothing is dropped before the secrets are looked
+// for: a secret a server sends back with one inside is still a secret.
+#[tokio::test]
+async fn a_secret_split_by_a_character_that_shows_nothing_is_removed() {
+    let invisible = [
+        '\u{ad}',
+        '\u{61c}',
+        '\u{180e}',
+        '\u{200b}',
+        '\u{200c}',
+        '\u{200d}',
+        '\u{200e}',
+        '\u{200f}',
+        '\u{202a}',
+        '\u{202e}',
+        '\u{2060}',
+        '\u{2064}',
+        '\u{2066}',
+        '\u{2069}',
+        '\u{206f}',
+        '\u{feff}',
+        '\u{fff9}',
+        '\u{fffb}',
+        '\u{e0001}',
+        '\u{e0041}',
+        '\u{e007f}',
+    ];
+    for hidden in invisible {
+        let (head, tail) = KEY.split_at(9);
+        let split =
+            format!("Bearer {hidden}{head}{hidden}{hidden}{tail}{hidden} is{hidden} refused");
+        let error = json!({"message": split});
+        for failure in failures(&with_key(KEY), refused(401, &error), &hello()).await {
+            assert_eq!(
+                failure.message,
+                "the provider answered HTTP 401: Bearer [***] is refused",
+                "U+{:04X}",
+                u32::from(hidden)
+            );
+        }
+    }
+}
+
+// Each form of a base URL's user information is a secret: as it is
+// written, as it reads once decoded, each part alone and the two joined.
+#[tokio::test]
+async fn each_form_of_a_base_url_s_user_information_is_removed() {
+    let config = OpenAiConfig {
+        base_url: Some("http://us%40er-name1:pa%73%73word-1@llm.example/v1".to_owned()),
+        ..with_key(KEY)
+    };
+    let forms = [
+        "us%40er-name1",
+        "pa%73%73word-1",
+        "us%40er-name1:pa%73%73word-1",
+        "us@er-name1",
+        "password-1",
+        "us@er-name1:password-1",
+        "Basic dXNAZXItbmFtZTE6cGFzc3dvcmQtMQ==",
+        "dXNAZXItbmFtZTE6cGFzc3dvcmQtMQ==",
+    ];
+    for form in forms {
+        let error = json!({"message": format!("refused: <{form}>")});
+        for failure in failures(&config, refused(401, &error), &hello()).await {
+            assert_eq!(
+                failure.message, "the provider answered HTTP 401: refused: <[***]>",
+                "{form}"
+            );
+        }
+    }
+    // A user and a password each too short to be a secret are one joined.
+    let config = OpenAiConfig {
+        base_url: Some("http://u:secret7@llm.example/v1".to_owned()),
+        ..with_key(KEY)
+    };
+    let error = json!({"message": "refused: <u:secret7> then <secret7>"});
+    for failure in failures(&config, refused(401, &error), &hello()).await {
+        assert_eq!(
+            failure.message,
+            "the provider answered HTTP 401: refused: <[***]> then <secret7>"
+        );
+    }
+}
+
+// The secrets are looked for before the text is put on one line and after:
+// a secret a server sends back with other white space is found after, and
+// one whose one-line form is too short to be a secret is found before.
+#[tokio::test]
+async fn a_secret_is_looked_for_before_and_after_the_text_is_put_on_one_line() {
+    let header = |value: &str| OpenAiConfig {
+        default_headers: Some([("x-token".to_owned(), value.to_owned())].into()),
+        ..with_key(KEY)
+    };
+    let said = |echoed: &str| json!({"message": format!("refused: <{echoed}>")});
+    let cleaned = "the provider answered HTTP 401: refused: <[***]>";
+    let cases = [
+        ("my secret key1", "my   secret\tkey1"),
+        ("my secret key1", "my\r\nsecret key1"),
+        ("p \t \t \t w", "p \t \t \t w"),
+    ];
+    for (secret, echoed) in cases {
+        let replies = refused(401, &said(echoed));
+        for failure in failures(&header(secret), replies, &hello()).await {
+            assert_eq!(failure.message, cleaned, "{secret:?} as {echoed:?}");
         }
     }
 }

@@ -874,7 +874,8 @@ fn each_request_was_sent_to_the_url_its_case_expects() {
         } else {
             "chat/completions"
         };
-        let mut expected = format!("{}/{path}", base.trim_end_matches('/'));
+        // The path follows the base URL, after the one slash that ends it.
+        let mut expected = format!("{}/{path}", base.strip_suffix('/').unwrap_or(base));
         if *name == MANGLED.0 {
             assert!(case.questioned.is_some(), "{name}");
             MANGLED.1.clone_into(&mut expected);
@@ -1050,7 +1051,7 @@ fn the_fixture_covers_every_kind_of_case() {
             .filter(|case| case.call == call)
             .count()
     };
-    assert!(calls("generate") >= 208, "{}", calls("generate"));
+    assert!(calls("generate") >= 209, "{}", calls("generate"));
     assert!(
         calls("generate_stream") >= 4,
         "{}",
@@ -1062,5 +1063,5 @@ fn the_fixture_covers_every_kind_of_case() {
         calls("generate_structured_stream")
     );
     assert!(calls("list_models") >= 10, "{}", calls("list_models"));
-    assert!(fixture.cases.len() >= 333, "the fixture lost cases");
+    assert!(fixture.cases.len() >= 334, "the fixture lost cases");
 }

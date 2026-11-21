@@ -35,6 +35,19 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
             ));
         }
         headers_differ(at, seen, sent, &replayed.config.api_key, found);
+        // The answer was served cut as the case records it: a stream read
+        // by read, anything else whole.
+        let recorded = exchange.response.chunks.as_ref();
+        let reads = recorded.map_or(0, |chunks| {
+            let read = chunks.iter().filter(|chunk| !chunk.bytes().is_empty());
+            read.count()
+        });
+        if seen.reads != reads {
+            found.push(format!(
+                "request {at}: its answer was served in {} reads, where the case records {reads}",
+                seen.reads
+            ));
+        }
         // The timeouts are the ones the client was built with.
         let built = replayed.timeouts.map(|timeouts| {
             let seconds = [("connect", timeouts.connect), ("read", timeouts.read)];

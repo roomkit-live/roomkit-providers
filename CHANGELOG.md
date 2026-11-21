@@ -86,14 +86,17 @@ nothing has been released yet.
   failure says the context overflowed when the body says so, by its code or
   by its words.
 - `roomkit-providers-openai`: no failure's text repeats a secret of the
-  configuration a server sends back as it is (the key, a default header's
-  value, a base URL's user information), nor a control character; a secret
-  shorter than 8 characters is not searched for. The README says what a
-  failure repeats of an answer, and the bounds of a stream's calls.
+  configuration a server sends back (the key, a default header's value, a
+  base URL's user information), as it is or as the failure's own code
+  writes it again, nor a control character or a character that shows
+  nothing; a secret shorter than 8 characters is not searched for. The
+  README says what a failure repeats of an answer, and the bounds of a
+  stream's calls.
 - `roomkit-providers-openai`: a base URL with user information is sent with
   it as Basic credentials, in place of the key, as Python's client does. A
-  base URL the client and Python's would not send to the same place, and a
-  timeout the clock cannot count, are refused when the provider is built.
+  base URL for which the client and Python's would not send the same
+  request, and a timeout the clock cannot count, are refused when the
+  provider is built.
 - `roomkit-providers-openai`: `supports_vision` answers as Python's
   provider; the configuration's `vision` states it where the provider would
   not.

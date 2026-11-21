@@ -10,7 +10,7 @@ use super::printable::PRINTABLE;
 
 /// `value` as Python's `repr` writes the value it reads as: `None`, `True`,
 /// a text in quotes, a list in brackets and a mapping in braces.
-pub(crate) fn repr(value: &Value) -> String {
+pub fn repr(value: &Value) -> String {
     match value {
         Value::Null => "None".to_owned(),
         Value::Bool(true) => "True".to_owned(),

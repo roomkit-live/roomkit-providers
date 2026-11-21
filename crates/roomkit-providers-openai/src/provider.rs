@@ -69,15 +69,17 @@ pub(crate) const JSON: &str = "application/json";
 /// # What it guarantees
 ///
 /// - no failure's text repeats a secret of the configuration that a
-///   server's answer holds as it is: the key, the value of a default
-///   header, the user information of the base URL. This holds whatever
-///   built the failure. A secret shorter than 8 characters is not searched
-///   for, and one a server sends back in another form cannot be
-///   recognised; the `Debug` forms print none;
+///   server's answer holds, as it is or as the code that builds the
+///   failure writes it again: the key, the value of a default header, the
+///   user information of the base URL. This holds whatever built the
+///   failure. A secret shorter than 8 characters is not searched for, and
+///   one a server itself sends back in another form cannot be recognised;
+///   the `Debug` forms print none;
 /// - a failure repeats of a server's answer only what an error object says
 ///   of itself (its message, its type, its code), or a value a reader
-///   refuses, on one line, without a control character, within 500
-///   characters; a body that is no JSON is never repeated;
+///   refuses, on one line, without a control character or a character that
+///   shows nothing, its message within 500 characters; a body that is no
+///   JSON is never repeated;
 /// - every size a server controls is bounded: an answer read whole past
 ///   4 MiB fails the request; a stream fails at a line or an event past
 ///   1 MiB and past 256 MiB in all, past 1,024 calls, and at a call's
@@ -89,8 +91,10 @@ pub(crate) const JSON: &str = "application/json";
 ///   which also ends a stream that stalls.
 ///
 /// A base URL that holds user information is sent with it as Basic
-/// credentials, in place of the key, as Python's client sends it. The
-/// crate's README says each of these in full.
+/// credentials, in place of the key, as Python's client sends it. A base
+/// URL for which Python's client and this one would not send the same
+/// request is refused when the provider is built. The crate's README says
+/// each of these in full.
 #[derive(Clone)]
 pub struct OpenAiAiProvider {
     pub(crate) config: Arc<OpenAiConfig>,

@@ -17,7 +17,7 @@ use std::collections::{HashMap, HashSet};
 use roomkit_providers_core::{CallIds, StreamToolCallDelta};
 use serde_json::Value;
 
-use self::held::Held;
+use self::held::{Held, stripped};
 use self::odd_id::same_odd;
 use crate::failure::Failure;
 
@@ -153,8 +153,10 @@ pub(crate) struct CallSlots {
     taken: HashSet<String>,
     /// The ids that are no text a slot took.
     taken_odd: Vec<Value>,
-    /// How many bytes were given to the JSON parser to fold the calls.
-    pub(crate) parsed: usize,
+    /// How many bytes were looked at to tell whether held arguments are
+    /// whole: each byte read as it came, and each byte given to the JSON
+    /// parser.
+    pub(crate) examined: usize,
 }
 
 impl CallSlots {
@@ -184,9 +186,9 @@ impl CallSlots {
         }
         let mut name = fragment.name.map(str::to_owned);
         let mut position = self.by_index.get(&fragment.index).copied();
-        let parsed = &mut self.parsed;
+        let examined = &mut self.examined;
         if let Some(held) = position.and_then(|at| self.slots.get_mut(at))
-            && held.starts_another_call(fragment, parsed)
+            && held.starts_another_call(fragment, examined)
         {
             if name.is_none() && held.is_continued_by(fragment.id) {
                 name = Some(held.name.clone());
@@ -243,7 +245,7 @@ impl CallSlots {
             ));
         }
         slot.arguments.push_str(fragment.arguments);
-        slot.held.push(fragment.arguments);
+        slot.held.push(fragment.arguments, &mut self.examined);
         if slot.name.is_empty() || (!first_name && fragment.arguments.is_empty()) {
             return Ok(None);
         }
@@ -312,22 +314,24 @@ impl Slot {
     /// whole arguments, a fragment that opens another JSON object. A server may
     /// repeat a call's name on every fragment, so the same name with nothing or
     /// blanks starts nothing. Whether the arguments held are whole is asked
-    /// last, and only where the answer depends on it; `parsed` counts what
-    /// that gives the JSON parser.
-    fn starts_another_call(&mut self, fragment: &Fragment<'_>, parsed: &mut usize) -> bool {
+    /// last, and only where the answer depends on it; `examined` counts what
+    /// that looks at.
+    fn starts_another_call(&mut self, fragment: &Fragment<'_>, examined: &mut usize) -> bool {
         if fragment.id.is_true() && self.has_server_id() && !self.holds(fragment.id) {
             return true;
         }
         if self.name.is_empty() {
             return false;
         }
+        // White space is what Python's `str.strip()` strips.
         let blank = self.held.is_blank();
+        let arguments = fragment.arguments;
         let brings = match fragment.name {
-            None => !blank && fragment.arguments.trim_start().starts_with('{'),
+            None => !blank && arguments.trim_start_matches(stripped).starts_with('{'),
             Some(name) if name != self.name => true,
-            Some(_) => !blank && !fragment.arguments.trim().is_empty(),
+            Some(_) => !blank && !arguments.chars().all(stripped),
         };
-        brings && self.held.is_whole(&self.arguments, parsed)
+        brings && self.held.is_whole(&self.arguments, examined)
     }
 
     /// Whether the call took the server's id, text or not.
