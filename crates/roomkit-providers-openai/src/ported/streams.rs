@@ -138,7 +138,11 @@ async fn entries_with_no_function_are_no_tool_round_streamed() {
 #[tokio::test]
 async fn the_timeout_bounds_reads_not_the_stream() {
     let said = ["We ", "open ", "at ", "nine", "."];
-    let reads = said.map(|text| format!("data: {}\n\n", chunk(&json!({"content": text}))));
+    let mut reads = said.map(|text| format!("data: {}\n\n", chunk(&json!({"content": text}))));
+    // The answer's end mark comes with its last event.
+    if let Some(last) = reads.last_mut() {
+        last.push_str("data: [DONE]\n\n");
+    }
     let steps = Arc::new(Notify::new());
     let stepped = Reply::Answer {
         status: 200,

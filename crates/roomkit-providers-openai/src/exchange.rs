@@ -197,7 +197,7 @@ impl OpenAiAiProvider {
 }
 
 /// Whether the server says its answer is JSON.
-fn is_json(headers: &HeaderMap) -> bool {
+pub(crate) fn is_json(headers: &HeaderMap) -> bool {
     let kind = headers.get(CONTENT_TYPE);
     let kind = kind.and_then(|value| value.to_str().ok());
     kind.is_some_and(|value| value.trim_start().starts_with("application/json"))

@@ -202,6 +202,14 @@ const NOT_FOLLOWED: &[&str] = &[
 /// The failure's words are the provider's, where Python's hold the body.
 const OTHER_WORDS: &[&str] = &["the failure says "];
 
+/// The failure differs from Python's in its status, in whether it is
+/// retried and in its words.
+const ANOTHER_FAILURE: &[&str] = &[
+    "the failure's status_code differs: ",
+    "the failure's retryable differs: ",
+    "the failure says ",
+];
+
 const REDIRECT: &str = "A redirect is not followed: the maintainer's decision.";
 
 /// The failure of a redirect of `status`, after the one request.
@@ -209,6 +217,13 @@ const fn not_followed(status: u16, says: &'static str) -> Instead {
     fails(Some(status), false, says)
 }
 
+const NO_COMPLETION: &str = "A 200 whose body is JSON and no completion is a failure: the \
+     maintainer's decision. Python reads it as an answer that says nothing.";
+const CUT_SHORT: &str = "A stream that ends with neither a finish reason nor its end mark was \
+     cut: what came is handed on, then it fails, and a call it brought is never handed whole. \
+     The maintainer's decision. Python reads it as complete.";
+const CUT_SHORT_WORDS: &str =
+    "the provider's stream ended with neither a finish reason nor its end mark";
 const COUNT: &str =
     "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.";
 const LAST_EVENT: &str = "An event the answer ends on with no blank line after it is read: \
@@ -290,6 +305,60 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
             307,
             "the endpoint answered with a redirect (307), which is not followed",
         ),
+    ),
+    (
+        "answer_200_that_is_no_completion",
+        NO_COMPLETION,
+        &["a failure where Python answers: "],
+        fails(
+            None,
+            false,
+            "The provider answered with a body it could not read: not a chat completion",
+        ),
+    ),
+    (
+        "stream_that_ends_without_an_ending",
+        CUT_SHORT,
+        // The text that came, with no done event after it.
+        &[
+            r#"the events: [{"type":"text_delta","text":"Hello."}]"#,
+            "a failure where Python answers: ",
+        ],
+        fails(None, true, CUT_SHORT_WORDS),
+    ),
+    (
+        "stream_tool_call_that_ends_without_an_ending",
+        CUT_SHORT,
+        // The call as it was written, never the whole call, to run.
+        &[
+            r#"the events: [{"type":"tool_call_delta","id":"call_1","name":"lookup_order","index":0,"arguments_delta":"{\"number\": \"A-1\"}"}]"#,
+            "a failure where Python answers: ",
+        ],
+        fails(None, true, CUT_SHORT_WORDS),
+    ),
+    (
+        "stream_answered_with_a_json_error_object",
+        "A JSON error object that answers a stream request with a 200 reads as the status it \
+         names, as generate reads the same body: the maintainer's decision. Python says the \
+         stream carried no event, a final failure that names no status.",
+        ANOTHER_FAILURE,
+        Instead {
+            requests: 1,
+            does: Does::Fails(
+                Some(529),
+                true,
+                None,
+                Says::Exactly("The engine is currently overloaded."),
+            ),
+        },
+    ),
+    (
+        "stream_that_starts_with_a_byte_order_mark",
+        "A byte order mark that starts a stream is ignored, as the format of a stream of \
+         events says, and the first event is read: the maintainer's decision. Python's \
+         client reads the line the mark starts as no data.",
+        OTHER_EVENTS,
+        streams("Hello.", "{}"),
     ),
     (
         "usage_completion_tokens_as_text",

@@ -13,17 +13,18 @@
 //! passed, so that a line that never ends, or events that never stop, are
 //! cut.
 //!
-//! The reader is narrower than the format on two points:
-//!
-//! - a byte order mark at the start of the answer is not dropped: the line
-//!   it starts is read as a field other than `data`, and skipped;
-//! - a `data` line without a colon, which the format reads as an empty line
-//!   of data, is skipped as another field is.
+//! A byte order mark that starts the answer is dropped, as the format
+//! says: it is no part of the first line. The reader is narrower than the
+//! format on one point: a `data` line without a colon, which the format
+//! reads as an empty line of data, is skipped as another field is.
 
 use crate::SseError;
 
 /// The longest line a stream may send, in bytes.
 pub const LINE_LIMIT: usize = 1024 * 1024;
+
+/// The byte order mark an answer may start with.
+const BYTE_ORDER_MARK: &[u8] = b"\xEF\xBB\xBF";
 
 /// The most data one event may carry, in bytes.
 pub const EVENT_LIMIT: usize = 1024 * 1024;
@@ -40,6 +41,9 @@ pub const STREAM_LIMIT: usize = 256 * 1024 * 1024;
 pub struct Events {
     /// The bytes of the line being read.
     line: Vec<u8>,
+    /// Whether the answer's first line was taken: a byte order mark starts
+    /// no other.
+    started: bool,
     /// The data of the event being read, its lines joined.
     data: Option<String>,
     /// Whether the last byte read was a `\r` that ended a line: a `\n`
@@ -58,6 +62,7 @@ impl Events {
     pub fn new(limit: usize) -> Self {
         Self {
             line: Vec::new(),
+            started: false,
             data: None,
             after_carriage_return: false,
             read: 0,
@@ -154,8 +159,14 @@ impl Events {
         Ok(())
     }
 
-    /// Takes one whole line: the event it ends, at a blank line.
+    /// Takes one whole line: the event it ends, at a blank line. The byte
+    /// order mark that starts the answer's first line is no part of it.
     fn take_line(&mut self, line: &[u8]) -> Result<Option<String>, SseError> {
+        let line = if std::mem::replace(&mut self.started, true) {
+            line
+        } else {
+            line.strip_prefix(BYTE_ORDER_MARK).unwrap_or(line)
+        };
         if line.is_empty() {
             return Ok(self.data.take());
         }
@@ -218,6 +229,43 @@ mod tests {
         let mut events = Events::new(1024);
         assert_eq!(events.fed(b"data: last").unwrap(), Vec::<String>::new());
         assert_eq!(events.finish().unwrap().as_deref(), Some("last"));
+    }
+
+    // A byte order mark that starts the answer is no part of its first
+    // line, wherever the reads cut it; one anywhere else is what it was, a
+    // character of its line.
+    #[test]
+    fn a_byte_order_mark_that_starts_the_answer_is_dropped() {
+        let answer = "\u{feff}data: first\n\ndata: second\n\n".as_bytes();
+        for at in 0..=answer.len() {
+            let (head, tail) = answer.split_at(at);
+            let mut events = Events::new(1024);
+            let mut read = events.fed(head).unwrap();
+            read.extend(events.fed(tail).unwrap());
+            assert_eq!(read, ["first", "second"], "{at}");
+        }
+        // The mark alone, and the mark before an event the answer's end
+        // cuts.
+        let mut events = Events::new(1024);
+        assert_eq!(
+            events.fed("\u{feff}\n".as_bytes()).unwrap(),
+            Vec::<String>::new()
+        );
+        assert_eq!(events.finish().unwrap(), None);
+        let mut events = Events::new(1024);
+        assert_eq!(
+            events.fed("\u{feff}data: last".as_bytes()).unwrap(),
+            Vec::<String>::new()
+        );
+        assert_eq!(events.finish().unwrap().as_deref(), Some("last"));
+        // A mark that starts a later line makes it another field than data.
+        let mut events = Events::new(1024);
+        let later = "data: first\n\n\u{feff}data: second\n\ndata: third\n\n";
+        assert_eq!(events.fed(later.as_bytes()).unwrap(), ["first", "third"]);
+        // Two marks: the first alone is dropped.
+        let mut events = Events::new(1024);
+        let twice = "\u{feff}\u{feff}data: first\n\ndata: second\n\n";
+        assert_eq!(events.fed(twice.as_bytes()).unwrap(), ["second"]);
     }
 
     /// The events `answer` gives before it fails and the failure, read in
@@ -424,10 +472,8 @@ mod tests {
     }
 
     #[test]
-    fn a_byte_order_mark_and_a_data_line_without_a_colon_are_skipped() {
+    fn a_data_line_without_a_colon_is_skipped() {
         let mut events = Events::new(1024);
-        let marked = b"\xef\xbb\xbfdata: first\ndata: second\n\n";
-        assert_eq!(events.fed(marked).unwrap(), ["second"]);
         let bare = b"data: one\ndata\ndata: two\n\n";
         assert_eq!(events.fed(bare).unwrap(), ["one\ntwo"]);
     }

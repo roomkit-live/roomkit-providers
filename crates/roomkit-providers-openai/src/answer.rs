@@ -34,6 +34,13 @@ pub(crate) fn read(
     if let Some(error) = completion.get("error").filter(|error| truthy(error)) {
         return Err(Failure::error_object(error));
     }
+    // A completion holds its choices as a list, an empty one included. An
+    // object that holds none (a gateway's `{"status": "ok"}`), or anything
+    // else under that name, is no completion: an answer that says nothing
+    // must be one the model gave.
+    let Some(Value::Array(choices)) = completion.get("choices") else {
+        return Err(no_completion());
+    };
     let usage = completion.get("usage").map(usage_of).unwrap_or_default();
     // The model that answered, as the answer names it, else the one asked.
     let model = completion.get("model").filter(|model| truthy(model));
@@ -42,16 +49,7 @@ pub(crate) fn read(
     let model = model.cloned().unwrap_or_else(|| asked.into());
     response.metadata.insert("model".to_owned(), model);
     let schema = request.response_schema.as_ref();
-    let choice = match completion.get("choices") {
-        Some(Value::Array(choices)) => choices.first(),
-        // Choices left out or null are none, as Python reads them; choices
-        // that are no list are no completion.
-        Some(Value::Null) | None => None,
-        Some(Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Object(_)) => {
-            return Err(no_completion());
-        }
-    };
-    let Some(choice) = choice else {
+    let Some(choice) = choices.first() else {
         if let Some(schema) = schema {
             check_schema_answer("", schema, provider, None, None)?;
         }

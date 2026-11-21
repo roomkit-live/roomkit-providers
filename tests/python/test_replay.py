@@ -58,11 +58,11 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             dict(counts),
             {
-                ("generate", "as Python"): 184,
-                ("generate", "named"): 23,
+                ("generate", "as Python"): 183,
+                ("generate", "named"): 24,
                 ("generate", "left to Rust"): 2,
-                ("generate_structured_stream", "as Python"): 97,
-                ("generate_structured_stream", "named"): 13,
+                ("generate_structured_stream", "as Python"): 93,
+                ("generate_structured_stream", "named"): 17,
                 ("generate_structured_stream", "left to Rust"): 1,
                 ("generate_stream", "as Python"): 4,
                 ("list_models", "as Python"): 5,
@@ -86,7 +86,7 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
     def test_every_named_case_is_a_case_of_the_fixture(self) -> None:
         names = {case["name"] for case in fixture()["cases"]}
         self.assertEqual(set(named()) - names, set())
-        self.assertEqual(len(named()), 41)
+        self.assertEqual(len(named()), 46)
 
 
 class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):

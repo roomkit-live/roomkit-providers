@@ -5,13 +5,21 @@
 //! The stream is pulled: nothing is sent before it is first polled, the
 //! answer is read only as its events are taken, and dropping the stream
 //! drops the request with its connection, which closes it.
+//!
+//! An answer is complete once it said why it stopped, or sent its end
+//! mark. One that ends with neither was cut: what came is handed on, then
+//! it fails, and a call it brought is never handed whole, to run. An
+//! answer that gave no event and that the server says is JSON may be an
+//! error object in place of a stream: it reads as a whole answer's does.
 
 use roomkit_providers_core::{
     AiRequest, ProviderError, ProviderStream, StreamEvent, TextStream, Yielder, items, next,
 };
 use roomkit_providers_http::sse::Events;
+use serde_json::Value;
 
-use crate::exchange::Call;
+use crate::answer::truthy;
+use crate::exchange::{ANSWER_LIMIT, Call, is_json};
 use crate::failure::Failure;
 use crate::failure::exit::{Exit, carried};
 use crate::folding::{Folding, push_end};
@@ -73,11 +81,45 @@ pub(crate) fn text(mut events: ProviderStream<'_>) -> TextStream<'_> {
     ))
 }
 
+/// The bytes of an answer the server says is JSON, kept while it gave no
+/// event: within what an answer read whole may weigh, and given up at the
+/// first event.
+struct Unstreamed(Option<Vec<u8>>);
+
+impl Unstreamed {
+    /// Keeps `bytes`, the answer's next ones.
+    fn keep(&mut self, bytes: &[u8]) {
+        let Some(kept) = &mut self.0 else {
+            return;
+        };
+        if kept.len().saturating_add(bytes.len()) > ANSWER_LIMIT {
+            self.0 = None;
+        } else {
+            kept.extend_from_slice(bytes);
+        }
+    }
+
+    /// The failure of the answer, which gave no event: what the error
+    /// object it holds says, as the reader of a whole answer reads it,
+    /// else that no event came.
+    fn failure(self) -> Failure {
+        let answer = self
+            .0
+            .and_then(|body| serde_json::from_slice::<Value>(&body).ok());
+        let error = answer.as_ref().and_then(|answer| answer.get("error"));
+        match error.filter(|error| truthy(error)) {
+            Some(error) => Failure::error_object(error),
+            None => Failure::no_event(),
+        }
+    }
+}
+
 /// Asks for the stream and hands its events to `out` as they are read.
 ///
 /// The answer is read as a stream of events whatever the server says it
 /// is, as Python's client reads it: a page or a whole JSON body holds no
-/// event, which is a failure.
+/// event, which is a failure, the one an error object names when the body
+/// is one.
 async fn read(
     provider: &OpenAiAiProvider,
     request: &AiRequest,
@@ -86,14 +128,18 @@ async fn read(
     let body = provider.asked().body(request, true)?;
     let body = serde_json::to_vec(&body).map_err(|_| unwritten())?;
     let mut response = provider.open(Call::Chat(&body)).await?;
+    let mut unstreamed = Unstreamed(is_json(response.headers()).then(Vec::new));
     let mut events = Events::new(provider.stream_limit);
     let mut folding = Folding::new(&provider.config.model);
-    let (mut chunks, mut ready) = (0_usize, Vec::new());
+    let (mut chunks, mut marked, mut ready) = (0_usize, false, Vec::new());
     'answer: loop {
         let read = response.chunk().await;
         let read = read.map_err(|error| Failure::transport(&error))?;
         let (ended, unread) = match &read {
-            Some(bytes) => events.feed(bytes),
+            Some(bytes) => {
+                unstreamed.keep(bytes);
+                events.feed(bytes)
+            }
             // An event the answer ends on with no blank line after it is
             // read all the same.
             None => match events.finish() {
@@ -103,6 +149,7 @@ async fn read(
         };
         for data in ended {
             if data.starts_with(END_MARK) {
+                marked = true;
                 break 'answer;
             }
             let taken = folding.take(&data, &mut ready);
@@ -112,6 +159,7 @@ async fn read(
             }
             taken?;
             chunks = chunks.saturating_add(1);
+            unstreamed = Unstreamed(None);
         }
         // What the reader read before it failed was handed on first.
         if let Some(error) = unread {
@@ -124,12 +172,30 @@ async fn read(
     // The connection is not read past the end of the answer.
     drop(response);
     if chunks == 0 {
-        return Err(Failure::no_event());
+        return Err(unstreamed.failure());
     }
+    end(folding, marked, out).await
+}
+
+/// Hands on the end of an answer that gave events: what its folding still
+/// holds, then its calls and its done event when the answer is complete,
+/// `marked` saying whether its end mark came.
+///
+/// # Errors
+///
+/// The failure of an answer that ended with neither a finish reason nor
+/// its end mark, after what came; and the failure of its calls.
+async fn end(mut folding: Folding<'_>, marked: bool, out: &Yielder<Item>) -> Result<(), Failure> {
+    let mut ready = Vec::new();
     // What the end gave before it failed is handed on first.
     folding.flush(&mut ready);
-    let finished = folding.finish();
-    let finished = finished.map(|(calls, done)| push_end(&mut ready, calls, done));
+    let complete = marked || folding.has_finish_reason();
+    let finished = if complete {
+        let finished = folding.finish();
+        finished.map(|(calls, done)| push_end(&mut ready, calls, done))
+    } else {
+        Err(Failure::cut_short())
+    };
     for event in ready {
         out.give(Ok(event)).await;
     }

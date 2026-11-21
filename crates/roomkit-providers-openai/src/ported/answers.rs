@@ -111,6 +111,39 @@ async fn a_malformed_answer_s_reason_holds_no_key() {
     }
 }
 
+// Not in Python, which reads each of these as an empty answer: a 200 whose
+// body is JSON and no completion is no answer. A completion holds its
+// choices as a list, an empty one included.
+#[tokio::test]
+async fn a_json_body_that_is_no_completion_is_a_failure_not_an_empty_answer() {
+    let no_completion = [
+        json!({"status": "ok"}),
+        json!({}),
+        json!({"choices": null}),
+        json!({"id": "chatcmpl-1", "object": "chat.completion", "model": "answering-model"}),
+        json!({"error": null, "usage": {"prompt_tokens": 12}}),
+    ];
+    for body in no_completion {
+        let error = asked(super::support::json_reply(200, body.to_string()), &hello()).await;
+        let error = error.unwrap_err();
+        assert_eq!(
+            error.message,
+            "The provider answered with a body it could not read: not a chat completion",
+            "{body}"
+        );
+        let attributes = (error.retryable, error.status_code, error.before_request);
+        assert_eq!(attributes, (false, None, false), "{body}");
+    }
+    // A completion with no choice is one: an answer that says nothing.
+    let empty = json!({"choices": [], "usage": {"prompt_tokens": 12}});
+    let response = read(&empty).unwrap();
+    assert_eq!(response.content, "");
+    assert_eq!(
+        serde_json::to_string(&response.usage).unwrap(),
+        r#"{"input_tokens":12}"#
+    );
+}
+
 /// What `generate` reads of a completion whose message is `message`: its
 /// reasoning, its text.
 async fn generated(message: &Value) -> (Option<String>, String) {

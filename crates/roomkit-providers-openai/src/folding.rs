@@ -87,6 +87,11 @@ pub(crate) struct Folding<'p> {
 }
 
 impl<'p> Folding<'p> {
+    /// Whether a chunk said why the answer stopped.
+    pub(crate) const fn has_finish_reason(&self) -> bool {
+        self.finish_reason.is_some()
+    }
+
     /// The folding of a stream asking the model `asked`.
     pub(crate) fn new(asked: &'p str) -> Self {
         Self {

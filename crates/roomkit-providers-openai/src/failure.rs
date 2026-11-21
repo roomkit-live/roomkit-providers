@@ -221,6 +221,14 @@ impl Failure {
         Self::said(vec![own(said)], false, None)
     }
 
+    /// The failure of a streamed answer that ended with neither a finish
+    /// reason nor its end mark: it was cut, as one whose connection is
+    /// lost, and is worth a retry.
+    pub(crate) fn cut_short() -> Self {
+        let said = "the provider's stream ended with neither a finish reason nor its end mark";
+        Self::said(vec![own(said)], true, None)
+    }
+
     /// The failure of a streamed answer past what the provider reads of
     /// one, or that is no stream of events: final, in the reader's words,
     /// which repeat nothing of the answer.

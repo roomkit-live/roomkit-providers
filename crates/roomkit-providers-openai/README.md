@@ -66,8 +66,14 @@ the done event, with the usage and the model that answered.
   which its failure replaces. The text went out as it came: it is
   provisional until the done event.
 - **The answer is read as a stream of events** whatever the server says it
-  is. Lines end with a line feed, a carriage return, or both. A page or a
-  whole JSON body holds no event, which is a failure.
+  is. Lines end with a line feed, a carriage return, or both, and a byte
+  order mark that starts the answer is ignored. A page or a whole JSON body
+  holds no event, which is a failure; a JSON error object in place of a
+  stream fails as the status it names, as it does for `generate`.
+- **A stream is complete once it said why it stopped, or sent its end
+  mark.** One that ends with neither was cut: what came is handed on, then
+  it fails, a failure worth a retry, and a call it brought is never handed
+  whole, to run.
 
 ## The model listing
 
@@ -189,7 +195,7 @@ read in the whole body, repeated in the failure or not.
 ## Where the provider differs from Python's
 
 The provider does as `OpenAIAIProvider` of RoomKit's Python implementation on
-293 of the 334 captured cases: 186 of the 209 of a whole answer, 98 of the
+288 of the 334 captured cases: 185 of the 209 of a whole answer, 94 of the
 111 of a stream of events, the 4 of a stream of text, and 5 of the 10 of a
 model listing. It differs on the others, each for a reason:
 
@@ -225,6 +231,21 @@ model listing. It differs on the others, each for a reason:
   written as JSON, where Python writes its `repr`.
 - **Choices that are no list** fail with a `ProviderError`, final, whole as
   streamed, where Python's whole answer raises a raw `AttributeError`.
+- **A 200 whose body is JSON and no completion** (`{"status": "ok"}`, `{}`,
+  `{"choices": null}`) fails as no chat completion, final, where Python
+  reads it as an answer that says nothing. A completion holds its choices as
+  a list, an empty one included.
+- **A stream that ends with neither a finish reason nor its end mark** fails
+  after what came, as a stream whose connection is lost does, and hands no
+  whole call, where Python reads it as complete and hands its call to run.
+  A stream that ends with one of the two is complete, here as in Python.
+- **A JSON error object that answers a stream request with a 200** fails as
+  the status it names, retried or not by that status, as `generate` reads
+  the same body. Python says the stream carried no event, a final failure
+  that names no status.
+- **A byte order mark that starts a stream** is ignored, as the format of a
+  stream of events says, and the first event is read, where Python's SDK
+  reads the line the mark starts as no data.
 - **The last event of a stream** that ends with no blank line after it is
   read, where Python's SDK drops it.
 - **An event that holds no data** (a named event a server keeps a connection

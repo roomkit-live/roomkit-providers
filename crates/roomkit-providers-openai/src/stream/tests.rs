@@ -207,3 +207,173 @@ async fn the_events_read_before_a_line_that_does_not_read_are_handed_on() {
         );
     }
 }
+
+/// One read of a stream that holds `events`, each an event's data, and
+/// nothing after them.
+fn read_of(events: &[String]) -> Vec<u8> {
+    let events = events.iter().map(|data| format!("data: {data}\n\n"));
+    events.collect::<String>().into_bytes()
+}
+
+/// A chunk that ends an answer for `finish_reason`.
+fn finish(finish_reason: &str) -> String {
+    json!({"choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason}]}).to_string()
+}
+
+/// A chunk that writes a whole call to `lookup`.
+fn call() -> String {
+    let function = json!({"name": "lookup", "arguments": "{\"number\": \"A-1\"}"});
+    chunk(&json!({"tool_calls": [{"index": 0, "id": "call_1", "function": function}]})).to_string()
+}
+
+// Not in Python, which reads such a stream as complete: a stream that ends
+// with neither a finish reason nor its end mark was cut. What came is
+// handed on, then it fails as a stream whose connection is lost does; a
+// call it brought is never handed whole, to run.
+#[tokio::test]
+async fn a_stream_that_ends_with_no_finish_reason_and_no_end_mark_was_cut() {
+    let said = chunk(&json!({"content": "Hello."})).to_string();
+    for (reads, text, deltas) in [
+        (vec![read_of(std::slice::from_ref(&said))], "Hello.", 0),
+        (vec![read_of(&[call()])], "", 1),
+        (vec![read_of(&[said.clone(), call()])], "Hello.", 1),
+        // A partial tag the answer ends on is text that came.
+        (
+            vec![read_of(&[
+                chunk(&json!({"content": "Hello.<thi"})).to_string()
+            ])],
+            "Hello.<thi",
+            0,
+        ),
+    ] {
+        let (events, failure) = streamed(stream_reply(reads, Ending::Ends), &hello()).await;
+        assert_eq!(text_of(&events), text);
+        let composed = events
+            .iter()
+            .filter(|event| matches!(event, StreamEvent::ToolCallDelta(_)));
+        assert_eq!(composed.count(), deltas);
+        let ended =
+            |event: &StreamEvent| matches!(event, StreamEvent::ToolCall(_) | StreamEvent::Done(_));
+        assert!(!events.iter().any(ended), "{events:?}");
+        let error = failure.unwrap();
+        assert_eq!(
+            error.message,
+            "the provider's stream ended with neither a finish reason nor its end mark"
+        );
+        let attributes = (error.retryable, error.status_code, error.before_request);
+        assert_eq!(attributes, (true, None, false));
+    }
+    // The text of such a stream fails the same way, after what came.
+    let fake = Fake::serving(vec![stream_reply(vec![read_of(&[said])], Ending::Ends)]).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    let (pieces, failure) = drained(provider.generate_stream(&hello())).await;
+    assert_eq!(pieces, ["Hello."]);
+    assert!(failure.unwrap().retryable);
+}
+
+// A stream that ends with a finish reason and no end mark, or with its end
+// mark and no finish reason, is complete: its calls and its end are handed
+// on, as Python hands them.
+#[tokio::test]
+async fn a_stream_that_ends_with_a_finish_reason_or_with_its_end_mark_is_complete() {
+    let said = chunk(&json!({"content": "Hello."})).to_string();
+    let mark = "[DONE]".to_owned();
+    for (events, finish_reason, calls) in [
+        (vec![said.clone(), finish("stop")], Some("stop"), 0),
+        (vec![said.clone(), mark.clone()], None, 0),
+        (vec![call(), finish("tool_calls")], Some("tool_calls"), 1),
+        (vec![call(), mark], None, 1),
+        // A finish reason that ends the answer in an event its end cuts.
+        (vec![said, finish("length")], Some("length"), 0),
+    ] {
+        let reply = stream_reply(vec![read_of(&events)], Ending::Ends);
+        let (given, failure) = streamed(reply, &hello()).await;
+        assert!(failure.is_none(), "{events:?}: {failure:?}");
+        let Some(StreamEvent::Done(done)) = given.last() else {
+            panic!("{events:?}: no end in {given:?}");
+        };
+        assert_eq!(done.finish_reason.as_deref(), finish_reason, "{events:?}");
+        let whole = given.iter().filter_map(|event| match event {
+            StreamEvent::ToolCall(call) => Some(call.partial),
+            StreamEvent::TextDelta(_)
+            | StreamEvent::ToolCallDelta(_)
+            | StreamEvent::Done(_)
+            | StreamEvent::ThinkingDelta(_)
+            | StreamEvent::Usage(_) => None,
+        });
+        assert_eq!(whole.collect::<Vec<_>>(), vec![false; calls], "{events:?}");
+    }
+}
+
+// Not in Python, which says such an answer carried no event: a JSON error
+// object that answers a stream request with a 200 reads as the status it
+// names, as `generate` reads the same body. No head of a stream came: the
+// failure says whether a new request may succeed.
+#[tokio::test]
+async fn a_json_error_object_answering_a_stream_reads_as_the_status_it_names() {
+    let overloaded =
+        json!({"error": {"message": "The engine is overloaded.", "type": "overloaded_error"}});
+    let refused = json!({"error": {"message": "No such model.", "code": 404}});
+    for (body, status, retryable) in [(&overloaded, 529, true), (&refused, 404, false)] {
+        let reply = || crate::ported::support::json_reply(200, body.to_string());
+        let (events, failure) = streamed(reply(), &hello()).await;
+        assert!(events.is_empty(), "{events:?}");
+        let streamed = failure.unwrap();
+        let whole = crate::ported::support::asked(reply(), &hello())
+            .await
+            .unwrap_err();
+        let attributes = |error: &roomkit_providers_core::ProviderError| {
+            (
+                error.message.clone(),
+                error.status_code,
+                error.retryable,
+                error.before_request,
+            )
+        };
+        assert_eq!(attributes(&streamed), attributes(&whole), "{body}");
+        assert_eq!(
+            (streamed.status_code, streamed.retryable),
+            (Some(status), retryable)
+        );
+    }
+    // A JSON body that holds no error, and an error object the server does
+    // not say is JSON, are an answer that carried no event, as before.
+    let no_event = "The provider's stream carried no event: its body could not be read";
+    let json_reply = crate::ported::support::json_reply;
+    let plain = Reply::Answer {
+        status: 200,
+        headers: vec![("content-type".to_owned(), "text/plain".to_owned())],
+        body: crate::replay::fake::Body::Whole(overloaded.to_string().into_bytes()),
+    };
+    let empty = json!({"error": null, "status": "ok"}).to_string();
+    for reply in [
+        json_reply(200, empty),
+        json_reply(200, "[]".to_owned()),
+        json_reply(200, "{".to_owned()),
+        plain,
+    ] {
+        let (events, failure) = streamed(reply, &hello()).await;
+        assert!(events.is_empty(), "{events:?}");
+        let error = failure.unwrap();
+        assert_eq!((error.message.as_str(), error.retryable), (no_event, false));
+    }
+}
+
+// Not in Python, whose client reads the line a byte order mark starts as no
+// data: the mark that starts a stream is ignored, as the format of a stream
+// of events says, and its first event is read.
+#[tokio::test]
+async fn a_byte_order_mark_that_starts_a_stream_is_ignored() {
+    let said = chunk(&json!({"content": "Hello."})).to_string();
+    let body = [&b"\xEF\xBB\xBF"[..], &read_of(&[said, finish("stop")])].concat();
+    // In one read, and with the mark cut from what follows it.
+    for reads in [
+        vec![body.clone()],
+        vec![body[..2].to_vec(), body[2..].to_vec()],
+    ] {
+        let (events, failure) = streamed(stream_reply(reads, Ending::Ends), &hello()).await;
+        assert!(failure.is_none(), "{failure:?}");
+        assert_eq!(text_of(&events), "Hello.");
+        assert!(matches!(events.last(), Some(StreamEvent::Done(_))));
+    }
+}

@@ -416,7 +416,7 @@ async fn replayed_or_named(call: &str) -> (usize, usize) {
 /// what the provider does instead.
 #[tokio::test]
 async fn every_generate_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named("generate").await, (186, 23));
+    assert_eq!(replayed_or_named("generate").await, (185, 24));
 }
 
 /// Every `generate_structured_stream` case, the same way: the events in
@@ -425,7 +425,7 @@ async fn every_generate_case_replays_as_python_or_is_named() {
 async fn every_structured_stream_case_replays_as_python_or_is_named() {
     assert_eq!(
         replayed_or_named("generate_structured_stream").await,
-        (98, 13)
+        (94, 17)
     );
 }
 

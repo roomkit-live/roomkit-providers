@@ -130,6 +130,97 @@
       }
     },
     {
+      "name": "answer_200_that_is_no_completion",
+      "list": "questioned_otherwise",
+      "reason": "A 200 whose body is JSON and no completion is a failure: the maintainer's decision. Python reads it as an answer that says nothing.",
+      "differs": [
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: not a chat completion"
+        }
+      }
+    },
+    {
+      "name": "stream_that_ends_without_an_ending",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a finish reason nor its end mark was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: [{\"type\":\"text_delta\",\"text\":\"Hello.\"}]",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a finish reason nor its end mark"
+        }
+      }
+    },
+    {
+      "name": "stream_tool_call_that_ends_without_an_ending",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a finish reason nor its end mark was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: [{\"type\":\"tool_call_delta\",\"id\":\"call_1\",\"name\":\"lookup_order\",\"index\":0,\"arguments_delta\":\"{\\\"number\\\": \\\"A-1\\\"}\"}]",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a finish reason nor its end mark"
+        }
+      }
+    },
+    {
+      "name": "stream_answered_with_a_json_error_object",
+      "list": "questioned_otherwise",
+      "reason": "A JSON error object that answers a stream request with a 200 reads as the status it names, as generate reads the same body: the maintainer's decision. Python says the stream carried no event, a final failure that names no status.",
+      "differs": [
+        "the failure's status_code differs: ",
+        "the failure's retryable differs: ",
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 529,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The engine is currently overloaded."
+        }
+      }
+    },
+    {
+      "name": "stream_that_starts_with_a_byte_order_mark",
+      "list": "questioned_otherwise",
+      "reason": "A byte order mark that starts a stream is ignored, as the format of a stream of events says, and the first event is read: the maintainer's decision. Python's client reads the line the mark starts as no data.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
       "name": "usage_completion_tokens_as_text",
       "list": "questioned_otherwise",
       "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
