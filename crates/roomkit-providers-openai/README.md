@@ -86,6 +86,16 @@ the done event, with the usage and the model that answered.
   it fails, a failure worth a retry, and a call it brought is never handed
   whole, to run. A finish reason that is an empty text
   (`"finish_reason": ""`) says nothing: it is no reason, and no stop.
+- **An answer that ends inside an event was cut there.** The event an answer
+  ends on, with no blank line after it, is read when its data is a whole
+  JSON document, or the end mark, with or without a line end after its last
+  line. When its data is neither, the answer ended inside it: nothing of
+  that event is read, and the stream is what it was before it: complete if
+  it had said why it stopped, cut if it had not, and an answer that carried
+  no event if that event was its first. The line end cannot tell the two
+  apart, since a whole last line may lack its own; the data can, since an
+  event's data is a JSON object and no start of one is a JSON document. A
+  character the answer's end cuts is part of the cut.
 
 ## The model listing
 
@@ -260,8 +270,8 @@ read in the whole body, repeated in the failure or not.
 ## Where the provider differs from Python's
 
 The provider does as `OpenAIAIProvider` of RoomKit's Python implementation on
-292 of the 340 captured cases: 187 of the 211 of a whole answer, 96 of the
-115 of a stream of events, the 4 of a stream of text, and 5 of the 10 of a
+295 of the 344 captured cases: 187 of the 211 of a whole answer, 99 of the
+119 of a stream of events, the 4 of a stream of text, and 5 of the 10 of a
 model listing. It differs on the others, each for a reason:
 
 - **Redirects** are refused, where Python's SDK follows them, a `301`, a
@@ -332,6 +342,12 @@ model listing. It differs on the others, each for a reason:
   after what came, as a stream whose connection is lost does, and hands no
   whole call, where Python reads it as complete and hands its call to run.
   A stream that ends with one of the two is complete, here as in Python.
+- **A body that ends inside an event** is read as one that ended before
+  that event, here as in Python, whose SDK reads nothing of such an event:
+  it is complete if it had said why it stopped, and fails as said above if
+  it had not, where Python reads it as complete. A body that ends inside a
+  character is cut there too, where Python fails for good, in the words of
+  its decoder.
 - **A JSON error object that answers a stream request with a 200** fails as
   the status it names, retried or not by that status, as `generate` reads
   the same body. Python says the stream carried no event, a final failure
@@ -348,7 +364,7 @@ model listing. It differs on the others, each for a reason:
   stream of events says, and the first event is read, where Python's SDK
   reads the line the mark starts as no data.
 - **The last event of a stream** that ends with no blank line after it is
-  read, where Python's SDK drops it.
+  read when its data came whole, where Python's SDK drops it.
 - **An event that holds no data** (a named event a server keeps a connection
   alive with) is no event, as the format says, where Python's SDK reads it
   as JSON and fails the stream.

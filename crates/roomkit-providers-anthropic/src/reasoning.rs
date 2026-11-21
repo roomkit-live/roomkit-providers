@@ -113,7 +113,7 @@ pub(crate) fn effort(request: &AiRequest, entry: Option<&ModelInfo>) -> Option<&
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::entry;
+    use crate::models::{entry, models};
 
     fn asking(effort: &str) -> AiRequest {
         AiRequest {
@@ -141,6 +141,80 @@ mod tests {
         // level, and a model the catalogue does not know nothing.
         assert_eq!(sent("claude-opus-5-5", "none"), Some("low"));
         assert_eq!(sent("no-such-model", "none"), None);
+    }
+
+    /// A turn that states this budget, this switch and this effort.
+    fn turn(budget: Option<i64>, enabled: Option<bool>, effort: Option<&str>) -> AiRequest {
+        AiRequest {
+            thinking_budget: budget,
+            enable_thinking: enabled,
+            reasoning_effort: effort.map(str::to_owned),
+            ..AiRequest::default()
+        }
+    }
+
+    // Python: src/roomkit/providers/anthropic/reasoning.py::thinking_or_temperature,
+    // which sends `_thinking_off(model)` where the switch is False, and
+    // nowhere else.
+    // The block that turns thinking off goes to a turn that states off, of
+    // a model whose catalogue entry declares one, and to no other turn: one
+    // that says nothing of thinking sends no block, and one that thinks
+    // sends the block of its thinking.
+    #[test]
+    fn the_block_that_turns_thinking_off_goes_to_a_turn_that_states_off_alone() {
+        let declaring = [
+            ("claude-opus-5", "disabled"),
+            ("claude-sonnet-5", "disabled"),
+            ("claude-haiku-5-5", "disabled"),
+            ("claude-sonnet-5-5", "between_tools"),
+        ];
+        let declared = |model: &&ModelInfo| {
+            let tags = OFF_BLOCKS.iter();
+            tags.filter(|(tag, _)| tagged(Some(model), tag)).count()
+        };
+        // Every model of the catalogue that declares a block, each one block.
+        let blocks: Vec<usize> = models().iter().map(|model| declared(&model)).collect();
+        assert_eq!(blocks.iter().sum::<usize>(), declaring.len());
+        assert!(blocks.iter().all(|declared| *declared <= 1));
+        for (model, kind) in declaring {
+            let adaptive = AnthropicConfig::new("placeholder-not-a-key", model);
+            let budgeted = AnthropicConfig {
+                use_adaptive_thinking: Some(false),
+                ..adaptive.clone()
+            };
+            let sent = |config: &AnthropicConfig, turn: &AiRequest| {
+                sampling(config, turn, entry(model)).thinking
+            };
+            for config in [&adaptive, &budgeted] {
+                for off in [
+                    turn(None, Some(false), None),
+                    turn(Some(0), Some(true), None),
+                    turn(Some(-1), None, None),
+                    turn(None, None, Some("none")),
+                ] {
+                    assert_eq!(sent(config, &off), Some(json!({"type": kind})), "{model}");
+                }
+                for unsaid in [turn(None, None, None), turn(None, None, Some("high"))] {
+                    assert_eq!(sent(config, &unsaid), None, "{model}");
+                }
+            }
+            let thinks = json!({"type": "adaptive", "display": "summarized"});
+            let on = turn(None, Some(true), None);
+            assert_eq!(sent(&adaptive, &on), Some(thinks), "{model}");
+            // A turn that does not think for want of a budget did not state
+            // off.
+            assert_eq!(sent(&budgeted, &on), None, "{model}");
+            let on_a_budget = json!({"type": "enabled", "budget_tokens": 2048});
+            let asked = turn(Some(2048), None, None);
+            assert_eq!(sent(&budgeted, &asked), Some(on_a_budget), "{model}");
+        }
+        // A model that declares no block is sent none, whatever its turn
+        // states.
+        for model in ["claude-opus-5-5", "claude-opus-4-8", "no-such-model"] {
+            let config = AnthropicConfig::new("placeholder-not-a-key", model);
+            let off = turn(None, Some(false), None);
+            assert_eq!(sampling(&config, &off, entry(model)).thinking, None);
+        }
     }
 
     #[test]

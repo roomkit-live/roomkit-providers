@@ -9,8 +9,10 @@
 //! An answer is complete once it said why it stopped, or sent its end
 //! mark. One that ends with neither was cut: what came is handed on, then
 //! it fails, and a call it brought is never handed whole, to run. An
-//! answer that gave no event and that the server says is JSON may be an
-//! error object in place of a stream: it reads as a whole answer's does.
+//! answer that ends inside an event was cut there: nothing of that event
+//! is read, and the answer is what it was before it. An answer that gave
+//! no event and that the server says is JSON may be an error object in
+//! place of a stream: it reads as a whole answer's does.
 
 use roomkit_providers_client::failure::carried;
 use roomkit_providers_client::stream::Item;
@@ -62,6 +64,11 @@ async fn read(provider: &OpenAi, request: &AiRequest, out: &Yielder<Item>) -> Re
     while let Some(data) = answer.next().await? {
         if data.starts_with(END_MARK) {
             marked = true;
+            break;
+        }
+        // The answer ended inside this event: it is no event of the
+        // answer, which is what it was before it.
+        if answer.was_cut() {
             break;
         }
         let taken = folding.take(&data, &mut ready);

@@ -280,15 +280,24 @@ fn open_call(index: u32) -> [Value; 2] {
 // Not in Python, which reads such a stream as complete: a stream that ends
 // with neither a stop reason nor the event that ends its message was cut.
 // What came is handed on, then it fails as a stream whose connection is
-// lost does; a call it brought is never handed whole, to run.
+// lost does. A call whose block closed is part of what came, handed as it
+// came; a call still open is never handed. No done event follows: the
+// failure is the stream's last item.
 #[tokio::test]
 async fn a_stream_that_ends_with_no_stop_reason_and_no_end_was_cut() {
     let [opened, delta, stopped] = text_block(0, "Hello.");
-    for (events, text, composed) in [
-        (vec![start()], "", 0),
-        (vec![start(), opened.clone(), delta.clone()], "Hello.", 0),
-        (vec![start(), opened, delta, stopped], "Hello.", 0),
-        ([&[start()][..], &open_call(0)].concat(), "", 2),
+    let closed = json!({"type": "content_block_stop", "index": 0});
+    for (events, text, composed, handed) in [
+        (vec![start()], "", 0, 0),
+        (vec![start(), opened.clone(), delta.clone()], "Hello.", 0, 0),
+        (vec![start(), opened, delta, stopped], "Hello.", 0, 0),
+        ([&[start()][..], &open_call(0)].concat(), "", 2, 0),
+        (
+            [&[start()][..], &open_call(0), &[closed]].concat(),
+            "",
+            2,
+            1,
+        ),
     ] {
         let (given, failure) = streamed(stream_of(&events), &hello()).await;
         assert_eq!(text_of(&given), text);
@@ -296,8 +305,17 @@ async fn a_stream_that_ends_with_no_stop_reason_and_no_end_was_cut() {
             .iter()
             .filter(|event| matches!(event, StreamEvent::ToolCallDelta(_)));
         assert_eq!(deltas.count(), composed);
-        let ended =
-            |event: &StreamEvent| matches!(event, StreamEvent::ToolCall(_) | StreamEvent::Done(_));
+        let calls = given.iter().filter_map(|event| match event {
+            StreamEvent::ToolCall(call) => Some((call.id.as_str(), call.partial, call.garbled)),
+            StreamEvent::TextDelta(_)
+            | StreamEvent::ToolCallDelta(_)
+            | StreamEvent::Done(_)
+            | StreamEvent::ThinkingDelta(_)
+            | StreamEvent::Usage(_) => None,
+        });
+        let whole = [("toolu_1", false, false)];
+        assert_eq!(calls.collect::<Vec<_>>(), whole[..handed], "{given:?}");
+        let ended = |event: &StreamEvent| matches!(event, StreamEvent::Done(_));
         assert!(!given.iter().any(ended), "{given:?}");
         let error = failure.unwrap();
         assert_eq!(
@@ -316,6 +334,118 @@ async fn a_stream_that_ends_with_no_stop_reason_and_no_end_was_cut() {
     assert_eq!(pieces, ["Hello."]);
     assert!(failure.unwrap().retryable);
     assert!(provider.generate(&hello()).await.unwrap_err().retryable);
+}
+
+/// What a stream of events gives of each of `bodies`, each the one read of
+/// an answer that then ends: its events, then the failure that ended them.
+async fn streamed_each(bodies: Vec<Vec<u8>>) -> Vec<(Vec<StreamEvent>, Option<ProviderError>)> {
+    let asked = bodies.len();
+    let replies = bodies.into_iter().map(|body| stream_of_bytes(vec![body]));
+    let fake = Fake::serving(replies.collect()).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    let mut given = Vec::new();
+    for _ in 0..asked {
+        given.push(drained(provider.generate_structured_stream(&hello())).await);
+    }
+    given
+}
+
+/// An answer sent in `reads`, after which the stream ends.
+fn stream_of_bytes(reads: Vec<Vec<u8>>) -> Reply {
+    Reply::stream(reads, Ending::Ends)
+}
+
+/// `before`, then each start of `event` that stops short of its blank
+/// line: the bodies of answers that end inside `event`, and one that ends
+/// before it.
+fn ending_inside(before: &[u8], event: &str) -> Vec<Vec<u8>> {
+    let cuts = (0..event.len()).map(|at| &event.as_bytes()[..at]);
+    cuts.map(|start| [before, start].concat()).collect()
+}
+
+/// What the failure of a stream that was cut says.
+const CUT: &str =
+    "the provider's stream ended with neither a stop reason nor the end of its message";
+
+// A body that ends inside an event was cut there, whatever of the event
+// came: the event is not read, and the stream is what it was before it.
+// With no stop reason before it, what came is handed on, then the stream
+// fails as one that ended with neither a stop reason nor its end, worth a
+// retry, never in the words of a reader of the event. An event whose data
+// came whole is read, with no blank line and no line end after it.
+#[tokio::test]
+async fn a_stream_that_ends_inside_an_event_was_cut_before_it() {
+    let [_, more, _] = text_block(0, "lo.");
+    let (before, next) = (said("Hel"), event(&more));
+    // The data of the event is whole two bytes before its end: its line
+    // end, then its blank line.
+    let whole = next.len() - 2;
+    let given = streamed_each(ending_inside(&before, &next)).await;
+    for (at, (events, failure)) in given.iter().enumerate() {
+        let text = if at < whole { "Hel" } else { "Hello." };
+        assert_eq!(text_of(events), text, "cut at {at}");
+        let done = |event: &StreamEvent| matches!(event, StreamEvent::Done(_));
+        assert!(!events.iter().any(done), "cut at {at}: {events:?}");
+        let error = failure.as_ref().unwrap();
+        assert_eq!(error.message, CUT, "cut at {at}");
+        let attributes = (error.retryable, error.status_code, error.before_request);
+        assert_eq!(attributes, (true, None, false), "cut at {at}");
+    }
+    // A body that ends inside a character ends inside an event.
+    let [_, wide, _] = text_block(0, "caf\u{e9}");
+    let wide = event(&wide);
+    let inside = wide.find('\u{e9}').unwrap() + 1;
+    let cut = [&before[..], &wide.as_bytes()[..inside]].concat();
+    // A whole answer and the text of such a stream fail the same way.
+    let replies = (0..3).map(|_| stream_of_bytes(vec![cut.clone()]));
+    let fake = Fake::serving(replies.collect()).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    let (events, failure) = drained(provider.generate_structured_stream(&hello())).await;
+    assert_eq!(text_of(&events), "Hel");
+    let (pieces, text_failure) = drained(provider.generate_stream(&hello())).await;
+    assert_eq!(pieces, ["Hel"]);
+    let whole_answer = provider.generate(&hello()).await.unwrap_err();
+    for error in [failure.unwrap(), text_failure.unwrap(), whole_answer] {
+        assert_eq!((error.message.as_str(), error.retryable), (CUT, true));
+    }
+}
+
+// Once a stream said why it stopped it is complete, as Python reads it,
+// wherever the event that ends its message is cut.
+#[tokio::test]
+async fn a_stream_that_ends_inside_the_event_after_its_stop_reason_is_complete() {
+    let events = message_saying("Hello.");
+    let (said, stop) = events.split_at(events.len() - 1);
+    let given = streamed_each(ending_inside(&sse_of(said), &event(&stop[0]))).await;
+    for (at, (events, failure)) in given.iter().enumerate() {
+        assert!(failure.is_none(), "cut at {at}: {failure:?}");
+        assert_eq!(text_of(events), "Hello.", "cut at {at}");
+        let Some(StreamEvent::Done(done)) = events.last() else {
+            panic!("cut at {at}: no end in {events:?}");
+        };
+        assert_eq!(done.finish_reason.as_deref(), Some("end_turn"));
+        assert_eq!(done.usage["output_tokens"], 5, "cut at {at}");
+    }
+}
+
+// A body that ends inside its first event holds no event: the failure of an
+// answer that carried none, final, as Python reads it. Once the data of the
+// message's start came whole, the message started, and was cut.
+#[tokio::test]
+async fn a_stream_that_ends_inside_its_first_event_carried_no_event() {
+    let first = event(&start());
+    let whole = first.len() - 2;
+    let given = streamed_each(ending_inside(b"", &first)).await;
+    for (at, (events, failure)) in given.iter().enumerate() {
+        let error = failure.as_ref().unwrap();
+        let said = (error.message.as_str(), error.retryable, events.len());
+        if at < whole {
+            let no_event = "The provider's stream carried no event: its body could not be read";
+            assert_eq!(said, (no_event, false, 0), "cut at {at}");
+        } else {
+            assert_eq!(said, (CUT, true, 1), "cut at {at}");
+        }
+    }
 }
 
 // A stream that ends with a stop reason and no end event, or with its end

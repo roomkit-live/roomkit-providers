@@ -2472,6 +2472,47 @@ case(
     stream(["data: [DONE]\n\n"]),
 )
 
+# -- Streams that end inside an event -------------------------------------------------------
+
+INSIDE_AN_EVENT = "stream stream_ends_inside_an_event"
+CUT_EVENT = 'data: {"id":"chatcmpl-1","choi'
+case(
+    "stream_that_ends_inside_an_event",
+    INSIDE_AN_EVENT,
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([*sse(chunk({"content": "Hel"}), done=False), CUT_EVENT]),
+    note="The body ends inside the data of an event, with no finish reason before it.",
+)
+case(
+    "stream_that_ends_inside_the_event_after_its_finish_reason",
+    f"{INSIDE_AN_EVENT} finish_stop",
+    STREAM,
+    OPENAI,
+    HELLO,
+    stream([*said("Hel", "lo.")[:-2], CUT_EVENT]),
+    note="The finish reason came: the body ends inside the event that tells the usage.",
+)
+case(
+    "stream_that_ends_inside_its_end_mark",
+    f"{INSIDE_AN_EVENT} finish_stop",
+    STREAM,
+    OPENAI,
+    HELLO,
+    stream([*said("Hel", "lo.")[:-1], "data: [DO"]),
+    note="The finish reason and the usage came: the body ends inside the end mark.",
+)
+case(
+    "stream_that_ends_inside_its_first_event",
+    INSIDE_AN_EVENT,
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([CUT_EVENT]),
+    note="A body that ends inside its first event holds no event.",
+)
+
 # -- A redirect to another host --------------------------------------------------------------
 
 case(
@@ -3260,6 +3301,17 @@ ALSO_DECIDED_BY_THE_SDK = {
     "stream_event_with_no_data": (
         "The openai SDK's reader hands on an event that holds no data, which is read as JSON."
     ),
+    **{
+        f"stream_that_ends_inside_{event}": (
+            "The openai SDK's reader reads nothing of an event the body ends inside."
+        )
+        for event in (
+            "an_event",
+            "the_event_after_its_finish_reason",
+            "its_end_mark",
+            "its_first_event",
+        )
+    },
     "list_models_status_401": RAISED_AS_IT_IS,
     "list_models_connection_refused": RAISED_AS_IT_IS,
 }
@@ -3286,6 +3338,7 @@ READ_SILENTLY = (
     "A count that is no JSON whole number is read as one without a word: a text as the "
     "number it spells, true as one."
 )
+READS_AS_COMPLETE = "A stream that ends with no finish reason and no end mark reads as complete."
 POSSIBLE_DEFECTS = {
     "answer_200_that_is_no_completion": (
         "A 200 JSON body that is no completion reads as an empty answer, not as a failure."
@@ -3296,9 +3349,8 @@ POSSIBLE_DEFECTS = {
     "extra_body_replacing_the_request_s_own": (
         "extra_body replaces the request's own model, temperature and messages."
     ),
-    "stream_that_ends_without_an_ending": (
-        "A stream that ends with no finish reason and no end mark reads as complete."
-    ),
+    "stream_that_ends_without_an_ending": READS_AS_COMPLETE,
+    "stream_that_ends_inside_an_event": READS_AS_COMPLETE,
     "stream_tool_call_that_ends_without_an_ending": (
         "A stream that ends with no finish reason and no end mark hands its call as whole."
     ),

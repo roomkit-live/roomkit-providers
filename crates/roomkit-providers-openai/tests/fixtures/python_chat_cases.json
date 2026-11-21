@@ -44,6 +44,7 @@
   "stream_last_event_without_its_blank_line",
   "stream_last_event_without_its_line_end",
   "stream_that_starts_with_a_byte_order_mark",
+  "stream_that_ends_inside_an_event",
   "redirect_302_to_another_host",
   "usage_prompt_tokens_as_text",
   "usage_completion_tokens_as_text",
@@ -31002,6 +31003,426 @@
       },
       "chunks": [
        "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [],
+    "error": {
+     "class": "ProviderError",
+     "message": "The provider's stream carried no event: its body could not be read",
+     "text": "openai: The provider's stream carried no event: its body could not be read",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ValueError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "events"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "stream_that_ends_inside_an_event",
+   "kinds": [
+    "stream",
+    "stream_ends_inside_an_event"
+   ],
+   "call": "generate_structured_stream",
+   "note": "The body ends inside the data of an event, with no finish reason before it.",
+   "sdk": "The openai SDK's reader reads nothing of an event the body ends inside.",
+   "questioned": "A possible defect: A stream that ends with no finish reason and no end mark reads as complete.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hel\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"choi"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hel"
+     },
+     {
+      "type": "done",
+      "finish_reason": null,
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_that_ends_inside_the_event_after_its_finish_reason",
+   "kinds": [
+    "finish_stop",
+    "stream",
+    "stream_ends_inside_an_event"
+   ],
+   "call": "generate_structured_stream",
+   "note": "The finish reason came: the body ends inside the event that tells the usage.",
+   "sdk": "The openai SDK's reader reads nothing of an event the body ends inside.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "gpt-4o",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hel\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"lo.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"choi"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hel"
+     },
+     {
+      "type": "text_delta",
+      "text": "lo."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_that_ends_inside_its_end_mark",
+   "kinds": [
+    "finish_stop",
+    "stream",
+    "stream_ends_inside_an_event"
+   ],
+   "call": "generate_structured_stream",
+   "note": "The finish reason and the usage came: the body ends inside the end mark.",
+   "sdk": "The openai SDK's reader reads nothing of an event the body ends inside.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "gpt-4o",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hel\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"lo.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":5,\"total_tokens\":17}}\n\n",
+       "data: [DO"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hel"
+     },
+     {
+      "type": "text_delta",
+      "text": "lo."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {
+       "input_tokens": 12,
+       "output_tokens": 5
+      },
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_that_ends_inside_its_first_event",
+   "kinds": [
+    "stream",
+    "stream_ends_inside_an_event"
+   ],
+   "call": "generate_structured_stream",
+   "note": "A body that ends inside its first event holds no event.",
+   "sdk": "The openai SDK's reader reads nothing of an event the body ends inside.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"choi"
       ],
       "then": "the stream ends"
      }

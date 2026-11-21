@@ -63,8 +63,8 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
                 ("generate", "as Python"): 185,
                 ("generate", "named"): 24,
                 ("generate", "left to Rust"): 2,
-                ("generate_structured_stream", "as Python"): 95,
-                ("generate_structured_stream", "named"): 19,
+                ("generate_structured_stream", "as Python"): 98,
+                ("generate_structured_stream", "named"): 20,
                 ("generate_structured_stream", "left to Rust"): 1,
                 ("generate_stream", "as Python"): 4,
                 ("list_models", "as Python"): 5,
@@ -88,7 +88,7 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
     def test_every_named_case_is_a_case_of_the_fixture(self) -> None:
         names = {case["name"] for case in fixture()["cases"]}
         self.assertEqual(set(named()) - names, set())
-        self.assertEqual(len(named()), 48)
+        self.assertEqual(len(named()), 49)
 
 
 class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):

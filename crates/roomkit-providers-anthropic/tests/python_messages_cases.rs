@@ -24,9 +24,12 @@ const FIXTURE: &str = include_str!("fixtures/python_messages_cases.json");
 
 /// The key of every configuration, and the keys a request carries.
 const KEY: &str = "placeholder-not-a-key";
-const REQUEST_KEYS: [&str; 2] = [
+const REQUEST_KEYS: [&str; 4] = [
     "placeholder-not-a-key-either",
     "placeholder-not-a-key-of-another",
+    // A key written in white space, and one that is white space alone.
+    " placeholder-not-a-key-in-spaces ",
+    "   ",
 ];
 
 /// Anthropic's own endpoint, which a configuration with no base URL calls.
@@ -82,7 +85,7 @@ const READ_TAGS: [&str; 7] = [
 /// maintainer decides. A replay may set them aside, or expect otherwise
 /// once each is settled: a case joins or leaves this list with that
 /// decision.
-const QUESTIONED: [&str; 43] = [
+const QUESTIONED: [&str; 48] = [
     "answer_200_that_is_an_error_object",
     "answer_that_ends_inside_a_text",
     "answer_that_starts_with_a_byte_order_mark",
@@ -90,6 +93,8 @@ const QUESTIONED: [&str; 43] = [
     "base_url_with_a_query",
     "extra_header_in_place_of_the_key",
     "extra_header_in_place_of_the_key_of_the_request",
+    "key_of_the_request_in_white_space",
+    "key_of_the_request_that_is_blank",
     "list_models_page_that_says_more_follow",
     "list_models_redirect_to_another_host",
     "redirect_301",
@@ -110,8 +115,11 @@ const QUESTIONED: [&str; 43] = [
     "stream_of_a_message_start_alone",
     "stream_that_ends_before_its_stop_reason",
     "stream_that_ends_inside_a_text",
+    "stream_that_ends_inside_an_event",
+    "stream_that_ends_inside_its_end_event",
     "stream_that_ends_without_its_end_event",
     "stream_that_starts_with_a_byte_order_mark",
+    "stream_tool_call_closed_before_the_stream_ends",
     "stream_tool_call_that_ends_without_an_ending",
     "stream_tool_call_whose_arguments_are_blank",
     "stream_tool_call_whose_arguments_are_no_json",
@@ -143,7 +151,7 @@ const UNREAD: [&str; 1] = ["turn_whose_role_the_provider_does_not_know"];
 
 /// What a fixture must show of the provider: each kind, in at least one
 /// case. A regenerated fixture that loses one fails here.
-const KINDS: [&str; 103] = [
+const KINDS: [&str; 106] = [
     "base_url",
     "before_request",
     "body_lost",
@@ -171,6 +179,7 @@ const KINDS: [&str; 103] = [
     "image_data_uri",
     "image_url",
     "listing",
+    "listing_content_type",
     "listing_pages",
     "max_tokens",
     "no_temperature",
@@ -214,6 +223,7 @@ const KINDS: [&str; 103] = [
     "stream_cut",
     "stream_cut_anywhere",
     "stream_cut_inside_a_character",
+    "stream_ends_inside_an_event",
     "stream_error_event",
     "stream_events_ignored",
     "stream_events_named",
@@ -229,6 +239,7 @@ const KINDS: [&str; 103] = [
     "thinking_replayed",
     "thinking_sent",
     "thinking_signed",
+    "thinking_unsaid",
     "timeout",
     "timeouts",
     "tool_call",
@@ -442,9 +453,9 @@ fn each_result_reads_as_the_contract_s_types_and_writes_back_unchanged() {
 #[test]
 fn each_failure_says_what_a_replay_reproduces_of_it() {
     let failures = fixture().each_failure_says_what_a_replay_reproduces(&SHAPE);
-    assert!(failures.all >= 120, "{} failures", failures.all);
+    assert!(failures.all >= 122, "{} failures", failures.all);
     assert!(
-        failures.compared >= 27,
+        failures.compared >= 28,
         "{} messages compared",
         failures.compared
     );
@@ -607,17 +618,17 @@ fn the_fixture_covers_every_kind_of_case() {
     let fixture = fixture();
     fixture.covers_every_kind_of_case(&KINDS);
     let calls = |call: &str| fixture.calls(call);
-    assert!(calls("generate") >= 242, "{}", calls("generate"));
+    assert!(calls("generate") >= 248, "{}", calls("generate"));
     assert!(
         calls("generate_stream") >= 6,
         "{}",
         calls("generate_stream")
     );
     assert!(
-        calls("generate_structured_stream") >= 100,
+        calls("generate_structured_stream") >= 105,
         "{}",
         calls("generate_structured_stream")
     );
-    assert!(calls("list_models") >= 16, "{}", calls("list_models"));
-    assert!(fixture.cases.len() >= 364, "the fixture lost cases");
+    assert!(calls("list_models") >= 18, "{}", calls("list_models"));
+    assert!(fixture.cases.len() >= 377, "the fixture lost cases");
 }

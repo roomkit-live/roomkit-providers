@@ -262,7 +262,8 @@ impl Anthropic {
     }
 
     /// The models the endpoint lists, each by its id and its name, as
-    /// Python's `list_models` reads the one page it asks.
+    /// Python's `list_models` reads the one page it asks: as the JSON it
+    /// is, whatever the answer says it is.
     async fn live_models(&self) -> Result<Vec<ModelInfo>, Failure> {
         let headers = self.keyed_headers()?;
         let call = Call {
@@ -271,11 +272,12 @@ impl Anthropic {
             body: None,
         };
         let (page, json) = self.client.send(call).await?;
-        if !json {
-            return Err(failure::no_listing());
-        }
-        let page: Value =
-            serde_json::from_slice(past_mark(&page)).map_err(|error| Failure::malformed(&error))?;
+        let page: Value = match serde_json::from_slice(past_mark(&page)) {
+            Ok(page) => page,
+            Err(error) if json => return Err(Failure::malformed(&error)),
+            // A body that is no JSON and that nothing says is: no listing.
+            Err(_) => return Err(failure::no_listing()),
+        };
         if failure::holds_an_error(&page) {
             return Err(Failure::error_object(&page));
         }

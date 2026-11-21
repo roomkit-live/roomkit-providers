@@ -167,6 +167,25 @@
       }
     },
     {
+      "name": "stream_that_ends_inside_an_event",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a finish reason nor its end mark was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: [{\"type\":\"text_delta\",\"text\":\"Hel\"}]",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a finish reason nor its end mark"
+        }
+      }
+    },
+    {
       "name": "stream_tool_call_that_ends_without_an_ending",
       "list": "questioned_otherwise",
       "reason": "A stream that ends with neither a finish reason nor its end mark was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
@@ -430,7 +449,7 @@
     {
       "name": "stream_last_event_without_its_blank_line",
       "list": "questioned_otherwise",
-      "reason": "An event the answer ends on with no blank line after it is read: the maintainer's decision. Python's client drops it.",
+      "reason": "An event the answer ends on with no blank line after it is read when its data came whole: the maintainer's decision. Python's client drops it.",
       "differs": [
         "the events: "
       ],
@@ -445,7 +464,7 @@
     {
       "name": "stream_last_event_without_its_line_end",
       "list": "questioned_otherwise",
-      "reason": "An event the answer ends on with no blank line after it is read: the maintainer's decision. Python's client drops it.",
+      "reason": "An event the answer ends on with no blank line after it is read when its data came whole: the maintainer's decision. Python's client drops it.",
       "differs": [
         "the events: "
       ],

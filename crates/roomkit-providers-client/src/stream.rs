@@ -31,6 +31,10 @@ pub type Item = Result<StreamEvent, ProviderError>;
 /// one the server says is JSON are kept, within what an answer read whole
 /// may weigh: such an answer may be a JSON document in place of a stream,
 /// which [`unstreamed`](Self::unstreamed) gives.
+///
+/// An answer may end inside an event, with no blank line after it. Such an
+/// event is given as any other, and [`was_cut`](Self::was_cut) says
+/// whether the answer was cut there.
 pub struct Streamed {
     response: reqwest::Response,
     events: Events,
@@ -45,6 +49,9 @@ pub struct Streamed {
     /// The bytes of an answer the server says is JSON, kept until a second
     /// event is asked for.
     kept: Option<Vec<u8>>,
+    /// Whether the answer was cut inside the event given last: said at the
+    /// answer's end, of its last event, which is given next.
+    cut: bool,
 }
 
 impl std::fmt::Debug for Streamed {
@@ -78,14 +85,16 @@ impl Client {
             ended: false,
             given: false,
             kept,
+            cut: false,
         })
     }
 }
 
 impl Streamed {
     /// The data of the answer's next event, `None` once the answer ended.
-    /// An event the answer ends on with no blank line after it is read all
-    /// the same.
+    /// An event the answer ends on with no blank line after it is given all
+    /// the same, with what came of its data: [`was_cut`](Self::was_cut)
+    /// says whether the answer was cut inside it.
     ///
     /// # Errors
     ///
@@ -118,7 +127,10 @@ impl Streamed {
                     self.events.feed(bytes)
                 }
                 None => match self.events.finish() {
-                    Ok(last) => (last.into_iter().collect(), None),
+                    Ok(last) => {
+                        self.cut = last.as_deref().is_some_and(stops_short);
+                        (last.into_iter().collect(), None)
+                    }
                     Err(error) => (Vec::new(), Some(error)),
                 },
             };
@@ -126,6 +138,25 @@ impl Streamed {
             self.unread = unread;
             self.ended = read.is_none();
         }
+    }
+
+    /// Whether the answer was cut inside the event [`next`](Self::next) gave
+    /// last: the answer ended with no blank line after that event, and its
+    /// data does not read as a JSON document. Such an event is no event of
+    /// the answer, which is then what it was before it: complete if it had
+    /// said how it ends, cut if it had not, and nothing follows it.
+    ///
+    /// An event whose data reads as a JSON document came whole: it is read
+    /// as any other, with no blank line after it and with no line end
+    /// after its last line. The line end cannot tell the two apart: the
+    /// last line of a whole event may lack its own, and data written on
+    /// several lines may be cut after one. The data can, where an event's
+    /// data is a JSON object, as on the wires read here: no start of an
+    /// object's text is a JSON document. A wire that ends on a mark that
+    /// is no JSON looks for its mark first.
+    #[must_use]
+    pub const fn was_cut(&self) -> bool {
+        self.cut
     }
 
     /// Keeps `bytes`, the next ones of an answer the server says is JSON.
@@ -150,6 +181,12 @@ impl Streamed {
         let body = self.kept?;
         serde_json::from_slice(past_mark(&body)).ok()
     }
+}
+
+/// Whether `data`, what came of an event no blank line followed, stops
+/// short of the event's end: it does not read as a JSON document.
+fn stops_short(data: &str) -> bool {
+    serde_json::from_str::<Value>(data).is_err()
 }
 
 /// The events of the generation that answers `request`, as they leave a

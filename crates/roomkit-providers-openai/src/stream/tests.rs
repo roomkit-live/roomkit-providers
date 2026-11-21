@@ -332,6 +332,133 @@ async fn an_empty_finish_reason_is_none() {
     );
 }
 
+/// What a stream of events gave: its events, then the failure that ended
+/// them.
+type Given = (
+    Vec<StreamEvent>,
+    Option<roomkit_providers_llm::ProviderError>,
+);
+
+/// What a stream of events gives of each of `bodies`, each the one read of
+/// an answer that then ends.
+async fn streamed_each(bodies: Vec<Vec<u8>>) -> Vec<Given> {
+    let asked = bodies.len();
+    let replies = bodies.into_iter();
+    let replies = replies.map(|body| stream_reply(vec![body], Ending::Ends));
+    let fake = Fake::serving(replies.collect()).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    let mut given = Vec::new();
+    for _ in 0..asked {
+        given.push(drained(provider.generate_structured_stream(&hello())).await);
+    }
+    given
+}
+
+/// `before`, then each start of `event` that stops short of its blank
+/// line: the bodies of answers that end inside `event`, and one that ends
+/// before it.
+fn ending_inside(before: &[u8], event: &[u8]) -> Vec<Vec<u8>> {
+    let cuts = (0..event.len()).map(|at| &event[..at]);
+    cuts.map(|start| [before, start].concat()).collect()
+}
+
+/// What the failure of a stream that was cut says.
+const CUT: &str = "the provider's stream ended with neither a finish reason nor its end mark";
+
+// A body that ends inside an event was cut there, whatever of the event
+// came: the event is not read, and the stream is what it was before it.
+// With no finish reason before it, what came is handed on, then the stream
+// fails as one that ended with neither a finish reason nor its end mark,
+// worth a retry, never in the words of a reader of the event. An event
+// whose data came whole is read, with no blank line and no line end after
+// it.
+#[tokio::test]
+async fn a_stream_that_ends_inside_an_event_was_cut_before_it() {
+    let (before, next) = (said("Hel"), said("lo."));
+    // The data of the event is whole two bytes before its end: its line
+    // end, then its blank line.
+    let whole = next.len() - 2;
+    let given = streamed_each(ending_inside(&before, &next)).await;
+    for (at, (events, failure)) in given.iter().enumerate() {
+        let text = if at < whole { "Hel" } else { "Hello." };
+        assert_eq!(text_of(events), text, "cut at {at}");
+        let done = |event: &StreamEvent| matches!(event, StreamEvent::Done(_));
+        assert!(!events.iter().any(done), "cut at {at}: {events:?}");
+        let error = failure.as_ref().unwrap();
+        assert_eq!(error.message, CUT, "cut at {at}");
+        let attributes = (error.retryable, error.status_code, error.before_request);
+        assert_eq!(attributes, (true, None, false), "cut at {at}");
+    }
+    // A body that ends inside a character ends inside an event, and so
+    // does one that ends inside its end mark.
+    let wide = said("caf\u{e9}");
+    let inside = wide.iter().position(|byte| *byte == 0xC3).unwrap() + 1;
+    for cut in [&wide[..inside], &b"data: [DO"[..]] {
+        let cut = [&before[..], cut].concat();
+        // The text of such a stream fails the same way.
+        let replies = (0..2).map(|_| stream_reply(vec![cut.clone()], Ending::Ends));
+        let fake = Fake::serving(replies.collect()).await;
+        let provider = pointed(elsewhere("local-model"), &fake);
+        let (events, failure) = drained(provider.generate_structured_stream(&hello())).await;
+        assert_eq!(text_of(&events), "Hel");
+        let (pieces, text_failure) = drained(provider.generate_stream(&hello())).await;
+        assert_eq!(pieces, ["Hel"]);
+        for error in [failure.unwrap(), text_failure.unwrap()] {
+            assert_eq!((error.message.as_str(), error.retryable), (CUT, true));
+        }
+    }
+}
+
+// Once a stream said why it stopped it is complete, as Python reads it,
+// wherever the event after it, or its end mark, is cut. A usage that came
+// whole is read.
+#[tokio::test]
+async fn a_stream_that_ends_inside_the_event_after_its_finish_reason_is_complete() {
+    let said = chunk(&json!({"content": "Hello."})).to_string();
+    let before = read_of(&[said, finish("stop")]);
+    let usage = json!({"choices": [], "usage": {"prompt_tokens": 12, "completion_tokens": 5}});
+    let usage = read_of(&[usage.to_string()]);
+    for (next, counted) in [(&usage[..], true), (&b"data: [DONE]\n\n"[..], false)] {
+        let whole = next.len() - 2;
+        let given = streamed_each(ending_inside(&before, next)).await;
+        for (at, (events, failure)) in given.iter().enumerate() {
+            assert!(failure.is_none(), "cut at {at}: {failure:?}");
+            assert_eq!(text_of(events), "Hello.", "cut at {at}");
+            let Some(StreamEvent::Done(done)) = events.last() else {
+                panic!("cut at {at}: no end in {events:?}");
+            };
+            assert_eq!(done.finish_reason.as_deref(), Some("stop"), "cut at {at}");
+            let read = counted && at >= whole;
+            assert_eq!(
+                done.usage.is_empty(),
+                !read,
+                "cut at {at}: {:?}",
+                done.usage
+            );
+        }
+    }
+}
+
+// A body that ends inside its first event holds no event: the failure of an
+// answer that carried none, final, as Python reads it. Once the data of the
+// event came whole, it is read, and the stream was cut.
+#[tokio::test]
+async fn a_stream_that_ends_inside_its_first_event_carried_no_event() {
+    let first = said("Hel");
+    let whole = first.len() - 2;
+    let given = streamed_each(ending_inside(b"", &first)).await;
+    for (at, (events, failure)) in given.iter().enumerate() {
+        let error = failure.as_ref().unwrap();
+        let said = (error.message.as_str(), error.retryable, events.len());
+        if at < whole {
+            let no_event = "The provider's stream carried no event: its body could not be read";
+            assert_eq!(said, (no_event, false, 0), "cut at {at}");
+        } else {
+            assert_eq!(said, (CUT, true, 1), "cut at {at}");
+        }
+    }
+}
+
 // Not in Python, which says such an answer carried no event: a JSON error
 // object that answers a stream request with a 200 reads as the status it
 // names, as `generate` reads the same body. No head of a stream came: the

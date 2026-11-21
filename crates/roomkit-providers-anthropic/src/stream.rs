@@ -8,10 +8,14 @@
 //!
 //! An answer is complete once it said why it stopped, or sent the event
 //! that ends its message, past which nothing is read. One that ends with
-//! neither was cut: what came is handed on, then it fails, and a call it
-//! brought is never handed whole, to run. An answer that gave no event of
-//! a message and that the server says is JSON may be an error object in
-//! place of a stream: it fails as the status that object names.
+//! neither was cut: what came is handed on, a call whose block closed
+//! among it, then it fails. A call still open is never handed, and the
+//! failure is the stream's last item: a host runs no call of a stream that
+//! failed. An answer that ends inside an event was cut there: nothing of
+//! that event is read, and the answer is what it was before it. An answer
+//! that gave no event of a message and that the server says is JSON may be
+//! an error object in place of a stream: it fails as the status that
+//! object names.
 
 use roomkit_providers_client::Call;
 use roomkit_providers_client::failure::carried;
@@ -56,6 +60,11 @@ async fn read(
     let mut folding = Folding::new(&provider.config.model);
     let mut ready = Vec::new();
     while let Some(data) = answer.next().await? {
+        // The answer ended inside this event: it is no event of the
+        // message, which is what it was before it.
+        if answer.was_cut() {
+            break;
+        }
         let taken = folding.take(&data, &mut ready);
         // What an event gave before it failed is handed on first.
         for event in ready.drain(..) {

@@ -58,7 +58,7 @@ const SDK_ERRORS: [&str; 12] = [
 /// planned otherwise and the maintainer decides. A replay may set them
 /// aside, or expect otherwise once each is settled: a case joins or leaves
 /// this list with that decision.
-const QUESTIONED: [&str; 41] = [
+const QUESTIONED: [&str; 42] = [
     "answer_200_that_is_no_completion",
     "authorization_among_the_default_headers",
     "base_url_with_a_trailing_slash_and_a_query",
@@ -80,6 +80,7 @@ const QUESTIONED: [&str; 41] = [
     "stream_last_event_without_its_blank_line",
     "stream_last_event_without_its_line_end",
     "stream_status_400_whose_body_is_lost",
+    "stream_that_ends_inside_an_event",
     "stream_that_ends_without_an_ending",
     "stream_that_starts_with_a_byte_order_mark",
     "stream_tool_call_empty_finish_reason_without_an_end_mark",
@@ -118,7 +119,7 @@ const MANGLED: (&str, &str) = (
 
 /// What a fixture must show of the provider: each kind, in at least one
 /// case. A regenerated fixture that loses one fails here.
-const KINDS: [&str; 83] = [
+const KINDS: [&str; 84] = [
     // A request and its answer.
     "plain",
     "system_prompt",
@@ -163,6 +164,7 @@ const KINDS: [&str; 83] = [
     "stream_usage_off",
     "stream_cut_anywhere",
     "stream_cut_inside_a_character",
+    "stream_ends_inside_an_event",
     "stream_shapes",
     "usage_cached",
     "usage_reasoning",
@@ -383,9 +385,9 @@ fn each_result_reads_as_the_contract_s_types_and_writes_back_unchanged() {
 #[test]
 fn each_failure_says_what_a_replay_reproduces_of_it() {
     let failures = fixture().each_failure_says_what_a_replay_reproduces(&SHAPE);
-    assert!(failures.all >= 122, "{} failures", failures.all);
+    assert!(failures.all >= 123, "{} failures", failures.all);
     assert!(
-        failures.compared >= 45,
+        failures.compared >= 46,
         "{} messages compared",
         failures.compared
     );
@@ -482,10 +484,10 @@ fn the_fixture_covers_every_kind_of_case() {
         calls("generate_stream")
     );
     assert!(
-        calls("generate_structured_stream") >= 115,
+        calls("generate_structured_stream") >= 119,
         "{}",
         calls("generate_structured_stream")
     );
     assert!(calls("list_models") >= 10, "{}", calls("list_models"));
-    assert!(fixture.cases.len() >= 340, "the fixture lost cases");
+    assert!(fixture.cases.len() >= 344, "the fixture lost cases");
 }

@@ -83,7 +83,9 @@ SDK writes them: `max_tokens`, `messages`, `model`, `output_config`,
   key to the next. The model listing is asked with the configuration's. A
   request that has no key to carry, none of its own, none in the
   configuration and no credential among the extra headers, is refused before
-  it is sent, as Python's SDK refuses it.
+  it is sent, as Python's SDK refuses it. Where the configuration's key is
+  empty and an extra header brings a credential, `x-api-key` goes empty
+  beside it, as Python's SDK sends it.
 - **Headers.** `anthropic-version: 2023-06-01`, `accept: application/json`,
   `content-type` on a request with a body, and a `User-Agent` that names the
   client, `roomkit-providers/` and the version of the crate; then the
@@ -124,8 +126,20 @@ reason, the usage, the model that answered and the category of a refusal.
   its type names.
 - **A stream is complete once it said why it stopped, or sent the event that
   ends its message**, past which nothing is read. One that ends with neither
-  was cut: what came is handed on, then it fails, a failure worth a retry,
-  and a call it brought is never handed whole, to run.
+  was cut: what came is handed on, then it fails, a failure worth a retry.
+  A call whose block closed before the cut is part of what came, and is
+  handed as it came; a call still open is never handed. The failure is the
+  stream's last item: a host runs no call of a stream that failed.
+- **An answer that ends inside an event was cut there.** The event an answer
+  ends on, with no blank line after it, is read when its data is a whole
+  JSON document, with or without a line end after its last line. When its
+  data is no JSON document the answer ended inside it: nothing of that
+  event is read, and the stream is what it was before it: complete if it
+  had said why it stopped, cut if it had not, and an answer that carried no
+  event if that event was its first. The line end cannot tell the two
+  apart, since a whole last line may lack its own; the data can, since an
+  event's data is a JSON object and no start of one is a JSON document. A
+  character the answer's end cuts is part of the cut.
 - **A call left open** by a message that is complete (Anthropic closes no
   block a cut stops) is handed once the message is over, with the arguments
   that streamed, read for how the message stopped: partial when the response
@@ -138,8 +152,10 @@ reason, the usage, the model that answered and the category of a refusal.
 headers, the timeouts and the tries of any request. The page gives each
 model's id and name: what the crate's catalogue knows of a model (its
 context window, whether it takes images, its price) is filled from it, and
-a model the catalogue does not know passes through. A body that is no page
-of models with their ids is a failure, never an empty listing.
+a model the catalogue does not know passes through. The page is read as the
+JSON it is, whatever the answer says it is, as Python's SDK reads it. A body
+that is no page of models with their ids is a failure, never an empty
+listing.
 `available_models` is the catalogue, with no request.
 
 ## What the provider guarantees
@@ -218,9 +234,9 @@ Anthropic names no code for it.
 ## Where the provider differs from Python's
 
 The provider does as `AnthropicAIProvider` of RoomKit's Python
-implementation on 300 of the 364 captured cases: 208 of the 242 of a whole
-answer, 80 of the 100 of a stream of events, 5 of the 6 of a stream of text,
-and 7 of the 16 of a model listing. It differs on the others, each for a
+implementation on 309 of the 377 captured cases: 212 of the 248 of a whole
+answer, 83 of the 105 of a stream of events, 5 of the 6 of a stream of text,
+and 9 of the 18 of a model listing. It differs on the others, each for a
 reason:
 
 - **Redirects** are refused, where Python's SDK follows them, a `301`, a
@@ -253,9 +269,17 @@ reason:
   event, a final failure that names no status.
 - **A stream that ends with neither a stop reason nor the event that ends
   its message** fails after what came, as a stream whose connection is lost
-  does, and hands no call, where Python reads it as complete, with no finish
-  reason, and hands its call to run. A stream that ends with one of the two
-  is complete, here as in Python.
+  does, where Python reads it as complete, with no finish reason. A call
+  whose block closed is handed as it came, before the failure, as Python
+  hands it before a lost connection; a call still open is never handed,
+  where Python hands it whole, to run. A stream that ends with one of the
+  two is complete, here as in Python.
+- **A body that ends inside an event** is read as one that ended before
+  that event, here as in Python, whose SDK reads nothing of such an event:
+  it is complete if it had said why it stopped, and fails as said above if
+  it had not, where Python reads it as complete. A body that ends inside a
+  character is cut there too, where Python fails for good, in the words of
+  its decoder.
 - **An event is read by the `type` its data names**, where Python's SDK reads
   it by its `event:` line: here a stream whose events have no such line is
   read, one whose data names no type fails, and an error event whose data is
@@ -266,11 +290,22 @@ reason:
   stream of events says, and the first event is read, where Python's SDK
   reads the line the mark starts as no event and fails on the next.
 - **The last event of a stream** that ends with no blank line after it is
-  read, where Python's SDK drops it, with the stop reason and the usage it
-  holds.
+  read when its data came whole, where Python's SDK drops it, with the stop
+  reason and the usage it holds.
 - **A call whose arguments are blank or no JSON** is handed as the contract
   reads it: blank arguments as none, unreadable ones as a call that does not
   run. Python's SDK fails the whole stream on them.
+- **A call's arguments nested 128 deep or more** are not read: the call is
+  handed as one that does not run, its arguments kept as their text.
+  Python reads them at any depth its interpreter allows.
+- **An integer outside 64 bits in a call's arguments** (above
+  18,446,744,073,709,551,615, or below -9,223,372,036,854,775,808) is read
+  as a float, where Python keeps the integer.
+- **Half of a surrogate pair written as an escape** (`\ud83d` with no second
+  half after it) in the data of an event, in a streamed text for one, fails
+  the stream, final, in the reader's words, after what came: the JSON reader
+  takes no text that is no Unicode. Python reads the text with that half in
+  it.
 - **A call is handed once.** One whose block names no id is handed under the
   one id the provider gave it, where Python hands it twice, under two ids;
   one left open under an id an earlier call of the message carried is handed
@@ -296,6 +331,14 @@ reason:
 - **One client serves every key.** A request's key goes in that request's
   header, where Python keeps a separate SDK client, with its own connections,
   for each of the last eight keys.
+- **A key of the request that is blank, or written in white space,** goes in
+  its header as the request wrote it. White space around a header's value
+  is no part of it: a server reads a blank key as an empty one, and a key
+  in white space without it. Python hands the key to its HTTP client, which
+  refuses such a value: nothing is sent, and its call fails as a lost
+  connection, worth a retry. So does Python's call for a key no header can
+  carry, one that holds a line break: here that request is refused before
+  it is sent, a final failure.
 - **The connections in use are not capped**: the HTTP client has no such
   bound, where Python's client holds 1,000 at most and makes the calls past
   them wait. A request takes again a connection no request used for 5
@@ -327,8 +370,9 @@ token bound of zero in the request is read as none; an `X-Api-Key` among the
 extra headers replaces the configuration's key and a request's; a refused
 request whose body is lost fails as a lost connection, worth a retry; a
 stream that said why it stopped and ends without the event that ends its
-message is complete; the arguments a call's block holds as it opens are not
-read; and the one page of a listing that says more follow is the listing.
+message, or inside it, is complete; the arguments a call's block holds as it
+opens are not read; and the one page of a listing that says more follow is
+the listing.
 
 The rules of a try, which Python leaves to the anthropic SDK, are the SDK's:
 a connection that failed, a timeout, an answer that says `x-should-retry`,

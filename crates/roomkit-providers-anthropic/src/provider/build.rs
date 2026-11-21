@@ -61,7 +61,10 @@ pub(super) struct Carried {
 /// The headers every request carries: the key, the version of the API and
 /// what the provider accepts, then the configuration's extra headers, one
 /// of which replaces the provider's of the same name, its key included, as
-/// Python's client lets it. An empty key writes no header.
+/// Python's client lets it. An empty key is written as an empty header, as
+/// Python's SDK writes it. A request goes with it only beside a credential
+/// an extra header brings: a request's own key takes its place, and a
+/// request with no credential is not sent.
 ///
 /// A base URL that holds user information is sent with it as Basic
 /// credentials, which the client writes beside the key: as with Python's
@@ -72,11 +75,9 @@ pub(super) fn headers_of(config: &AnthropicConfig, url: &reqwest::Url) -> Result
     let mut headers = HeaderMap::new();
     headers.insert(ACCEPT, HeaderValue::from_static(JSON));
     headers.insert(VERSION_HEADER, HeaderValue::from_static(VERSION));
-    if !config.api_key.is_empty() {
-        let no_header = || Failure::unbuilt("its key cannot go in a header");
-        let key = key_value(&config.api_key).ok_or_else(no_header)?;
-        headers.insert(KEY_HEADER, key);
-    }
+    let no_header = || Failure::unbuilt("its key cannot go in a header");
+    let key = key_value(&config.api_key).ok_or_else(no_header)?;
+    headers.insert(KEY_HEADER, key);
     let (mut key_replaced, mut authorized) = (false, false);
     for (name, value) in config.extra_headers.iter().flatten() {
         let no_header = || Failure::unbuilt("one of its extra headers is no HTTP header");

@@ -39,7 +39,12 @@ from wire_capture import (
 
 # The key of another request than the one that carries ``REQUEST_KEY``.
 OTHER_REQUEST_KEY = "placeholder-not-a-key-of-another"
-REQUEST_KEYS = (REQUEST_KEY, OTHER_REQUEST_KEY)
+# A key written in white space, which holds neither of the two others.
+SPACED_REQUEST_KEY = " placeholder-not-a-key-in-spaces "
+# A key that is white space alone. It is no key the fixture can look for:
+# the fixture's own indentation holds it.
+BLANK_REQUEST_KEY = "   "
+REQUEST_KEYS = (REQUEST_KEY, OTHER_REQUEST_KEY, SPACED_REQUEST_KEY)
 
 SDK_RETRIES = (
     "The anthropic SDK decides which answers it tries again, how many times and after what wait."
@@ -1095,6 +1100,29 @@ case(
     hello(DISABLES),
     note="The catalogue says how a model stops thinking whatever the endpoint.",
 )
+UNSAID = "thinking_unsaid"
+for name, config in (
+    ("a_model_that_takes_disabled", DISABLES),
+    ("a_model_that_takes_between_tools", BETWEEN_TOOLS),
+):
+    case(
+        f"thinking_left_unsaid_for_{name}",
+        f"{SENT} {UNSAID}",
+        GENERATE,
+        config,
+        HELLO,
+        hello(config),
+        note="The block that turns thinking off goes to a turn that states off, and to no other.",
+    )
+case(
+    "thinking_switched_on_without_a_budget_for_a_model_that_takes_disabled",
+    SENT,
+    GENERATE,
+    {**DISABLES, "use_adaptive_thinking": False},
+    {**HELLO, "enable_thinking": True},
+    hello(DISABLES),
+    note="A turn that does not think for want of a budget did not state off: no block is sent.",
+)
 
 EFFORT = "effort"
 for name, config, effort in (
@@ -1611,6 +1639,16 @@ case(
     hello(CLAUDE),
     note="A key that is no text is none: the configuration's is sent.",
 )
+for name, key in (("that_is_blank", BLANK_REQUEST_KEY), ("in_white_space", SPACED_REQUEST_KEY)):
+    case(
+        f"key_of_the_request_{name}",
+        "request_key",
+        GENERATE,
+        CLAUDE,
+        {**HELLO, "metadata": {"api_key": key}},
+        hello(CLAUDE),
+        note="A text that is not empty is a key, whatever white space it holds.",
+    )
 TENANT = {
     **GATEWAY,
     "extra_headers": {"X-Tenant": "acme"},
@@ -2870,6 +2908,38 @@ case(
     stream([*said("Hello there.")[:-2], said("Hello there.")[-2].removesuffix("\n")]),
     sdk="The anthropic SDK's reader hands on an event at the blank line that ends it.",
 )
+INSIDE_AN_EVENT = "stream_ends_inside_an_event"
+NOT_READ = "The anthropic SDK's reader reads nothing of an event the body ends inside."
+case(
+    "stream_that_ends_inside_an_event",
+    f"{ENDS_EARLY} {INSIDE_AN_EVENT} finish_none",
+    STREAM,
+    CLAUDE,
+    HELLO,
+    stream([*HALF_SAID, 'event: content_block_delta\ndata: {"type":"content_bl']),
+    sdk=NOT_READ,
+    note="The body ends inside the data of an event, with no stop reason before it.",
+)
+case(
+    "stream_that_ends_inside_its_end_event",
+    f"{ENDS_EARLY} {INSIDE_AN_EVENT}",
+    STREAM,
+    CLAUDE,
+    HELLO,
+    stream([*said("Hello there.")[:-1], 'event: message_stop\ndata: {"type":"mess']),
+    sdk=NOT_READ,
+    note="The stop reason came: the body ends inside the event that ends the message.",
+)
+case(
+    "stream_that_ends_inside_its_first_event",
+    f"stream {INSIDE_AN_EVENT} not_a_stream",
+    STREAM,
+    CLAUDE,
+    HELLO,
+    stream(['event: message_start\ndata: {"type":"message_st']),
+    sdk=NOT_READ,
+    note=NO_EVENT,
+)
 
 # -- How a streamed call is folded ---------------------------------------------------
 
@@ -3077,6 +3147,24 @@ case(
         sse(started(), *tool_block(0, "toolu_1", "lookup_order", '{"num', close=False)), cut=LOST
     ),
     note="The call's composition was told; the call itself never is.",
+)
+case(
+    "stream_tool_call_closed_before_a_lost_connection",
+    f"{FOLDING} stream_cut",
+    STREAM,
+    CLAUDE,
+    TOOLS,
+    stream(sse(started(), *LOOKED_UP), cut=LOST),
+    note="The call's block closed before the cut: the call was handed, and the error follows it.",
+)
+case(
+    "stream_tool_call_closed_before_the_stream_ends",
+    f"{FOLDING} stream_without_its_end",
+    STREAM,
+    CLAUDE,
+    TOOLS,
+    stream(sse(started(), *LOOKED_UP)),
+    note="The call's block closed, and the body ends with no stop reason after it.",
 )
 
 # -- A redirect ---------------------------------------------------------------------------
@@ -3385,6 +3473,19 @@ case(
     NOTHING,
     Reply(status=200, headers=dict(JSON), text=MARK + json.dumps(listed(OPUS))),
 )
+for name, said_to_be in (
+    ("that_does_not_say_what_it_is", {}),
+    ("said_to_be_a_text", {"content-type": "text/plain"}),
+):
+    case(
+        f"list_models_page_{name}",
+        "listing listing_content_type",
+        LISTING,
+        GATEWAY,
+        NOTHING,
+        Reply(status=200, headers=said_to_be, body=listed(OPUS)),
+        note="A page of models is read as the JSON it is, whatever the answer says it is.",
+    )
 case(
     "list_models_redirect_to_another_host",
     "listing redirect redirect_to_another_host",
@@ -3463,6 +3564,19 @@ case(
     KEYED,
     hello(CLAUDE),
 )
+case(
+    "key_of_the_configuration_that_is_empty_beside_an_authorization",
+    "odd_shapes extra_headers",
+    GENERATE,
+    {
+        **CLAUDE,
+        "api_key": "",
+        "extra_headers": {"Authorization": "Bearer placeholder-from-a-header"},
+    },
+    HELLO,
+    hello(CLAUDE),
+    note="The header of the key is sent empty, beside the credential an extra header brings.",
+)
 
 # -- What the anthropic SDK decides, beside its retries -----------------------------------
 
@@ -3522,6 +3636,11 @@ ALSO_DECIDED_BY_THE_SDK = {
     "list_models_answered_with_a_page": PAGE_READ_BY_THE_SDK,
     "list_models_answered_with_an_error_object": PAGE_READ_BY_THE_SDK,
     "list_models_page_that_starts_with_a_byte_order_mark": PAGE_READ_BY_THE_SDK,
+    "list_models_page_that_does_not_say_what_it_is": PAGE_READ_BY_THE_SDK,
+    "list_models_page_said_to_be_a_text": PAGE_READ_BY_THE_SDK,
+    "key_of_the_configuration_that_is_empty_beside_an_authorization": (
+        "The anthropic SDK writes the header of the key it is given, an empty one too."
+    ),
 }
 
 # -- What is under question ----------------------------------------------------------------
@@ -3562,6 +3681,15 @@ READ_SILENTLY = (
     "A count that is no JSON whole number is read as one without a word: a text as the "
     "number it spells, true as one."
 )
+ENDS_WITHOUT_ITS_END = (
+    "A stream that ends without the event that ends its message reads as complete."
+)
+KEY_IN_WHITE_SPACE = (
+    "A key of the request that is blank, or written in white space, is handed to the HTTP "
+    "client as it is. The fake stands above that client, which refuses such a value for a "
+    "header: on a wire nothing is sent, and the call fails as a lost connection, worth a "
+    "retry."
+)
 POSSIBLE_DEFECTS = {
     "token_bound_of_zero_in_the_request": (
         "A token bound of zero in the request is read as none: the configuration's is sent."
@@ -3573,9 +3701,9 @@ POSSIBLE_DEFECTS = {
         "An empty base URL sends the request to Anthropic's own endpoint without the "
         "profile of its model and without the check of its tool names."
     ),
-    "stream_that_ends_without_its_end_event": (
-        "A stream that ends without the event that ends its message reads as complete."
-    ),
+    "stream_that_ends_without_its_end_event": ENDS_WITHOUT_ITS_END,
+    "stream_that_ends_inside_its_end_event": ENDS_WITHOUT_ITS_END,
+    "stream_that_ends_inside_an_event": READS_AS_COMPLETE,
     "stream_that_ends_before_its_stop_reason": READS_AS_COMPLETE,
     "stream_that_ends_inside_a_text": READS_AS_COMPLETE,
     "answer_that_ends_inside_a_text": READS_AS_COMPLETE,
@@ -3588,6 +3716,9 @@ POSSIBLE_DEFECTS = {
         "A stream that ends with no stop reason and without the event that ends its message "
         "hands its call as whole."
     ),
+    "stream_tool_call_closed_before_the_stream_ends": READS_AS_COMPLETE,
+    "key_of_the_request_that_is_blank": KEY_IN_WHITE_SPACE,
+    "key_of_the_request_in_white_space": KEY_IN_WHITE_SPACE,
     "answer_200_that_is_an_error_object": ERROR_OBJECT_UNREAD,
     "stream_answer_200_that_is_an_error_object": ERROR_OBJECT_UNREAD,
     "stream_that_starts_with_a_byte_order_mark": MARK_NOT_DROPPED,

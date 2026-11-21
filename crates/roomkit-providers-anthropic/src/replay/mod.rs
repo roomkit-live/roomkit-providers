@@ -79,7 +79,7 @@ async fn replayed_or_named_for(call: &str) -> (usize, usize) {
 /// what the provider does instead.
 #[tokio::test]
 async fn every_generate_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named_for("generate").await, (208, 34));
+    assert_eq!(replayed_or_named_for("generate").await, (212, 36));
 }
 
 /// Every `generate_structured_stream` case, the same way: the events in
@@ -88,7 +88,7 @@ async fn every_generate_case_replays_as_python_or_is_named() {
 async fn every_structured_stream_case_replays_as_python_or_is_named() {
     assert_eq!(
         replayed_or_named_for("generate_structured_stream").await,
-        (80, 20)
+        (83, 22)
     );
 }
 
@@ -103,7 +103,7 @@ async fn every_text_stream_case_replays_as_python_or_is_named() {
 /// failure Python's `list_models` raises as its SDK's or as a raw exception.
 #[tokio::test]
 async fn every_listing_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named_for("list_models").await, (7, 9));
+    assert_eq!(replayed_or_named_for("list_models").await, (9, 9));
 }
 
 // The seam a replay outside this crate drives a provider through does what
@@ -181,7 +181,7 @@ fn the_catalogue_says_what_the_cases_rest_on() {
         assert_eq!(floor, facts.reasoning_floor.as_deref(), "{}", case.name);
         models += 1;
     }
-    assert!(models >= 364, "{models} cases");
+    assert!(models >= 377, "{models} cases");
 }
 
 /// What the provider of each case answers of itself is what Python's
@@ -213,6 +213,6 @@ fn a_provider_answers_of_itself_what_python_s_answers() {
     }
     // The two the provider does not build: a base URL Python's client and
     // this one read otherwise.
-    assert_eq!(built, 362);
+    assert_eq!(built, 375);
     assert!((270..built).contains(&holds), "{holds} hold a tool unseen");
 }

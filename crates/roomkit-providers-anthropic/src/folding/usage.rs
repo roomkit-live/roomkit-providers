@@ -122,8 +122,9 @@ mod tests {
         }
     }
 
-    // Source: src/tests.rs::a_message_start_tells_its_input
-    // Python: tests/test_providers/test_anthropic.py::TestAnthropicUsageCounters::test_a_message_start_tells_its_input
+    // The counters a message's start tells, in their order, a cache counter
+    // at zero left out. The event the start gives of them is the folding's
+    // (`folding::tests::a_message_start_tells_its_input`).
     #[test]
     fn a_message_start_tells_its_input_and_its_cache_counters_above_zero() {
         let told = |start: Value| {

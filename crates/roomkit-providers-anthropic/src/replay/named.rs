@@ -79,8 +79,9 @@ const NOT_FOLLOWED_307: &str = "the endpoint answered with a redirect (307), whi
 const NOT_FOLLOWED_308: &str = "the endpoint answered with a redirect (308), which is not followed";
 
 const CUT_SHORT: &str = "A stream that ends with neither a stop reason nor the event that ends \
-     its message was cut: what came is handed on, then it fails, and a call it brought is never \
-     handed whole. The maintainer's decision. Python reads it as complete.";
+     its message was cut: what came is handed on, a call whose block closed among it, then it \
+     fails, and a call still open is never handed. The maintainer's decision. Python reads it as \
+     complete.";
 const CUT_SHORT_WORDS: &str =
     "the provider's stream ended with neither a stop reason nor the end of its message";
 const COUNT: &str =
@@ -92,6 +93,11 @@ const ERROR_OBJECT: &str = "A JSON error object that answers a request with a 20
 const MARK: &str = "A byte order mark that starts a stream is ignored, as the format of a stream \
      of events says, and the first event is read: the maintainer's decision. Python's SDK reads \
      the line the mark starts as no event, and fails on the event after it.";
+const KEY_AS_WRITTEN: &str = "A key of the request goes in its header as the request wrote it. \
+     White space around a header's value is no part of it: a server reads a blank key as an \
+     empty one, and a key in white space without it. Python hands the key to its HTTP client, \
+     which refuses such a value: on a wire it sends nothing, and fails as a lost connection, \
+     worth a retry.";
 const CALL_ARGUMENTS: &str = "A call whose arguments are no JSON object is handed as the \
      contract reads it, blank arguments as none and unreadable ones as a call that does not \
      run. Python's SDK fails the whole stream on them.";
@@ -124,6 +130,18 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
                 "the provider cannot be built: its base URL is not an http or https URL",
             ),
         },
+    ),
+    (
+        "key_of_the_request_that_is_blank",
+        KEY_AS_WRITTEN,
+        &[r#"request 0: x-api-key is Some("")"#],
+        answers(SAID, "end_turn", COUNTED),
+    ),
+    (
+        "key_of_the_request_in_white_space",
+        KEY_AS_WRITTEN,
+        &[r#"request 0: x-api-key is Some("placeholder-not-a-key-in-spaces")"#],
+        answers(SAID, "end_turn", COUNTED),
     ),
     (
         "usage_counts_written_as_text",
@@ -208,9 +226,30 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
         fails(None, true, CUT_SHORT_WORDS),
     ),
     (
+        "stream_that_ends_inside_an_event",
+        CUT_SHORT,
+        // The text that came before the event the body ends inside.
+        &[
+            r#"the events: [{"type":"usage","usage":{"input_tokens":12}},{"type":"text_delta","text":"Hel"}]"#,
+            "a failure where Python answers: ",
+        ],
+        fails(None, true, CUT_SHORT_WORDS),
+    ),
+    (
+        "stream_tool_call_closed_before_the_stream_ends",
+        CUT_SHORT,
+        // The call, whose block closed, as it came, and no done event.
+        &[
+            r#"the events: [{"type":"usage","usage":{"input_tokens":12}},{"type":"tool_call_delta","id":"toolu_1","name":"lookup_order","index":0,"arguments_delta":""},{"type":"tool_call_delta","id":"toolu_1","name":"lookup_order","index":0,"arguments_delta":"{\"number\": \"A-1\"}"},{"type":"tool_call","id":"toolu_1","name":"lookup_order","arguments":{"number":"A-1"},"metadata":{},"served":null,"partial":false,"garbled":false,"intent":null}]"#,
+            "a failure where Python answers: ",
+        ],
+        fails(None, true, CUT_SHORT_WORDS),
+    ),
+    (
         "stream_last_event_without_its_blank_line",
-        "An event the answer ends on with no blank line after it is read: the maintainer's \
-         decision. Python's SDK drops it, with the stop reason and the usage it holds.",
+        "An event the answer ends on with no blank line after it is read when its data came \
+         whole: the maintainer's decision. Python's SDK drops it, with the stop reason and the \
+         usage it holds.",
         OTHER_EVENTS,
         counts(COUNTED),
     ),

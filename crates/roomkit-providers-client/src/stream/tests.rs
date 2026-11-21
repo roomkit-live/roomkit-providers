@@ -83,6 +83,60 @@ async fn a_streamed_answer_gives_its_events_or_the_document_it_is() {
     }
 }
 
+// An answer that ends inside an event was cut there: the event is given
+// with what came of its data, and the answer says so of that event alone,
+// when its data does not read as a JSON document. An event whose data
+// reads came whole, whatever follows its last line: a blank line, a line
+// end or nothing.
+#[tokio::test]
+async fn an_answer_says_of_its_last_event_whether_it_was_cut_inside_it() {
+    const EVENTS: &str = "text/event-stream";
+    let whole = r#"{"said": "two"}"#;
+    let endings = [
+        (format!("data: {whole}\n\n"), whole, false),
+        (format!("data: {whole}\n"), whole, false),
+        (format!("data: {whole}"), whole, false),
+        (r#"data: {"said": "tw"#.to_owned(), r#"{"said": "tw"#, true),
+        ("data: {\"said\":\n".to_owned(), r#"{"said":"#, true),
+        (
+            "data: {\"said\":\ndata: \"two\"}".to_owned(),
+            "{\"said\":\n\"two\"}",
+            false,
+        ),
+        ("data: [DONE]".to_owned(), "[DONE]", true),
+        ("data:".to_owned(), "", true),
+        ("data: caf\u{e9}".to_owned(), "caf\u{e9}", true),
+    ];
+    let first = r#"data: {"said": "one"}"#;
+    let replies = endings.iter().map(|(last, _, _)| {
+        let body = format!("{first}\n\n{last}");
+        answer(EVENTS, &[&body], Ending::Ends)
+    });
+    let fake = Fake::serving(replies.collect()).await;
+    let client = client(usual(), 0);
+    for (last, data, cut) in &endings {
+        let mut events = streamed(&client, &fake).await;
+        assert!(!events.was_cut(), "{last:?}: before any event");
+        let one = events.next().await.unwrap();
+        assert_eq!(one.as_deref(), Some(r#"{"said": "one"}"#), "{last:?}");
+        assert!(!events.was_cut(), "{last:?}: an event its blank line ended");
+        assert_eq!(events.next().await.unwrap().as_deref(), Some(*data));
+        assert_eq!(events.was_cut(), *cut, "{last:?}");
+        assert_eq!(events.next().await.unwrap(), None, "{last:?}");
+    }
+    // A character the answer's end cuts is left out of the event it cut.
+    let fake = Fake::serving(vec![Reply::Answer {
+        status: 200,
+        headers: vec![("content-type".to_owned(), EVENTS.to_owned())],
+        body: Body::Reads(vec![b"data: {\"said\": \"caf\xc3".to_vec()], Ending::Ends),
+    }])
+    .await;
+    let mut events = streamed(&client, &fake).await;
+    let last = events.next().await.unwrap();
+    assert_eq!(last.as_deref(), Some(r#"{"said": "caf"#));
+    assert!(events.was_cut());
+}
+
 // What was read before a stream fails is given first: the events ended
 // before the bound of a stream was passed, and those that came before the
 // connection was lost.

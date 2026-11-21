@@ -75,8 +75,8 @@ const EMPTY_REASON: &str = "A finish reason that is an empty text says nothing: 
      The maintainer's decision. Python reads it as complete.";
 const COUNT: &str =
     "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.";
-const LAST_EVENT: &str = "An event the answer ends on with no blank line after it is read: \
-     the maintainer's decision. Python's client drops it.";
+const LAST_EVENT: &str = "An event the answer ends on with no blank line after it is read \
+     when its data came whole: the maintainer's decision. Python's client drops it.";
 const COUNTED: &str = r#"{"input_tokens":1200,"output_tokens":45}"#;
 
 /// The questioned cases the provider answers otherwise than Python: the
@@ -171,6 +171,16 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
         // The text that came, with no done event after it.
         &[
             r#"the events: [{"type":"text_delta","text":"Hello."}]"#,
+            "a failure where Python answers: ",
+        ],
+        fails(None, true, CUT_SHORT_WORDS),
+    ),
+    (
+        "stream_that_ends_inside_an_event",
+        CUT_SHORT,
+        // The text that came before the event the body ends inside.
+        &[
+            r#"the events: [{"type":"text_delta","text":"Hel"}]"#,
             "a failure where Python answers: ",
         ],
         fails(None, true, CUT_SHORT_WORDS),

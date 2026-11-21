@@ -87,6 +87,40 @@ fn thinking_deltas_and_signatures_keep_their_block_identity() {
     assert_eq!(parts[1].redacted.as_deref(), Some("opaque"));
 }
 
+// Source: src/tests.rs::a_message_start_tells_its_input
+// Python: tests/test_providers/test_anthropic.py::TestAnthropicUsageCounters::test_a_message_start_tells_its_input
+#[test]
+fn a_message_start_tells_its_input() {
+    let cached = json!({
+        "input_tokens": 11,
+        "output_tokens": 7,
+        "cache_creation_input_tokens": 5,
+        "cache_read_input_tokens": 3,
+    });
+    let cached_input = json!({
+        "input_tokens": 11,
+        "cache_creation_input_tokens": 5,
+        "cache_read_input_tokens": 3,
+    });
+    for (usage, told) in [
+        (
+            json!({"input_tokens": 11, "output_tokens": 7}),
+            json!({"input_tokens": 11}),
+        ),
+        (cached, cached_input),
+    ] {
+        let started = json!({"type": "message_start", "message": {"usage": usage}});
+        let (events, failure, _) = fold(&[started]);
+        assert!(failure.is_none(), "{failure:?}");
+        let told = told.as_object().cloned().unwrap_or_default();
+        assert_eq!(events, [StreamEvent::Usage(StreamUsage { usage: told })]);
+    }
+    // A start that tells nothing of its input gives no event.
+    let (events, failure, _) = fold(&[start()]);
+    assert!(failure.is_none(), "{failure:?}");
+    assert_eq!(events, []);
+}
+
 // Source: src/tests.rs::fragmented_calls_are_not_executable_when_the_output_cap_cuts_them
 // Python: src/roomkit/providers/anthropic/tool_blocks.py::ToolUseBlocks.remaining
 #[test]

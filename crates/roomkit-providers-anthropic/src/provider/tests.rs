@@ -185,8 +185,58 @@ async fn extra_headers_replace_the_provider_s_own_whatever_their_case() {
         assert_eq!(sent("accept"), ["application/json"]);
         assert_eq!(sent("content-type"), ["application/json"]);
     }
-    // No `Debug` form shows the key a header carries.
+    // No `Debug` form shows the key a header carries: neither the
+    // provider's, nor that of the headers a request goes with.
     assert!(!format!("{provider:?}").contains("placeholder"));
+    for request in [hello(), lending("placeholder-lent-key")] {
+        let headers = provider.headers_of(&request).unwrap();
+        for (name, value) in [
+            ("x-api-key", "placeholder-from-a-header"),
+            ("anthropic-version", "custom"),
+        ] {
+            assert_eq!(headers.get_all(name).iter().count(), 1, "{name}");
+            assert_eq!(headers[name], value);
+        }
+        let shown = format!("{headers:?}");
+        assert!(!shown.contains("placeholder"), "{shown}");
+    }
+}
+
+// The value of an extra header is a secret of the exit, whatever the header:
+// no failure repeats it, of a whole answer, of a stream or of the listing.
+// Where the value names a scheme before its credentials, the credentials
+// alone are one too.
+#[tokio::test]
+async fn no_failure_repeats_the_value_of_an_extra_header() {
+    let extra = [
+        ("X-Tenant", "placeholder-of-a-tenant"),
+        ("Authorization", "Bearer placeholder-from-a-header"),
+    ];
+    let echoed = "Tenant placeholder-of-a-tenant may not send Bearer placeholder-from-a-header, \
+                  nor placeholder-from-a-header.";
+    let refusal = json!({"error": {"type": "permission_error", "message": echoed}}).to_string();
+    let fake = Fake::serving(vec![Reply::json(403, refusal); 3]).await;
+    let provider = pointed(with_headers(elsewhere("local-model"), &extra), &fake);
+    let whole = provider.generate(&hello()).await.unwrap_err();
+    let (_, streamed) = drained(provider.generate_structured_stream(&hello())).await;
+    let listing = provider.list_models().await.unwrap_err();
+    for error in [whole, streamed.unwrap(), listing] {
+        assert_eq!(
+            error.message,
+            "the provider answered HTTP 403 (permission_error): Tenant [***] may not send [***], \
+             nor [***]."
+        );
+        let shown = format!("{error} {error:?}");
+        assert!(!shown.contains("placeholder"), "{shown}");
+    }
+    // The headers went as they are configured.
+    for seen in fake.seen() {
+        assert_eq!(seen.headers["x-tenant"], "placeholder-of-a-tenant");
+        assert_eq!(
+            seen.headers["authorization"],
+            "Bearer placeholder-from-a-header"
+        );
+    }
 }
 
 // Python: tests/test_providers/test_anthropic.py::TestPerRequestCredential: each
@@ -229,6 +279,35 @@ async fn each_request_goes_with_its_own_key_and_leaves_none_to_the_next() {
     );
 }
 
+// Not in Python, whose HTTP client refuses such a value for a header and
+// sends nothing: a key of the request that is blank, or written in white
+// space, goes in its header as the request wrote it, and the server reads
+// it without that white space. No failure repeats it, as it was lent or as
+// the server read it.
+#[tokio::test]
+async fn a_key_of_the_request_in_white_space_goes_as_it_is_written() {
+    let read = "placeholder-lent-key";
+    let said = format!("Wrong key: {read}.");
+    let refusal = json!({"error": {"type": "authentication_error", "message": said}});
+    let replies = vec![Reply::json(401, refusal.to_string()), saying("Yes.")];
+    let fake = Fake::serving(replies).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    let lent = format!(" {read} ");
+    let error = provider.generate(&lending(&lent)).await.unwrap_err();
+    assert_eq!(
+        error.message,
+        "the provider answered HTTP 401 (authentication_error): Wrong key: [***]."
+    );
+    assert!(!format!("{error} {error:?}").contains(read));
+    provider.generate(&lending("   ")).await.unwrap();
+    let keys: Vec<String> = fake
+        .seen()
+        .iter()
+        .map(|seen| seen.headers["x-api-key"].clone())
+        .collect();
+    assert_eq!(keys, [read, ""]);
+}
+
 // A request that has no key to carry is refused before it is sent, as
 // Python's SDK refuses it: the configuration holds none, the request brings
 // none, and no extra header carries a credential.
@@ -256,8 +335,8 @@ async fn a_request_with_no_key_to_carry_is_not_sent() {
         .await
         .unwrap();
     assert_eq!(fake.seen()[0].headers["x-api-key"], "placeholder-lent-key");
-    // So is a credential among the extra headers: the request then carries
-    // no key of the provider's.
+    // So is a credential among the extra headers: the header of the key
+    // then goes empty, once, as Python's SDK sends it.
     let bearer = [("Authorization", "Bearer placeholder-from-a-header")];
     let provider = pointed(with_headers(keyless(), &bearer), &fake);
     provider.generate(&hello()).await.unwrap();
@@ -266,7 +345,8 @@ async fn a_request_with_no_key_to_carry_is_not_sent() {
         seen.headers["authorization"],
         "Bearer placeholder-from-a-header"
     );
-    assert!(!seen.headers.contains_key("x-api-key"));
+    let keys = seen.lines.iter().filter(|(name, _)| name == "x-api-key");
+    assert_eq!(keys.map(|(_, key)| key.as_str()).collect::<Vec<_>>(), [""]);
     // A key that cannot go in a header is refused before anything is sent,
     // in words that repeat nothing of it.
     let error = pointed(elsewhere("local-model"), &fake)

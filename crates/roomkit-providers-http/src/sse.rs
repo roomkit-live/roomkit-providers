@@ -5,7 +5,9 @@
 //! wherever the reads cut: a `\r` that ends one read and a `\n` that starts
 //! the next are one ending. A blank line ends an event, whose `data` lines
 //! join with `\n`; a comment (`:`) and the other fields are skipped. An
-//! event the answer's end cuts, with no blank line after it, is read.
+//! event the answer's end cuts, with no blank line after it, is read, its
+//! last line up to a character that end cuts: whether its data came whole
+//! is for its reader to tell.
 //! What was read before the reading fails is handed on with the failure,
 //! wherever the reads cut.
 //! Three bounds keep a broken or hostile server from growing the memory: a
@@ -131,7 +133,9 @@ impl Events {
     }
 
     /// The data of the event the answer's end cut, if any: an answer that
-    /// ends without its blank line.
+    /// ends without its blank line. The answer may have ended anywhere in
+    /// that event: its data is what came of it, a last line no ending
+    /// followed included, up to a character the end cuts.
     ///
     /// # Errors
     ///
@@ -147,7 +151,7 @@ impl Events {
         }
         // The last line, which no ending followed, is the last of the event
         // the answer's end cuts.
-        let ended = self.take_line(&line)?;
+        let ended = self.take_line(whole_characters(&line))?;
         Ok(ended.or_else(|| self.data.take()))
     }
 
@@ -188,6 +192,19 @@ impl Events {
         }
         data.push_str(value);
         Ok(None)
+    }
+}
+
+/// `line`, the last of an answer, without the character the answer's end
+/// cut: the bytes that start a character and do not finish it. Bytes that
+/// are no UTF-8 stay, for the line to be refused.
+fn whole_characters(line: &[u8]) -> &[u8] {
+    match std::str::from_utf8(line) {
+        // An error with no length: the bytes stop inside a character.
+        Err(error) if error.error_len().is_none() => {
+            line.get(..error.valid_up_to()).unwrap_or(line)
+        }
+        Ok(_) | Err(_) => line,
     }
 }
 
@@ -382,7 +399,7 @@ mod tests {
 
     /// A line is decoded once it is whole: a character cut by a chunk is
     /// read, and bytes that are no UTF-8 are refused wherever the chunks
-    /// are cut, at the answer's end too.
+    /// are cut, on the answer's last line too.
     #[test]
     fn data_that_is_no_utf_8_is_refused_whole_or_split_across_chunks() {
         let malformed = SseError::Malformed {
@@ -392,7 +409,7 @@ mod tests {
             &b"data: \xff\n\n"[..],
             b"data: caf\xc3\n\n",
             b"data: \xe2\x82\n\n",
-            b"data: \xe2\x82",
+            b"data: \xe2\x82\n",
         ] {
             for at in 0..=answer.len() {
                 assert_eq!(
@@ -410,6 +427,47 @@ mod tests {
                 Ok(vec!["caf\u{e9} \u{20ac}".to_owned()]),
                 "cut at {at}"
             );
+        }
+    }
+
+    /// A character the answer's end cuts, on a last line no ending
+    /// followed, is left out of the event that line belongs to: the answer
+    /// ended inside that event, which its reader tells by data that does
+    /// not read. Bytes that are no UTF-8 are refused there as anywhere, and
+    /// so is an unfinished character on a line that ended.
+    #[test]
+    fn a_character_the_answer_s_end_cuts_is_left_out_of_its_event() {
+        for (answer, last) in [
+            (&b"data: caf\xc3"[..], "caf"),
+            (b"data: \xe2\x82", ""),
+            (b"data: one\ndata: \xf0\x9f\x98", "one\n"),
+        ] {
+            for at in 0..=answer.len() {
+                assert_eq!(
+                    read_in_two(answer, at),
+                    Ok(vec![last.to_owned()]),
+                    "{:?} cut at {at}",
+                    String::from_utf8_lossy(answer)
+                );
+            }
+        }
+        let malformed = SseError::Malformed {
+            reason: "an event's data is not UTF-8".to_owned(),
+        };
+        for answer in [
+            &b"data: \xff"[..],
+            b"data: \xc3(",
+            b"data: \xffcaf\xc3",
+            b"data: caf\xc3\n",
+        ] {
+            for at in 0..=answer.len() {
+                assert_eq!(
+                    read_in_two(answer, at),
+                    Err(malformed.clone()),
+                    "{:?} cut at {at}",
+                    String::from_utf8_lossy(answer)
+                );
+            }
         }
     }
 

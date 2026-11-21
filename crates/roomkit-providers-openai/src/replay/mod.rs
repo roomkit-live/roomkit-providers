@@ -88,7 +88,7 @@ async fn every_generate_case_replays_as_python_or_is_named() {
 async fn every_structured_stream_case_replays_as_python_or_is_named() {
     assert_eq!(
         replayed_or_named_for("generate_structured_stream").await,
-        (96, 19)
+        (99, 20)
     );
 }
 
