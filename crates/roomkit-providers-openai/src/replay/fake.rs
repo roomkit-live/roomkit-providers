@@ -4,7 +4,6 @@
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -35,9 +34,9 @@ pub(crate) enum Body {
     /// flushed before the next; then the stream ends, the connection is
     /// lost, or nothing more comes.
     Reads(Vec<Vec<u8>>, Ending),
-    /// Sent read by read as [`Body::Reads`], after this pause before each
-    /// read; then the stream ends.
-    Paced(Vec<Vec<u8>>, Duration),
+    /// Sent read by read as [`Body::Reads`], each read once the test says
+    /// so, with one notification; then the stream ends.
+    Stepped(Vec<Vec<u8>>, Arc<Notify>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,8 +52,10 @@ pub(crate) struct Seen {
     pub(crate) method: String,
     /// The path and the query.
     pub(crate) target: String,
-    /// The headers, their names in lower case.
+    /// The headers, their names in lower case: the last of each name.
     pub(crate) headers: BTreeMap<String, String>,
+    /// Every header line, in the order sent, its name in lower case.
+    pub(crate) lines: Vec<(String, String)>,
     pub(crate) body: Vec<u8>,
 }
 
@@ -70,14 +71,34 @@ pub(crate) struct Fake {
 #[derive(Default)]
 struct Told {
     received: Notify,
+    silent: Notify,
     closed: Notify,
+}
+
+/// A local port a fake listens on. Fakes that serve one after the other may
+/// share one: a port a server closed its connections on stays taken for a
+/// minute, and a test that opens hundreds of them leaves none to open.
+#[derive(Clone)]
+pub(crate) struct Door(Arc<TcpListener>);
+
+impl Door {
+    /// A port of its own on this machine.
+    pub(crate) async fn open() -> Self {
+        Self(Arc::new(TcpListener::bind("127.0.0.1:0").await.unwrap()))
+    }
 }
 
 impl Fake {
     /// A server on a port of its own that answers with `replies`, in order;
     /// a request past them is kept and answered 599.
     pub(crate) async fn serving(replies: Vec<Reply>) -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        Self::behind(&Door::open().await, replies)
+    }
+
+    /// As [`serving`](Self::serving), on the port of `door`: for fakes that
+    /// serve one after the other, each dropped before the next is made.
+    pub(crate) fn behind(door: &Door, replies: Vec<Reply>) -> Self {
+        let listener = Arc::clone(&door.0);
         let address = listener.local_addr().unwrap();
         let seen = Arc::new(Mutex::new(Vec::new()));
         let kept = Arc::clone(&seen);
@@ -111,6 +132,12 @@ impl Fake {
         self.told.received.notified().await;
     }
 
+    /// Returns once the fake stopped answering a request and keeps its
+    /// connection open and silent: once for each time it does.
+    pub(crate) async fn silent(&self) {
+        self.told.silent.notified().await;
+    }
+
     /// Returns once the client closed a connection the fake kept open and
     /// silent.
     pub(crate) async fn closed(&self) {
@@ -136,7 +163,7 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
     };
     seen.lock().unwrap().push(request);
     told.received.notify_one();
-    let closed = &told.closed;
+    let closed = &*told;
     let (status, headers, body) = match reply {
         Reply::Refused => return,
         Reply::Silent => return hold(socket, closed).await,
@@ -170,27 +197,28 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
                 Ending::Silent => hold(socket, closed).await,
             }
         }
-        Body::Paced(reads, pause) => {
-            send_reads(&mut socket, head, &reads, Some(pause)).await;
+        Body::Stepped(reads, steps) => {
+            send_reads(&mut socket, head, &reads, Some(&steps)).await;
             end_reads(socket).await;
         }
     }
 }
 
 /// Sends the head of a chunked answer, then each of `reads` as one chunk of
-/// the transfer, flushed before the next, after `pause` when one is given.
+/// the transfer, flushed before the next, each once `steps` says so when
+/// steps are given.
 async fn send_reads(
     socket: &mut TcpStream,
     mut head: Vec<String>,
     reads: &[Vec<u8>],
-    pause: Option<Duration>,
+    steps: Option<&Notify>,
 ) {
     head.push("transfer-encoding: chunked\r\n\r\n".to_owned());
     socket.write_all(head.join("\r\n").as_bytes()).await.ok();
     for read in reads.iter().filter(|read| !read.is_empty()) {
-        if let Some(pause) = pause {
+        if let Some(steps) = steps {
             socket.flush().await.ok();
-            tokio::time::sleep(pause).await;
+            steps.notified().await;
         }
         let mut chunk = format!("{:x}\r\n", read.len()).into_bytes();
         chunk.extend_from_slice(read);
@@ -208,10 +236,11 @@ async fn end_reads(mut socket: TcpStream) {
 
 /// Keeps a connection open and silent until its client closes it, and
 /// tells so.
-async fn hold(mut socket: TcpStream, closed: &Notify) {
+async fn hold(mut socket: TcpStream, told: &Told) {
+    told.silent.notify_one();
     let mut sent = [0_u8; 64];
     while matches!(socket.read(&mut sent).await, Ok(1..)) {}
-    closed.notify_one();
+    told.closed.notify_one();
 }
 
 /// One request: its head, then the body its `content-length` declares.
@@ -238,8 +267,9 @@ async fn read_request(socket: &mut TcpStream) -> Option<Seen> {
     };
     for line in lines {
         let (name, value) = line.split_once(':')?;
-        seen.headers
-            .insert(name.to_ascii_lowercase(), value.trim().to_owned());
+        let (name, value) = (name.to_ascii_lowercase(), value.trim().to_owned());
+        seen.lines.push((name.clone(), value.clone()));
+        seen.headers.insert(name, value);
     }
     let length = seen.headers.get("content-length");
     let length: usize = length.and_then(|length| length.parse().ok()).unwrap_or(0);

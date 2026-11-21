@@ -53,6 +53,27 @@ pub(crate) fn listed(page: &[u8]) -> Option<Vec<ModelInfo>> {
     ids.map(|id| id.map(ModelInfo::new)).collect()
 }
 
+/// How the names of the models that take images start, for a model the
+/// catalogue does not carry (Python's `_VISION_PREFIXES`).
+const VISION_PREFIXES: [&str; 8] = [
+    "gpt-5",
+    "gpt-4o",
+    "gpt-4.1",
+    "gpt-4-turbo",
+    "gpt-4-vision",
+    "o1",
+    "o3",
+    "o4",
+];
+
+/// Whether `model`, which the catalogue does not carry, takes images on
+/// `OpenAI`'s own endpoint, by how its name starts.
+pub(crate) fn sees_images_by_its_name(model: &str) -> bool {
+    VISION_PREFIXES
+        .iter()
+        .any(|prefix| model.starts_with(prefix))
+}
+
 /// Whether `entry` carries `tag`; no entry carries none.
 pub(crate) fn tagged(entry: Option<&ModelInfo>, tag: &str) -> bool {
     entry.is_some_and(|entry| entry.capabilities.iter().any(|held| held == tag))

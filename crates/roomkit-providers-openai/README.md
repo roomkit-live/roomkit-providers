@@ -81,27 +81,76 @@ catalogue, with no request.
 
 ## What the provider guarantees
 
-- **The key.** It appears in no failure, log, `Debug` form or result. A
-  failure that echoes a server's answer has the key removed from it.
-- **What a failure echoes.** Of a server's answer, only what an error object
-  says of itself: its message, its type and its code, on one line, within
-  500 characters. A body that is no JSON (a gateway's page, a plain text) is
-  never echoed.
-- **Sizes.** Every size a server controls is bounded. An answer read whole
-  past 4 MiB fails the request. A stream fails at a line past 1 MiB, at an
-  event past 1 MiB, and past 256 MiB in all; each is a final failure, after
-  the events read before it.
+- **Secrets.** No failure's text repeats a secret of the configuration that
+  a server's answer holds as it is: the key, the value of each default
+  header (and, where the value names a scheme such as `Bearer`, what follows
+  it), and the user information of the base URL, as it is written, as it
+  reads once decoded, and as the `Authorization` the client writes from it.
+  Each is replaced by `[***]`. This holds whatever built the failure: the
+  provider, the contract's check of a response schema, or a reader. Two
+  limits:
+  - a secret shorter than 8 characters is not searched for: it would be
+    found in ordinary words;
+  - a secret a server sends back in another form (encoded again, cut in
+    pieces, in another case) cannot be recognised.
+
+  The `Debug` forms print none of them, and the provider logs none.
+- **What a failure repeats of an answer.** Only this, each on one line and
+  bounded:
+  - of a request the server refuses, what its error object says of itself:
+    its message, its type and its code (a type or a code within 64
+    characters). A body that is no JSON (a gateway's page, a plain text) is
+    never repeated;
+  - of an answer that holds an error object in place of a completion, the
+    object's message, or the object itself, written as JSON, when it has
+    none; of an error a stream carries, its message;
+  - of an answer a reader cannot read, the reader's words, which may quote
+    one value: a call's id that is no text, or the member the JSON reader
+    refuses (`invalid type: string "...", expected u64`);
+  - of an answer a response schema refuses, the contract's sentence, which
+    quotes the refusal or names the member that does not fit.
+
+  The whole text is within 500 characters. No control character and no
+  control of the direction of a text is left in it: each becomes a space,
+  and a run of spaces is one.
+- **Sizes.** Every size a server controls is bounded:
+  - an answer read whole past 4 MiB fails the request;
+  - a stream fails at a line past 1 MiB, at an event past 1 MiB, and past
+    256 MiB in all;
+  - a streamed answer fails past 1,024 calls, at a call whose arguments are
+    past 4 MiB or whose id or name is past 1,024 bytes, and at a refusal
+    past 4 MiB.
+
+  Each is a final failure, after what was read before it. The text and the
+  reasoning of a stream are handed on as they come and kept nowhere; under
+  a response schema the contract keeps the answer's text to check it, within
+  the stream's bound. Folding a streamed call costs in proportion to its
+  bytes, whatever shape a server gives it.
 - **Where a request goes.** To the base URL of the configuration, OpenAI's
   own when it names none, followed by `/chat/completions` or `/models`. A
-  redirect is not followed: the request fails. A base URL with a query or a
-  fragment is refused when the provider is built.
+  redirect is not followed: the request fails. A base URL is refused when
+  the provider is built if it has a query or a fragment, if it holds white
+  space, a control character or a backslash, or if its scheme is not
+  followed by `//` and a host: Python's client and this one would not send
+  such a URL to the same place. The `Debug` forms show the origin the client
+  dials, as the client's own URL parser reads it.
+- **A base URL with user information** (`https://user:password@host/v1`) is
+  sent with it as Basic credentials, `Authorization: Basic ...`, as Python's
+  client sends it: they take the place of the key and of a configured
+  `Authorization` header, neither of which is sent.
 - **The environment.** Nothing is read from it: no key, no base URL, no
-  proxy. The client asks for no compressed answer.
-- **Time.** `connect_timeout` bounds a connection, `timeout` the wait between
-  two reads of an answer, not the whole answer: a stream may last longer,
-  and one that stalls ends at `timeout`, a failure worth a retry. A request
-  is tried again only as `max_retries` allows, which is 0 unless the
-  configuration says.
+  proxy.
+- **No compressed answer.** The client sends no `accept-encoding`, whatever
+  compression a host's build turns on in the HTTP client, so a server has no
+  reason to compress. An answer compressed all the same is not decompressed:
+  its body is no JSON, a failure.
+- **Time.** `connect_timeout` bounds a connection. `timeout` bounds the wait
+  for the head of an answer, from the moment its request is sent, then each
+  wait between two reads of its body, not the whole answer: a stream may
+  last longer, and one that stalls ends at `timeout`, a failure worth a
+  retry. A timeout so long that the clock cannot count to its end is refused
+  when the provider is built. A request is tried again only as `max_retries`
+  allows, which is 0 unless the configuration says.
 
 ### What a failed request says
 
@@ -114,22 +163,27 @@ A request the server refuses fails with its status, in these words:
 | `500` with an empty body | `the provider answered HTTP 500: Internal Server Error` |
 
 The message, the type and the code are read in the body's `error` object,
-or at its top level. `status_code` holds the status, `retryable` whether it
-is one a new request may get past (408, 409, 429, 500 and above), and
-`context_overflow` is `true` when the code is `context_length_exceeded`.
+or at its top level. `status_code` holds the status, and `retryable` whether
+it is one a new request may get past (408, 409, 429, 500 and above).
+`context_overflow` is `true` when the server says the request is past the
+model's context: by the code `context_length_exceeded`, or by its words,
+read in the whole body, repeated in the failure or not.
 
 ## Where the provider differs from Python's
 
 The provider does as `OpenAIAIProvider` of RoomKit's Python implementation on
-286 of the 326 captured cases: 181 of the 203 of a whole answer, 97 of the
-110 of a stream of events, the 4 of a stream of text, and 4 of the 9 of a
+292 of the 333 captured cases: 185 of the 208 of a whole answer, 98 of the
+111 of a stream of events, the 4 of a stream of text, and 5 of the 10 of a
 model listing. It differs on the others, each for a reason:
 
 - **Redirects** are refused, where Python's SDK follows them, a `301`, a
   `302` or a `303` as a `GET` without the request's body. A request of a
   model's turn is not sent elsewhere than where the configuration says.
 - **A base URL with a query or a fragment** is refused when the provider is
-  built, where Python sends to a path written after the query.
+  built, where Python sends to a path written after the query. So are the
+  forms listed above: Python sends one with a backslash to another host
+  than this client would, one with no `//` or with white space to no host,
+  and refuses one with a control character.
 - **An empty key** builds a provider that sends no `Authorization`, for a
   local server that asks for none, where Python's SDK refuses to build a
   client.
@@ -139,28 +193,45 @@ model listing. It differs on the others, each for a reason:
   fails on others, with an error of its own on a whole answer.
 - **A failure's message** for a status is the provider's own sentence, as
   the table above shows, where Python's carries the whole body the server
-  answered. So a body that is no JSON is not echoed, where Python's message
-  is that body; and a refusal for a context too long that a server words
-  outside its error's message is not in the text for a host to read. A
-  request that got no answer fails in this crate's words, where Python has
-  the SDK's.
+  answered. A body that is no JSON is not repeated, where Python's message
+  is that body. A request that got no answer fails in this crate's words,
+  where Python has the SDK's.
+- **A context too long** is said by the failure itself, `context_overflow`,
+  when the body says so by its words, where Python leaves it unsaid for a
+  reader of its message, which holds the body.
+- **An error object with no message**, answered in place of a completion, is
+  written as JSON, where Python writes its `repr`.
+- **Choices that are no list** fail with a `ProviderError`, final, whole as
+  streamed, where Python's whole answer raises a raw `AttributeError`.
 - **The last event of a stream** that ends with no blank line after it is
   read, where Python's SDK drops it.
 - **An event that holds no data** (a named event a server keeps a connection
   alive with) is no event, as the format says, where Python's SDK reads it
   as JSON and fails the stream.
 - **A stream is bounded**, as said above, where Python's SDK reads a line or
-  an event of any length.
+  an event of any length, and its provider any number of calls.
 - **A call's index** in a stream is a whole number; another fails the
   stream, where Python takes any value as the call's key.
 - **`list_models`** fails with a `ProviderError`, as a completion does, where
   Python's raises the openai SDK's error or a raw exception as it is: a
   status, a connection that failed, a body that is no page of models.
-- **`supports_vision`** is the configuration's `vision`, where Python reads
-  its catalogue of models.
+- **`supports_vision`** answers as Python's: what the catalogue says of the
+  model; for a model it does not know, yes behind a base URL, and on OpenAI's
+  own endpoint by how the model's name starts. The configuration's `vision`,
+  which Python does not have, states it where the provider would not:
+  `true` answers yes.
 - **Whether the endpoint is OpenAI's own**, which decides the rules of its
   models, is Python's comparison of the base URL, and also what the client
   dials: both must say so.
+- **The timeout** bounds the wait for the head of an answer from the moment
+  its request is sent, connecting and sending included, then each wait
+  between two reads of its body. Python's bounds each read and each write
+  of the connection apart, and the wait for a connection of its pool.
+  Neither bounds the whole answer.
+- **`close()`** releases nothing: the connections close when the provider
+  and its clones are dropped. Python's closes its HTTP client.
+- **No transport is given to the provider.** Python's takes one, which its
+  tests answer from; this one is tested against a local server.
 
 A member of an answer written in another shape than the dialect's (a usage
 that is a text, a delta that is no object) reads as absent. What Python
@@ -173,7 +244,16 @@ connection that failed, a timeout, an answer that says `x-should-retry`, or a
 status of 408, 409, 429 or 500 and above is tried again, after the wait
 `retry-after-ms` or `retry-after` asks within two minutes, else 0.5 s
 doubling to 8 s, up to a quarter less. A whole answer is read inside its
-try; a stream is tried until its head came.
+try; a stream is tried until its head came. A `retry-after` is read as the
+SDK reads it but for these:
+
+| The header says | Python's SDK | Here |
+| --- | --- | --- |
+| a number past what a float holds (`1e400`) | gives the request up: no wait is that long | no wait is taken from it: the backoff |
+| digits with underscores (`1_0`) | 10 s | no number: the backoff |
+| a date with no zone | read as UTC | no date: the backoff |
+| a date with single-digit fields (`Thu, 1 Jan 2026 0:0:7 GMT`) | read | no date: the backoff |
+| a date whose day is past its month (`32 Jan`) | the first day of the next month, too far to wait for: gives the request up | no date: the backoff |
 
 It depends on `roomkit-providers-core` and `roomkit-providers-http`, and on
 neither Python nor RoomKit.
@@ -189,8 +269,9 @@ neither Python nor RoomKit.
   configuration is built. The JSON form writes the switch decided, `true` or
   `false`, as Python does, and a member left out of what is read leaves it
   unset.
-- `vision` is this crate's: Python reads whether a model takes images from
-  its catalogue of models. It is no part of the JSON form.
+- `vision` is this crate's: it states that the model takes images where the
+  provider, which answers as Python's, would not say so. It is no part of
+  the JSON form.
 - `default_headers` are written sorted by name.
 - Input is stricter: a value pydantic would convert (`"30"` for a number,
   `1024.0` for an integer, `1` for a boolean) and an integer outside 32 bits
@@ -204,9 +285,10 @@ neither Python nor RoomKit.
   OpenAI's endpoint, and nothing is refused.
 
 The `Debug` form never prints the key, nor the base URL's user information,
-path or query, nor a default header's value. The JSON form is not for
-showing: like Python's, it masks the key alone, and writes a default
-header's value and the credentials a base URL carries whole.
+path or query, nor a default header's value. Of the base URL it shows the
+origin the HTTP client dials, read as the client reads it. The JSON form is
+not for showing: like Python's, it masks the key alone, and writes a
+default header's value and the credentials a base URL carries whole.
 
 ## The wire cases
 

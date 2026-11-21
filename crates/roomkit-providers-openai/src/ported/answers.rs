@@ -7,21 +7,19 @@ use roomkit_providers_core::{
 use serde_json::{Map, Value, json};
 
 use super::support::{
-    KEY, asked, completion, elsewhere, hello, official, pointed, saying, schema_failure,
+    KEY, asked, chunk, completion, elsewhere, events, hello, official, pointed, saying,
+    schema_failure, streamed,
 };
-use crate::failure::Failing;
+use crate::failure::exit::test_exit;
 use crate::replay::fake::Fake;
 use crate::{OpenAiAiProvider, OpenAiConfig};
 
-const FAILING: Failing<'static> = Failing {
-    provider: "openai",
-    secret: KEY,
-};
-
-/// What the provider reads of a 200 JSON answer whose body is `body`.
+/// What the provider reads of a 200 JSON answer whose body is `body`, a
+/// failure as it leaves the provider.
 fn read(body: &Value) -> Result<AiResponse, ProviderError> {
     let body = body.to_string();
-    crate::answer::read(body.as_bytes(), true, &hello(), "asked-model", FAILING)
+    let read = crate::answer::read(body.as_bytes(), true, &hello(), "asked-model", "openai");
+    read.map_err(|failure| test_exit().leave(&failure))
 }
 
 /// A completion's body whose one choice holds `message`, with `usage`.
@@ -91,11 +89,26 @@ fn a_whole_answer_s_entry_with_no_function_is_no_call() {
 }
 
 // Source: src/wire.rs::tests::a_malformed_answer_s_reason_holds_no_key
-#[test]
-fn a_malformed_answer_s_reason_holds_no_key() {
-    let error = read(&json!({"choices": KEY})).unwrap_err();
-    let printed = format!("{error} {error:?}");
-    assert!(!printed.contains(KEY), "{printed}");
+// (there the typed reader quotes the answer for choices that are no list;
+// here choices that are no list fail in words of the provider's own, and
+// what quotes the answer is an error object with no message, written whole,
+// and the reader's refusal of a streamed call's index)
+#[tokio::test]
+async fn a_malformed_answer_s_reason_holds_no_key() {
+    let object = json!({"error": {"detail": format!("the key {KEY} is refused")}});
+    let error = read(&object).unwrap_err();
+    assert_eq!(error.message, r#"{"detail":"the key [***] is refused"}"#);
+    let call = json!({"tool_calls": [{"index": KEY, "function": {"name": "now"}}]});
+    let (_, failure) = streamed(events(&[chunk(&call)]), &hello()).await;
+    let error = failure.unwrap();
+    assert_eq!(
+        error.message,
+        "invalid type: string \"[***]\", expected u64"
+    );
+    for error in [read(&json!({"choices": KEY})).unwrap_err(), error] {
+        let printed = format!("{error} {error:?}");
+        assert!(!printed.contains(KEY), "{printed}");
+    }
 }
 
 /// What `generate` reads of a completion whose message is `message`: its
@@ -215,4 +228,21 @@ async fn a_refusal_that_is_not_text_is_not_reported() {
     let message = json!({"role": "assistant", "content": null, "refusal": true});
     let response = asked(completion(&message, "stop"), &hello()).await.unwrap();
     assert_eq!(response.metadata.get("refusal"), None);
+}
+
+// A call is cut by how the answer stopped only when it is the answer's
+// last: with no arguments under a stop for length, the last call must not
+// run, and the one before it is a call with no arguments.
+#[test]
+fn only_the_last_call_of_an_answer_is_cut_by_its_ending() {
+    let call = |id: &str| json!({"id": id, "type": "function", "function": {"name": "now", "arguments": ""}});
+    let message = json!({"role": "assistant", "content": null, "tool_calls": [call("a"), call("b"), call("c")]});
+    let body = json!({"choices": [{"index": 0, "message": message, "finish_reason": "length"}]});
+    let response = read(&body).unwrap();
+    let cut: Vec<bool> = response
+        .tool_calls
+        .iter()
+        .map(|call| call.partial)
+        .collect();
+    assert_eq!(cut, [false, false, true]);
 }

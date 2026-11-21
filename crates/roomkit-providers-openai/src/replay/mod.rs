@@ -14,10 +14,13 @@
 mod compare;
 pub(crate) mod fake;
 mod named;
+mod self_test;
 
 use std::collections::BTreeMap;
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
+use std::task::Poll;
 use std::time::Duration;
 
 use roomkit_providers_core::{
@@ -27,9 +30,10 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use self::compare::differences;
-use self::fake::{Body, Ending, Fake, Reply, Seen};
+use self::fake::{Body, Door, Ending, Fake, Reply, Seen};
 use self::named::named;
 use crate::exchange::Pace;
+use crate::provider::Timeouts;
 use crate::{OpenAiAiProvider, OpenAiConfig};
 
 const FIXTURE: &str = include_str!("../../tests/fixtures/python_chat_cases.json");
@@ -37,9 +41,9 @@ const FIXTURE: &str = include_str!("../../tests/fixtures/python_chat_cases.json"
 /// The fixture's clock, in seconds since 1970: 2026-01-01T00:00:00Z.
 const CLOCK: f64 = 1_767_225_600.0;
 
-/// The timeout a case that waits for one is replayed with, in place of its
-/// configuration's: the wait is the same, only shorter.
-const SHORT: Duration = Duration::from_millis(250);
+/// How many times the replay lets the provider go on, after the fake went
+/// silent, before it gives up on reading what the fake sent first.
+const ROUNDS: usize = 4096;
 
 #[derive(Deserialize)]
 struct Fixture {
@@ -53,6 +57,7 @@ struct Case {
     call: String,
     questioned: Option<String>,
     config: Value,
+    supports_vision: Option<bool>,
     catalogue: Option<Catalogue>,
     request: Value,
     exchanges: Vec<Exchange>,
@@ -175,20 +180,34 @@ struct Replayed {
     outcome: Option<Outcome>,
     seen: Vec<Seen>,
     waits: Vec<f64>,
+    /// The timeouts the provider's client was built with.
+    timeouts: Option<Timeouts>,
+    /// Whether the provider says its model takes images.
+    vision: Option<bool>,
 }
 
+/// A stream of a provider's items.
+type Items<'a, T> = Pin<Box<dyn futures_core::Stream<Item = Result<T, ProviderError>> + Send + 'a>>;
+
 /// Every item of `stream`, and the failure that ended it.
-pub(crate) async fn drained<T>(
-    mut stream: Pin<Box<dyn futures_core::Stream<Item = Result<T, ProviderError>> + Send + '_>>,
+pub(crate) async fn drained<T>(stream: Items<'_, T>) -> (Vec<T>, Option<ProviderError>) {
+    counted(stream, &Mutex::new(0)).await
+}
+
+/// As [`drained`], counting in `given` the items as they come.
+async fn counted<T>(
+    mut stream: Items<'_, T>,
+    given: &Mutex<usize>,
 ) -> (Vec<T>, Option<ProviderError>) {
-    let mut given = Vec::new();
+    let mut items = Vec::new();
     while let Some(item) = next(&mut stream).await {
         match item {
-            Ok(item) => given.push(item),
-            Err(error) => return (given, Some(error)),
+            Ok(item) => items.push(item),
+            Err(error) => return (items, Some(error)),
         }
+        *given.lock().unwrap() = items.len();
     }
-    (given, None)
+    (items, None)
 }
 
 fn reply_of(answered: &Answered) -> Reply {
@@ -216,45 +235,84 @@ fn reply_of(answered: &Answered) -> Reply {
     }
 }
 
-/// Whether a case waits for a timeout: its provider is built with a short one.
-fn waits_for_a_timeout(case: &Case) -> bool {
-    case.exchanges.iter().any(|exchange| {
-        let answered = &exchange.response;
-        answered.failure.as_deref() == Some("timeout")
-            || answered.then.as_deref() == Some("the read times out")
-    })
+/// The next step of `future`, without waiting for it.
+pub(crate) async fn poll_once<F: Future + Unpin>(future: &mut F) -> Poll<F::Output> {
+    std::future::poll_fn(|context| Poll::Ready(Pin::new(&mut *future).poll(context))).await
+}
+
+/// Lets `time` pass at once: the clock is stopped, moved and started again,
+/// so that what waits on real answers afterwards waits in real time.
+pub(crate) async fn let_pass(time: Duration) {
+    tokio::time::pause();
+    tokio::time::advance(time).await;
+    tokio::time::resume();
+}
+
+/// Drives `call` to its end. Where the fake goes silent, the provider's
+/// timeout is not waited for: once the provider read what the fake sent
+/// before (`given` reaching `before` items, for a stream that gives some),
+/// the time of `timeout` is let pass at once. Nothing here depends on how
+/// fast anything arrives: a provider that never reads what was sent waits
+/// for its timeout in real time, and the replay then says what differs.
+async fn driven<T>(
+    mut call: Pin<&mut (dyn Future<Output = T> + '_)>,
+    fake: &Fake,
+    given: &Mutex<usize>,
+    before: usize,
+    timeout: Duration,
+) -> T {
+    loop {
+        tokio::select! {
+            biased;
+            ended = &mut call => return ended,
+            () = fake.silent() => {}
+        }
+        let asked = fake.seen().len();
+        for _ in 0..ROUNDS {
+            // What was sent is read: the read that waits for more is the
+            // one whose time is let pass.
+            for _ in 0..8 {
+                if let Poll::Ready(ended) = poll_once(&mut call).await {
+                    return ended;
+                }
+                tokio::task::yield_now().await;
+            }
+            if fake.seen().len() != asked {
+                // The next try began: its time is its own.
+                break;
+            }
+            if *given.lock().unwrap() >= before {
+                let_pass(timeout + Duration::from_millis(1)).await;
+            }
+        }
+    }
 }
 
 /// Replays `case`: its provider built from its configuration, its endpoint
-/// pointed at a fake that answers with the case's exchanges, its clock set
-/// to the fixture's and its waits kept instead of taken.
-async fn replay(case: &Case) -> Replayed {
+/// pointed at a fake behind `door` that answers with the case's exchanges,
+/// its clock set to the fixture's and its waits kept instead of taken.
+async fn replay(case: &Case, door: &Door) -> Replayed {
     let config: OpenAiConfig = serde_json::from_value(case.config.clone()).unwrap();
-    let mut built = config.clone();
-    if waits_for_a_timeout(case) {
-        built.timeout = SHORT;
-    }
     let mut replayed = Replayed {
-        config,
+        config: config.clone(),
         unbuilt: None,
         outcome: None,
         seen: Vec::new(),
         waits: Vec::new(),
+        timeouts: None,
+        vision: None,
     };
-    let mut provider = match OpenAiAiProvider::new(built) {
+    let mut provider = match OpenAiAiProvider::new(config) {
         Ok(provider) => provider,
         Err(error) => {
             replayed.unbuilt = Some(error);
             return replayed;
         }
     };
-    let fake = Fake::serving(
-        case.exchanges
-            .iter()
-            .map(|e| reply_of(&e.response))
-            .collect(),
-    )
-    .await;
+    replayed.timeouts = Some(provider.timeouts);
+    replayed.vision = Some(provider.supports_vision());
+    let replies = case.exchanges.iter().map(|e| reply_of(&e.response));
+    let fake = Fake::behind(door, replies.collect());
     provider.point_at(fake.address);
     let waits = Arc::new(Mutex::new(Vec::new()));
     let kept = Arc::clone(&waits);
@@ -266,19 +324,31 @@ async fn replay(case: &Case) -> Replayed {
         }),
     };
     let request: AiRequest = serde_json::from_value(case.request.clone()).unwrap();
-    replayed.outcome = Some(match case.call.as_str() {
-        "generate" => Outcome::Response(provider.generate(&request).await),
-        "generate_structured_stream" => {
-            let (events, failure) = drained(provider.generate_structured_stream(&request)).await;
-            Outcome::Events(events, failure)
+    // What a stream gives before a silence, as Python read it.
+    let expected = &case.expected;
+    let before = expected.events.as_ref().map_or(0, Vec::len);
+    let before = before.max(expected.text.as_ref().map_or(0, Vec::len));
+    let given = Mutex::new(0);
+    let call = async {
+        match case.call.as_str() {
+            "generate" => Outcome::Response(provider.generate(&request).await),
+            "generate_structured_stream" => {
+                let events = provider.generate_structured_stream(&request);
+                let (events, failure) = counted(events, &given).await;
+                Outcome::Events(events, failure)
+            }
+            "generate_stream" => {
+                let text = provider.generate_stream(&request);
+                let (text, failure) = counted(text, &given).await;
+                Outcome::Text(text, failure)
+            }
+            "list_models" => Outcome::Models(provider.list_models().await),
+            other => panic!("{}: an unknown call {other}", case.name),
         }
-        "generate_stream" => {
-            let (text, failure) = drained(provider.generate_stream(&request)).await;
-            Outcome::Text(text, failure)
-        }
-        "list_models" => Outcome::Models(provider.list_models().await),
-        other => panic!("{}: an unknown call {other}", case.name),
-    });
+    };
+    let call = std::pin::pin!(call);
+    let outcome = driven(call, &fake, &given, before, provider.timeouts.read).await;
+    replayed.outcome = Some(outcome);
     replayed.seen = fake.seen();
     replayed.waits = waits.lock().unwrap().clone();
     replayed
@@ -297,8 +367,10 @@ async fn replayed_or_named(call: &str) -> (usize, usize) {
     assert_eq!(fixture.clock, "2026-01-01T00:00:00Z");
     let named = named();
     let (mut as_python, mut otherwise, mut failures) = (0, 0, Vec::new());
+    // The cases are replayed one after the other, on one port.
+    let door = Door::open().await;
     for case in fixture.cases.iter().filter(|case| case.call == call) {
-        let replayed = replay(case).await;
+        let replayed = replay(case, &door).await;
         let differing = differences(case, &replayed);
         match named.get(case.name.as_str()) {
             None if differing.is_empty() => as_python += 1,
@@ -324,7 +396,7 @@ async fn replayed_or_named(call: &str) -> (usize, usize) {
 /// what the provider does instead.
 #[tokio::test]
 async fn every_generate_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named("generate").await, (181, 22));
+    assert_eq!(replayed_or_named("generate").await, (185, 23));
 }
 
 /// Every `generate_structured_stream` case, the same way: the events in
@@ -333,7 +405,7 @@ async fn every_generate_case_replays_as_python_or_is_named() {
 async fn every_structured_stream_case_replays_as_python_or_is_named() {
     assert_eq!(
         replayed_or_named("generate_structured_stream").await,
-        (97, 13)
+        (98, 13)
     );
 }
 
@@ -347,7 +419,7 @@ async fn every_text_stream_case_replays_as_python() {
 /// failure Python's `list_models` raises as its SDK's or as a raw exception.
 #[tokio::test]
 async fn every_listing_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named("list_models").await, (4, 5));
+    assert_eq!(replayed_or_named("list_models").await, (5, 5));
 }
 
 /// The catalogue of the crate says of each model what the cases rest on:

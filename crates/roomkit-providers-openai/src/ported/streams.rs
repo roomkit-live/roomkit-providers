@@ -1,18 +1,18 @@
 //! A streamed answer: its reasoning, its check against a response schema,
 //! its timeout and its bounds.
 
-use std::time::Duration;
+use std::sync::Arc;
 
-use roomkit_providers_core::{AiProvider, AiRequest, ResponseSchemaFailure, StreamEvent};
+use roomkit_providers_core::{AiProvider, AiRequest, ResponseSchemaFailure, StreamEvent, next};
 use serde_json::{Value, json};
+use tokio::sync::Notify;
 
 use super::support::{
     chunk, elsewhere, ending, events, hello, pointed, schema_failure, sse_of, stream_reply,
     streamed, text_of,
 };
-use crate::OpenAiConfig;
-use crate::replay::drained;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
+use crate::replay::{drained, let_pass, poll_once};
 
 /// More bytes than a line or an event of a stream may hold, and than an
 /// answer read whole may weigh.
@@ -131,35 +131,48 @@ async fn entries_with_no_function_are_no_tool_round_streamed() {
 
 // Source: tests/agent/main.rs::the_timeout_bounds_reads_not_the_stream
 // The timeout bounds the wait between two reads, not the whole answer, as
-// Python's `httpx.Timeout(timeout)` bounds each read: a stream whose events
-// come 60 ms apart is read whole under a 250 ms timeout, though it lasts
-// 300 ms.
+// Python's `httpx.Timeout(timeout)` bounds each read. There the events come
+// 50 ms apart under a timeout of 150 ms; here most of the timeout is let
+// pass before each event, at once, so that the answer lasts three times its
+// timeout and nothing waits on real time.
 #[tokio::test]
 async fn the_timeout_bounds_reads_not_the_stream() {
-    let mut chunks = vec![
-        chunk(&json!({"role": "assistant", "content": "We "})),
-        chunk(&json!({"content": "open "})),
-        chunk(&json!({"content": "at nine."})),
-    ];
-    chunks.extend(ending("stop", 30, 6));
-    let reads = chunks.iter().map(|chunk| format!("data: {chunk}\n\n"));
-    let paced = Reply::Answer {
+    let said = ["We ", "open ", "at ", "nine", "."];
+    let reads = said.map(|text| format!("data: {}\n\n", chunk(&json!({"content": text}))));
+    let steps = Arc::new(Notify::new());
+    let stepped = Reply::Answer {
         status: 200,
         headers: vec![("content-type".to_owned(), "text/event-stream".to_owned())],
-        body: Body::Paced(
-            reads.map(String::into_bytes).collect(),
-            Duration::from_millis(60),
-        ),
+        body: Body::Stepped(reads.map(String::into_bytes).to_vec(), Arc::clone(&steps)),
     };
-    let fake = Fake::serving(vec![paced]).await;
-    let config = OpenAiConfig {
-        timeout: Duration::from_millis(250),
-        ..elsewhere("local-model")
-    };
-    let provider = pointed(config, &fake);
-    let (events, failure) = drained(provider.generate_structured_stream(&hello())).await;
+    let fake = Fake::serving(vec![stepped]).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    let timeout = provider.timeouts.read;
+    let request = hello();
+    let mut stream = provider.generate_structured_stream(&request);
+    let mut read = String::new();
+    for _ in said {
+        // The read that waits for the next event begins, and most of its
+        // timeout passes before the event is sent.
+        assert!(
+            poll_once(&mut std::pin::pin!(next(&mut stream)))
+                .await
+                .is_pending()
+        );
+        let_pass(timeout.mul_f64(0.6)).await;
+        steps.notify_one();
+        match next(&mut stream).await {
+            Some(Ok(StreamEvent::TextDelta(delta))) => read.push_str(&delta.text),
+            other => panic!("a text comes: {other:?}"),
+        }
+    }
+    let (rest, failure) = drained(stream).await;
     assert!(failure.is_none(), "{failure:?}");
-    assert_eq!(text_of(&events), "We open at nine.");
+    assert!(
+        matches!(rest.as_slice(), [StreamEvent::Done(_)]),
+        "{rest:?}"
+    );
+    assert_eq!(read, "We open at nine.");
 }
 
 /// A streamed answer that sends `fill` again and again, past `bytes` bytes.

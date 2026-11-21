@@ -7,7 +7,8 @@ use roomkit_providers_core::{ProviderError, ResponseSchemaError};
 use serde::Serialize;
 use serde_json::Value;
 
-use super::{Case, Failure, Outcome, Replayed, Wait};
+use super::fake::Seen;
+use super::{Case, Failure, Outcome, Replayed, Sent, Wait};
 
 /// Where the requests the provider sent differ from Python's.
 fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
@@ -33,26 +34,50 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
                 written(body.as_ref())
             ));
         }
-        for (name, value) in &sent.headers {
-            let key = format!("Bearer {}", replayed.config.api_key);
-            let expected = value
-                .as_ref()
-                .map(|value| value.replace("Bearer <config key>", &key));
-            if seen.headers.get(name) != expected.as_ref() {
-                found.push(format!(
-                    "request {at}: {name} is {:?}",
-                    seen.headers.get(name)
-                ));
+        headers_differ(at, seen, sent, &replayed.config.api_key, found);
+        // The timeouts are the ones the client was built with.
+        let built = replayed.timeouts.map(|timeouts| {
+            let seconds = [("connect", timeouts.connect), ("read", timeouts.read)];
+            seconds.map(|(name, timeout)| (name, timeout.as_secs_f64()))
+        });
+        for (name, timeout) in built.into_iter().flatten() {
+            if sent.timeouts.get(name) != Some(&timeout) {
+                found.push(format!("request {at}: the {name} timeout is {timeout} s"));
             }
         }
-        let timeouts = [
-            ("connect", replayed.config.connect_timeout),
-            ("read", replayed.config.timeout),
-        ];
-        for (name, timeout) in timeouts {
-            if sent.timeouts.get(name) != Some(&timeout.as_secs_f64()) {
-                found.push(format!("request {at}: the {name} timeout is {timeout:?}"));
-            }
+    }
+}
+
+/// The headers a client writes by itself for the transport, beside those
+/// the provider decides: any other header the fixture does not record is
+/// one the provider must not send.
+const TRANSPORT_HEADERS: [&str; 2] = ["host", "content-length"];
+
+/// Where the headers of the request `seen`, the one at `at`, differ from
+/// those Python `sent`: each recorded header as Python sent it, or absent
+/// where Python sent none, no header twice, and no other header than the
+/// transport's own.
+fn headers_differ(at: usize, seen: &Seen, sent: &Sent, key: &str, found: &mut Vec<String>) {
+    let bearer = format!("Bearer {key}");
+    for (name, value) in &sent.headers {
+        let value = value.as_ref();
+        let expected = value.map(|value| value.replace("Bearer <config key>", &bearer));
+        if seen.headers.get(name) != expected.as_ref() {
+            found.push(format!(
+                "request {at}: {name} is {:?}",
+                seen.headers.get(name)
+            ));
+        }
+    }
+    for (name, _) in &seen.lines {
+        let times = seen.lines.iter().filter(|(other, _)| other == name).count();
+        if times != 1 {
+            found.push(format!("request {at}: {name} is sent {times} times"));
+        }
+        if !sent.headers.contains_key(name) && !TRANSPORT_HEADERS.contains(&name.as_str()) {
+            found.push(format!(
+                "request {at}: {name} is sent, which Python does not send"
+            ));
         }
     }
 }
@@ -102,7 +127,8 @@ fn shaped_as(given: &str, minted: &str) -> bool {
 /// Writes into `given` the ids Python minted, where `given` holds an id of
 /// the same shape in the same place: such an id is random, so its shape is
 /// compared, and that the items of one call share one id, not its value.
-/// `held` keeps which id of the provider stands for which of Python's.
+/// `held` keeps, for each id Python minted, the id of the provider that
+/// stands for it.
 fn name_minted_ids(
     case: &Case,
     expected: &Value,
@@ -127,8 +153,14 @@ fn name_minted_ids(
                     name_minted_ids(case, expected, given, held);
                     continue;
                 };
-                let stands_for = held.entry(id.clone()).or_insert_with(|| minted.to_owned());
-                if shaped_as(&id, minted) && stands_for == minted {
+                // One id of the provider's stands for one of Python's, and
+                // for no other.
+                let stands = held.entry(minted.to_owned()).or_insert_with(|| id.clone());
+                let one_for_one = *stands == id
+                    && held
+                        .iter()
+                        .all(|(other, given)| other == minted || *given != id);
+                if shaped_as(&id, minted) && one_for_one {
                     *given = minted.into();
                 }
             }
@@ -215,6 +247,9 @@ pub(super) fn differences(case: &Case, replayed: &Replayed) -> Vec<String> {
     }
     requests_differ(case, replayed, &mut found);
     waits_differ(case, replayed, &mut found);
+    if case.supports_vision.is_some() && replayed.vision != case.supports_vision {
+        found.push(format!("supports_vision is {:?}", replayed.vision));
+    }
     let expected = &case.expected;
     let list = |items: &Option<Vec<Value>>| items.clone().map(Value::Array);
     let texts = expected.text.clone().map(Value::from);

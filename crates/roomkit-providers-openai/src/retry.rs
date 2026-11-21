@@ -176,4 +176,44 @@ mod tests {
             &[("retry-after", "121"), ("x-should-retry", "true")]
         ));
     }
+
+    // What Python's SDK reads of a `retry-after` and this crate does not, or
+    // reads otherwise: each is written in the crate's README.
+    #[test]
+    fn a_retry_after_python_s_sdk_reads_otherwise() {
+        let asked =
+            |name: &'static str, value: &'static str| retry_after(&headers(&[(name, value)]), NOW);
+        // A number too large for a float is infinite: no wait is taken from
+        // it, and the status decides, where the SDK gives the request up.
+        for huge in [
+            "1e400",
+            "99999999999999999999999999999999999999999999999999e300",
+        ] {
+            assert_eq!(asked("retry-after", huge), Some(f64::INFINITY));
+            assert_eq!(asked("retry-after-ms", huge), Some(f64::INFINITY));
+        }
+        let limited = StatusCode::TOO_MANY_REQUESTS;
+        assert!(should_retry(
+            limited,
+            &headers(&[("retry-after", "1e400")]),
+            NOW
+        ));
+        let wait = delay_within(0, Some(f64::INFINITY), 0.0);
+        assert_eq!(wait, Duration::from_millis(500));
+        // Digits with underscores are no number here: the backoff. The SDK
+        // reads 10 s and 1 s.
+        assert_eq!(asked("retry-after", "1_0"), None);
+        assert_eq!(asked("retry-after-ms", "1_000"), None);
+        // A date with no zone, with single-digit fields or with a day past
+        // its month is no date here: the backoff. The SDK reads the first
+        // as UTC, the second as written, and the third as the first day of
+        // the next month, too far ahead to wait for.
+        for date in [
+            "Thu, 01 Jan 2026 00:00:07",
+            "Thu, 1 Jan 2026 0:0:7 GMT",
+            "Thu, 32 Jan 2026 00:00:07 GMT",
+        ] {
+            assert_eq!(asked("retry-after", date), None, "{date}");
+        }
+    }
 }

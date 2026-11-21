@@ -3,11 +3,11 @@
 
 use roomkit_providers_core::{
     AiRequest, AiResponse, AiToolCall, CallGarbledOptions, CallIds, CallPartialOptions, Metadata,
-    ProviderError, call_garbled, call_partial, check_schema_answer, tool_arguments,
+    call_garbled, call_partial, check_schema_answer, tool_arguments,
 };
 use serde_json::{Map, Value};
 
-use crate::failure::Failing;
+use crate::failure::Failure;
 use crate::think_tags::{extract_think_tags, field_reasoning, merge_thinking};
 
 /// The response of a 2xx answer: `body` as it came, `json` whether the
@@ -23,16 +23,16 @@ pub(crate) fn read(
     json: bool,
     request: &AiRequest,
     asked: &str,
-    failing: Failing<'_>,
-) -> Result<AiResponse, ProviderError> {
-    let no_completion = || failing.unreadable("not a chat completion");
+    provider: &str,
+) -> Result<AiResponse, Failure> {
+    let no_completion = || Failure::unreadable("not a chat completion");
     if !json {
         return Err(no_completion());
     }
-    let answer: Value = serde_json::from_slice(body).map_err(|error| failing.malformed(&error))?;
+    let answer: Value = serde_json::from_slice(body).map_err(|error| Failure::malformed(&error))?;
     let completion = answer.as_object().ok_or_else(no_completion)?;
     if let Some(error) = completion.get("error").filter(|error| truthy(error)) {
-        return Err(failing.error_object(error));
+        return Err(Failure::error_object(error));
     }
     let usage = completion.get("usage").map(usage_of).unwrap_or_default();
     // The model that answered, as the answer names it, else the one asked.
@@ -53,7 +53,7 @@ pub(crate) fn read(
     };
     let Some(choice) = choice else {
         if let Some(schema) = schema {
-            check_schema_answer("", schema, failing.provider, None, None)?;
+            check_schema_answer("", schema, provider, None, None)?;
         }
         return Ok(response);
     };
@@ -72,7 +72,7 @@ pub(crate) fn read(
     if let Some(schema) = schema.filter(|_| calls.is_empty()) {
         let filtered = (finish_reason == Some("content_filter")).then_some("content_filter");
         let declined = refusal.or(filtered);
-        check_schema_answer(&content, schema, failing.provider, declined, finish_reason)?;
+        check_schema_answer(&content, schema, provider, declined, finish_reason)?;
     }
     response.content = content;
     response.thinking = merge_thinking(thinking, field);

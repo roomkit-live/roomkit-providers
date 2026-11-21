@@ -11,8 +11,8 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
-use roomkit_providers_core::ProviderError;
 
+use crate::failure::Failure;
 use crate::provider::{JSON, OpenAiAiProvider};
 use crate::retry;
 
@@ -58,7 +58,7 @@ pub(crate) enum Call<'b> {
 /// How a try ended without an answer.
 enum Failed {
     /// The request failed for good.
-    Final(ProviderError),
+    Final(Failure),
     /// Another try comes after this wait.
     Again(Duration),
 }
@@ -74,7 +74,7 @@ enum Unread {
 impl OpenAiAiProvider {
     /// Sends `call` until a whole answer comes or no try is left: the
     /// answer's body, and whether the server said it is JSON.
-    pub(crate) async fn send(&self, call: Call<'_>) -> Result<(Vec<u8>, bool), ProviderError> {
+    pub(crate) async fn send(&self, call: Call<'_>) -> Result<(Vec<u8>, bool), Failure> {
         let mut retries_taken = 0;
         loop {
             match self.whole(call, retries_taken).await {
@@ -86,7 +86,7 @@ impl OpenAiAiProvider {
 
     /// Sends `call` until the head of an answer comes or no try is left:
     /// the answer, its body still to read.
-    pub(crate) async fn open(&self, call: Call<'_>) -> Result<reqwest::Response, ProviderError> {
+    pub(crate) async fn open(&self, call: Call<'_>) -> Result<reqwest::Response, Failure> {
         let mut retries_taken = 0;
         loop {
             match self.head(call, retries_taken, false).await {
@@ -97,7 +97,7 @@ impl OpenAiAiProvider {
     }
 
     /// Waits before another try, or gives the failure that ends the request.
-    async fn again(&self, failed: Failed, retries_taken: &mut u32) -> Result<(), ProviderError> {
+    async fn again(&self, failed: Failed, retries_taken: &mut u32) -> Result<(), Failure> {
         match failed {
             Failed::Final(error) => Err(error),
             Failed::Again(wait) => {
@@ -126,7 +126,7 @@ impl OpenAiAiProvider {
             let now = (self.pace.now)();
             Failed::Again(retry::delay(retries_taken, None, now))
         } else {
-            Failed::Final(self.failing().transport(error))
+            Failed::Final(Failure::transport(error))
         }
     }
 
@@ -138,8 +138,8 @@ impl OpenAiAiProvider {
             Ok(body) => Ok((body, json)),
             Err(Unread::Lost(error)) => Err(self.lost(&error, retries_taken)),
             Err(Unread::TooLong) => {
-                let message = format!("the provider's answer is longer than {ANSWER_LIMIT} bytes");
-                Err(Failed::Final(self.failing().unreadable(&message)))
+                let said = format!("the provider's answer is longer than {ANSWER_LIMIT} bytes");
+                Err(Failed::Final(Failure::unreadable(said)))
             }
         }
     }
@@ -156,7 +156,6 @@ impl OpenAiAiProvider {
         whole: bool,
     ) -> Result<reqwest::Response, Failed> {
         let now = (self.pace.now)();
-        let failing = self.failing();
         let mut headers = self.headers.clone();
         let request = match call {
             Call::Chat(body) => {
@@ -170,9 +169,10 @@ impl OpenAiAiProvider {
         let response = match request.headers(headers).send().await {
             Ok(response) => response,
             // A request that could not be built never left: it fails the
-            // same however many times it is tried.
+            // same however many times it is tried, so it is final.
             Err(error) if error.is_builder() => {
-                return Err(Failed::Final(failing.transport(&error)));
+                let unbuilt = Failure::before_request("the request could not be built");
+                return Err(Failed::Final(unbuilt));
             }
             Err(error) => return Err(self.lost(&error, retries_taken)),
         };
@@ -190,9 +190,9 @@ impl OpenAiAiProvider {
             Ok(body) => body,
             Err(Unread::TooLong) => Vec::new(),
             Err(Unread::Lost(error)) if whole => return Err(self.lost(&error, retries_taken)),
-            Err(Unread::Lost(error)) => return Err(Failed::Final(failing.transport(&error))),
+            Err(Unread::Lost(error)) => return Err(Failed::Final(Failure::transport(&error))),
         };
-        Err(Failed::Final(failing.status(status.as_u16(), &body)))
+        Err(Failed::Final(Failure::status(status.as_u16(), &body)))
     }
 }
 
@@ -218,3 +218,6 @@ async fn read_body(mut response: reqwest::Response) -> Result<Vec<u8>, Unread> {
     }
     Ok(body)
 }
+
+#[cfg(test)]
+mod tests;

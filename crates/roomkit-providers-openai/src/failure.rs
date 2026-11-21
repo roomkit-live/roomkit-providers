@@ -1,20 +1,32 @@
 //! What a failed request reads as: Python's `provider_error` and its
-//! helpers, with what a failure echoes of a server's answer bounded and
-//! cleaned of the key.
+//! helpers.
+//!
+//! A failure is built here as a [`Failure`], which keeps the provider's own
+//! words apart from what a server, a reader or the contract said. It leaves
+//! the provider through [`exit::Exit::leave`], the one place the contract's
+//! error is made: there what was said is cleaned of the configuration's
+//! secrets, put on one line and bounded.
 
-use roomkit_providers_core::{ProviderError, ProviderErrorOptions};
+use std::borrow::Cow;
+use std::fmt;
+
+use roomkit_providers_core::{ProviderError, is_context_overflow_message};
 use roomkit_providers_http::SseError;
 use serde_json::Value;
 
 use self::words::names_transient;
 
+pub(crate) mod exit;
+#[cfg(test)]
+mod exit_tests;
 mod words;
 
-/// The most characters of a server's answer a failure's message carries.
+/// The most characters of a failure's text, and of what it repeats of a
+/// server's answer.
 pub(crate) const MESSAGE_LIMIT: usize = 500;
 
-/// The most characters of an error's type or code a failure's message
-/// carries.
+/// The most characters of an error's type or code, or of a value a reader
+/// refused, a failure's text carries.
 const NAME_LIMIT: usize = 64;
 
 /// What Python's client says of an error inside a stream that brings no
@@ -48,139 +60,221 @@ const ERROR_TYPE_STATUS: [(&str, u16); 21] = [
     ("DEADLINE_EXCEEDED", 504),
 ];
 
-/// Who fails: the provider's name, and the key no message may carry.
-#[derive(Clone, Copy)]
-pub(crate) struct Failing<'p> {
-    pub(crate) provider: &'p str,
-    pub(crate) secret: &'p str,
+/// A piece of a failure's text.
+#[derive(Clone)]
+enum Said {
+    /// The provider's own words: never searched for a secret.
+    Own(Cow<'static, str>),
+    /// What a server or a reader said, and the most characters of it the
+    /// text carries: cleaned when the failure leaves.
+    Told(String, usize),
 }
 
-impl std::fmt::Debug for Failing<'_> {
-    /// The provider's name: never the key.
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Failing")
-            .field("provider", &self.provider)
-            .finish_non_exhaustive()
+/// The provider's own words.
+fn own(text: impl Into<Cow<'static, str>>) -> Said {
+    Said::Own(text.into())
+}
+
+/// How a failure was built.
+#[derive(Clone)]
+enum Built {
+    /// By this module, its text in pieces.
+    Here {
+        said: Vec<Said>,
+        retryable: bool,
+        status: Option<u16>,
+        context_overflow: Option<bool>,
+        before_request: bool,
+    },
+    /// By the contract: its text is one piece.
+    Elsewhere(ProviderError),
+}
+
+/// A failure inside the provider. It becomes the contract's error only
+/// where it leaves ([`exit::Exit::leave`]).
+#[derive(Clone)]
+pub(crate) struct Failure(Built);
+
+impl fmt::Debug for Failure {
+    /// Where it was built: never what it says, which is not cleaned yet.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let built = match self.0 {
+            Built::Here { .. } => "here",
+            Built::Elsewhere(_) => "elsewhere",
+        };
+        f.debug_tuple("Failure").field(&built).finish()
     }
 }
 
-impl Failing<'_> {
-    fn error(self, message: &str, retryable: bool, status: Option<u16>) -> ProviderError {
-        let options = ProviderErrorOptions {
+impl From<ProviderError> for Failure {
+    /// A failure the contract built: of a request it refuses, or of an
+    /// answer it checked.
+    fn from(error: ProviderError) -> Self {
+        Self(Built::Elsewhere(error))
+    }
+}
+
+impl Failure {
+    fn said(said: Vec<Said>, retryable: bool, status: Option<u16>) -> Self {
+        Self(Built::Here {
+            said,
             retryable,
-            provider: self.provider.to_owned(),
-            status_code: status,
-            ..ProviderErrorOptions::default()
-        };
-        ProviderError::new(cleaned(message, self.secret, MESSAGE_LIMIT), options)
+            status,
+            context_overflow: None,
+            before_request: false,
+        })
+    }
+
+    /// A failure before any request, final: `said`, the provider's own
+    /// words.
+    pub(crate) fn before_request(said: impl Into<Cow<'static, str>>) -> Self {
+        Self(Built::Here {
+            said: vec![own(said)],
+            retryable: false,
+            status: None,
+            context_overflow: None,
+            before_request: true,
+        })
     }
 
     /// The failure of an answer whose status is no success, retried when
     /// the status is transient: `the provider answered HTTP 401 (type,
     /// code): message`. Of the body it carries what an error object says
     /// of itself and nothing else: its message, its type and its code,
-    /// read under `error` or at the top level, each on one line, bounded
-    /// and without the key. A body that is no JSON is not echoed: the
-    /// message is then the status's reason. A redirect is a failure: it
-    /// is not followed.
-    pub(crate) fn status(self, status: u16, body: &[u8]) -> ProviderError {
+    /// read under `error` or at the top level. A body that is no JSON is
+    /// not echoed: the text is then the status's reason. Whether the
+    /// request overflowed the model's context is read from the whole body,
+    /// echoed or not: the code that says so, or the words. A redirect is a
+    /// failure: it is not followed.
+    pub(crate) fn status(status: u16, body: &[u8]) -> Self {
         if (300..400).contains(&status) {
-            let message =
+            let said =
                 format!("the endpoint answered with a redirect ({status}), which is not followed");
-            return self.error(&message, false, Some(status));
+            return Self::said(vec![own(said)], false, Some(status));
         }
         let parsed: Option<Value> = serde_json::from_slice(body).ok();
-        let said = |name: &str| said_of(parsed.as_ref()?, name);
-        let named = |name: &str| {
-            let name = cleaned(&said(name)?, self.secret, NAME_LIMIT);
-            Some(name).filter(|name| !name.is_empty())
+        let stated = |name: &str| {
+            let stated = said_of(parsed.as_ref()?, name)?;
+            Some(stated).filter(|stated| !exit::one_line(stated).is_empty())
         };
-        let (kind, code) = (named("type"), named("code"));
-        let detail = match (&kind, &code) {
-            (Some(kind), Some(code)) => format!(" ({kind}, {code})"),
-            (Some(named), None) | (None, Some(named)) => format!(" ({named})"),
-            (None, None) => String::new(),
-        };
+        let mut said = vec![own(format!("the provider answered HTTP {status}"))];
+        let (kind, code) = (stated("type"), stated("code"));
+        // The code is compared as the server wrote it.
+        let by_code = code.as_deref() == Some("context_length_exceeded");
+        let name = |name: String| Said::Told(name, NAME_LIMIT);
+        match (kind, code) {
+            (Some(kind), Some(code)) => {
+                said.extend([own(" ("), name(kind), own(", "), name(code), own(")")]);
+            }
+            (Some(named), None) | (None, Some(named)) => {
+                said.extend([own(" ("), name(named), own(")")]);
+            }
+            (None, None) => {}
+        }
+        said.push(own(": "));
         let bare = || parsed.as_ref()?.get("error")?.as_str().map(str::to_owned);
         let reason = || {
-            reqwest::StatusCode::from_u16(status)
-                .ok()?
-                .canonical_reason()
+            let status = reqwest::StatusCode::from_u16(status).ok()?;
+            status.canonical_reason()
         };
-        let message = said("message")
-            .or_else(bare)
-            .unwrap_or_else(|| reason().unwrap_or("no message").to_owned());
-        let message = format!("the provider answered HTTP {status}{detail}: {message}");
-        let mut error = self.error(&message, retryable_status(status), Some(status));
-        // The error object's code is a first-hand fact, unlike its wording.
-        if code.as_deref() == Some("context_length_exceeded") {
-            error.context_overflow = Some(true);
+        said.push(match stated("message").or_else(bare) {
+            Some(message) => Said::Told(message, MESSAGE_LIMIT),
+            None => own(reason().unwrap_or("no message")),
+        });
+        let mut failure = Self::said(said, retryable_status(status), Some(status));
+        // Everything the server said is read for an overflow, not only
+        // what is echoed.
+        let by_words = is_context_overflow_message(&String::from_utf8_lossy(body));
+        if let Built::Here {
+            context_overflow, ..
+        } = &mut failure.0
+            && (by_code || by_words)
+        {
+            *context_overflow = Some(true);
         }
-        error
+        failure
     }
 
     /// The failure of an error a server wrote inside its stream, in place
     /// of an event: the status the error names decides whether it is
-    /// retried, else its words (Python's `provider_error`). Its message is
-    /// the error's own, or the words of Python's client for an error that
-    /// brings none.
-    pub(crate) fn stream_error(self, error: &Value) -> ProviderError {
+    /// retried, else its words (Python's `provider_error`). Its text is
+    /// the error's own message, or the words of Python's client for an
+    /// error that brings none.
+    pub(crate) fn stream_error(error: &Value) -> Self {
         let message = error.get("message").and_then(Value::as_str);
         let message = message.filter(|message| !message.is_empty());
-        let message = message.unwrap_or(STREAM_ERROR);
         let status = described_status(error);
-        let retryable = status.map_or_else(|| names_transient(message), retryable_status);
-        self.error(message, retryable, status)
+        let words = message.unwrap_or(STREAM_ERROR);
+        let retryable = status.map_or_else(|| names_transient(words), retryable_status);
+        let said = match message {
+            Some(message) => Said::Told(message.to_owned(), MESSAGE_LIMIT),
+            None => own(STREAM_ERROR),
+        };
+        Self::said(vec![said], retryable, status)
     }
 
     /// The failure of a streamed answer that ended without one event (a
     /// page, a whole JSON body, the end mark alone): final (Python's
     /// `nonempty_stream`).
-    pub(crate) fn no_event(self) -> ProviderError {
-        let message = "The provider's stream carried no event: its body could not be read";
-        self.error(message, false, None)
+    pub(crate) fn no_event() -> Self {
+        let said = "The provider's stream carried no event: its body could not be read";
+        Self::said(vec![own(said)], false, None)
     }
 
     /// The failure of a streamed answer past what the provider reads of
-    /// one, or that is no stream of events: final.
-    pub(crate) fn stream_unread(self, error: &SseError) -> ProviderError {
-        self.error(&error.to_string(), false, None)
+    /// one, or that is no stream of events: final, in the reader's words,
+    /// which repeat nothing of the answer.
+    pub(crate) fn stream_unread(error: &SseError) -> Self {
+        Self::said(vec![own(error.to_string())], false, None)
     }
 
     /// The failure of a request that got no answer, or whose answer was
     /// lost while it was read: worth a retry.
-    pub(crate) fn transport(self, error: &reqwest::Error) -> ProviderError {
-        let message = if error.is_timeout() {
+    pub(crate) fn transport(error: &reqwest::Error) -> Self {
+        let said = if error.is_timeout() {
             "the provider did not answer in time"
         } else {
             "the connection to the provider failed"
         };
-        self.error(message, true, None)
+        Self::said(vec![own(said)], true, None)
     }
 
     /// The failure of an answer that says it is JSON and does not read as
-    /// JSON: final, in the words of the JSON reader.
-    pub(crate) fn malformed(self, error: &serde_json::Error) -> ProviderError {
-        self.error(&error.to_string(), false, None)
+    /// JSON, or of a member the reader refuses: final, in the reader's
+    /// words, which may quote the answer.
+    pub(crate) fn malformed(error: &serde_json::Error) -> Self {
+        let said = Said::Told(error.to_string(), MESSAGE_LIMIT);
+        Self::said(vec![said], false, None)
     }
 
-    /// The failure of an answer whose body is not the provider's format: final.
-    pub(crate) fn unreadable(self, what: &str) -> ProviderError {
-        let message = format!("The provider answered with a body it could not read: {what}");
-        self.error(&message, false, None)
+    /// The failure of an answer whose body is not the provider's format:
+    /// final. `what` says why, in the provider's own words.
+    pub(crate) fn unreadable(what: impl Into<Cow<'static, str>>) -> Self {
+        let said = "The provider answered with a body it could not read: ";
+        Self::said(vec![own(said), own(what)], false, None)
+    }
+
+    /// As [`unreadable`](Self::unreadable), naming the `value` the server
+    /// wrote that does not read.
+    pub(crate) fn unreadable_value(what: &'static str, value: String) -> Self {
+        let said = "The provider answered with a body it could not read: ";
+        let value = Said::Told(value, NAME_LIMIT);
+        Self::said(vec![own(said), own(what), own(": "), value], false, None)
     }
 
     /// The failure an error object a server answered with in place of a
     /// response describes (a gateway's 200 carrying an error): retried when
     /// the status it names is transient (Python's `error_body_failure`).
-    pub(crate) fn error_object(self, body: &Value) -> ProviderError {
+    /// Its text is the object's message, or the object itself, as JSON,
+    /// when it brings none.
+    pub(crate) fn error_object(body: &Value) -> Self {
         let status = described_status(body);
-        let said = error_objects(body, 3).into_iter();
-        let mut said = said;
-        let message = said
+        let mut objects = error_objects(body, 3).into_iter();
+        let message = objects
             .find_map(|object| object.get("message").and_then(Value::as_str))
             .map_or_else(|| text_of(body), str::to_owned);
-        self.error(&message, status.is_some_and(retryable_status), status)
+        let said = Said::Told(message, MESSAGE_LIMIT);
+        Self::said(vec![said], status.is_some_and(retryable_status), status)
     }
 }
 
@@ -262,28 +356,20 @@ fn status_in(value: &Value) -> Option<u16> {
     }
 }
 
-/// `text` as an error carries it: `secret` removed wherever it appears, on
-/// one line, within `limit` characters.
-pub(crate) fn cleaned(text: &str, secret: &str, limit: usize) -> String {
-    let removed = if secret.is_empty() {
-        text.to_owned()
-    } else {
-        text.replace(secret, "[removed]")
-    };
-    let line = removed.split_whitespace().collect::<Vec<_>>().join(" ");
-    line.chars().take(limit).collect()
-}
-
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
     use super::*;
 
-    const FAILING: Failing<'static> = Failing {
-        provider: "openai",
-        secret: "placeholder-not-a-key",
-    };
+    use super::exit::test_exit;
+    use roomkit_providers_core::ProviderError;
+
+    /// The failure of a status, as it leaves a provider whose key is the
+    /// placeholder.
+    fn refusal_of(status: u16, body: &[u8]) -> ProviderError {
+        test_exit().leave(&Failure::status(status, body))
+    }
 
     #[test]
     fn a_message_never_carries_the_key_and_is_bounded() {
@@ -292,16 +378,16 @@ mod tests {
             "type": "placeholder-not-a-key",
             "code": "placeholder-not-a-key",
         }});
-        let error = FAILING.status(401, echoed.to_string().as_bytes());
+        let error = refusal_of(401, echoed.to_string().as_bytes());
         assert_eq!(
             error.message,
-            "the provider answered HTTP 401 ([removed], [removed]): Incorrect key: [removed]."
+            "the provider answered HTTP 401 ([***], [***]): Incorrect key: [***]."
         );
         let long = json!({"error": {
             "message": "x".repeat(4 * MESSAGE_LIMIT),
             "type": "t".repeat(4 * NAME_LIMIT),
         }});
-        let long = FAILING.status(400, long.to_string().as_bytes());
+        let long = refusal_of(400, long.to_string().as_bytes());
         assert_eq!(long.message.chars().count(), MESSAGE_LIMIT);
         let named = format!(
             "the provider answered HTTP 400 ({}): xxx",
@@ -310,7 +396,7 @@ mod tests {
         assert!(long.message.starts_with(&named), "{}", long.message);
         let lines = json!({"error": {"message": " model\n not  loaded \n"}});
         assert_eq!(
-            FAILING.status(400, lines.to_string().as_bytes()).message,
+            refusal_of(400, lines.to_string().as_bytes()).message,
             "the provider answered HTTP 400: model not loaded"
         );
     }
@@ -319,7 +405,7 @@ mod tests {
     // and ::an_error_answer_that_is_no_json_gives_the_status_s_reason_only
     #[test]
     fn an_error_answer_gives_its_type_code_and_message_or_the_status_s_reason() {
-        let said = |status: u16, body: &str| FAILING.status(status, body.as_bytes()).message;
+        let said = |status: u16, body: &str| refusal_of(status, body.as_bytes()).message;
         let own = r#"{"error": {"message": "Incorrect API key", "type": "invalid_request_error", "code": "invalid_api_key"}}"#;
         let flat = r#"{"object": "error", "message": "The model does not exist.", "type": "NotFoundError", "code": 404}"#;
         assert_eq!(
@@ -341,7 +427,7 @@ mod tests {
     // and nothing of a body that is no JSON.
     #[test]
     fn a_status_failure_says_what_the_error_object_says_and_echoes_no_other_body() {
-        let said = |status: u16, body: &str| FAILING.status(status, body.as_bytes()).message;
+        let said = |status: u16, body: &str| refusal_of(status, body.as_bytes()).message;
         let object = json!({"error": {
             "message": "Incorrect API key provided.",
             "type": "invalid_request_error",
@@ -389,24 +475,46 @@ mod tests {
     #[test]
     fn a_status_decides_whether_a_failure_is_retried() {
         for (status, retryable) in [(400, false), (408, true), (409, true), (429, true)] {
-            assert_eq!(
-                FAILING.status(status, b"{}").retryable,
-                retryable,
-                "{status}"
-            );
+            assert_eq!(refusal_of(status, b"{}").retryable, retryable, "{status}");
         }
-        assert!(FAILING.status(529, b"").retryable);
-        let redirect = FAILING.status(307, b"");
+        assert!(refusal_of(529, b"").retryable);
+        let redirect = refusal_of(307, b"");
         assert_eq!(
             (redirect.retryable, redirect.status_code),
             (false, Some(307))
         );
         let overflow = json!({"error": {"code": "context_length_exceeded"}}).to_string();
         assert_eq!(
-            FAILING.status(400, overflow.as_bytes()).context_overflow,
+            refusal_of(400, overflow.as_bytes()).context_overflow,
             Some(true)
         );
-        assert_eq!(FAILING.status(400, b"{}").context_overflow, None);
+        assert_eq!(refusal_of(400, b"{}").context_overflow, None);
+    }
+
+    // The bounds are exact: a text of 500 characters is whole, one more is
+    // cut; a type or a code of 64 characters is whole, one more is cut.
+    #[test]
+    fn a_failure_s_text_is_bounded_exactly() {
+        let own = "the provider answered HTTP 400: ";
+        let said = |message: &str| {
+            let body = json!({"error": {"message": message}}).to_string();
+            refusal_of(400, body.as_bytes()).message
+        };
+        let fits = "m".repeat(500 - own.len());
+        assert_eq!(said(&fits), format!("{own}{fits}"));
+        assert_eq!(said(&fits).chars().count(), 500);
+        assert_eq!(said(&format!("{fits}!")), format!("{own}{fits}"));
+        // The bound counts characters, not bytes.
+        let wide = "\u{e9}".repeat(500 - own.len());
+        assert_eq!(said(&format!("{wide}!")), format!("{own}{wide}"));
+        let named = |kind: &str| {
+            let body = json!({"error": {"message": "No.", "type": kind}}).to_string();
+            refusal_of(400, body.as_bytes()).message
+        };
+        let fits = "t".repeat(64);
+        let whole = format!("the provider answered HTTP 400 ({fits}): No.");
+        assert_eq!(named(&fits), whole);
+        assert_eq!(named(&format!("{fits}!")), whole);
     }
 
     // Python: provider_error on the error a stream carried: the status it
@@ -414,7 +522,7 @@ mod tests {
     #[test]
     fn an_error_inside_a_stream_reads_as_its_status_or_its_words() {
         let read = |error: Value| {
-            let error = FAILING.stream_error(&error);
+            let error = test_exit().leave(&Failure::stream_error(&error));
             (error.status_code, error.retryable, error.message)
         };
         let named = |status: Option<u16>, retryable: bool, message: &str| {
@@ -442,14 +550,14 @@ mod tests {
         );
         assert_eq!(
             read(json!({"message": "key placeholder-not-a-key"})),
-            named(None, false, "key [removed]")
+            named(None, false, "key [***]")
         );
     }
 
     #[test]
     fn an_error_object_reads_as_the_status_it_names() {
         let read = |body: Value| {
-            let error = FAILING.error_object(&body);
+            let error = test_exit().leave(&Failure::error_object(&body));
             (error.status_code, error.retryable, error.message)
         };
         let named = |status: Option<u16>, retryable: bool, message: &str| {

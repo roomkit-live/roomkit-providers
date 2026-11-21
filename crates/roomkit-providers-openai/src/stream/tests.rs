@@ -11,8 +11,8 @@ use crate::OpenAiConfig;
 use crate::ported::support::{
     chunk, elsewhere, hello, pointed, sse_of, stream_reply, streamed, text_of,
 };
-use crate::replay::drained;
 use crate::replay::fake::{Ending, Fake, Reply};
+use crate::replay::{drained, let_pass, poll_once};
 
 /// The events of a chunk that says `text`, with no end after it.
 fn said(text: &str) -> Vec<u8> {
@@ -92,19 +92,40 @@ async fn nothing_is_sent_before_a_stream_is_polled() {
     assert_eq!(fake.seen().len(), 1);
 }
 
-// A stream that stalls is ended by the configuration's read timeout: the
-// events that came are handed on, then the failure, worth a retry.
+// A stream that stalls is ended by the configuration's read timeout, and
+// by no other time: the events that came are handed on, then the failure,
+// worth a retry. Nothing here waits on the timeout itself: the first event
+// comes in its own time, then the timeout's time is let pass at once.
 #[tokio::test]
 async fn a_stream_that_stalls_ends_at_the_read_timeout() {
+    const TIMEOUT: Duration = Duration::from_secs(40);
     let fake = Fake::serving(vec![stream_reply(vec![said("Hel")], Ending::Silent)]).await;
     let config = OpenAiConfig {
-        timeout: Duration::from_millis(40),
+        timeout: TIMEOUT,
         ..elsewhere("local-model")
     };
     let provider = pointed(config, &fake);
-    let (events, failure) = drained(provider.generate_structured_stream(&hello())).await;
-    assert_eq!(text_of(&events), "Hel");
-    let error = failure.unwrap();
+    let request = hello();
+    let mut stream = provider.generate_structured_stream(&request);
+    let first = next(&mut stream).await;
+    assert!(
+        matches!(&first, Some(Ok(StreamEvent::TextDelta(delta))) if delta.text == "Hel"),
+        "{first:?}"
+    );
+    // The read that waits for more begins here. Half the timeout later it
+    // still waits.
+    let mut more = std::pin::pin!(next(&mut stream));
+    assert!(poll_once(&mut more).await.is_pending());
+    let_pass(TIMEOUT / 2).await;
+    assert!(poll_once(&mut more).await.is_pending());
+    // Once the timeout passed it fails, long before another half of it.
+    let_pass(TIMEOUT / 2 + Duration::from_secs(1)).await;
+    let failed = tokio::select! {
+        biased;
+        failed = &mut more => failed,
+        () = tokio::time::sleep(TIMEOUT / 2) => panic!("the stream outlives its timeout"),
+    };
+    let error = failed.unwrap().unwrap_err();
     assert_eq!(
         (error.message.as_str(), error.retryable, error.status_code),
         ("the provider did not answer in time", true, None)
@@ -161,4 +182,28 @@ async fn the_end_mark_ends_the_reading() {
     assert!(failure.is_none(), "{failure:?}");
     assert_eq!(text_of(&events), "Hello.");
     assert!(matches!(events.last(), Some(StreamEvent::Done(_))));
+}
+
+// What the reader read before it fails is handed on, however the answer is
+// cut: an event and a line that is no UTF-8 in one read, or in two.
+#[tokio::test]
+async fn the_events_read_before_a_line_that_does_not_read_are_handed_on() {
+    let first = said("Hel");
+    let bad = b"data: \xff\xfe\n\ndata: late\n\n".to_vec();
+    for reads in [
+        vec![[first.clone(), bad.clone()].concat()],
+        vec![first, bad],
+    ] {
+        let (events, failure) = streamed(stream_reply(reads, Ending::Ends), &hello()).await;
+        assert_eq!(text_of(&events), "Hel");
+        let error = failure.unwrap();
+        assert_eq!(
+            (error.message.as_str(), error.retryable, error.status_code),
+            (
+                "the provider's answer is malformed: an event's data is not UTF-8",
+                false,
+                None
+            )
+        );
+    }
 }

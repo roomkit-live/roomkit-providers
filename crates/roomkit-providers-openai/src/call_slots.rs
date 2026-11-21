@@ -5,11 +5,66 @@
 //! another call: a server that sends each call whole may tag every one with
 //! index 0, and folding them together would run one call made of two. Each slot
 //! has an id from its opening and keeps it once a composition event names it.
+//!
+//! Folding a call costs what its bytes cost, not more: whether the
+//! arguments held are whole is asked of [`held::Held`], which read them as
+//! they came, and what a server controls of a call is bounded, the number
+//! of calls ([`CALLS_LIMIT`]), a call's arguments ([`ARGUMENTS_LIMIT`]) and
+//! its id and its name ([`NAME_LIMIT`]): a stream past one of them fails.
 
 use std::collections::{HashMap, HashSet};
 
 use roomkit_providers_core::{CallIds, StreamToolCallDelta};
 use serde_json::Value;
+
+use self::held::Held;
+use self::odd_id::same_odd;
+use crate::failure::Failure;
+
+mod held;
+mod odd_id;
+
+/// The most calls one streamed answer may hold.
+pub(crate) const CALLS_LIMIT: usize = 1024;
+
+/// The most bytes of one call's arguments: what an answer read whole may
+/// weigh.
+pub(crate) const ARGUMENTS_LIMIT: usize = 4 * 1024 * 1024;
+
+/// The most bytes of a call's id or of its name, each of which every event
+/// of the call's composition repeats.
+pub(crate) const NAME_LIMIT: usize = 1024;
+
+/// Why the calls of a stream do not read: what is wrong, in the provider's
+/// words, and the value the server wrote, when one is to blame.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct Unread {
+    what: &'static str,
+    value: Option<String>,
+}
+
+impl Unread {
+    const fn because(what: &'static str) -> Self {
+        Self { what, value: None }
+    }
+
+    /// An id that is no text.
+    fn id(id: &Value) -> Self {
+        Self {
+            what: "a call's id is no text",
+            value: Some(id.to_string()),
+        }
+    }
+}
+
+impl From<Unread> for Failure {
+    fn from(unread: Unread) -> Self {
+        match unread.value {
+            Some(value) => Self::unreadable_value(unread.what, value),
+            None => Self::unreadable(unread.what),
+        }
+    }
+}
 
 /// A call as its stream gave it: its id, its tool and the text of its
 /// arguments, which is read once the stream ended.
@@ -45,6 +100,8 @@ struct Slot {
     odd_id: Option<Value>,
     name: String,
     arguments: String,
+    /// What the arguments are so far, read as they came.
+    held: Held,
     /// Whether a fragment carried a function, even one with no name and no
     /// arguments: that is a call, for the host to refuse.
     function: bool,
@@ -96,6 +153,8 @@ pub(crate) struct CallSlots {
     taken: HashSet<String>,
     /// The ids that are no text a slot took.
     taken_odd: Vec<Value>,
+    /// How many bytes were given to the JSON parser to fold the calls.
+    pub(crate) parsed: usize,
 }
 
 impl CallSlots {
@@ -113,22 +172,38 @@ impl CallSlots {
     pub(crate) fn fold(
         &mut self,
         fragment: &Fragment<'_>,
-    ) -> Result<Option<StreamToolCallDelta>, String> {
+    ) -> Result<Option<StreamToolCallDelta>, Unread> {
+        let too_long = |text: Option<&str>| text.is_some_and(|text| text.len() > NAME_LIMIT);
+        if too_long(fragment.name) {
+            return Err(Unread::because("a call's name is longer than 1024 bytes"));
+        }
+        if let FragmentId::Text(id) = fragment.id
+            && too_long(Some(id))
+        {
+            return Err(Unread::because("a call's id is longer than 1024 bytes"));
+        }
         let mut name = fragment.name.map(str::to_owned);
         let mut position = self.by_index.get(&fragment.index).copied();
-        if let Some(held) = position.and_then(|at| self.slots.get(at))
-            && held.starts_another_call(fragment)
+        let parsed = &mut self.parsed;
+        if let Some(held) = position.and_then(|at| self.slots.get_mut(at))
+            && held.starts_another_call(fragment, parsed)
         {
             if name.is_none() && held.is_continued_by(fragment.id) {
                 name = Some(held.name.clone());
             }
             position = None;
         }
-        let at = position.unwrap_or_else(|| self.new_slot(fragment.index, name.as_deref()));
+        let at = match position {
+            Some(at) => at,
+            None => self.new_slot(fragment.index, name.as_deref())?,
+        };
         self.fill(at, fragment, name.as_deref())
     }
 
-    fn new_slot(&mut self, index: u64, name: Option<&str>) -> usize {
+    fn new_slot(&mut self, index: u64, name: Option<&str>) -> Result<usize, Unread> {
+        if self.slots.len() >= CALLS_LIMIT {
+            return Err(Unread::because("the answer holds more than 1024 calls"));
+        }
         let id = CallIds::new().call("", name.unwrap_or("tool"));
         self.taken.insert(id.clone());
         self.slots.push(Slot {
@@ -136,9 +211,9 @@ impl CallSlots {
             minted: true,
             ..Slot::default()
         });
-        let at = self.slots.len() - 1;
+        let at = self.slots.len().saturating_sub(1);
         self.by_index.insert(index, at);
-        at
+        Ok(at)
     }
 
     /// Adds a fragment and emits only the first name or new argument text.
@@ -147,7 +222,7 @@ impl CallSlots {
         at: usize,
         fragment: &Fragment<'_>,
         name: Option<&str>,
-    ) -> Result<Option<StreamToolCallDelta>, String> {
+    ) -> Result<Option<StreamToolCallDelta>, Unread> {
         self.adopt_id(at, fragment.id)?;
         let Some(slot) = self.slots.get_mut(at) else {
             return Ok(None);
@@ -157,24 +232,35 @@ impl CallSlots {
         if let Some(name) = name {
             name.clone_into(&mut slot.name);
         }
+        if slot
+            .arguments
+            .len()
+            .saturating_add(fragment.arguments.len())
+            > ARGUMENTS_LIMIT
+        {
+            return Err(Unread::because(
+                "a call's arguments are longer than 4194304 bytes",
+            ));
+        }
         slot.arguments.push_str(fragment.arguments);
+        slot.held.push(fragment.arguments);
         if slot.name.is_empty() || (!first_name && fragment.arguments.is_empty()) {
             return Ok(None);
         }
         if let Some(id) = &slot.odd_id {
-            return Err(format!("a call's id is no text: {id}"));
+            return Err(Unread::id(id));
         }
         slot.announced = true;
         Ok(Some(StreamToolCallDelta {
             id: slot.id.clone(),
             name: slot.name.clone(),
-            index: u32::try_from(at).map_err(|_| "too many tool-call slots")?,
+            index: u32::try_from(at).unwrap_or(u32::MAX),
             arguments_delta: fragment.arguments.to_owned(),
         }))
     }
 
     /// Takes an unused server id only before the slot was announced.
-    fn adopt_id(&mut self, at: usize, id: FragmentId<'_>) -> Result<(), String> {
+    fn adopt_id(&mut self, at: usize, id: FragmentId<'_>) -> Result<(), Unread> {
         let Some(slot) = self.slots.get_mut(at) else {
             return Ok(());
         };
@@ -189,7 +275,7 @@ impl CallSlots {
                 self.taken.insert(id.to_owned());
             }
             FragmentId::True(id @ (Value::Array(_) | Value::Object(_))) => {
-                return Err(format!("a call's id is no text: {id}"));
+                return Err(Unread::id(id));
             }
             FragmentId::True(id) if !self.taken_odd.iter().any(|held| same_odd(held, id)) => {
                 slot.odd_id = Some(id.clone());
@@ -207,12 +293,12 @@ impl CallSlots {
     ///
     /// Why the read fails: a call that took an id that is no text, which
     /// Python's call refuses as its id.
-    pub(crate) fn finish(self) -> Result<Vec<RawCall>, String> {
+    pub(crate) fn finish(self) -> Result<Vec<RawCall>, Unread> {
         self.slots
             .into_iter()
             .filter(|slot| slot.function || !slot.name.is_empty() || !slot.arguments.is_empty())
             .map(|slot| match slot.odd_id {
-                Some(id) => Err(format!("a call's id is no text: {id}")),
+                Some(id) => Err(Unread::id(&id)),
                 None => Ok(RawCall::new(slot.id, slot.name, slot.arguments)),
             })
             .collect()
@@ -225,23 +311,23 @@ impl Slot {
     /// the same name bringing arguments of its own after whole ones; or, after
     /// whole arguments, a fragment that opens another JSON object. A server may
     /// repeat a call's name on every fragment, so the same name with nothing or
-    /// blanks starts nothing.
-    fn starts_another_call(&self, fragment: &Fragment<'_>) -> bool {
+    /// blanks starts nothing. Whether the arguments held are whole is asked
+    /// last, and only where the answer depends on it; `parsed` counts what
+    /// that gives the JSON parser.
+    fn starts_another_call(&mut self, fragment: &Fragment<'_>, parsed: &mut usize) -> bool {
         if fragment.id.is_true() && self.has_server_id() && !self.holds(fragment.id) {
             return true;
         }
         if self.name.is_empty() {
             return false;
         }
-        let held = self.arguments.trim();
-        let whole = held.is_empty() || serde_json::from_str::<Value>(held).is_ok();
-        let Some(name) = fragment.name else {
-            return !held.is_empty() && whole && fragment.arguments.trim_start().starts_with('{');
+        let blank = self.held.is_blank();
+        let brings = match fragment.name {
+            None => !blank && fragment.arguments.trim_start().starts_with('{'),
+            Some(name) if name != self.name => true,
+            Some(_) => !blank && !fragment.arguments.trim().is_empty(),
         };
-        if name != self.name {
-            return whole;
-        }
-        !fragment.arguments.trim().is_empty() && !held.is_empty() && whole
+        brings && self.held.is_whole(&self.arguments, parsed)
     }
 
     /// Whether the call took the server's id, text or not.
@@ -267,58 +353,5 @@ impl Slot {
     }
 }
 
-/// Whether two ids that are no text are one as Python compares them: a
-/// number or `true` by its value, `true` being 1 (`1 == True`, `7 == 7.0`).
-fn same_odd(held: &Value, id: &Value) -> bool {
-    match (python_number(held), python_number(id)) {
-        (Some(held), Some(id)) => held.equals(id),
-        _ => held == id,
-    }
-}
-
-/// A number as Python holds it: a whole one exactly, else a float.
-#[derive(Clone, Copy)]
-enum Number {
-    Int(i128),
-    Float(f64),
-}
-
-impl Number {
-    /// Whether the two are one number, exactly, as Python compares an
-    /// integer with a float: a float equal to an integer is whole.
-    fn equals(self, other: Self) -> bool {
-        match (self, other) {
-            (Self::Int(one), Self::Int(other)) => one == other,
-            (Self::Float(one), Self::Float(other)) => one.total_cmp(&other).is_eq(),
-            (Self::Int(whole), Self::Float(float)) | (Self::Float(float), Self::Int(whole)) => {
-                whole_of(float) == Some(whole)
-            }
-        }
-    }
-}
-
-/// `float` as an integer when it is a whole number an `i128` holds.
-#[expect(
-    clippy::cast_possible_truncation,
-    reason = "the float is whole and within i128's range, so the cast is exact"
-)]
-fn whole_of(float: f64) -> Option<i128> {
-    // i128's bounds, as floats: 2^127 is the first float past i128::MAX.
-    const BOUND: f64 = 170_141_183_460_469_231_731_687_303_715_884_105_728.0;
-    (float.is_finite() && float.trunc().total_cmp(&float).is_eq() && float.abs() < BOUND)
-        .then_some(float as i128)
-}
-
-/// `id` as the number Python reads it, `true` being 1.
-fn python_number(id: &Value) -> Option<Number> {
-    match id {
-        Value::Bool(flag) => Some(Number::Int(i128::from(*flag))),
-        Value::Number(number) => number
-            .as_i64()
-            .map(i128::from)
-            .or_else(|| number.as_u64().map(i128::from))
-            .map(Number::Int)
-            .or_else(|| number.as_f64().map(Number::Float)),
-        Value::Null | Value::String(_) | Value::Array(_) | Value::Object(_) => None,
-    }
-}
+#[cfg(test)]
+mod tests;

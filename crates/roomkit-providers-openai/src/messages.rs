@@ -164,7 +164,7 @@ fn tool_messages(
     let mut rendered = Vec::new();
     let mut images = Vec::new();
     for result in results {
-        let (text, shown) = result.result.split_for_message();
+        let (text, shown) = result.split_for_message();
         rendered.push(json!({
             "role": "tool",
             "tool_call_id": result.tool_call_id,

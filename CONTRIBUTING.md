@@ -41,7 +41,11 @@ especially boundaries, failures, cancellation and cleanup.
   fake of the wire it speaks.
 - An example runs with no service and no key: it starts the server it talks
   to on a local port, checks what it shows and fails otherwise. `make all`
-  runs each example (`make examples`).
+  runs each example (`make examples`), with the proxy variables set to a
+  local port nothing listens on: a provider reads none of them.
+- A test does not wait on a timeout, and asserts nothing about how fast an
+  answer comes. It waits on what the local fake observed, then lets the
+  timeout's time pass at once (the tests' `let_pass`).
 - No key belongs in a fixture, a test or a command. Default checks require no
   external service and no credentials.
 - No test asks a name of the network. A test of `validate_public_url` gives

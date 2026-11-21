@@ -99,30 +99,6 @@ impl Endpoint {
             && default_port
             && self.path.trim_end_matches('/') == OPENAI_PATH
     }
-
-    /// The scheme, the host and the port, when each is made of the
-    /// characters a scheme, a name or an address and a port are written
-    /// with: never the user information, the path or the query.
-    fn shown(&self) -> Option<String> {
-        let named = |c: char| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_');
-        let addressed = |c: char| c.is_ascii_hexdigit() || matches!(c, ':' | '.');
-        let host = if self.bracketed {
-            Some(&self.host)
-                .filter(|host| !host.is_empty() && host.chars().all(addressed))
-                .map(|host| format!("[{host}]"))
-        } else {
-            Some(&self.host)
-                .filter(|host| !host.is_empty() && host.chars().all(named))
-                .map(|host| host.to_ascii_lowercase())
-        }?;
-        match self.port.as_deref() {
-            None => Some(format!("{}://{host}", self.scheme)),
-            Some(port) if Self::port_number(port).is_some() => {
-                Some(format!("{}://{host}:{port}", self.scheme))
-            }
-            Some(_) => None,
-        }
-    }
 }
 
 /// `url` as `urlsplit` reads it once Python's `_comparable` stripped it:
@@ -165,12 +141,18 @@ pub(crate) fn is_openai_endpoint(base_url: Option<&str>) -> bool {
     base_url.is_none_or(|url| Endpoint::split(url).is_some_and(|endpoint| endpoint.is_openai()))
 }
 
-/// `url` as it may be shown: its scheme, host and port, never its user
-/// information, path or query, which may carry credentials.
+/// `url` as it may be shown: the origin the HTTP client dials for it, its
+/// scheme, host and port as the client's own URL parser reads them, never
+/// its user information, path or query, which may carry credentials.
 pub(crate) fn shown_url(url: &str) -> String {
-    Endpoint::split(url)
-        .and_then(|endpoint| endpoint.shown())
-        .unwrap_or_else(|| "(not a URL)".to_owned())
+    let Ok(read) = url::Url::parse(url) else {
+        return "(not a URL)".to_owned();
+    };
+    match (read.host_str(), read.port()) {
+        (Some(host), Some(port)) => format!("{}://{host}:{port}", read.scheme()),
+        (Some(host), None) => format!("{}://{host}", read.scheme()),
+        (None, _) => "(not a URL)".to_owned(),
+    }
 }
 
 #[cfg(test)]

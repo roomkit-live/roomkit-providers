@@ -11,8 +11,8 @@ use super::support::{
     KEY, chunk, elsewhere, events, hello, json_reply, pointed, saying, stream_reply, text_of,
 };
 use crate::exchange::Pace;
-use crate::replay::drained;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
+use crate::replay::{drained, let_pass};
 use crate::{OpenAiAiProvider, OpenAiConfig};
 
 /// A provider behind a base URL that keeps its waits instead of taking
@@ -92,15 +92,22 @@ async fn a_connection_that_closed_is_tried_again_after_its_backoff() {
 }
 
 // Source: tests/agent/retries.rs::a_timeout_is_tried_again
+// (there the timeout is 50 ms and the second answer must come within it;
+// here the first try's timeout is let pass at once, and the second try has
+// the whole of its own)
 #[tokio::test]
 async fn a_timeout_is_tried_again() {
     let replies = vec![Reply::Silent, saying_streamed("Recovered")];
-    let timed = OpenAiConfig {
-        timeout: Duration::from_millis(50),
-        ..retried(1)
-    };
-    let (provider, fake, waits) = retrying(replies, timed).await;
-    assert_eq!(answer(&provider, true).await.unwrap(), "Recovered");
+    let (provider, fake, waits) = retrying(replies, retried(1)).await;
+    let timeout = provider.timeouts.read;
+    let mut answered = std::pin::pin!(answer(&provider, true));
+    tokio::select! {
+        biased;
+        answered = &mut answered => panic!("no answer comes to the first try: {answered:?}"),
+        () = fake.silent() => {}
+    }
+    let_pass(timeout + Duration::from_secs(1)).await;
+    assert_eq!(answered.await.unwrap(), "Recovered");
     assert_eq!(fake.seen().len(), 2);
     assert_eq!(waits.lock().unwrap().len(), 1);
 }

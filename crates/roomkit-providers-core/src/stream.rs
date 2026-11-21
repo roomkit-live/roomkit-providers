@@ -20,6 +20,12 @@ pub struct Yielder<T> {
 impl<T: Unpin> Yielder<T> {
     /// Hands `item` to the stream's reader, and returns once the reader
     /// asks for the next one.
+    ///
+    /// It works only inside the producer [`items`] runs, awaited there: the
+    /// stream takes the item when the producer waits on this future, and
+    /// polls the producer again for the next. Awaited anywhere else, on
+    /// another task or under another future's waker, it is never woken:
+    /// nothing wakes it but the stream being polled.
     pub fn give(&self, item: T) -> impl Future<Output = ()> + '_ {
         Give {
             slot: &self.slot,

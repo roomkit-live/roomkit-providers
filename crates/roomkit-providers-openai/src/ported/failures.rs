@@ -6,7 +6,7 @@ use std::net::SocketAddr;
 use roomkit_providers_core::{AiProvider, ProviderError};
 use tokio::net::TcpSocket;
 
-use super::support::{KEY, asked, elsewhere, hello, json_reply, pointed, saying};
+use super::support::{KEY, asked, elsewhere, hello, json_reply, pointed, saying, streamed};
 use crate::exchange::ANSWER_LIMIT;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
 use crate::{OpenAiAiProvider, OpenAiConfig};
@@ -23,8 +23,11 @@ fn read(error: &ProviderError) -> (bool, Option<u16>) {
 #[tokio::test]
 async fn an_error_answer_past_the_answer_s_bound_keeps_its_status() {
     let body = vec![b'x'; TOO_LONG];
-    let error = asked(json_reply(503, body), &hello()).await.unwrap_err();
-    assert_eq!(read(&error), (true, Some(503)));
+    let error = asked(json_reply(503, body.clone()), &hello()).await;
+    assert_eq!(read(&error.unwrap_err()), (true, Some(503)));
+    let (events, failure) = streamed(json_reply(503, body), &hello()).await;
+    assert!(events.is_empty(), "{events:?}");
+    assert_eq!(read(&failure.unwrap()), (true, Some(503)));
 }
 
 // Source: tests/agent/main.rs::an_answer_declaring_more_than_the_limit_fails_the_turn
@@ -45,11 +48,10 @@ async fn an_answer_past_the_limit_fails_the_request() {
     for reply in [declaring, streaming] {
         let error = asked(reply, &hello()).await.unwrap_err();
         assert_eq!(read(&error), (false, None));
-        assert!(
-            error
-                .message
-                .ends_with("the provider's answer is longer than 4194304 bytes"),
-            "{error}"
+        assert_eq!(
+            error.message,
+            "The provider answered with a body it could not read: the provider's answer is \
+             longer than 4194304 bytes"
         );
     }
 }
@@ -67,6 +69,10 @@ async fn a_redirect_is_refused_and_the_request_never_follows_it() {
     };
     let error = asked(redirect, &hello()).await.unwrap_err();
     assert_eq!(read(&error), (false, Some(307)));
+    assert_eq!(
+        error.message,
+        "the endpoint answered with a redirect (307), which is not followed"
+    );
     assert_eq!(target.seen().len(), 0, "nothing followed the redirect");
 }
 
@@ -82,7 +88,7 @@ async fn the_api_key_an_error_answer_echoes_reaches_no_failure() {
     // JSON, nothing.
     let said = [
         "the provider answered HTTP 401 (invalid_request_error, invalid_api_key): \
-         Bearer [removed] is refused",
+         Bearer [***] is refused",
         "the provider answered HTTP 401: Unauthorized",
     ];
     for (body, said) in [object, text].into_iter().zip(said) {
@@ -115,6 +121,7 @@ async fn an_unreachable_endpoint_fails_the_request_without_naming_its_url() {
     let provider = OpenAiAiProvider::new(config).unwrap();
     let error = provider.generate(&hello()).await.unwrap_err();
     assert_eq!(read(&error), (true, None));
+    assert_eq!(error.message, "the connection to the provider failed");
     let printed = format!("{error} {error:?}");
     assert!(
         !printed.contains(&address.to_string()) && !printed.contains(&address.port().to_string()),
@@ -167,11 +174,11 @@ async fn a_try_again_carries_no_sdk_header() {
     assert_eq!(response.content, "Recovered");
     let requests = fake.seen();
     assert_eq!(requests.len(), 2);
-    for request in requests {
-        let names: Vec<&String> = request.headers.keys().collect();
-        assert!(
-            !names.iter().any(|name| name.starts_with("x-stainless")),
-            "{names:?}"
-        );
-    }
+    // The second try carries the headers of the first, and no other: none
+    // that counts the tries, as the SDK's does.
+    let [first, again] = requests.as_slice() else {
+        panic!("two requests: {requests:?}");
+    };
+    assert_eq!(again.lines, first.lines);
+    assert_eq!((again.method.as_str(), &again.body), ("POST", &first.body));
 }

@@ -13,6 +13,7 @@
   "versions": "The versions the fixture was written from. A message in Python's own words, which no replay compares, may name one: pydantic's names its version in a link.",
   "provenance": "roomkit_commit is the commit roomkit was imported at, and roomkit_dirty whether the package's files had changes not committed then. Both are null unless the package's own files are tracked by the repository that holds them: a package installed inside some checkout is not that checkout's. catalogue, on a case that calls OpenAI's own endpoint, holds what the provider read of its model's catalogue entry: whether the catalogue knows the model, the tags among those it reads on Chat Completions, and the least reasoning effort the entry declares. A case that changes because the catalogue changed shows it there.",
   "config": "The keyword arguments of OpenAIConfig. The key is a placeholder.",
+  "supports_vision": "What the provider of the case answers for supports_vision: whether its model takes images. It is left out where no provider was built.",
   "request": "AIContext dumped with model_dump(mode='json'), its ten request fields. A key the request carries is written masked there, and plain under request_api_key.",
   "exchanges.request": "What Python sent: the method, the whole URL (scheme, host, a port that is written, path and query), the body as JSON, and the headers RoomKit decides: authorization, with the key replaced by which key it was (<config key> or <request key>), content-type, accept, and each configured default header. The headers of the SDK and of the platform are left out. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool.",
   "exchanges.response": "What the fake answered: status and headers with a body under json, under text for a body that is no JSON, or under chunks for a body read in several reads. Each chunk is the bytes of one read, in order: a text where the bytes are UTF-8, written as that text, else an object whose hex member holds the bytes in hexadecimal, as a read that ends inside a character is. then says how the reads end after them: the stream ends, the connection is lost, or the read times out. A failure in place of a response is under failure: no answer came.",
@@ -82,6 +83,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -191,6 +193,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -304,6 +307,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -468,6 +472,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -578,6 +583,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -687,6 +693,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -796,6 +803,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -938,6 +946,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -1062,6 +1071,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -1128,6 +1138,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -1297,6 +1308,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -1489,6 +1501,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -1716,6 +1729,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -1928,6 +1942,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -2139,6 +2154,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -2387,6 +2403,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -2566,6 +2583,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -2825,6 +2843,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3053,6 +3072,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3117,6 +3137,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3253,6 +3274,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3365,6 +3387,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3478,6 +3501,7 @@
     ],
     "reasoning_floor": "minimal"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3589,6 +3613,7 @@
     ],
     "reasoning_floor": "low"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3703,6 +3728,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -3873,6 +3899,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4044,6 +4071,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4209,6 +4237,7 @@
     "base_url": "https://llm.example/v1",
     "reasoning_effort": "high"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4374,6 +4403,7 @@
     "reasoning_effort": "high",
     "supports_reasoning_effort_with_tools": true
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4539,6 +4569,7 @@
     "base_url": "https://llm.example/v1",
     "supports_reasoning_effort_with_tools": false
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4704,6 +4735,7 @@
     "use_max_completion_tokens": true,
     "supports_custom_temperature": false
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4808,6 +4840,7 @@
     "model": "gpt-5.1",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4920,6 +4953,7 @@
     ],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -4984,6 +5018,7 @@
     ],
     "reasoning_floor": "low"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -5066,6 +5101,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -5171,6 +5207,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -5275,6 +5312,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -5380,6 +5418,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -5487,6 +5526,7 @@
     "base_url": "https://llm.example/v1",
     "thinking_field": "reasoning_content"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -5753,6 +5793,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -6021,6 +6062,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -6157,6 +6199,7 @@
     "base_url": "https://llm.example/v1",
     "supports_response_schema": true
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -6294,6 +6337,7 @@
     "base_url": "https://llm.example/v1",
     "supports_response_schema": false
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -6370,6 +6414,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -6588,6 +6633,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -6686,6 +6732,7 @@
     "base_url": "https://llm.example/v1",
     "supports_response_schema_with_tools": true
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -6885,6 +6932,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7034,6 +7082,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7183,6 +7232,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7334,6 +7384,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7484,6 +7535,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7632,6 +7684,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7743,6 +7796,7 @@
      "min_p": 0.05
     }
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7853,6 +7907,7 @@
      "Accept": "application/x-ndjson"
     }
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -7963,6 +8018,7 @@
      "Authorization": "Basic placeholder-basic"
     }
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8118,6 +8174,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8228,6 +8285,7 @@
     "timeout": 120,
     "connect_timeout": 2.5
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8334,6 +8392,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8475,6 +8534,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/gateway/v1/?route=blue"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8585,6 +8645,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8699,6 +8760,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8809,6 +8871,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -8918,6 +8981,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9020,6 +9084,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9129,6 +9194,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9238,6 +9304,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9347,6 +9414,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9457,6 +9525,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9557,6 +9626,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9660,6 +9730,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9763,6 +9834,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9866,6 +9938,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -9969,6 +10042,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10072,6 +10146,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10175,6 +10250,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10278,6 +10354,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10381,6 +10458,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10484,6 +10562,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10589,6 +10668,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10694,6 +10774,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10798,6 +10879,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -10902,6 +10984,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11002,6 +11085,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11100,6 +11184,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11199,6 +11284,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11292,6 +11378,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11384,6 +11471,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11476,6 +11564,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11569,6 +11658,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11661,6 +11751,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11745,6 +11836,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11843,6 +11935,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -11942,6 +12035,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -12035,6 +12129,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -12130,6 +12225,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -12288,6 +12384,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -12487,6 +12584,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -12647,6 +12745,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -12808,6 +12907,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -12967,6 +13067,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -13073,6 +13174,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -13178,6 +13280,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -13285,6 +13388,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -13445,6 +13549,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -13649,6 +13754,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -13796,6 +13902,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -13943,6 +14050,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -14072,6 +14180,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -14184,6 +14293,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -14273,6 +14383,7 @@
     "base_url": "https://llm.example/v1",
     "include_stream_usage": false
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -14379,6 +14490,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -14546,6 +14658,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -14813,6 +14926,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -14913,6 +15027,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15019,6 +15134,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15122,6 +15238,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15220,6 +15337,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15315,6 +15433,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15406,6 +15525,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15531,6 +15651,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15640,6 +15761,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15764,6 +15886,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -15957,6 +16080,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -16106,6 +16230,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -16322,6 +16447,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -16533,6 +16659,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -16718,6 +16845,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -16901,6 +17029,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17094,6 +17223,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17234,6 +17364,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17388,6 +17519,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17536,6 +17668,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17677,6 +17810,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17770,6 +17904,7 @@
     "base_url": "https://llm.example/v1",
     "supports_response_schema": false
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17848,6 +17983,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -17965,6 +18101,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18075,6 +18212,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18184,6 +18322,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18293,6 +18432,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18395,6 +18535,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18495,6 +18636,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18594,6 +18736,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18701,6 +18844,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18814,6 +18958,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -18925,6 +19070,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19036,6 +19182,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19136,6 +19283,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19238,6 +19386,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19393,6 +19542,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19510,6 +19660,7 @@
      ]
     }
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19620,6 +19771,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19758,6 +19910,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -19961,6 +20114,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -20095,6 +20249,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -20776,6 +20931,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -20878,6 +21034,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -21064,6 +21221,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -21219,6 +21377,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -21364,6 +21523,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -21478,6 +21638,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -21581,6 +21742,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -21773,6 +21935,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -21963,6 +22126,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -22130,6 +22294,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -22299,6 +22464,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -22494,6 +22660,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -22669,6 +22836,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -22853,6 +23021,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23006,6 +23175,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23172,6 +23342,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23271,6 +23442,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23380,6 +23552,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23479,6 +23652,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23583,6 +23757,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23687,6 +23862,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23791,6 +23967,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -23901,6 +24078,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -24127,6 +24305,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -24397,6 +24576,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -24570,6 +24750,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -24675,6 +24856,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -24780,6 +24962,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -24887,6 +25070,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -24994,6 +25178,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25096,6 +25281,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25201,6 +25387,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25301,6 +25488,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25402,6 +25590,7 @@
     ],
     "reasoning_floor": "minimal"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25515,6 +25704,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25628,6 +25818,7 @@
     ],
     "reasoning_floor": "minimal"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25741,6 +25932,7 @@
     ],
     "reasoning_floor": "minimal"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25854,6 +26046,7 @@
     ],
     "reasoning_floor": "minimal"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -25967,6 +26160,7 @@
     ],
     "reasoning_floor": "minimal"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26080,6 +26274,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26193,6 +26388,7 @@
     ],
     "reasoning_floor": "none"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26299,6 +26495,7 @@
     "base_url": "https://llm.example/v1",
     "reasoning_effort": "high"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26406,6 +26603,7 @@
     "base_url": "https://llm.example/v1",
     "reasoning_effort": "high"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26519,6 +26717,7 @@
     ],
     "reasoning_floor": "low"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26632,6 +26831,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26803,6 +27003,7 @@
     ],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26891,6 +27092,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -26979,6 +27181,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27064,6 +27267,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27152,6 +27356,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27377,6 +27582,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27518,6 +27724,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27652,6 +27859,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27748,6 +27956,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27847,6 +28056,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -27951,6 +28161,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28055,6 +28266,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28159,6 +28371,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28263,6 +28476,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28367,6 +28581,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28471,6 +28686,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28575,6 +28791,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28681,6 +28898,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28780,6 +28998,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28870,6 +29089,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -28972,6 +29192,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29062,6 +29283,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29165,6 +29387,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29264,6 +29487,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29431,6 +29655,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29541,6 +29766,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29648,6 +29874,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29742,6 +29969,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29836,6 +30064,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -29923,6 +30152,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -30025,6 +30255,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -30163,6 +30394,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -30546,6 +30778,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -30706,6 +30939,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -30866,6 +31100,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -31026,6 +31261,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -31186,6 +31422,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -31346,6 +31583,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -31507,6 +31745,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -31616,6 +31855,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -31775,6 +32015,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -31926,6 +32167,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32025,6 +32267,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32135,6 +32378,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32240,6 +32484,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32338,6 +32583,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32437,6 +32683,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32547,6 +32794,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32646,6 +32894,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32755,6 +33004,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32859,6 +33109,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -32957,6 +33208,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33062,6 +33314,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33160,6 +33413,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33269,6 +33523,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33368,6 +33623,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33470,6 +33726,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33580,6 +33837,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33689,6 +33947,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33788,6 +34047,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33890,6 +34150,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -33999,6 +34260,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34104,6 +34366,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34201,6 +34464,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34299,6 +34563,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34393,6 +34658,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34499,6 +34765,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34602,6 +34869,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34702,6 +34970,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34808,6 +35077,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -34912,6 +35182,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -35091,6 +35362,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -35195,6 +35467,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -35385,6 +35658,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -35545,6 +35819,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -35713,6 +35988,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -35899,6 +36175,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -36060,6 +36337,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -36162,6 +36440,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -36266,6 +36545,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -36370,6 +36650,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -36481,6 +36762,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -36704,6 +36986,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -36908,6 +37191,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -37115,6 +37399,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -37268,6 +37553,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -37428,6 +37714,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -37588,6 +37875,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -37747,6 +38035,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -37848,6 +38137,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -37979,6 +38269,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -38110,6 +38401,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -38251,6 +38543,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39048,6 +39341,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39115,6 +39409,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39185,6 +39480,7 @@
     ],
     "reasoning_floor": "minimal"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39290,6 +39586,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39384,6 +39681,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39478,6 +39776,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39570,6 +39869,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39670,6 +39970,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39763,6 +40064,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39862,6 +40164,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -39968,6 +40271,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40069,6 +40373,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40162,6 +40467,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40256,6 +40562,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40365,6 +40672,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40527,6 +40835,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40693,6 +41002,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40794,6 +41104,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -40893,6 +41204,7 @@
     "base_url": "https://llm.example/v1",
     "reasoning_effort": "high"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -41056,6 +41368,7 @@
     "model": "gpt-5.5-pro",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -41164,6 +41477,7 @@
     "reasoning_effort": "high",
     "supports_reasoning_effort_with_tools": true
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -41327,6 +41641,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -41432,6 +41747,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -41522,6 +41838,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [
      {
@@ -41603,6 +41920,728 @@
    }
   },
   {
+   "name": "base_url_with_user_information",
+   "kinds": [
+    "base_url_credentials"
+   ],
+   "call": "generate",
+   "sdk": "The openai SDK's HTTP client sends the user information of a URL as Basic credentials, in place of the key and of a configured Authorization.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://user:password@llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://user:password@llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Basic dXNlcjpwYXNzd29yZA==",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "base_url_with_a_user_alone",
+   "kinds": [
+    "base_url_credentials"
+   ],
+   "call": "generate",
+   "sdk": "The openai SDK's HTTP client sends the user information of a URL as Basic credentials, in place of the key and of a configured Authorization.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://user@llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://user@llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Basic dXNlcjo=",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "base_url_with_user_information_and_an_authorization_header",
+   "kinds": [
+    "base_url_credentials",
+    "default_headers"
+   ],
+   "call": "generate_structured_stream",
+   "sdk": "The openai SDK's HTTP client sends the user information of a URL as Basic credentials, in place of the key and of a configured Authorization.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://user:pass%20word@llm.example/v1",
+    "default_headers": {
+     "Authorization": "Bearer of-a-gateway",
+     "x-tenant": "blue"
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://user:pass%20word@llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Basic dXNlcjpwYXNzIHdvcmQ=",
+       "content-type": "application/json",
+       "accept": "application/json",
+       "x-tenant": "blue"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":5,\"total_tokens\":17}}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {
+       "input_tokens": 12,
+       "output_tokens": 5
+      },
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "list_models_with_user_information",
+   "kinds": [
+    "base_url_credentials",
+    "listing"
+   ],
+   "call": "list_models",
+   "sdk": "The openai SDK's HTTP client sends the user information of a URL as Basic credentials, in place of the key and of a configured Authorization.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://user:password@llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://user:password@llm.example/v1/models",
+      "headers": {
+       "authorization": "Basic dXNlcjpwYXNzd29yZA==",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list",
+       "data": [
+        {
+         "id": "local-model",
+         "object": "model"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": [
+     {
+      "id": "local-model",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "vision_of_gpt_3_5_turbo",
+   "kinds": [
+    "vision"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-3.5-turbo"
+   },
+   "catalogue": {
+    "model": "gpt-3.5-turbo",
+    "known": false,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "gpt-3.5-turbo",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "vision_of_ft_gpt_4o_example__A1",
+   "kinds": [
+    "vision"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "ft:gpt-4o:example::A1"
+   },
+   "catalogue": {
+    "model": "ft:gpt-4o:example::A1",
+    "known": false,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "ft:gpt-4o:example::A1",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "vision_of_gpt_4o_2099_01_01",
+   "kinds": [
+    "vision"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o-2099-01-01"
+   },
+   "catalogue": {
+    "model": "gpt-4o-2099-01-01",
+    "known": false,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "gpt-4o-2099-01-01",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
    "name": "list_models",
    "kinds": [
     "listing"
@@ -41619,6 +42658,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -41801,6 +42841,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -41862,6 +42903,7 @@
      "x-tenant": "blue"
     }
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -41971,6 +43013,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -42050,6 +43093,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -42179,6 +43223,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -42244,6 +43289,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -42315,6 +43361,7 @@
     "tags": [],
     "reasoning_floor": null
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,
@@ -42393,6 +43440,7 @@
     "model": "local-model",
     "base_url": "https://llm.example/v1"
    },
+   "supports_vision": true,
    "request": {
     "messages": [],
     "system_prompt": null,

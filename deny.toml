@@ -24,9 +24,9 @@ exceptions = [
     { crate = "subtle", allow = ["BSD-3-Clause"] },
     # The public web PKI roots a server is checked against: certificate data.
     { crate = "webpki-roots", allow = ["CDLA-Permissive-2.0"] },
-    # The same data, compiled into the platform verifier of the HTTP client
-    # behind roomkit-providers-openai, which the configuration the provider
-    # gives the client leaves unused.
+    # The same data, which the platform verifier of the HTTP client behind
+    # roomkit-providers-openai depends on for WebAssembly targets alone: the
+    # lock file lists it, and no target this workspace builds compiles it.
     { crate = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] },
 ]
 confidence-threshold = 0.9

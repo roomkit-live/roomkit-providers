@@ -9,15 +9,20 @@ use serde_json::{Value, json};
 
 use super::Folding;
 use crate::call_slots::RawCall;
-use crate::failure::Failing;
-
-const FAILING: Failing<'static> = Failing {
-    provider: "openai",
-    secret: "placeholder-not-a-key",
-};
+use crate::failure::Failure;
+use crate::failure::exit::test_exit;
 
 fn folding() -> Folding<'static> {
-    Folding::new("asked-model", FAILING)
+    Folding::new("asked-model")
+}
+
+/// `failure` as it leaves a provider whose key is the placeholder.
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the failure of a result, taken as `map_err` gives it"
+)]
+fn left(failure: Failure) -> ProviderError {
+    test_exit().leave(&failure)
 }
 
 /// A chunk whose delta carries one `tool_calls` entry.
@@ -46,10 +51,11 @@ fn normalize_minted_ids(mut calls: Vec<RawCall>, server_ids: &HashSet<&str>) -> 
 fn streamed(fragments: &[Value]) -> Result<Vec<RawCall>, ProviderError> {
     let mut folding = folding();
     for fragment in fragments {
-        folding.take(&chunk(fragment), &mut Vec::new())?;
+        let taken = folding.take(&chunk(fragment), &mut Vec::new());
+        taken.map_err(left)?;
     }
     let ids = fragments.iter().filter_map(|f| f["id"].as_str()).collect();
-    let (calls, _) = folding.finish()?;
+    let (calls, _) = folding.finish().map_err(left)?;
     Ok(normalize_minted_ids(calls, &ids))
 }
 
@@ -334,8 +340,11 @@ fn a_call_named_under_an_id_that_is_no_text_fails_where_it_is_named() {
         call["id"] = again.clone();
         let taken = folding.take(&chunk(&entry), &mut Vec::new());
         assert!(taken.is_ok(), "{held}: {taken:?}");
-        let read = folding.take(&chunk(&call), &mut Vec::new());
-        let failed = read.as_ref().is_err_and(|error| !error.retryable);
+        let read = folding.take(&chunk(&call), &mut Vec::new()).map_err(left);
+        // Source: a malformed answer, which is final and names no status.
+        let failed = read
+            .as_ref()
+            .is_err_and(|error| !error.retryable && error.status_code.is_none());
         assert!(failed, "{held} then {again}: {read:?}");
     }
 }
@@ -446,6 +455,8 @@ fn a_streamed_completion_s_call_fragments_fold_by_index() {
         folding.take(chunk, &mut ready).unwrap();
     }
     assert_eq!(texts(&ready), ["Let me ", "check."]);
+    let reasoned = |event: &StreamEvent| matches!(event, StreamEvent::ThinkingDelta(_));
+    assert!(!ready.iter().any(reasoned), "{ready:?}");
     let (calls, done) = folding.finish().unwrap();
     assert_eq!(
         calls,
@@ -473,10 +484,10 @@ fn a_chunk_reporting_an_error_fails_without_the_key() {
         r#"{"error": {"message": "overloaded, key placeholder-not-a-key"}}"#,
         &mut Vec::new(),
     );
-    let error = failed.unwrap_err();
+    let error = left(failed.unwrap_err());
     assert_eq!(
         (error.message.as_str(), error.status_code, error.retryable),
-        ("overloaded, key [removed]", None, true)
+        ("overloaded, key [***]", None, true)
     );
 }
 
@@ -532,13 +543,53 @@ fn a_chunk_that_does_not_read_fails_the_stream() {
     ];
     for chunk in chunks {
         let failed = folding().take(&chunk.to_string(), &mut Vec::new());
-        let error = failed.expect_err(&chunk.to_string());
+        let error = left(failed.expect_err(&chunk.to_string()));
         assert_eq!(
             (error.retryable, error.status_code),
             (false, None),
             "{chunk}"
         );
     }
-    let no_json = folding().take("{not json", &mut Vec::new()).unwrap_err();
+    let no_json = left(folding().take("{not json", &mut Vec::new()).unwrap_err());
     assert_eq!((no_json.retryable, no_json.status_code), (false, None));
+}
+
+// A name that is empty is no name, as Python reads it: the fragment goes
+// on with the call it follows, where a name would start another.
+#[test]
+fn an_empty_name_is_no_name() {
+    let whole = json!({"index": 0, "id": "a", "function": {"name": "now", "arguments": "{}"}});
+    let unnamed = json!({"index": 0, "function": {"name": "", "arguments": " "}});
+    let read = streamed(&[whole.clone(), unnamed]).unwrap();
+    assert_eq!(read, [RawCall::new("a", "now", "{} ")]);
+    let renamed = json!({"index": 0, "function": {"name": "later", "arguments": " "}});
+    let read = streamed(&[whole, renamed]).unwrap();
+    assert_eq!(
+        read,
+        [
+            RawCall::new("a", "now", "{}"),
+            RawCall::new("", "later", " ")
+        ]
+    );
+}
+
+// The refusal a stream carries is kept within what an answer read whole
+// may weigh.
+#[test]
+fn a_refusal_past_its_bound_fails_the_stream() {
+    let piece = json!({"choices": [{"delta": {"refusal": "x".repeat(512 * 1024)}}]}).to_string();
+    let mut folding = folding();
+    for _ in 0..8 {
+        folding.take(&piece, &mut Vec::new()).unwrap();
+    }
+    let error = left(folding.take(&piece, &mut Vec::new()).unwrap_err());
+    assert_eq!(
+        (error.message.as_str(), error.retryable, error.status_code),
+        (
+            "The provider answered with a body it could not read: the refusal is longer than \
+             4194304 bytes",
+            false,
+            None
+        )
+    );
 }

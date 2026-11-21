@@ -3058,6 +3058,70 @@ case(
 )
 case("answer_200_that_is_a_list", ODD, GENERATE, LOCAL, HELLO, answer([]))
 
+# -- A base URL that holds user information -------------------------------------------------
+
+BASIC = (
+    "The openai SDK's HTTP client sends the user information of a URL as Basic credentials, "
+    "in place of the key and of a configured Authorization."
+)
+CREDENTIALS = "base_url_credentials"
+case(
+    "base_url_with_user_information",
+    CREDENTIALS,
+    GENERATE,
+    {**LOCAL, "base_url": "https://user:password@llm.example/v1"},
+    HELLO,
+    answer(completion()),
+    sdk=BASIC,
+)
+case(
+    "base_url_with_a_user_alone",
+    CREDENTIALS,
+    GENERATE,
+    {**LOCAL, "base_url": "https://user@llm.example/v1"},
+    HELLO,
+    answer(completion()),
+    sdk=BASIC,
+)
+case(
+    "base_url_with_user_information_and_an_authorization_header",
+    f"{CREDENTIALS} default_headers",
+    STREAM,
+    {
+        **LOCAL,
+        "base_url": "https://user:pass%20word@llm.example/v1",
+        "default_headers": {"Authorization": "Bearer of-a-gateway", "x-tenant": "blue"},
+    },
+    HELLO,
+    stream(said("Hello.")),
+    sdk=BASIC,
+)
+case(
+    "list_models_with_user_information",
+    f"{CREDENTIALS} listing",
+    "list_models",
+    {**LOCAL, "base_url": "https://user:password@llm.example/v1"},
+    {},
+    answer({"object": "list", "data": [{"id": "local-model", "object": "model"}]}),
+    sdk=BASIC,
+)
+
+# -- Whether the model takes images ---------------------------------------------------------
+
+# The fixture writes what each case's provider answers for supports_vision.
+# These three are the models the others do not show: one the catalogue says
+# takes none, and two it does not know, read by how their names start.
+for model in ("gpt-3.5-turbo", "ft:gpt-4o:example::A1", "gpt-4o-2099-01-01"):
+    name = model.replace(":", "_").replace(".", "_").replace("-", "_")
+    case(
+        f"vision_of_{name}",
+        "vision",
+        GENERATE,
+        {"api_key": KEY, "model": model},
+        HELLO,
+        answer(completion()),
+    )
+
 # -- The model listing ----------------------------------------------------------------------
 
 

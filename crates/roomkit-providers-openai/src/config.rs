@@ -87,7 +87,8 @@ const FIXED_TEMPERATURE_MODELS: [&str; 5] = ["gpt-5", "gpt-6", "o1", "o3", "o4"]
 ///
 /// The `Debug` form never prints the API key, nor the base URL's user
 /// information, path or query, which may carry credentials, nor a default
-/// header's value.
+/// header's value. Of the base URL it shows the origin the HTTP client
+/// dials for it, read as the client's own URL parser reads it.
 #[derive(Clone, PartialEq)]
 pub struct OpenAiConfig {
     /// The key a request carries as its bearer token.
@@ -148,9 +149,12 @@ pub struct OpenAiConfig {
     /// `None` sends no earlier reasoning (RFC §6.4): strict servers refuse
     /// a field they do not know, so it is never guessed.
     pub thinking_field: Option<String>,
-    /// Whether the configured model takes images (RFC §6.4). Python's
-    /// configuration has no such member: its provider reads it from its
-    /// catalogue of models.
+    /// States that the configured model takes images (RFC §6.4), where the
+    /// provider would not say so: `true` makes `supports_vision` answer
+    /// yes, for a model the catalogue does not know on `OpenAI`'s own
+    /// endpoint (a fine-tuned one). `false`, the default, leaves the
+    /// provider's own answer, which is Python's. Python's configuration
+    /// has no such member.
     pub vision: bool,
 }
 

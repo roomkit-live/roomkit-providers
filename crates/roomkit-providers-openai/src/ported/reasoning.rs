@@ -11,6 +11,7 @@ use super::support::{
 };
 use super::warnings::Warnings;
 use crate::OpenAiConfig;
+use crate::replay::drained;
 use crate::replay::fake::Fake;
 
 /// The member of the configuration the one warning names.
@@ -214,6 +215,14 @@ async fn a_responses_only_model_fails_before_the_request() {
         let error = refused(official(model), &hello()).await;
         assert!(error.to_string().contains("Responses API only"), "{error}");
         assert!(error.before_request);
+        // Asked as a stream, the refusal is the stream's one item.
+        let fake = Fake::serving(vec![saying("never")]).await;
+        let provider = pointed(official(model), &fake);
+        let (events, failure) = drained(provider.generate_structured_stream(&hello())).await;
+        let error = failure.unwrap();
+        assert!(events.is_empty() && error.before_request, "{error}");
+        assert!(error.to_string().contains("Responses API only"), "{error}");
+        assert!(fake.seen().is_empty(), "nothing is sent");
     }
 }
 

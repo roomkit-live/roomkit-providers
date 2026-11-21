@@ -5,10 +5,10 @@ use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use reqwest::header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderName, HeaderValue};
+use reqwest::header::HeaderMap;
 use roomkit_providers_core::{
-    AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderErrorOptions,
-    ProviderStream, StreamDone, TextStream, checked_stream, listing,
+    AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
+    TextStream, checked_stream, listing,
 };
 
 use roomkit_providers_http::sse::STREAM_LIMIT;
@@ -16,8 +16,14 @@ use roomkit_providers_http::sse::STREAM_LIMIT;
 use crate::answer;
 use crate::config::OpenAiConfig;
 use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint};
+
+pub(crate) use self::build::Timeouts;
+use self::build::{headers_of, joined, own_endpoint, refused, secrets_of};
 use crate::exchange::{Call, Pace};
-use crate::failure::Failing;
+use crate::failure::Failure;
+use crate::failure::exit::{Exit, Secrets};
+
+mod build;
 use crate::models;
 use crate::request::Asked;
 use crate::stream;
@@ -37,13 +43,6 @@ const MODELS: &str = "/models";
 
 /// What a request asks for, and what the body of a completion's is.
 pub(crate) const JSON: &str = "application/json";
-
-/// Compiles only while the URL the client dials is the `url` crate's, the
-/// one `roomkit-providers-http` validates a destination with: a URL that
-/// was checked there is read the same way here.
-const fn the_client_s_url(url: reqwest::Url) -> url::Url {
-    url
-}
 
 /// An AI provider for `OpenAI`'s Chat Completions, and for the servers that
 /// speak it behind a base URL: Python's `OpenAIAIProvider`.
@@ -69,18 +68,29 @@ const fn the_client_s_url(url: reqwest::Url) -> url::Url {
 ///
 /// # What it guarantees
 ///
-/// - the key appears in no failure, log, `Debug` form or result: a failure
-///   that echoes a server's answer has the key removed from it;
-/// - a failure echoes of a server's answer only what an error object says
-///   of itself (its message, its type, its code), within 500 characters, on
-///   one line; a body that is no JSON is never echoed;
+/// - no failure's text repeats a secret of the configuration that a
+///   server's answer holds as it is: the key, the value of a default
+///   header, the user information of the base URL. This holds whatever
+///   built the failure. A secret shorter than 8 characters is not searched
+///   for, and one a server sends back in another form cannot be
+///   recognised; the `Debug` forms print none;
+/// - a failure repeats of a server's answer only what an error object says
+///   of itself (its message, its type, its code), or a value a reader
+///   refuses, on one line, without a control character, within 500
+///   characters; a body that is no JSON is never repeated;
 /// - every size a server controls is bounded: an answer read whole past
 ///   4 MiB fails the request; a stream fails at a line or an event past
-///   1 MiB, and past 256 MiB in all;
+///   1 MiB and past 256 MiB in all, past 1,024 calls, and at a call's
+///   arguments or a refusal past 4 MiB;
 /// - a redirect is not followed, and no proxy, key or URL is read from the
-///   environment;
+///   environment; no compressed answer is asked for;
 /// - the timeouts are the configuration's: `connect_timeout` to connect,
-///   `timeout` between two reads, which also ends a stream that stalls.
+///   `timeout` for the head of an answer and between two reads of its body,
+///   which also ends a stream that stalls.
+///
+/// A base URL that holds user information is sent with it as Basic
+/// credentials, in place of the key, as Python's client sends it. The
+/// crate's README says each of these in full.
 #[derive(Clone)]
 pub struct OpenAiAiProvider {
     pub(crate) config: Arc<OpenAiConfig>,
@@ -96,6 +106,10 @@ pub struct OpenAiAiProvider {
     /// The most bytes read of a streamed answer: the reader's bound, which
     /// a test lowers.
     pub(crate) stream_limit: usize,
+    /// Where every failure leaves, cleaned of the configuration's secrets.
+    exit: Arc<Exit>,
+    /// The timeouts the client was built with.
+    pub(crate) timeouts: Timeouts,
 }
 
 impl OpenAiAiProvider {
@@ -108,21 +122,40 @@ impl OpenAiAiProvider {
     /// the API cannot follow; a default header that is no HTTP header; or a
     /// client that could not be built.
     pub fn new(config: OpenAiConfig) -> Result<Self, ProviderError> {
+        // A provider that cannot be built says why in its own words.
+        let nothing_to_hide = Exit {
+            provider: NAME,
+            secrets: Secrets::default(),
+        };
+        Self::built(config).map_err(|failure| nothing_to_hide.leave(&failure))
+    }
+
+    fn built(config: OpenAiConfig) -> Result<Self, Failure> {
         let base_url = config.base_url.as_deref().unwrap_or(OPENAI_BASE_URL);
         let chat = joined(base_url, CHAT_COMPLETIONS)?;
         let models = joined(base_url, MODELS)?;
-        let headers = headers_of(&config)?;
+        let headers = headers_of(&config, &chat)?;
+        let timeouts = Timeouts::of(&config)?;
         let tls = roomkit_providers_http::tls_config().map_err(|_| refused("TLS is not set"))?;
         let client = reqwest::Client::builder()
             .tls_backend_preconfigured(tls)
+            // No compressed answer is asked for, whatever a host's build
+            // turns on in the HTTP client.
             .no_gzip()
+            .no_brotli()
+            .no_zstd()
+            .no_deflate()
             // Neither the system's proxies nor its variables are read.
             .no_proxy()
-            .read_timeout(config.timeout)
-            .connect_timeout(config.connect_timeout)
+            .read_timeout(timeouts.read)
+            .connect_timeout(timeouts.connect)
             .redirect(reqwest::redirect::Policy::none())
             .build()
             .map_err(|_| refused("the HTTP client could not be built"))?;
+        let exit = Exit {
+            provider: NAME,
+            secrets: secrets_of(&config, &client, &chat),
+        };
         Ok(Self {
             own_endpoint: own_endpoint(&config, &chat),
             config: Arc::new(config),
@@ -133,6 +166,8 @@ impl OpenAiAiProvider {
             left_out_warned: Arc::new(AtomicBool::new(false)),
             pace: Pace::default(),
             stream_limit: STREAM_LIMIT,
+            exit: Arc::new(exit),
+            timeouts,
         })
     }
 
@@ -143,24 +178,16 @@ impl OpenAiAiProvider {
     }
 
     /// Sends the requests to `address` instead, over plain HTTP, each to
-    /// the path it had: a test's fake of the endpoint. What the provider
-    /// knows of its endpoint stays what its configuration says.
+    /// the path it had and with the user information it had: a test's fake
+    /// of the endpoint. What the provider knows of its endpoint stays what
+    /// its configuration says.
     #[cfg(test)]
     pub(crate) fn point_at(&mut self, address: std::net::SocketAddr) {
         for url in [&mut self.chat, &mut self.models] {
-            let target = &url[url::Position::BeforePath..];
-            if let Ok(pointed) = reqwest::Url::parse(&format!("http://{address}{target}")) {
-                *url = pointed;
-            }
-        }
-    }
-
-    /// What the provider's failures carry: its name, and the key to keep
-    /// out of them.
-    pub(crate) fn failing(&self) -> Failing<'_> {
-        Failing {
-            provider: NAME,
-            secret: &self.config.api_key,
+            let moved = url.set_scheme("http").is_ok()
+                && url.set_ip_host(address.ip()).is_ok()
+                && url.set_port(Some(address.port())).is_ok();
+            assert!(moved, "the endpoint is pointed at the fake");
         }
     }
 
@@ -177,21 +204,19 @@ impl OpenAiAiProvider {
 
     /// One whole answer: the request, tried again as the configuration
     /// allows, and the response read from the answer.
-    async fn answer(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
+    async fn answer(&self, request: &AiRequest) -> Result<AiResponse, Failure> {
         let body = self.asked().body(request, false)?;
         let body = serde_json::to_vec(&body).map_err(|_| unwritten())?;
         let (answer, json) = self.send(Call::Chat(&body)).await?;
-        answer::read(&answer, json, request, &self.config.model, self.failing())
+        answer::read(&answer, json, request, &self.config.model, NAME)
     }
 
     /// The models the endpoint lists, each by its id alone, as Python's
     /// `list_models` reads the page.
-    async fn live_models(&self) -> Result<Vec<ModelInfo>, ProviderError> {
+    async fn live_models(&self) -> Result<Vec<ModelInfo>, Failure> {
         let (page, json) = self.send(Call::Models).await?;
-        let no_page = || {
-            let what = "the model listing is no page of models with their ids";
-            self.failing().unreadable(what)
-        };
+        let no_page =
+            || Failure::unreadable("the model listing is no page of models with their ids");
         let listed = json.then(|| models::listed(&page)).flatten();
         listed.ok_or_else(no_page)
     }
@@ -210,78 +235,8 @@ fn refusal(done: &StreamDone) -> Option<String> {
 
 /// The failure of a request that could not be written: final, and nothing
 /// was sent.
-pub(crate) fn unwritten() -> ProviderError {
-    let options = ProviderErrorOptions {
-        provider: NAME.to_owned(),
-        before_request: true,
-        ..ProviderErrorOptions::default()
-    };
-    ProviderError::new("the request could not be written as JSON", options)
-}
-
-/// A failure before any request, final.
-fn refused(reason: &str) -> ProviderError {
-    let options = ProviderErrorOptions {
-        provider: NAME.to_owned(),
-        before_request: true,
-        ..ProviderErrorOptions::default()
-    };
-    ProviderError::new(format!("the provider cannot be built: {reason}"), options)
-}
-
-/// The URL of `path` under `base_url`, which the failure of a refused one
-/// does not repeat: it may carry credentials.
-fn joined(base_url: &str, path: &str) -> Result<reqwest::Url, ProviderError> {
-    let not_http = || refused("its base URL is not an http or https URL");
-    let base = reqwest::Url::parse(base_url).map_err(|_| not_http())?;
-    if base.query().is_some() || base.fragment().is_some() {
-        return Err(refused(
-            "its base URL has a query or a fragment, which the path of the API cannot follow",
-        ));
-    }
-    let joined = format!("{}{path}", base_url.trim_end_matches('/'));
-    let url = reqwest::Url::parse(&joined).map_err(|_| not_http())?;
-    match url.scheme() {
-        "http" | "https" => Ok(url),
-        _ => Err(not_http()),
-    }
-}
-
-/// Whether the provider talks to `OpenAI`'s own endpoint, whose models and
-/// rules it knows: the base URL is `OpenAI`'s as Python compares it, and
-/// the URL the client dials is `OpenAI`'s as the client reads it.
-fn own_endpoint(config: &OpenAiConfig, dialed: &reqwest::Url) -> bool {
-    let official = the_client_s_url(dialed.clone());
-    is_openai_endpoint(config.base_url.as_deref())
-        && official.scheme() == "https"
-        && official.host_str() == Some("api.openai.com")
-        && official.port_or_known_default() == Some(443)
-        && official.path() == "/v1/chat/completions"
-        && official.username().is_empty()
-        && official.password().is_none()
-}
-
-/// The headers every request carries: what the provider writes, then the
-/// configuration's, one of which replaces the provider's of the same name
-/// as Python's client lets it. An empty key sends no `Authorization`. A
-/// request with a body says beside them what the body is.
-fn headers_of(config: &OpenAiConfig) -> Result<HeaderMap, ProviderError> {
-    let mut headers = HeaderMap::new();
-    headers.insert(ACCEPT, HeaderValue::from_static(JSON));
-    if !config.api_key.is_empty() {
-        let bearer = HeaderValue::from_str(&format!("Bearer {}", config.api_key));
-        let mut bearer = bearer.map_err(|_| refused("its key cannot go in a header"))?;
-        bearer.set_sensitive(true);
-        headers.insert(AUTHORIZATION, bearer);
-    }
-    for (name, value) in config.default_headers.iter().flatten() {
-        let no_header = || refused("one of its default headers is no HTTP header");
-        let name = HeaderName::from_bytes(name.as_bytes()).map_err(|_| no_header())?;
-        let mut value = HeaderValue::from_str(value).map_err(|_| no_header())?;
-        value.set_sensitive(name == AUTHORIZATION);
-        headers.insert(name, value);
-    }
-    Ok(headers)
+pub(crate) fn unwritten() -> Failure {
+    Failure::before_request("the request could not be written as JSON")
 }
 
 impl AiProvider for OpenAiAiProvider {
@@ -293,9 +248,21 @@ impl AiProvider for OpenAiAiProvider {
         &self.config.model
     }
 
-    /// What the configuration says: `vision`.
+    /// Whether the configured model takes images, as Python's provider
+    /// answers it: what the catalogue says of the model, whatever the
+    /// endpoint; for a model it does not know, yes behind a base URL, where
+    /// the server decides what its model reads, and on `OpenAI`'s own
+    /// endpoint by how the model's name starts. The configuration's
+    /// `vision` states it where none of these does: `true` answers yes.
     fn supports_vision(&self) -> bool {
-        self.config.vision
+        if self.config.vision {
+            return true;
+        }
+        let stated = models::entry(&self.config.model).and_then(|entry| entry.supports_vision);
+        stated.unwrap_or_else(|| {
+            !is_openai_endpoint(self.config.base_url.as_deref())
+                || models::sees_images_by_its_name(&self.config.model)
+        })
     }
 
     /// `OpenAI`'s curated catalogue, Python's.
@@ -317,7 +284,8 @@ impl AiProvider for OpenAiAiProvider {
     /// (embeddings, audio, a local server's own) pass through, the speech
     /// models tagged.
     async fn list_models(&self) -> Result<Vec<ModelInfo>, ProviderError> {
-        let live = self.live_models().await?;
+        let live = self.live_models().await;
+        let live = live.map_err(|failure| self.exit.leave(&failure))?;
         Ok(listing(live, models::models()))
     }
 
@@ -330,7 +298,8 @@ impl AiProvider for OpenAiAiProvider {
     }
 
     async fn generate(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
-        self.answer(request).await
+        let answered = self.answer(request).await;
+        answered.map_err(|failure| self.exit.leave(&failure))
     }
 
     /// The text of [`generate_structured_stream`], as it comes: its
@@ -347,7 +316,8 @@ impl AiProvider for OpenAiAiProvider {
     /// done event. An answer constrained by a response schema is checked
     /// before its done event, which its failure replaces.
     fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
-        checked_stream(stream::events(self, request), request, NAME, refusal)
+        let checked = checked_stream(stream::events(self, request), request, NAME, refusal);
+        stream::leaving(checked, &self.exit)
     }
 }
 
@@ -358,6 +328,10 @@ impl fmt::Debug for OpenAiAiProvider {
         f.debug_struct("OpenAiAiProvider")
             .field("config", &self.config)
             .field("own_endpoint", &self.own_endpoint)
+            .field("timeouts", &self.timeouts)
             .finish_non_exhaustive()
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -6,6 +6,8 @@
 //! the next are one ending. A blank line ends an event, whose `data` lines
 //! join with `\n`; a comment (`:`) and the other fields are skipped. An
 //! event the answer's end cuts, with no blank line after it, is read.
+//! What was read before the reading fails is handed on with the failure,
+//! wherever the reads cut.
 //! Three bounds keep a broken or hostile server from growing the memory: a
 //! line, an event's data and the whole stream, each failing the turn once
 //! passed, so that a line that never ends, or events that never stop, are
@@ -47,6 +49,8 @@ pub struct Events {
     read: usize,
     /// The most bytes the answer may send.
     limit: usize,
+    /// Why the reading stopped, once it did.
+    failed: Option<SseError>,
 }
 
 impl Events {
@@ -58,26 +62,45 @@ impl Events {
             after_carriage_return: false,
             read: 0,
             limit,
+            failed: None,
         }
     }
 
     /// Reads `chunk`, the answer's next bytes: the data of each event it
-    /// ends, in order.
+    /// ends, in order, then why the reading stops, when it does. What was
+    /// read before a failure is handed on with it, however the answer was
+    /// cut into chunks: the stream's bound is counted byte by byte, and a
+    /// line that fails keeps the events ended before it. Once it failed,
+    /// the reader reads nothing more and says the same failure again.
     ///
-    /// # Errors
-    ///
-    /// [`SseError::AnswerTooLong`] past the stream's bound,
+    /// The failures: [`SseError::AnswerTooLong`] past the stream's bound,
     /// [`SseError::StreamLineTooLong`] for a line past [`LINE_LIMIT`],
     /// [`SseError::StreamEventTooLong`] for an event past
     /// [`EVENT_LIMIT`], [`SseError::Malformed`] for a line that is no
     /// UTF-8.
-    pub fn feed(&mut self, chunk: &[u8]) -> Result<Vec<String>, SseError> {
+    pub fn feed(&mut self, chunk: &[u8]) -> (Vec<String>, Option<SseError>) {
+        let mut ended = Vec::new();
+        if self.failed.is_none() {
+            self.failed = self.read_chunk(chunk, &mut ended).err();
+        }
+        (ended, self.failed.clone())
+    }
+
+    /// Reads the bytes of `chunk` the stream's bound still allows, adding
+    /// to `ended` the events they end, and fails past the bound.
+    fn read_chunk(&mut self, chunk: &[u8], ended: &mut Vec<String>) -> Result<(), SseError> {
+        let left = self.limit.saturating_sub(self.read);
+        let within = chunk.get(..left).unwrap_or(chunk);
         self.read = self.read.saturating_add(chunk.len());
-        if self.read > self.limit {
+        self.read_bytes(within, ended)?;
+        if within.len() < chunk.len() {
             return Err(SseError::AnswerTooLong { limit: self.limit });
         }
-        let mut ended = Vec::new();
-        let mut rest = chunk;
+        Ok(())
+    }
+
+    fn read_bytes(&mut self, bytes: &[u8], ended: &mut Vec<String>) -> Result<(), SseError> {
+        let mut rest = bytes;
         if self.after_carriage_return && !rest.is_empty() {
             self.after_carriage_return = false;
             rest = rest.strip_prefix(b"\n").unwrap_or(rest);
@@ -99,8 +122,7 @@ impl Events {
                 ended.push(event);
             }
         }
-        self.grow_line(rest)?;
-        Ok(ended)
+        self.grow_line(rest)
     }
 
     /// The data of the event the answer's end cut, if any: an answer that
@@ -108,8 +130,12 @@ impl Events {
     ///
     /// # Errors
     ///
-    /// As [`feed`](Self::feed), for the last line.
+    /// As [`feed`](Self::feed), for the last line; and the failure the
+    /// reading stopped on, if it did.
     pub fn finish(&mut self) -> Result<Option<String>, SseError> {
+        if let Some(failed) = &self.failed {
+            return Err(failed.clone());
+        }
         let line = std::mem::take(&mut self.line);
         if line.is_empty() {
             return Ok(self.data.take());
@@ -158,13 +184,21 @@ impl Events {
 mod tests {
     use super::*;
 
+    impl Events {
+        /// The events `chunk` ends, or the failure that stops the reading.
+        fn fed(&mut self, chunk: &[u8]) -> Result<Vec<String>, SseError> {
+            let (ended, failed) = self.feed(chunk);
+            failed.map_or(Ok(ended), Err)
+        }
+    }
+
     #[test]
     fn events_split_across_chunks_come_whole_and_in_order() {
         let mut events = Events::new(1024);
-        let mut read = events.feed(b"data: {\"a\"").unwrap();
+        let mut read = events.fed(b"data: {\"a\"").unwrap();
         read.extend(
             events
-                .feed(b": 1}\r\n\r\n: keep-alive\n\ndata: [DONE]\n\n")
+                .fed(b": 1}\r\n\r\n: keep-alive\n\ndata: [DONE]\n\n")
                 .unwrap(),
         );
         assert_eq!(read, ["{\"a\": 1}", "[DONE]"]);
@@ -174,7 +208,7 @@ mod tests {
     fn an_event_s_data_lines_join_and_other_fields_are_skipped() {
         let mut events = Events::new(1024);
         let read = events
-            .feed(b"event: message\nid: 7\ndata: first\ndata:second\n\n")
+            .fed(b"event: message\nid: 7\ndata: first\ndata:second\n\n")
             .unwrap();
         assert_eq!(read, ["first\nsecond"]);
     }
@@ -182,16 +216,84 @@ mod tests {
     #[test]
     fn an_event_the_answer_s_end_cuts_is_read() {
         let mut events = Events::new(1024);
-        assert_eq!(events.feed(b"data: last").unwrap(), Vec::<String>::new());
+        assert_eq!(events.fed(b"data: last").unwrap(), Vec::<String>::new());
         assert_eq!(events.finish().unwrap().as_deref(), Some("last"));
+    }
+
+    /// The events `answer` gives before it fails and the failure, read in
+    /// two chunks cut at `at` by a reader bounded at `limit`.
+    fn read_until_it_fails(
+        answer: &[u8],
+        at: usize,
+        limit: usize,
+    ) -> (Vec<String>, Option<SseError>) {
+        let (head, tail) = answer.split_at(at);
+        let mut events = Events::new(limit);
+        let mut read = Vec::new();
+        for chunk in [head, tail] {
+            let (ended, failed) = events.feed(chunk);
+            read.extend(ended);
+            if failed.is_some() {
+                return (read, failed);
+            }
+        }
+        match events.finish() {
+            Ok(last) => (read.into_iter().chain(last).collect(), None),
+            Err(error) => (read, Some(error)),
+        }
+    }
+
+    /// What was read before a failure is handed on, then the failure,
+    /// wherever the chunks are cut: an event and the line that fails may
+    /// come in one read.
+    #[test]
+    fn the_events_before_a_failure_are_read_at_every_cut() {
+        let malformed = SseError::Malformed {
+            reason: "an event's data is not UTF-8".to_owned(),
+        };
+        let both = || vec!["one".to_owned(), "two".to_owned()];
+        let no_utf8 = b"data: one\n\ndata: two\r\n\r\ndata: \xff\xfe\n\ndata: late\n\n";
+        for at in 0..=no_utf8.len() {
+            let read = read_until_it_fails(no_utf8, at, 1024);
+            assert_eq!(read, (both(), Some(malformed.clone())), "{at}");
+        }
+        // The stream's bound is counted byte by byte: the events that end
+        // within it are read, whatever chunk carries the byte past it.
+        let past_the_bound = b"data: one\n\ndata: two\n\ndata: three\n\n";
+        for (limit, within) in [(10, 0), (11, 1), (21, 1), (22, 2), (34, 2)] {
+            let too_long = SseError::AnswerTooLong { limit };
+            let read: Vec<String> = both().into_iter().take(within).collect();
+            for at in 0..=past_the_bound.len() {
+                let found = read_until_it_fails(past_the_bound, at, limit);
+                assert_eq!(
+                    found,
+                    (read.clone(), Some(too_long.clone())),
+                    "{limit} at {at}"
+                );
+            }
+        }
+        assert_eq!(read_until_it_fails(past_the_bound, 5, 35).1, None);
+        // A line and an event past their bounds, after an event.
+        let long_line = [&b"data: one\n\n"[..], &vec![b'x'; LINE_LIMIT + 1]].concat();
+        let line_too_long = SseError::StreamLineTooLong { limit: LINE_LIMIT };
+        let data_line = [&b"data: "[..], &vec![b'x'; EVENT_LIMIT / 2], b"\n"].concat();
+        let long_event = [&b"data: one\n\n"[..], &data_line, &data_line, &data_line].concat();
+        let event_too_long = SseError::StreamEventTooLong { limit: EVENT_LIMIT };
+        let one = || vec!["one".to_owned()];
+        for at in [0, 5, 11, 12, 4096] {
+            let read = read_until_it_fails(&long_line, at, usize::MAX);
+            assert_eq!(read, (one(), Some(line_too_long.clone())), "{at}");
+            let read = read_until_it_fails(&long_event, at, usize::MAX);
+            assert_eq!(read, (one(), Some(event_too_long.clone())), "{at}");
+        }
     }
 
     /// The events of `answer` sent in two chunks, cut at `at`, then ended.
     fn read_in_two(answer: &[u8], at: usize) -> Result<Vec<String>, SseError> {
         let (head, tail) = answer.split_at(at);
         let mut events = Events::new(1024);
-        let mut read = events.feed(head)?;
-        read.extend(events.feed(tail)?);
+        let mut read = events.fed(head)?;
+        read.extend(events.fed(tail)?);
         read.extend(events.finish()?);
         Ok(read)
     }
@@ -297,7 +399,7 @@ mod tests {
         let mut reader = Events::new(1024);
         let mut read = Vec::new();
         for byte in b"data: a\r\n\r\ndata: b\r\r" {
-            read.extend(reader.feed(&[*byte]).unwrap());
+            read.extend(reader.fed(&[*byte]).unwrap());
         }
         assert_eq!(read, ["a", "b"]);
         assert_eq!(reader.finish(), Ok(None));
@@ -325,9 +427,9 @@ mod tests {
     fn a_byte_order_mark_and_a_data_line_without_a_colon_are_skipped() {
         let mut events = Events::new(1024);
         let marked = b"\xef\xbb\xbfdata: first\ndata: second\n\n";
-        assert_eq!(events.feed(marked).unwrap(), ["second"]);
+        assert_eq!(events.fed(marked).unwrap(), ["second"]);
         let bare = b"data: one\ndata\ndata: two\n\n";
-        assert_eq!(events.feed(bare).unwrap(), ["one\ntwo"]);
+        assert_eq!(events.fed(bare).unwrap(), ["one\ntwo"]);
     }
 
     #[test]
@@ -340,14 +442,14 @@ mod tests {
     #[test]
     fn a_stream_is_read_to_its_bound_and_refused_one_byte_past_it() {
         let mut events = Events::new(16);
-        assert_eq!(events.feed(b"data: 12345678\n\n").unwrap(), ["12345678"]);
+        assert_eq!(events.fed(b"data: 12345678\n\n").unwrap(), ["12345678"]);
         assert_eq!(
-            events.feed(b"\n"),
+            events.fed(b"\n"),
             Err(SseError::AnswerTooLong { limit: 16 })
         );
         let mut events = Events::new(16);
         assert_eq!(
-            events.feed(b"data: 123456789\n\n"),
+            events.fed(b"data: 123456789\n\n"),
             Err(SseError::AnswerTooLong { limit: 16 })
         );
     }
@@ -357,15 +459,15 @@ mod tests {
         let too_long = Err(SseError::StreamLineTooLong { limit: LINE_LIMIT });
         let line = |length: usize| format!("data:{}\n\n", "x".repeat(length - 5));
         let mut events = Events::new(usize::MAX);
-        let read = events.feed(line(LINE_LIMIT).as_bytes()).unwrap();
+        let read = events.fed(line(LINE_LIMIT).as_bytes()).unwrap();
         let lengths: Vec<usize> = read.iter().map(String::len).collect();
         assert_eq!(lengths, [LINE_LIMIT - 5]);
         let mut events = Events::new(usize::MAX);
-        assert_eq!(events.feed(line(LINE_LIMIT + 1).as_bytes()), too_long);
+        assert_eq!(events.fed(line(LINE_LIMIT + 1).as_bytes()), too_long);
         // The bound is the line's, however many chunks bring it.
         let mut events = Events::new(usize::MAX);
-        assert_eq!(events.feed(&vec![b'x'; LINE_LIMIT]), Ok(Vec::new()));
-        assert_eq!(events.feed(b"x"), too_long);
+        assert_eq!(events.fed(&vec![b'x'; LINE_LIMIT]), Ok(Vec::new()));
+        assert_eq!(events.fed(b"x"), too_long);
     }
 
     /// The line break that joins two data lines counts in the event.
@@ -376,12 +478,12 @@ mod tests {
             format!("data:{first}\ndata:{}\n\n", "x".repeat(second))
         };
         let mut events = Events::new(usize::MAX);
-        let read = events.feed(event(9).as_bytes()).unwrap();
+        let read = events.fed(event(9).as_bytes()).unwrap();
         let lengths: Vec<usize> = read.iter().map(String::len).collect();
         assert_eq!(lengths, [EVENT_LIMIT]);
         let mut events = Events::new(usize::MAX);
         assert_eq!(
-            events.feed(event(10).as_bytes()),
+            events.fed(event(10).as_bytes()),
             Err(SseError::StreamEventTooLong { limit: EVENT_LIMIT })
         );
     }
@@ -392,7 +494,7 @@ mod tests {
     fn a_line_that_never_ends_is_cut_at_its_bound() {
         let mut events = Events::new(usize::MAX);
         let chunk = vec![b'x'; 64 * 1024];
-        let failed = (0..64).find_map(|_| events.feed(&chunk).err());
+        let failed = (0..64).find_map(|_| events.fed(&chunk).err());
         assert_eq!(
             failed,
             Some(SseError::StreamLineTooLong { limit: LINE_LIMIT })
@@ -404,7 +506,7 @@ mod tests {
     fn an_event_that_never_ends_is_cut_at_its_bound() {
         let mut events = Events::new(usize::MAX);
         let line = format!("data: {}\n", "x".repeat(1023));
-        let failed = (0..2048).find_map(|_| events.feed(line.as_bytes()).err());
+        let failed = (0..2048).find_map(|_| events.fed(line.as_bytes()).err());
         assert_eq!(
             failed,
             Some(SseError::StreamEventTooLong { limit: EVENT_LIMIT })
@@ -415,7 +517,7 @@ mod tests {
     #[test]
     fn events_that_never_stop_are_cut_at_the_stream_s_bound() {
         let mut events = Events::new(4096);
-        let failed = (0..1024).find_map(|_| events.feed(b"data: {}\n\n").err());
+        let failed = (0..1024).find_map(|_| events.fed(b"data: {}\n\n").err());
         assert_eq!(failed, Some(SseError::AnswerTooLong { limit: 4096 }));
     }
 }

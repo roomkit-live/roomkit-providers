@@ -108,8 +108,7 @@ impl ToolResult {
     /// alone. A text has no image. Python's
     /// `AIToolResultPart.split_for_message`.
     #[must_use]
-    #[doc(hidden)]
-    pub fn split_for_message(&self) -> (String, Vec<AiImagePart>) {
+    pub(crate) fn split_for_message(&self) -> (String, Vec<AiImagePart>) {
         let parts = match self {
             Self::Text(text) => return (text.clone(), Vec::new()),
             Self::Parts(parts) => parts,

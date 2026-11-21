@@ -8,17 +8,22 @@
 //! whole answer; what Python fails a stream on fails it here: a chunk that
 //! is no object, choices that are no list, a call that is no call, a text
 //! or a finish reason that is no text.
+//!
+//! What the folding keeps of a stream is bounded: its calls
+//! ([`crate::call_slots`]), and the refusal, at what an answer read whole
+//! may weigh. The text and the reasoning are handed on as they come and
+//! kept nowhere.
 
 use roomkit_providers_core::{
-    Metadata, ProviderError, StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta,
-    StreamToolCallDelta, dumps, read_tool_calls, stream_call_of,
+    Metadata, StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta, StreamToolCallDelta,
+    dumps, read_tool_calls, stream_call_of,
 };
 use serde::Deserialize;
 use serde_json::Value;
 
 use crate::answer::{truthy, usage_of};
-use crate::call_slots::{CallSlots, Fragment, FragmentId, RawCall};
-use crate::failure::Failing;
+use crate::call_slots::{ARGUMENTS_LIMIT, CallSlots, Fragment, FragmentId, RawCall};
+use crate::failure::Failure;
 use crate::think_tags::{Segment, ThinkTagParser, field_reasoning};
 
 /// A fragment of a call, which the call's `index` names across chunks.
@@ -79,12 +84,11 @@ pub(crate) struct Folding<'p> {
     model: Option<Value>,
     /// The model the request asked for.
     asked: &'p str,
-    failing: Failing<'p>,
 }
 
 impl<'p> Folding<'p> {
     /// The folding of a stream asking the model `asked`.
-    pub(crate) fn new(asked: &'p str, failing: Failing<'p>) -> Self {
+    pub(crate) fn new(asked: &'p str) -> Self {
         Self {
             calls: CallSlots::default(),
             finish_reason: None,
@@ -93,7 +97,6 @@ impl<'p> Folding<'p> {
             refusal: String::new(),
             model: None,
             asked,
-            failing,
         }
     }
 
@@ -105,18 +108,16 @@ impl<'p> Folding<'p> {
     ///
     /// The failure of an event that is no JSON, of an error the server
     /// wrote in place of a chunk, and of a chunk that does not read.
-    pub(crate) fn take(
-        &mut self,
-        data: &str,
-        ready: &mut Vec<StreamEvent>,
-    ) -> Result<(), ProviderError> {
-        let failing = self.failing;
-        let chunk: Value = serde_json::from_str(data).map_err(|error| failing.malformed(&error))?;
+    pub(crate) fn take(&mut self, data: &str, ready: &mut Vec<StreamEvent>) -> Result<(), Failure> {
+        let chunk: Value =
+            serde_json::from_str(data).map_err(|error| Failure::malformed(&error))?;
         if let Some(error) = chunk.get("error").filter(|error| truthy(error)) {
-            return Err(failing.stream_error(error));
+            return Err(Failure::stream_error(error));
         }
         if !chunk.is_object() {
-            return Err(self.unread("an event of the stream is no chat completion chunk"));
+            return Err(Failure::unreadable(
+                "an event of the stream is no chat completion chunk",
+            ));
         }
         if let Some(model) = chunk.get("model").filter(|model| truthy(model)) {
             self.model = Some(model.clone());
@@ -128,39 +129,39 @@ impl<'p> Folding<'p> {
         let first = match chunk.get("choices") {
             Some(Value::Array(choices)) => choices.first(),
             Some(other) if truthy(other) => {
-                return Err(self.unread("the choices of a chunk are no list"));
+                return Err(Failure::unreadable("the choices of a chunk are no list"));
             }
             Some(_) | None => None,
         };
         match first {
             Some(choice) if choice.is_object() => self.read_choice(choice, ready),
-            Some(_) => Err(self.unread("a choice of a chunk is no object")),
+            Some(_) => Err(Failure::unreadable("a choice of a chunk is no object")),
             None => Ok(()),
         }
     }
 
-    /// The failure of a chunk that does not read: final.
-    fn unread(&self, what: &str) -> ProviderError {
-        self.failing.unreadable(what)
-    }
-
     /// Reads the first choice of a chunk: Python reads no other.
-    fn read_choice(
-        &mut self,
-        choice: &Value,
-        ready: &mut Vec<StreamEvent>,
-    ) -> Result<(), ProviderError> {
+    fn read_choice(&mut self, choice: &Value, ready: &mut Vec<StreamEvent>) -> Result<(), Failure> {
         // The last reason that says something is kept, as Python's `or`
         // keeps it.
         match choice.get("finish_reason").filter(|reason| truthy(reason)) {
             Some(Value::String(reason)) => self.finish_reason = Some(reason.clone()),
-            Some(_) => return Err(self.unread("the finish reason of a chunk is no text")),
+            Some(_) => {
+                return Err(Failure::unreadable(
+                    "the finish reason of a chunk is no text",
+                ));
+            }
             None => {}
         }
         let Some(delta) = choice.get("delta").filter(|delta| delta.is_object()) else {
             return Ok(());
         };
         if let Some(refusal) = delta.get("refusal").and_then(Value::as_str) {
+            if self.refusal.len().saturating_add(refusal.len()) > ARGUMENTS_LIMIT {
+                return Err(Failure::unreadable(
+                    "the refusal is longer than 4194304 bytes",
+                ));
+            }
             self.refusal.push_str(refusal);
         }
         match delta.get("tool_calls") {
@@ -172,7 +173,7 @@ impl<'p> Folding<'p> {
                 }
             }
             Some(other) if truthy(other) => {
-                return Err(self.unread("the tool calls of a chunk are no list"));
+                return Err(Failure::unreadable("the tool calls of a chunk are no list"));
             }
             Some(_) | None => {}
         }
@@ -184,7 +185,7 @@ impl<'p> Folding<'p> {
         // reasoning, which Python hands on before it reads the text.
         match delta.get("content").filter(|content| truthy(content)) {
             Some(Value::String(text)) => queue(ready, self.tags.feed(text)),
-            Some(_) => return Err(self.unread("the text of a chunk is no text")),
+            Some(_) => return Err(Failure::unreadable("the text of a chunk is no text")),
             None => {}
         }
         Ok(())
@@ -192,16 +193,17 @@ impl<'p> Folding<'p> {
 
     /// Adds a call's fragment to the call it belongs to; an object for its
     /// arguments reads as the JSON text it stands for.
-    fn fold(&mut self, call: &Value) -> Result<Option<StreamToolCallDelta>, ProviderError> {
-        let failing = self.failing;
-        let call = DeltaCall::deserialize(call).map_err(|error| failing.malformed(&error))?;
+    fn fold(&mut self, call: &Value) -> Result<Option<StreamToolCallDelta>, Failure> {
+        let call = DeltaCall::deserialize(call).map_err(|error| Failure::malformed(&error))?;
         let function = call.function.as_ref();
         let name = function.and_then(|function| function.name.as_deref());
         let arguments = match function.map(|function| &function.arguments) {
             Some(Value::String(text)) => text.clone(),
             Some(object @ Value::Object(_)) => dumps(object),
             Some(other) if truthy(other) => {
-                return Err(self.unread("the arguments of a call are no text and no object"));
+                return Err(Failure::unreadable(
+                    "the arguments of a call are no text and no object",
+                ));
             }
             Some(_) | None => String::new(),
         };
@@ -213,7 +215,7 @@ impl<'p> Folding<'p> {
             function: function.is_some(),
         };
         let folded = self.calls.fold(&fragment);
-        folded.map_err(|reason| self.unread(&reason))
+        folded.map_err(Failure::from)
     }
 
     /// Adds to `ready` what the tags still hold once the stream is over.
@@ -229,10 +231,8 @@ impl<'p> Folding<'p> {
     /// # Errors
     ///
     /// The failure of a call that took an id that is no text.
-    pub(crate) fn finish(self) -> Result<(Vec<RawCall>, StreamDone), ProviderError> {
-        let failing = self.failing;
-        let calls = self.calls.finish();
-        let calls = calls.map_err(|reason| failing.unreadable(&reason))?;
+    pub(crate) fn finish(self) -> Result<(Vec<RawCall>, StreamDone), Failure> {
+        let calls = self.calls.finish()?;
         let mut done = StreamDone {
             finish_reason: self.finish_reason,
             usage: self.usage,

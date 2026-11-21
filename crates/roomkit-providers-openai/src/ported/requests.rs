@@ -275,7 +275,20 @@ fn a_named_field_carries_reasoning_and_leaves_a_round_that_did_not_reason_withou
     assert_eq!(reasoning_field(named, "why", true), Some(json!("why")));
     assert_eq!(reasoning_field(named, "why", false), Some(json!("why")));
     assert_eq!(reasoning_field(named, "", true), None);
-    // No field named sends no reasoning.
-    assert_eq!(reasoning_field(None, "why", true), None);
-    assert_eq!(reasoning_field(None, "why", false), None);
+    // No field named sends no reasoning, under any name: the row is the
+    // one of a message that said the same and did not reason.
+    for calls in [true, false] {
+        let rows = |thinking: Option<&str>| {
+            let thinking = thinking.map(|said| AiContentPart::Thinking(AiThinkingPart::new(said)));
+            let said = AiContentPart::Text(AiTextPart::new("Done."));
+            let parts = thinking
+                .into_iter()
+                .chain([said])
+                .chain(calls.then(call_part));
+            let message = AiMessage::new(AiRole::Assistant, parts.collect::<Vec<_>>());
+            chat_messages(&[message], None, None, "openai").unwrap()
+        };
+        assert_eq!(rows(Some("why")), rows(None), "{calls}");
+        assert_eq!(reasoning_field(None, "why", calls), None);
+    }
 }

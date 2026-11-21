@@ -64,8 +64,8 @@ nothing has been released yet.
   Chat Completions is configured with: the names, the defaults and the JSON
   form of `OpenAIConfig` in RoomKit's Python implementation, the key written
   masked. Its `Debug` form prints neither the key nor what a base URL holds
-  beside its scheme, host and port. The crate's README lists where it
-  differs from Python's. The provider itself is not written yet.
+  beside its scheme, host and port, as the HTTP client reads them. The
+  crate's README lists where it differs from Python's.
 - `roomkit-providers-openai`: `OpenAiAiProvider`, a provider for OpenAI's
   Chat Completions and the servers that speak it behind a base URL. It
   answers a request whole (`generate`), as `OpenAIAIProvider` of RoomKit's
@@ -82,7 +82,21 @@ nothing has been released yet.
   each filled from the crate's catalogue where it knows the model.
 - `roomkit-providers-openai`: a request the server refuses fails as
   `the provider answered HTTP <status> (<type>, <code>): <message>`, from
-  the body's error object alone. A body that is no JSON is not echoed.
+  the body's error object alone. A body that is no JSON is not echoed. The
+  failure says the context overflowed when the body says so, by its code or
+  by its words.
+- `roomkit-providers-openai`: no failure's text repeats a secret of the
+  configuration a server sends back as it is (the key, a default header's
+  value, a base URL's user information), nor a control character; a secret
+  shorter than 8 characters is not searched for. The README says what a
+  failure repeats of an answer, and the bounds of a stream's calls.
+- `roomkit-providers-openai`: a base URL with user information is sent with
+  it as Basic credentials, in place of the key, as Python's client does. A
+  base URL the client and Python's would not send to the same place, and a
+  timeout the clock cannot count, are refused when the provider is built.
+- `roomkit-providers-openai`: `supports_vision` answers as Python's
+  provider; the configuration's `vision` states it where the provider would
+  not.
 - `roomkit-providers-openai`: an example, `local_server`, that asks a
   stand-in server on a local port once whole and once streamed. `make all`
   runs it.

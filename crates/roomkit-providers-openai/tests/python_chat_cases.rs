@@ -64,6 +64,7 @@ struct Case {
     questioned: Option<String>,
     config: Value,
     catalogue: Option<Catalogue>,
+    supports_vision: Option<bool>,
     request: Value,
     request_api_key: Option<String>,
     exchanges: Vec<Exchange>,
@@ -307,7 +308,7 @@ const MANGLED: (&str, &str) = (
 
 /// What a fixture must show of the provider: each kind, in at least one
 /// case. A regenerated fixture that loses one fails here.
-const KINDS: [&str; 79] = [
+const KINDS: [&str; 81] = [
     // A request and its answer.
     "plain",
     "system_prompt",
@@ -397,6 +398,9 @@ const KINDS: [&str; 79] = [
     "retry_wait",
     // The model listing.
     "listing",
+    // What the provider says of its model, and a base URL's credentials.
+    "vision",
+    "base_url_credentials",
 ];
 
 #[expect(
@@ -450,6 +454,7 @@ fn the_fixture_says_where_it_comes_from_and_how_it_is_written() {
         "provenance",
         "exchanges.request",
         "exchanges.response",
+        "supports_vision",
         "compare",
         "questioned",
         "sdk",
@@ -516,6 +521,23 @@ fn a_case_on_openai_s_endpoint_holds_the_catalogue_facts_it_rests_on() {
     ] {
         assert!(models.contains(model), "no case on {model}");
     }
+}
+
+/// Each case says whether its provider's model takes images, unless no
+/// provider was built; the fixture shows a model that takes some and a
+/// model that takes none, on OpenAI's own endpoint and behind a base URL.
+#[test]
+fn a_case_says_whether_its_model_takes_images() {
+    let mut said = BTreeSet::new();
+    for case in fixture().cases {
+        let unbuilt = case.expected.error.as_ref();
+        let unbuilt = unbuilt.is_some_and(|error| error.class == "OpenAIError");
+        assert_eq!(case.supports_vision.is_none(), unbuilt, "{}", case.name);
+        let own = case.config.get("base_url").is_none();
+        said.extend(case.supports_vision.map(|sees| (own, sees)));
+    }
+    let shown: Vec<(bool, bool)> = said.into_iter().collect();
+    assert_eq!(shown, [(false, true), (true, false), (true, true)]);
 }
 
 /// What the configuration says of the token bound and of the temperature is
@@ -1028,17 +1050,17 @@ fn the_fixture_covers_every_kind_of_case() {
             .filter(|case| case.call == call)
             .count()
     };
-    assert!(calls("generate") >= 203, "{}", calls("generate"));
+    assert!(calls("generate") >= 208, "{}", calls("generate"));
     assert!(
         calls("generate_stream") >= 4,
         "{}",
         calls("generate_stream")
     );
     assert!(
-        calls("generate_structured_stream") >= 110,
+        calls("generate_structured_stream") >= 111,
         "{}",
         calls("generate_structured_stream")
     );
-    assert!(calls("list_models") >= 9, "{}", calls("list_models"));
-    assert!(fixture.cases.len() >= 326, "the fixture lost cases");
+    assert!(calls("list_models") >= 10, "{}", calls("list_models"));
+    assert!(fixture.cases.len() >= 333, "the fixture lost cases");
 }

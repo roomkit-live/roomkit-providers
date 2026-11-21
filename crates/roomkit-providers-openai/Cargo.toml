@@ -32,6 +32,10 @@ tracing = { workspace = true }
 url = { workspace = true }
 
 [dev-dependencies]
+# With gzip turned on, as a host's build may turn it on for the same HTTP
+# client: the tests hold that the provider still asks for no compressed
+# answer.
+reqwest = { workspace = true, features = ["gzip"] }
 # The trait of the streams a test reads.
 futures-core = { workspace = true }
 # The fake of the wire the provider is replayed against, and the example's

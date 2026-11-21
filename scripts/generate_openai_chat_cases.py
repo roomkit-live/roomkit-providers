@@ -122,6 +122,10 @@ NOTES = {
         "catalogue changed shows it there."
     ),
     "config": "The keyword arguments of OpenAIConfig. The key is a placeholder.",
+    "supports_vision": (
+        "What the provider of the case answers for supports_vision: whether its model takes "
+        "images. It is left out where no provider was built."
+    ),
     "request": (
         "AIContext dumped with model_dump(mode='json'), its ten request fields. A key the "
         "request carries is written masked there, and plain under request_api_key."
@@ -469,11 +473,12 @@ async def answered_by_python(case: Case, wire: Wire, context: AIContext) -> dict
     try:
         provider = OpenAIAIProvider(OpenAIConfig(**case.config), transport=transport)
     except openai.OpenAIError as unbuilt:
-        return {"expected": {"error": error_form(unbuilt)}, "catalogue": None}
+        return {"expected": {"error": error_form(unbuilt)}, "catalogue": None, "vision": None}
     wire.record_waits(provider._client)
     try:
         expected = await outcome(provider, case.call, context)
-        return {"expected": expected, "catalogue": catalogue_of(provider)}
+        vision = provider.supports_vision
+        return {"expected": expected, "catalogue": catalogue_of(provider), "vision": vision}
     finally:
         await provider.close()
 
@@ -504,6 +509,8 @@ async def run(case: Case) -> dict[str, Any]:
     written["config"] = case.config
     if ran["catalogue"] is not None:
         written["catalogue"] = ran["catalogue"]
+    if ran["vision"] is not None:
+        written["supports_vision"] = ran["vision"]
     written["request"] = context.model_dump(mode="json", include=REQUEST_FIELDS)
     if "api_key" in case.request.get("metadata", {}):
         written["request_api_key"] = case.request["metadata"]["api_key"]

@@ -28,8 +28,20 @@ test:
 # Runs each example, which checks what it shows and fails otherwise. An
 # example talks to a local server it starts itself: nothing leaves the
 # machine.
+#
+# It runs with every proxy variable set to a local port nothing listens on.
+# A provider reads no proxy from its environment: one that did would send
+# its requests there, and the example would fail. The check is made here
+# because the crates forbid unsafe code, so no test can set a variable of
+# its own process. The example is built first, without the variables, so
+# that cargo itself is given no proxy.
+NO_SUCH_PROXY := http://127.0.0.1:9
 examples:
-	$(CARGO) run --locked -p roomkit-providers-openai --example local_server
+	$(CARGO) build --locked -p roomkit-providers-openai --example local_server
+	HTTP_PROXY=$(NO_SUCH_PROXY) HTTPS_PROXY=$(NO_SUCH_PROXY) ALL_PROXY=$(NO_SUCH_PROXY) \
+	http_proxy=$(NO_SUCH_PROXY) https_proxy=$(NO_SUCH_PROXY) all_proxy=$(NO_SUCH_PROXY) \
+	NO_PROXY= no_proxy= \
+		$(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
 
 doc:
 	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --workspace --no-deps --all-features --locked
