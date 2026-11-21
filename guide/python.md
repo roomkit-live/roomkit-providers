@@ -63,20 +63,46 @@ behind a base URL.
 
 ## Switching from RoomKit's own provider
 
-Change the import and the class's name, then check three things the
-provider takes from nowhere but its configuration:
+Change the import and the class's name. The network of the host stays as
+it is: the provider reads from the environment what RoomKit's provider
+reads there of proxies and of certificates, once, when it is built.
+
+- **Proxies.** `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` are
+  read as RoomKit's provider reads them, in upper or in lower case: a
+  request goes through the proxy named for its endpoint's scheme, unless
+  `NO_PROXY` exempts the host. A proxy's URL may carry a user and a
+  password, which are sent to the proxy alone and appear in no failure.
+- **Certificates.** A server's certificate is checked against the
+  authorities of the file `SSL_CERT_FILE` names, else against those filed in
+  the directories `SSL_CERT_DIR` names, else against the system's own. An
+  endpoint whose certificate a private authority signed is reached as it is
+  with RoomKit's provider.
+- **When.** The environment is read when `OpenAI(...)` is called. A variable
+  set or changed afterwards, in `os.environ` as anywhere else, changes
+  nothing for that provider; one built later reads it.
+
+Then check what does differ:
 
 - **`OPENAI_BASE_URL`, `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` are not
   read.** RoomKit's provider reads them through the `openai` SDK. A host
   that relied on `OPENAI_BASE_URL` to reach another server, and gives no
   `base_url`, now reaches OpenAI's own endpoint and sends it its key: write
   the server in `base_url`.
-- **No proxy is read from the environment.** RoomKit's provider goes through
-  `HTTP_PROXY` and `HTTPS_PROXY`; this one connects straight to its
-  endpoint, and behind a proxy it reaches nothing.
-- **Only the public certificate roots compiled into the package are
-  trusted.** An endpoint whose certificate is signed by a private authority
-  cannot be reached, whatever the system's store or `SSL_CERT_FILE` hold.
+- **A SOCKS proxy is refused.** RoomKit's provider takes `socks5://` once
+  the `socksio` package is installed; this one is not built in an
+  environment that names one, and says so.
+- **The system's proxy settings are not read.** On macOS and on Windows,
+  RoomKit's provider takes the proxies of the system's settings when no
+  proxy variable is set; this one reads the variables alone.
+- **A system with no certificate store** (a container without one) gets the
+  public roots compiled into the package, where RoomKit's provider trusts
+  nothing there. They are never added to a store that holds an authority.
+- **A certificate that is refused** fails as `the provider's certificate is
+  not trusted`, where RoomKit's provider says `Connection error.`; both say
+  the request is worth trying again.
+
+The package was run on Linux alone: what it does on macOS and on Windows,
+where the system itself checks a certificate, was not verified.
 
 ```python
 # from roomkit.providers.openai import OpenAIAIProvider, OpenAIConfig

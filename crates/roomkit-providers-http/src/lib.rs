@@ -15,11 +15,11 @@
 
 #![forbid(unsafe_code)]
 
-use std::sync::Arc;
-
 mod public_url;
+mod trust;
 
 pub use public_url::{ValidatePublicUrlOptions, validate_public_url};
+pub use trust::{CertificateRefused, TlsUnset, certificate_refused};
 
 #[doc(hidden)]
 pub mod sse;
@@ -56,69 +56,25 @@ pub enum SseError {
     },
 }
 
-/// TLS with ring, the public web PKI roots, and HTTP/1.1 ALPN.
+/// TLS with ring and HTTP/1.1 ALPN, for a provider crate: the configuration
+/// its HTTP client is built with.
 ///
-/// For a provider crate: the configuration its HTTP client is built with.
+/// A server's certificate is checked against what the environment and the
+/// system name at the moment of the call, as the client of `RoomKit`'s
+/// Python providers decides it: the authorities of the file `SSL_CERT_FILE`
+/// names, and no other; else those filed in the directories `SSL_CERT_DIR`
+/// names, under the names OpenSSL gives them; else the system's own
+/// verifier on macOS and Windows, and elsewhere the store of authorities
+/// the system keeps on its disk. A system that keeps none is given the
+/// public roots compiled in, which are never added to a store that holds an
+/// authority.
 ///
 /// # Errors
 ///
-/// Fails when the cryptography provider has no usable protocol version.
+/// The cryptography provider has no usable protocol version; the file
+/// `SSL_CERT_FILE` names does not read or holds no certificate; or the
+/// system's verifier could not be made.
 #[doc(hidden)]
-pub fn tls_config() -> Result<rustls::ClientConfig, String> {
-    let mut config = rustls::ClientConfig::builder_with_provider(Arc::new(
-        rustls::crypto::ring::default_provider(),
-    ))
-    .with_safe_default_protocol_versions()
-    .map_err(|error| error.to_string())?
-    .with_root_certificates(public_roots())
-    .with_no_client_auth();
-    config.alpn_protocols = vec![b"http/1.1".to_vec()];
-    Ok(config)
-}
-
-/// The public web PKI roots a server's certificate is checked against.
-fn public_roots() -> rustls::RootCertStore {
-    rustls::RootCertStore {
-        roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use rustls::pki_types::ServerName;
-
-    use super::*;
-
-    /// The `supported_versions` extension of a hello that offers TLS 1.3,
-    /// then TLS 1.2: its type, its length, then the two versions.
-    const TLS_1_3_THEN_1_2: [u8; 9] = [0x00, 0x2b, 0x00, 0x05, 0x04, 0x03, 0x04, 0x03, 0x03];
-
-    #[test]
-    fn the_tls_configuration_is_built_and_asks_for_http_1_1() {
-        let config = tls_config().unwrap();
-        assert_eq!(config.alpn_protocols, [b"http/1.1".to_vec()]);
-    }
-
-    /// The versions are read where a server reads them: in the hello a
-    /// client of the configuration writes first, which no socket carries
-    /// here.
-    #[test]
-    fn a_client_of_the_tls_configuration_offers_tls_1_3_and_tls_1_2() {
-        let config = Arc::new(tls_config().unwrap());
-        let server = ServerName::try_from("service.example").unwrap();
-        let mut client = rustls::ClientConnection::new(config, server).unwrap();
-        let mut hello = Vec::new();
-        client.write_tls(&mut hello).unwrap();
-        let offered = hello
-            .windows(TLS_1_3_THEN_1_2.len())
-            .any(|bytes| bytes == TLS_1_3_THEN_1_2);
-        assert!(offered, "{hello:02x?}");
-    }
-
-    #[test]
-    fn the_root_store_holds_the_public_web_pki_roots() {
-        let roots = public_roots();
-        assert!(!roots.is_empty());
-        assert_eq!(roots.len(), webpki_roots::TLS_SERVER_ROOTS.len());
-    }
+pub fn tls_config() -> Result<rustls::ClientConfig, TlsUnset> {
+    trust::tls_config()
 }

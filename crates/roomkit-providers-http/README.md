@@ -24,7 +24,15 @@ public internet, in any of the forms the client's parser reads (`127.1`,
 
 The crate also holds what the provider crates build their HTTP on, hidden
 from its documentation: a bounded reader of server-sent events and the TLS
-configuration their clients take.
+configuration their clients take. That configuration is ring's
+cryptography and HTTP/1.1, and a server's certificate is checked against
+what the environment and the system name when the configuration is made:
+the authorities of the file `SSL_CERT_FILE` names, else those filed in the
+directories `SSL_CERT_DIR` names, else the system's (its own verifier on
+macOS and on Windows, the store it keeps on its disk elsewhere), and the
+public roots compiled in where the system keeps none.
+`roomkit-providers-client`'s README says it in full, with where it differs
+from RoomKit's Python client.
 
 It depends on neither Python nor RoomKit, nor on `roomkit-providers-llm`,
 and on no HTTP client: it reads a URL with the `url` crate, the parser

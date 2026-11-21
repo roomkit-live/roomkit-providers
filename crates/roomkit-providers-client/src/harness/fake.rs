@@ -1,14 +1,19 @@
 //! A fake of the endpoint: a local server that answers each connection with
-//! the next reply of a script, and keeps what it was sent.
+//! the next reply of a script, and keeps what it was sent. It speaks plain
+//! HTTP, or TLS with the certificate a test's authority signed
+//! ([`Fake::serving_tls`]); and it stands for a proxy as it stands for an
+//! endpoint, since a proxy is asked as a server is: it answers a request
+//! handed to it whole, and carries a tunnel ([`Reply::Tunnel`]).
 
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
+use tokio_rustls::TlsAcceptor;
 
 /// What the fake does with one request.
 #[derive(Clone, Debug)]
@@ -27,6 +32,10 @@ pub enum Reply {
         /// The body of the answer, and how it is sent.
         body: Body,
     },
+    /// Answers a `CONNECT` with a 200, then carries what the client sends
+    /// to the server at this address, and what that server sends back: the
+    /// tunnel of a proxy, whatever host the client asked it for.
+    Tunnel(SocketAddr),
 }
 
 impl Reply {
@@ -114,6 +123,7 @@ struct Told {
     received: Notify,
     silent: Notify,
     closed: Notify,
+    turned_away: Notify,
 }
 
 /// A local port a fake listens on. Fakes that serve one after the other may
@@ -144,10 +154,23 @@ impl Fake {
         Self::behind(&Door::open().await, replies)
     }
 
+    /// As [`serving`](Self::serving), over TLS: each connection is greeted
+    /// as `tls` says, the configuration of a server
+    /// ([`Authority::serving`](super::tls::Authority::serving)), before
+    /// its request is read. A connection its client ends before the
+    /// greeting is done takes no reply of the script.
+    pub async fn serving_tls(replies: Vec<Reply>, tls: Arc<rustls::ServerConfig>) -> Self {
+        Self::started(&Door::open().await, replies, Some(TlsAcceptor::from(tls)))
+    }
+
     /// As [`serving`](Self::serving), on the port of `door`: for fakes that
     /// serve one after the other, each dropped before the next is made.
     #[must_use]
     pub fn behind(door: &Door, replies: Vec<Reply>) -> Self {
+        Self::started(door, replies, None)
+    }
+
+    fn started(door: &Door, replies: Vec<Reply>, tls: Option<TlsAcceptor>) -> Self {
         let listener = Arc::clone(&door.0);
         let address = listener.local_addr().unwrap();
         let seen = Arc::new(Mutex::new(Vec::new()));
@@ -157,18 +180,19 @@ impl Fake {
         let serving = Arc::new(Mutex::new(Vec::new()));
         let accepted = Arc::clone(&serving);
         let server = tokio::spawn(async move {
-            let mut replies = replies.into_iter();
+            let replies = Arc::new(Mutex::new(replies.into_iter()));
             while let Ok((socket, _)) = listener.accept().await {
-                let extra = Reply::Answer {
-                    status: 599,
-                    headers: Vec::new(),
-                    body: Body::Whole(Vec::new()),
-                };
-                let reply = replies.next().unwrap_or(extra);
                 // Each read goes out as it is written.
                 socket.set_nodelay(true).ok();
                 let telling = Arc::clone(&telling);
-                let answer = answer(socket, reply, Arc::clone(&kept), telling);
+                let kept = Arc::clone(&kept);
+                let answer: Answering = match tls.clone() {
+                    // The reply is the next when the connection is taken.
+                    None => Box::pin(answer(socket, next_of(&replies), kept, telling)),
+                    Some(tls) => {
+                        Box::pin(greeted(tls, socket, Arc::clone(&replies), kept, telling))
+                    }
+                };
                 // Kept before it can end: a connection that was answered
                 // is one `served` waits for.
                 let mut accepted = accepted.lock().unwrap();
@@ -212,6 +236,13 @@ impl Fake {
         self.told.closed.notified().await;
     }
 
+    /// Returns once a client ended a connection before the TLS greeting
+    /// was done, as one that refuses the fake's certificate does: once for
+    /// each time one does.
+    pub async fn turned_away(&self) {
+        self.told.turned_away.notified().await;
+    }
+
     /// The requests received so far, in order.
     #[must_use]
     pub fn seen(&self) -> Vec<Seen> {
@@ -225,8 +256,49 @@ impl Drop for Fake {
     }
 }
 
+/// What a connection is served with, to its end.
+type Answering = std::pin::Pin<Box<dyn Future<Output = ()> + Send>>;
+
+/// The replies of a script that are left.
+type Replies = Arc<Mutex<std::vec::IntoIter<Reply>>>;
+
+/// A connection a fake may serve: a socket, or TLS over one.
+trait Connection: AsyncRead + AsyncWrite + Unpin + Send {}
+
+impl<S: AsyncRead + AsyncWrite + Unpin + Send> Connection for S {}
+
+/// The next reply of a script: a request past them is answered 599.
+fn next_of(replies: &Replies) -> Reply {
+    let extra = Reply::Answer {
+        status: 599,
+        headers: Vec::new(),
+        body: Body::Whole(Vec::new()),
+    };
+    replies.lock().unwrap().next().unwrap_or(extra)
+}
+
+/// Greets `socket` over TLS, then answers it with the next reply. A client
+/// that leaves before the greeting is done is told of, and takes no reply.
+async fn greeted(
+    tls: TlsAcceptor,
+    socket: TcpStream,
+    replies: Replies,
+    seen: Arc<Mutex<Vec<Seen>>>,
+    told: Arc<Told>,
+) {
+    match tls.accept(socket).await {
+        Ok(socket) => answer(socket, next_of(&replies), seen, told).await,
+        Err(_) => told.turned_away.notify_one(),
+    }
+}
+
 /// Reads one request from `socket`, keeps it, and answers as `reply` says.
-async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>, told: Arc<Told>) {
+async fn answer(
+    mut socket: impl Connection,
+    reply: Reply,
+    seen: Arc<Mutex<Vec<Seen>>>,
+    told: Arc<Told>,
+) {
     let Some(request) = read_request(&mut socket).await else {
         return;
     };
@@ -246,6 +318,7 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
     let (status, headers, body) = match reply {
         Reply::Refused => return,
         Reply::Silent => return hold(socket, closed).await,
+        Reply::Tunnel(to) => return carry(socket, to).await,
         Reply::Answer {
             status,
             headers,
@@ -287,7 +360,7 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
 /// the transfer, flushed before the next, each once `steps` says so when
 /// steps are given. `wrote` is told of each read as it is written.
 async fn send_reads(
-    socket: &mut TcpStream,
+    socket: &mut impl Connection,
     mut head: Vec<String>,
     reads: &[Vec<u8>],
     steps: Option<&Notify>,
@@ -309,15 +382,29 @@ async fn send_reads(
     }
 }
 
+/// Answers a `CONNECT` with a 200, then carries the bytes between `socket`
+/// and the server at `to` until one of them ends.
+async fn carry(mut socket: impl Connection, to: SocketAddr) {
+    let Ok(mut server) = TcpStream::connect(to).await else {
+        return;
+    };
+    let opened = b"HTTP/1.1 200 Connection established\r\n\r\n";
+    if socket.write_all(opened).await.is_ok() {
+        tokio::io::copy_bidirectional(&mut socket, &mut server)
+            .await
+            .ok();
+    }
+}
+
 /// Ends a chunked answer.
-async fn end_reads(mut socket: TcpStream) {
+async fn end_reads(mut socket: impl Connection) {
     socket.write_all(b"0\r\n\r\n").await.ok();
     socket.shutdown().await.ok();
 }
 
 /// Keeps a connection open and silent until its client closes it, and
 /// tells so.
-async fn hold(mut socket: TcpStream, told: &Told) {
+async fn hold(mut socket: impl Connection, told: &Told) {
     told.silent.notify_one();
     let mut sent = [0_u8; 64];
     while matches!(socket.read(&mut sent).await, Ok(1..)) {}
@@ -325,7 +412,7 @@ async fn hold(mut socket: TcpStream, told: &Told) {
 }
 
 /// One request: its head, then the body its `content-length` declares.
-async fn read_request(socket: &mut TcpStream) -> Option<Seen> {
+async fn read_request(socket: &mut impl Connection) -> Option<Seen> {
     let mut received = Vec::new();
     let mut buffer = [0_u8; 8192];
     let head_end = loop {

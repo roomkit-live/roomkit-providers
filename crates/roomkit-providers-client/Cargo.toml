@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 readme = "README.md"
-include = ["/LICENSE", "/README.md", "/src"]
+include = ["/LICENSE", "/README.md", "/src", "/tests"]
 keywords = ["llm", "ai", "provider", "http", "client"]
 categories = ["web-programming::http-client"]
 
@@ -18,12 +18,19 @@ categories = ["web-programming::http-client"]
 # taken, and a provider's requests go to a loopback address. Not for a host.
 replay = []
 # Test support, for the tests of a provider crate: a local fake of an
-# endpoint, the replay of a fixture of recorded cases through it, what the
-# replay compares, its self-test and the cases a provider names. It panics
-# where a test fails: never for a host.
+# endpoint or of a proxy, over plain HTTP or over TLS with the certificate
+# of an authority a test makes for itself, the replay of a fixture of
+# recorded cases through it, what the replay compares, its self-test and
+# the cases a provider names. It panics where a test fails: never for a
+# host.
 harness = [
     "dep:futures-core",
+    "dep:rcgen",
     "dep:serde",
+    "dep:tokio-rustls",
+    "rustls/ring",
+    "rustls/std",
+    "rustls/tls12",
     "tokio/io-util",
     "tokio/macros",
     "tokio/net",
@@ -43,13 +50,21 @@ roomkit-providers-http = { workspace = true }
 futures-core = { workspace = true, optional = true }
 # An HTTP date a server's `retry-after` names.
 jiff = { workspace = true }
+# The authority a test makes for itself, and the certificates it signs for
+# the harness's fakes.
+rcgen = { workspace = true, optional = true }
 # `rustls-no-provider` makes the client take the configuration given it.
 reqwest = { workspace = true, features = ["rustls-no-provider"] }
+# The TLS configuration the HTTP client is given, by its type; and, for the
+# harness, the TLS of a fake.
+rustls = { workspace = true }
 # The fixture of recorded cases, which the harness reads.
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_json = { workspace = true }
 # The wait between two tries of a request.
 tokio = { workspace = true, features = ["time"] }
+# The TLS of the harness's fake of an endpoint.
+tokio-rustls = { workspace = true, optional = true }
 # The line a provider logs when a request is tried again, written once here
 # and logged under the provider's own target.
 tracing = { workspace = true }
@@ -65,8 +80,11 @@ reqwest = { workspace = true, features = ["gzip"] }
 # What the harness is built with, for the crate's own tests, which drive
 # the client against the harness's fake.
 futures-core = { workspace = true }
+rcgen = { workspace = true }
+rustls = { workspace = true, features = ["ring", "std", "tls12"] }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt", "net", "io-util", "sync", "test-util"] }
+tokio-rustls = { workspace = true }
 
 [lints]
 workspace = true

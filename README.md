@@ -91,9 +91,9 @@ provider.
 | Path | Contents |
 | --- | --- |
 | `crates/roomkit-providers-llm` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests |
-| `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients |
-| `crates/roomkit-providers-client` | The HTTP client a provider is built on, written once for every provider: a request and its tries, the bounds of an answer and of a stream, the base URLs refused when a provider is built, the one exit of failures, and, for a provider's tests, the replay of its recorded wire cases against a local fake |
-| `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and an example against a local server |
+| `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients, which trusts the certificate authorities the environment or the system names |
+| `crates/roomkit-providers-client` | The HTTP client a provider is built on, written once for every provider: a request and its tries, the proxies it reads from the environment, the bounds of an answer and of a stream, the base URLs refused when a provider is built, the one exit of failures, and, for a provider's tests, the replay of its recorded wire cases against a local fake |
+| `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract; `src/vendors` holds each provider's own part |
 | `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract, and `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig` |
 | `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the replay of the recorded wire cases through `OpenAI`; a RoomKit agent over it; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
@@ -103,10 +103,11 @@ provider.
 | `benchmarks/footprint.py`, `benchmarks/fork_children.py` | The threads and the connections a busy provider holds, and how often a child forked under load hangs |
 | `guide/python.md` | The Python guide |
 | `scripts/check-python.py` | Builds a wheel and a source distribution, installs each beside RoomKit and runs the Python tests and the examples on it (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshot, `scripts/roomkit_env.py` names the RoomKit of the environment) |
-| `scripts/no-network.sh` | Runs a command where no network is reachable but loopback: the tests, the examples and the benches go through it |
+| `scripts/no-network.sh` | Runs a command where no network is reachable but loopback, without the proxy and certificate variables of the machine: the tests, the examples and the benches go through it |
 | `scripts/generate_openai_catalogue.py` | Writes OpenAI's model catalogue of RoomKit's Python, which the provider reads its models' rules from |
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
+| `scripts/generate_python_proxy_cases.py` | Writes which proxy the client of RoomKit's Python providers takes for a table of environments, which the client crate's tests replay |
 | `scripts/generate_openai_config_forms.py` | Writes the JSON forms of RoomKit's Python `OpenAIConfig`, which the OpenAI crate's tests compare with |
 | `scripts/generate_openai_chat_cases.py` | Runs RoomKit's Python OpenAI provider against a fake endpoint and writes what it sends and reads, case by case (`scripts/openai_chat_cases.py` holds the cases) |
 | `scripts/generate_printable_ranges.py` | Writes the table of the characters Python's `repr` writes as they are |

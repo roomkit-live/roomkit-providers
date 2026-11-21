@@ -35,6 +35,7 @@ mod compare;
 pub mod fake;
 pub mod named;
 pub mod self_test;
+pub mod tls;
 
 use std::collections::BTreeMap;
 use std::fmt;

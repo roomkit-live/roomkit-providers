@@ -14,6 +14,7 @@ A provider crate holds its wire and nothing else:
   Python.
 
 Everything else comes from this crate: the HTTP client and its timeouts, the
+proxies and the certificate authorities it reads from the environment, the
 tries of a request and their waits, the bounds of what is read, the base URLs
 refused when a provider is built, the one exit of failures, and, for the
 provider's tests, the replay of its recorded cases.
@@ -32,18 +33,20 @@ provider.
 | `retry` | `Rule` and `Past`: whether a failed try is tried again and after what wait, and where the rule of a vendor's SDK differs |
 | `failure` | `Failure`, a failure inside a provider, with the failures every provider words alike; `own`, `told` and `Stated`, for those a provider words; `Exit` and `Secrets`, the one way a failure leaves; `carried`; `described_status`, `retryable_status`, `names_transient`, `past_mark`, `one_line`; `MESSAGE_LIMIT`, `NAME_LIMIT` |
 | `stream` | `Streamed`, a streamed answer read event by event within `STREAM_LIMIT`; `leaving` and `text`, the two streams a provider gives of its events; `Item` |
-| `harness` (feature `harness`) | Test support: `fake`, a local fake of an endpoint; `Fixture`, `Case`, `Replays`, `replayed_or_named`, the replay of recorded cases; `named`, the cases a provider answers otherwise than Python; `self_test`, the replay held to what it compares |
+| `harness` (feature `harness`) | Test support: `fake`, a local fake of an endpoint or of a proxy, over plain HTTP or over TLS; `tls`, an authority a test makes for itself and the certificates it signs; `Fixture`, `Case`, `Replays`, `replayed_or_named`, the replay of recorded cases; `named`, the cases a provider answers otherwise than Python; `self_test`, the replay held to what it compares |
 | crate root (feature `replay`) | `Client::replaying`, `ReplayWaits` and `replayed_at`: the seam a replay outside a provider crate's tests drives a provider through |
 
 ## What the client does
 
-- **TLS** is the configuration of `roomkit-providers-http`: ring, the public
-  web PKI roots, HTTP/1.1.
-- **No redirect is followed.** A redirect is a failure, final, with its
-  status (`Failure::redirect`).
-- **No proxy** is read from the system or its environment, and **no
-  compressed answer** is asked for, whatever compression a host's build turns
-  on in the HTTP client.
+- **TLS** is the configuration of `roomkit-providers-http`: ring and
+  HTTP/1.1, a server's certificate checked against what the environment and
+  the system name ([The environment](#the-environment)).
+- **Proxies** are those the environment names
+  ([The environment](#the-environment)).
+- **No redirect is followed**, a proxy's own among them. A redirect is a
+  failure, final, with its status (`Failure::redirect`).
+- **No compressed answer** is asked for, whatever compression a host's build
+  turns on in the HTTP client.
 - **Timeouts** are the provider's `Timeouts`: `connect` to connect, `read` for
   the head of an answer and between two reads of its body, which also ends a
   stream that stalls. A timeout the clock cannot count a hundred years past
@@ -62,6 +65,156 @@ provider.
   request; an error body past it keeps its status. A stream fails at a line
   or an event past 1 MiB and past 256 MiB in all (`stream::STREAM_LIMIT`),
   after what was read before is handed on.
+
+## The environment
+
+A client reads the environment of its process once, in `Client::new`, when
+its provider is built: a variable that changes afterwards changes nothing
+for that client, and a provider built later reads it anew. It reads the
+proxy variables and the variables that name certificate authorities, as the
+client of RoomKit's Python providers reads them (httpx2, under the `openai`
+and `anthropic` SDKs), so that a host that moves from a Python provider
+keeps the network it had. It reads nothing else: no key, no base URL, no
+header. The variables a vendor's SDK reads for those (`OPENAI_BASE_URL`,
+`OPENAI_ORG_ID`, `OPENAI_PROJECT_ID`, `ANTHROPIC_BASE_URL`,
+`ANTHROPIC_CUSTOM_HEADERS` and the like) are not read: a provider takes its
+key, its endpoint and its headers from its configuration alone, and its
+README says what that changes for a host.
+
+### Proxies
+
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY`, read as Python's
+`urllib` and `httpx2` read them:
+
+- **Names.** A variable is read in any case. A name that ends in lower case
+  (`http_proxy`) wins over the others, and set to nothing it unsets them.
+  Under `REQUEST_METHOD`, the mark of a CGI program, `HTTP_PROXY` is dropped
+  unless its name ends in lower case, since a request's `Proxy` header would
+  set it; `HTTPS_PROXY` and `ALL_PROXY` are kept.
+- **Which proxy.** `HTTP_PROXY` serves the `http` endpoints, `HTTPS_PROXY`
+  the `https` ones, `ALL_PROXY` the scheme that has no proxy of its own. A
+  proxy written without a scheme is an `http` one. A request for an `http`
+  endpoint is handed to the proxy whole; one for an `https` endpoint goes
+  through a tunnel the proxy opens (`CONNECT`), and the endpoint's
+  certificate is checked as without a proxy. The user information of a
+  proxy's URL is sent to it as Basic credentials (`Proxy-Authorization`),
+  and never to the endpoint behind a tunnel.
+- **`NO_PROXY`** is a list between commas, each entry trimmed:
+  - a name exempts itself and what is under it (`example.com` exempts
+    `api.example.com`), and after a dot what is under it alone
+    (`.example.com` does not exempt `example.com`);
+  - an address exempts itself, and so does a range, which is read as the
+    one address it is written with (`10.0.0.0/8` exempts `10.0.0.0` and
+    nothing else);
+  - `localhost` exempts itself alone;
+  - an entry with a port exempts that port (`example.com:8443`), never the
+    own port of an endpoint's scheme (`example.com:443` exempts no `https`
+    endpoint);
+  - `*` alone exempts everything; a star anywhere else stands for nothing
+    (`*.example.com` exempts no host);
+  - an entry written as a URL is a pattern of Python's client
+    (`https://example.com`, `all://*.example.com`, `https://`).
+
+Each of these is Python's reading, quirks included: the crate's tests hold
+it to what Python's client decides of a table of 109 environments
+(`tests/fixtures/python_proxy_cases.json`, written by
+`scripts/generate_python_proxy_cases.py`). The proxy matcher of the HTTP
+client itself is not used: it reads these variables otherwise (the
+upper-case name first, a range as a range, no port, every proxy dropped
+under `REQUEST_METHOD`), and sends directly where a proxy's URL does not
+read.
+
+An environment Python's client refuses when it is built is refused when the
+provider is built, as `the provider cannot be built: ...`, in words that
+repeat nothing of the variable: a proxy that is neither `http` nor `https`,
+a proxy or an entry of `NO_PROXY` that does not read as a URL (an address
+that is none, a port that is no number, a control character, an entry past
+ASCII or in Punycode).
+
+Where the client differs from Python's:
+
+- **A SOCKS proxy is refused.** Python's client takes `socks5` and
+  `socks5h` when the `socksio` package is installed, which RoomKit does not
+  install, and refuses them otherwise.
+- **The system's proxy settings are not read.** On macOS and on Windows,
+  Python's client takes the proxies of the system's settings when no proxy
+  variable is set at all. This client reads the variables alone.
+- **A proxy Python's client could not reach is refused when the provider is
+  built**: one without a host, one whose port is past 65,535. So is a port
+  written otherwise than in digits (`+3128`), which Python reads.
+- **An address of `NO_PROXY` is compared with the address the client
+  dials**, where Python compares it with the text of the URL: `::1` exempts
+  `http://[0:0:0:0:0:0:0:1]/` and `127.0.0.1` exempts `http://127.1/` here,
+  and neither does with Python's client.
+
+### Certificate authorities
+
+A server's certificate, an endpoint's or that of a proxy reached over
+`https`, is checked against:
+
+1. the authorities of the file `SSL_CERT_FILE` names, and no other. A file
+   that cannot be read, or that holds no certificate, is refused when the
+   provider is built, as Python's client refuses it;
+2. else the authorities filed in the directories `SSL_CERT_DIR` names, under
+   the name OpenSSL looks one up by (the eight hexadecimal digits of its
+   subject's hash, a dot and a number, as `openssl rehash` writes them), and
+   no other. Directories that hold none leave no authority, and every
+   server is then refused;
+3. else the system: its own verifier on macOS and on Windows
+   (`rustls-platform-verifier`), which is what Python's `truststore` asks
+   there, and on Linux and the other Unix systems the store the system
+   keeps on its disk, its bundle file and its directories of hashed names,
+   as OpenSSL reads them.
+
+A variable set to nothing is not set. Cryptography is ring's on every
+system.
+
+One point is this crate's own: **a system that keeps no authority at all**,
+a container without a certificate store, is given the public roots compiled
+in (`webpki-roots`), where Python's client would trust nothing. They are
+never added to a store that holds an authority of its own, and never stand
+in for what a variable names.
+
+Where the client differs from Python's: a certificate filed in a directory
+under a hash that is not its own is read, where OpenSSL does not find it;
+and on macOS and on Windows the system's verifier may check a certificate's
+revocation, which Python's client does not ask of it. On those two systems
+nothing here was run: see [What is not verified](#what-is-not-verified).
+
+### What a host sees
+
+| What happened | The failure | Tried again | `retryable` | `status_code` |
+| --- | --- | --- | --- | --- |
+| A proxy answered a request handed to it with a 407 | `the provider answered HTTP 407: Proxy Authentication Required`, or what the provider reads of its body | no | `false` | `407` |
+| A proxy answered a request handed to it with a 502 | `the provider answered HTTP 502: Bad Gateway` | yes | `true` | `502` |
+| A proxy refused a tunnel, whatever its status | `the connection to the provider failed` | yes | `true` | none |
+| A proxy answered with a redirect | `the endpoint answered with a redirect (302), which is not followed` | no | `false` | `302` |
+| A proxy is not there | `the connection to the provider failed` | yes | `true` | none |
+| No authority the client trusts signed the server's certificate | `the provider's certificate is not trusted` | yes | `true` | none |
+| The certificate is for another host name | `the provider's certificate is not for its host name` | yes | `true` | none |
+| The certificate has expired, or is not valid yet | `the provider's certificate has expired, or is not valid yet` | yes | `true` | none |
+
+Each is typed as RoomKit's Python provider types it: a proxy's answer to a
+request handed to it cannot be told from the endpoint's, and a tunnel that
+does not open or a certificate that is refused is a connection that failed,
+which Python's client tries again and RoomKit calls worth a new request.
+The words for a certificate are this client's: Python says `Connection
+error.` for each.
+
+A proxy's credentials are a secret of the process. `Client::secrets` holds
+them beside the configuration's, so that a failure repeats none of them, in
+any form a proxy may send them back in; the `Debug` form of a client says
+how many proxies it has, and shows no URL.
+
+### What is not verified
+
+- **macOS and Windows.** The tests run on Linux. That the system's verifier
+  is asked on macOS and on Windows, and what it answers, was not run; nor
+  was the crate built for either.
+- **A proxy reached over `https`.** The HTTP client speaks TLS to such a
+  proxy, checked against the same authorities; no test has such a proxy.
+- **The system's store on Linux** is read where `openssl-probe` finds it;
+  the tests replace what the system gives, and do not read the machine's.
 
 ## Writing a provider on it
 
@@ -190,7 +343,8 @@ What the provider supplies:
   information as Basic credentials, which take the place of an
   `Authorization` the provider would write.
 - **Its secrets**, `Client::secrets(keys, header_values, url)`: the keys, the
-  value of each configured header, and the user information of the URL.
+  value of each configured header, and the user information of the URL. The
+  client adds the credentials of the proxies its environment named.
   `Exit::with_secrets` gives the exit of one request that brings a key of its
   own.
 - **Its retry parameters**, a `retry::Rule`: the longest wait a server may
@@ -313,6 +467,26 @@ what it was sent (`Fake::seen`). No test waits on a timeout: it waits on what
 the fake observed (`Fake::silent`, `Fake::closed`), then lets the time pass
 at once (`harness::let_pass`). `harness::drained` reads a stream to its end.
 
+The fake also stands for what a host's network puts before an endpoint:
+
+- **a proxy.** A request handed to a proxy is a request the fake answers,
+  whose target is the whole URL; `Reply::Tunnel(address)` answers a
+  `CONNECT` and carries the bytes to the fake at `address`;
+- **TLS.** `harness::tls::Authority::new()` makes an authority when the test
+  runs, whose key is kept nowhere. `Fake::serving_tls(replies,
+  authority.serving(&["llm.example"]))` is a server whose certificate it
+  signed for those names, and `authority.pem()` is what a file
+  `SSL_CERT_FILE` names holds. `Fake::turned_away` returns once a client
+  left the greeting, as one that refuses the certificate does.
+
+A provider reads its environment when it is built, and a test cannot set a
+variable of its own process, since the crates forbid unsafe code: a test of
+the environment runs a child in the environment it gives it
+(`tests/environment.rs`, and `roomkit-providers-openai/examples/
+behind_a_proxy.rs`, which `make examples` runs). `scripts/no-network.sh`,
+which runs the tests, drops the proxy and certificate variables of the
+machine, so that no other test depends on them.
+
 The recorded cases are a fixture written by a script on RoomKit's Python
 provider, in the form `roomkit-providers-openai/tests/fixtures/
 python_chat_cases.json` has: for each case a configuration, a request, the
@@ -348,7 +522,6 @@ replay it (`roomkit-providers-openai/src/replay/`):
    `NAMED_FAILURE`, `NAMED_UNBUILT`); the provider names the cases of its
    fixture each is run on, and adds the wrongs of its own wire: another path,
    another key, a header it does not send.
-
 What a fixture must hold for the harness to read it: `clock`, the instant
 Python's clock was stopped at; and for each case `name`, `call` (`generate`,
 `generate_structured_stream`, `generate_stream` or `list_models`), `config`

@@ -10,7 +10,10 @@
 //!   states. It sends a [`Call`] until an answer comes or no try is left,
 //!   whole ([`Client::send`]) or as a stream of events
 //!   ([`Client::stream`], [`stream::Streamed`]), and bounds what it reads
-//!   of each.
+//!   of each. When it is built, and only then, it reads from the
+//!   environment the proxies it sends through and the certificate
+//!   authorities it checks a server against, as the client of `RoomKit`'s
+//!   Python providers reads them.
 //! - [`retry`]: whether a failed try is tried again and after what wait,
 //!   with the [`retry::Rule`] that says where a vendor's SDK differs.
 //! - [`failure`]: a [`Failure`] as a provider builds it, and the one
@@ -36,6 +39,7 @@ mod exchange;
 pub mod failure;
 #[cfg(any(test, feature = "harness"))]
 pub mod harness;
+mod proxy;
 pub mod retry;
 pub mod stream;
 #[cfg(test)]

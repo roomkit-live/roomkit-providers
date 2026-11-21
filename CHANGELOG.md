@@ -75,10 +75,20 @@ nothing has been released yet.
   Python implementation does on the cases captured from it; its README lists
   where it differs and why. A redirect is refused, the key appears in no
   failure, an answer past 4 MiB fails, a 200 whose body is JSON and no
-  completion fails, carrying what the body says of it, and nothing is read
-  from the environment: no base URL, no organization, no proxy. Only the
-  public certificate roots compiled in are trusted. An idle connection is
-  kept 5 seconds, and 100 of them for a host at most.
+  completion fails, carrying what the body says of it, and no key, base URL
+  or organization is read from the environment. An idle connection is kept
+  5 seconds, and 100 of them for a host at most.
+- `roomkit-providers-openai`: a provider goes through the proxies its
+  environment names, `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and
+  `NO_PROXY`, read once, when it is built, as RoomKit's Python client reads
+  them on a table of 109 environments; a proxy's credentials appear in no
+  failure. A SOCKS proxy is refused, and the system's proxy settings are
+  not read.
+- `roomkit-providers-openai`: a server's certificate is checked against the
+  authorities `SSL_CERT_FILE` or `SSL_CERT_DIR` name, else against the
+  system's, as RoomKit's Python client checks it; a system that keeps no
+  authority is given the public roots compiled in. A certificate that is
+  refused fails as `the provider's certificate is not trusted`.
 - `roomkit-providers-openai`: the provider's streams,
   `generate_structured_stream` and `generate_stream`. A stream is pulled,
   and dropping it stops the request and closes its connection. It fails at
@@ -110,15 +120,17 @@ nothing has been released yet.
 - `roomkit-providers-openai`: `supports_vision` answers as Python's
   provider; the configuration's `vision` states it where the provider would
   not.
-- `roomkit-providers-openai`: an example, `local_server`, that asks a
-  stand-in server on a local port once whole and once streamed. `make all`
-  runs it.
+- `roomkit-providers-openai`: two examples, which `make all` runs:
+  `local_server` asks a stand-in server on a local port once whole and once
+  streamed, and `behind_a_proxy` asks through a stand-in proxy named by the
+  environment alone.
 - `roomkit-providers-client`: the HTTP client a provider is built on, which
   `roomkit-providers-openai` is now written on: a request and its tries, the
+  proxies and the certificate authorities read from the environment, the
   bounds of an answer and of a stream, the base URLs refused when a provider
   is built, the one exit of failures and, for a provider's tests, the replay
-  of its recorded wire cases. A provider crate holds its wire and nothing
-  else.
+  of its recorded wire cases and a fake of an endpoint or of a proxy, over
+  plain HTTP or over TLS. A provider crate holds its wire and nothing else.
 - `roomkit-providers`, the Python package (CPython 3.12 or newer, Linux
   x86_64, built from the repository), for RoomKit, which it depends on
   (0.117): `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`,

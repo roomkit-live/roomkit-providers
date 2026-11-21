@@ -22,11 +22,13 @@ exceptions = [
     { crate = "untrusted", allow = ["ISC"] },
     # Constant-time comparisons, behind rustls.
     { crate = "subtle", allow = ["BSD-3-Clause"] },
-    # The public web PKI roots a server is checked against: certificate data.
+    # The public web PKI roots a server is checked against where the system
+    # keeps no authority of its own: certificate data.
     { crate = "webpki-roots", allow = ["CDLA-Permissive-2.0"] },
-    # The same data, which the platform verifier of the HTTP client behind
-    # roomkit-providers-openai depends on for WebAssembly targets alone: the
-    # lock file lists it, and no target this workspace builds compiles it.
+    # The same data, which the system's certificate verifier, behind
+    # roomkit-providers-http and the HTTP client, depends on for WebAssembly
+    # targets alone: the lock file lists it, and no target this workspace
+    # builds compiles it.
     { crate = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] },
     # PyO3's detection of the build's target, in the Python binding's tree
     # alone (`make python-check`): a build script's dependency.

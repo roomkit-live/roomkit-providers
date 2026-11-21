@@ -2,8 +2,9 @@ CARGO ?= cargo
 MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' Cargo.toml).0
 DENY_FLAGS ?=
 # The interpreter of the generated files: one with RoomKit's Python package
-# installed for python-forms, python-public-urls and the python-openai
-# targets, the Python version RoomKit is tested with for printable-table.
+# installed for python-forms, python-public-urls, python-proxy-cases and the
+# python-openai targets, the Python version RoomKit is tested with for
+# printable-table.
 # For python-check, python-wheel and api-snapshot, the interpreter the
 # package is built for and tested on: CPython 3.12 or newer.
 PYTHON ?= python3
@@ -19,7 +20,8 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	scripts/roomkit_env.py scripts/wheel_paths.py
 
 .PHONY: all fmt fmt-check clippy test examples doc deny check-contract-deps msrv msrv-toolchain hooks \
-	python-forms python-public-urls python-openai-config python-openai-chat-cases \
+	python-forms python-public-urls python-proxy-cases python-openai-config \
+	python-openai-chat-cases \
 	python-openai-catalogue \
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
 	printable-table named-cases \
@@ -44,22 +46,22 @@ test:
 	$(NO_NETWORK) $(CARGO) test --workspace --all-features --locked --offline
 
 # Runs each example, which checks what it shows and fails otherwise. An
-# example talks to a local server it starts itself: nothing leaves the
+# example talks to local servers it starts itself: nothing leaves the
 # machine.
 #
-# It runs with every proxy variable set to a local port nothing listens on.
-# A provider reads no proxy from its environment: one that did would send
-# its requests there, and the example would fail. The check is made here
-# because the crates forbid unsafe code, so no test can set a variable of
-# its own process. The example is built first, without the variables, so
-# that cargo itself is given no proxy.
-NO_SUCH_PROXY := http://127.0.0.1:9
+# behind_a_proxy is the proof that a provider reads its proxies and its
+# certificate authorities from the environment of its process: it runs
+# itself again as a child whose environment names a local proxy and the
+# authority of a local TLS server, and checks that the request for an https
+# endpoint went through a tunnel of the proxy, that the request for an http
+# endpoint was handed to the proxy, and that the host NO_PROXY names was
+# reached directly. The crates forbid unsafe code, so no test sets a
+# variable of its own process: a child is given its environment instead.
+# The examples are built first, outside the namespace that runs them.
 examples:
-	$(CARGO) build --locked -p roomkit-providers-openai --example local_server
-	HTTP_PROXY=$(NO_SUCH_PROXY) HTTPS_PROXY=$(NO_SUCH_PROXY) ALL_PROXY=$(NO_SUCH_PROXY) \
-	http_proxy=$(NO_SUCH_PROXY) https_proxy=$(NO_SUCH_PROXY) all_proxy=$(NO_SUCH_PROXY) \
-	NO_PROXY= no_proxy= \
-		$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
+	$(CARGO) build --locked -p roomkit-providers-openai --examples
+	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
+	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example behind_a_proxy
 
 doc:
 	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --workspace --no-deps --all-features --locked
@@ -135,6 +137,12 @@ python-forms:
 # network.
 python-public-urls:
 	$(PYTHON) scripts/generate_python_public_urls.py
+
+# Rewrites the fixture of which proxy the client of RoomKit's Python providers
+# takes for a table of environments. PYTHON needs roomkit's `openai` extra.
+# The script builds clients and sends nothing.
+python-proxy-cases:
+	$(PYTHON) scripts/generate_python_proxy_cases.py
 
 # Rewrites the fixture of the JSON forms of RoomKit's Python `OpenAIConfig`.
 python-openai-config:

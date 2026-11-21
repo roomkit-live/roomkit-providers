@@ -2,6 +2,7 @@
 //! times it gives a request, and what a provider states of its tries.
 
 use std::fmt;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use reqwest::header::AUTHORIZATION;
@@ -10,6 +11,7 @@ use roomkit_providers_http::sse::STREAM_LIMIT;
 use crate::endpoint::{has_user_information, percent_decoded};
 use crate::exchange::Pace;
 use crate::failure::{Failure, Secrets};
+use crate::proxy::Proxies;
 use crate::retry::Rule;
 
 /// How long a connection no request uses is kept: the 5 seconds the client
@@ -81,10 +83,15 @@ pub struct Settings {
 /// answer comes or no try is left ([`send`](Self::send),
 /// [`stream`](Self::stream)), and bounds what it reads of each answer.
 ///
-/// - TLS is the configuration of `roomkit-providers-http`: ring, the public
-///   web PKI roots, HTTP/1.1.
-/// - No redirect is followed, and no proxy is read from the system or its
-///   environment.
+/// - TLS is the configuration of `roomkit-providers-http`: ring and
+///   HTTP/1.1, a server's certificate checked against the authorities
+///   `SSL_CERT_FILE` or `SSL_CERT_DIR` name, else against the system's.
+/// - A request goes through the proxy `HTTP_PROXY`, `HTTPS_PROXY` or
+///   `ALL_PROXY` names for it, unless `NO_PROXY` exempts its host, as the
+///   client of Python's providers reads those variables.
+/// - The environment is read once, when the client is built: a variable
+///   changed afterwards changes nothing for it.
+/// - No redirect is followed, a proxy's own among them.
 /// - No compressed answer is asked for, whatever compression a host's
 ///   build turns on in the HTTP client.
 /// - A connection no request uses is kept 5 seconds, 100 of them for a
@@ -99,19 +106,41 @@ pub struct Client {
     pub(crate) tried_again: fn(u32, Duration),
     pub(crate) pace: Pace,
     stream_limit: usize,
+    /// The proxies the environment named when the client was built.
+    proxies: Arc<Proxies>,
 }
 
 impl Client {
-    /// The client of a provider that states `settings`.
+    /// The client of a provider that states `settings`. The environment is
+    /// read here, and nowhere else: the proxy variables, and the variables
+    /// that name the authorities a server's certificate is checked
+    /// against.
     ///
     /// # Errors
     ///
-    /// The failure of a provider that cannot be built: the TLS
-    /// configuration or the HTTP client could not be made.
+    /// The failure of a provider that cannot be built: a proxy variable
+    /// that does not read or names a proxy that is neither `http` nor
+    /// `https`, a file `SSL_CERT_FILE` names that holds no certificate, or
+    /// a TLS configuration or an HTTP client that could not be made.
     pub fn new(settings: Settings) -> Result<Self, Failure> {
+        let proxies = Proxies::of_the_environment()?;
         let tls = roomkit_providers_http::tls_config();
-        let tls = tls.map_err(|_| Failure::unbuilt("TLS is not set"))?;
+        let tls = tls.map_err(|unset| Failure::unbuilt(unset.reason()))?;
+        Self::built(settings, proxies, tls)
+    }
+
+    /// The client of a provider that states `settings`, which sends through
+    /// `proxies` and checks a server's certificate as `tls` says: what
+    /// [`new`](Self::new) builds of the environment, and what a test
+    /// builds without one.
+    pub(crate) fn built(
+        settings: Settings,
+        proxies: Proxies,
+        tls: rustls::ClientConfig,
+    ) -> Result<Self, Failure> {
+        let proxies = Arc::new(proxies);
         let timeouts = settings.timeouts;
+        let through = Arc::clone(&proxies);
         let http = reqwest::Client::builder()
             .tls_backend_preconfigured(tls)
             // No compressed answer is asked for, whatever a host's build
@@ -120,8 +149,10 @@ impl Client {
             .no_brotli()
             .no_zstd()
             .no_deflate()
-            // Neither the system's proxies nor its variables are read.
-            .no_proxy()
+            // The proxies are those read above: given one rule of its
+            // own, the HTTP client reads neither the environment nor the
+            // system's settings itself.
+            .proxy(reqwest::Proxy::custom(move |url| through.for_url(url)))
             .read_timeout(timeouts.read)
             .connect_timeout(timeouts.connect)
             // A connection no request uses is kept as long, and as many of
@@ -140,6 +171,7 @@ impl Client {
             tried_again: settings.tried_again,
             pace: Pace::default(),
             stream_limit: STREAM_LIMIT,
+            proxies,
         })
     }
 
@@ -168,11 +200,13 @@ impl Client {
         self.pace = pace;
     }
 
-    /// What no failure may repeat of a configuration: its `keys`, the value
-    /// of each of its `headers` and its credentials when it names a scheme
-    /// before them, the user information of `url`, the URL it sends to, as
-    /// written and as it reads, and the `Authorization` the client writes
-    /// from that user information.
+    /// What no failure may repeat of a configuration and of the process:
+    /// the configuration's `keys`, the value of each of its `headers` and
+    /// its credentials when it names a scheme before them, the user
+    /// information of `url`, the URL it sends to, and that of each proxy
+    /// the environment named, as written and as it reads, and the
+    /// credentials the client writes from that user information, for the
+    /// endpoint or for a proxy.
     pub fn secrets<'h>(
         &self,
         keys: impl IntoIterator<Item = String>,
@@ -180,29 +214,35 @@ impl Client {
         url: &reqwest::Url,
     ) -> Secrets {
         let mut texts: Vec<String> = keys.into_iter().collect();
-        let with_credentials = |value: &str| {
-            let after_a_scheme = value
-                .split_once(' ')
-                .map(|(_, rest)| rest.trim().to_owned());
-            [Some(value.to_owned()), after_a_scheme]
-        };
         texts.extend(headers.into_iter().flat_map(with_credentials).flatten());
-        if has_user_information(url) {
-            let (user, password) = (url.username(), url.password().unwrap_or_default());
-            let read = [percent_decoded(user), percent_decoded(password)];
-            texts.extend([user.to_owned(), password.to_owned()]);
-            texts.push(format!("{user}:{password}"));
-            texts.push(read.join(":"));
-            texts.extend(read);
-            // What the client itself writes of it on each request.
-            let written = self.http.get(url.clone()).build().ok();
-            let written = written
-                .as_ref()
-                .and_then(|request| request.headers().get(AUTHORIZATION));
-            let written = written.and_then(|value| value.to_str().ok());
-            texts.extend(written.into_iter().flat_map(with_credentials).flatten());
+        for carrying in std::iter::once(url).chain(self.proxies.urls()) {
+            texts.extend(self.user_information_of(carrying));
         }
         Secrets::of(texts)
+    }
+
+    /// The user information of `url` in each form a text may hold it in: as
+    /// written and as it reads, each part and the two together, and the
+    /// Basic credentials the client writes of it, in an `Authorization` to
+    /// an endpoint as in a `Proxy-Authorization` to a proxy.
+    fn user_information_of(&self, url: &reqwest::Url) -> Vec<String> {
+        if !has_user_information(url) {
+            return Vec::new();
+        }
+        let (user, password) = (url.username(), url.password().unwrap_or_default());
+        let read = [percent_decoded(user), percent_decoded(password)];
+        let mut texts = vec![user.to_owned(), password.to_owned()];
+        texts.push(format!("{user}:{password}"));
+        texts.push(read.join(":"));
+        texts.extend(read);
+        // What the client itself writes of it on each request.
+        let written = self.http.get(url.clone()).build().ok();
+        let written = written
+            .as_ref()
+            .and_then(|request| request.headers().get(AUTHORIZATION));
+        let written = written.and_then(|value| value.to_str().ok());
+        texts.extend(written.into_iter().flat_map(with_credentials).flatten());
+        texts
     }
 
     /// The client as a replay of recorded cases drives it, outside a
@@ -214,8 +254,8 @@ impl Client {
         let waits = ReplayWaits::default();
         let kept = waits.clone();
         self.pace = Pace {
-            now: std::sync::Arc::new(move || clock),
-            wait: std::sync::Arc::new(move |wait| {
+            now: Arc::new(move || clock),
+            wait: Arc::new(move |wait| {
                 kept.keep(wait.as_secs_f64());
                 Box::pin(std::future::ready(()))
             }),
@@ -225,15 +265,26 @@ impl Client {
 }
 
 impl fmt::Debug for Client {
-    /// What the client was built with: nothing of a request.
+    /// What the client was built with: nothing of a request, and of its
+    /// proxies how many they are, never a URL.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Client")
             .field("timeouts", &self.timeouts)
             .field("max_retries", &self.max_retries)
             .field("retry", &self.retry)
             .field("stream_limit", &self.stream_limit)
+            .field("proxies", &self.proxies)
             .finish_non_exhaustive()
     }
+}
+
+/// A header's value, and the credentials it holds when it names a scheme
+/// before them (`Bearer`, `Basic`).
+fn with_credentials(value: &str) -> [Option<String>; 2] {
+    let after_a_scheme = value
+        .split_once(' ')
+        .map(|(_, rest)| rest.trim().to_owned());
+    [Some(value.to_owned()), after_a_scheme]
 }
 
 /// Sends each of `urls`, the URLs a provider asks, to `fake` instead, a
@@ -266,7 +317,7 @@ pub fn replayed_at<'u>(
 /// [`Client::replaying`]).
 #[cfg(feature = "replay")]
 #[derive(Clone, Debug, Default)]
-pub struct ReplayWaits(std::sync::Arc<std::sync::Mutex<Vec<f64>>>);
+pub struct ReplayWaits(Arc<std::sync::Mutex<Vec<f64>>>);
 
 #[cfg(feature = "replay")]
 impl ReplayWaits {

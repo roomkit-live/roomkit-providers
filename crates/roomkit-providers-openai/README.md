@@ -44,6 +44,17 @@ stand-in server it starts on a local port, and checks what it read:
 cargo run -p roomkit-providers-openai --example local_server
 ```
 
+`examples/behind_a_proxy.rs` asks three servers from behind a proxy, with
+nothing of the proxy in the configuration: the provider reads
+`HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` and `SSL_CERT_FILE` from its
+environment. The proxy, the servers and the authority that signs the
+certificate of one of them are stand-ins on local ports, and the example
+checks which way each request went:
+
+```sh
+cargo run -p roomkit-providers-openai --example behind_a_proxy
+```
+
 ## Streams
 
 `generate_structured_stream` gives the events of one generation as they
@@ -161,17 +172,37 @@ catalogue, with no request.
   `Authorization` header, neither of which is sent. The credentials are the
   user information once decoded, which must be UTF-8: a base URL whose user
   information is not is refused, as said above.
-- **The environment.** Nothing is read from it: no key, no base URL, no
-  organization, no project, no proxy. Python's client reads
-  `OPENAI_BASE_URL`, `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`, and goes
-  through `HTTP_PROXY` and `HTTPS_PROXY`. A host that relied on
-  `OPENAI_BASE_URL` to reach another server, and names none in its
-  configuration, reaches OpenAI's own endpoint here, and sends it its key.
-  One behind a proxy reaches nothing.
-- **Certificates.** A server's certificate is checked against the public
-  roots compiled into the crate, and no other: an endpoint whose
-  certificate is signed by a private authority cannot be reached, whatever
-  the system's store or `SSL_CERT_FILE` hold, which Python's client reads.
+- **The environment.** The provider reads of it what the network of its
+  host is, and nothing else. It is read once, when the provider is built: a
+  variable that changes afterwards changes nothing for that provider.
+  - **Proxies.** `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY`
+    are read as Python's client reads them, in any case, the name that ends
+    in lower case first: a request for an `http` endpoint is handed to its
+    proxy, one for an `https` endpoint goes through a tunnel of its proxy,
+    and a host `NO_PROXY` exempts is reached directly. A proxy's URL may
+    carry credentials, which are sent to the proxy alone and appear in no
+    failure. A SOCKS proxy is refused when the provider is built, and the
+    system's own proxy settings, which Python's client takes on macOS and
+    on Windows when no variable is set, are not read.
+  - **Certificates.** A server's certificate is checked against the
+    authorities of the file `SSL_CERT_FILE` names, else against those filed
+    in the directories `SSL_CERT_DIR` names, else against the system's: its
+    own verifier on macOS and on Windows, the store it keeps on its disk
+    elsewhere. Python's client decides the same. One point goes beyond it:
+    a system that keeps no authority at all, a container without a
+    certificate store, is given the public roots compiled into the crate,
+    which are never added to a store that holds an authority.
+  - **Nothing else.** No key, no base URL, no organization, no project and
+    no header is read. Python's client reads `OPENAI_BASE_URL`,
+    `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`. A host that relied on
+    `OPENAI_BASE_URL` to reach another server, and names none in its
+    configuration, reaches OpenAI's own endpoint here, and sends it its
+    key.
+
+  `roomkit-providers-client`'s README says how each variable is read, where
+  that differs from Python's client, and what was not verified: nothing
+  here was run on macOS or on Windows. `examples/behind_a_proxy.rs` shows a
+  host behind a proxy, with nothing of the proxy in its configuration.
 - **Idle connections** are kept 5 seconds, 100 of them for a host at most,
   as Python's client keeps them. The connections in use are not capped: the
   HTTP client has no such bound, where Python's client holds 1,000 at most
@@ -231,6 +262,20 @@ model listing. It differs on the others, each for a reason:
 - **An empty key** builds a provider that sends no `Authorization`, for a
   local server that asks for none, where Python's SDK refuses to build a
   client.
+- **The proxies and the certificate authorities** are those Python's client
+  reads from the same environment, with these differences: a SOCKS proxy is
+  refused when the provider is built, where Python's client takes one once
+  `socksio` is installed; the system's proxy settings are not read, where
+  Python's client takes them on macOS and on Windows when no proxy variable
+  is set; a proxy without a host or with a port past 65,535 is refused when
+  the provider is built, where Python's client fails at each request; an
+  address of `NO_PROXY` is compared with the address the client dials, where
+  Python compares it with the text of the base URL; and a system that keeps
+  no certificate authority is given the public roots compiled in, where
+  Python's client trusts nothing. A certificate the client refuses fails as
+  `the provider's certificate is not trusted`, or says that it is for
+  another host name or out of date, where Python says `Connection error.`;
+  both type it as a connection that failed, worth a new request.
 - **A count of tokens** is read when it is a JSON whole number, a float with
   no fraction included. Any other (a text, `true`, a fraction, a number below
   zero) stays unknown, whole or streamed, where Python converts some and

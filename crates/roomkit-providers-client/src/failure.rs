@@ -17,7 +17,7 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use roomkit_providers_http::SseError;
+use roomkit_providers_http::{CertificateRefused, SseError, certificate_refused};
 use roomkit_providers_llm::{ProviderError, is_context_overflow_message};
 use serde_json::Value;
 
@@ -305,13 +305,26 @@ impl Failure {
     }
 
     /// The failure of a request that got no answer, or whose answer was
-    /// lost while it was read: worth a retry.
+    /// lost while it was read: worth a retry. One whose connection ended on
+    /// a certificate the client refused says so, and is typed alike, as
+    /// Python's client types it: a connection that failed. So is one a
+    /// proxy refused to carry. The words are the provider's own: nothing
+    /// of the error is repeated, which names the URL asked.
     #[must_use]
     pub fn transport(error: &reqwest::Error) -> Self {
         let said = if error.is_timeout() {
             "the provider did not answer in time"
         } else {
-            "the connection to the provider failed"
+            match certificate_refused(error) {
+                Some(CertificateRefused::Untrusted) => "the provider's certificate is not trusted",
+                Some(CertificateRefused::OtherName) => {
+                    "the provider's certificate is not for its host name"
+                }
+                Some(CertificateRefused::OutOfDate) => {
+                    "the provider's certificate has expired, or is not valid yet"
+                }
+                None => "the connection to the provider failed",
+            }
         };
         Self::said(vec![own(said)], true, None)
     }

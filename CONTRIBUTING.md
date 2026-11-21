@@ -68,10 +68,22 @@ especially boundaries, failures, cancellation and cleanup.
 
 - No test reaches a vendor's service. A provider is tested against a local
   fake of the wire it speaks.
-- An example runs with no service and no key: it starts the server it talks
-  to on a local port, checks what it shows and fails otherwise. `make all`
-  runs each example (`make examples`), with the proxy variables set to a
-  local port nothing listens on: a provider reads none of them.
+- An example runs with no service and no key: it starts the servers it
+  talks to on local ports, checks what it shows and fails otherwise. `make
+  all` runs each example (`make examples`).
+- A provider reads the proxies and the certificate authorities of its
+  environment when it is built, and the crates forbid unsafe code, so no
+  test sets a variable of its own process. A test of what a provider reads
+  there runs a child in the environment it gives it
+  (`crates/roomkit-providers-client/tests/environment.rs`, the example
+  `behind_a_proxy`); a Python test sets `os.environ` before it builds its
+  provider. Any other test gives its client what an environment would name,
+  and `scripts/no-network.sh` drops those variables of the machine, so that
+  a developer's proxy changes no test.
+- A certificate a test needs is signed by an authority the test makes when
+  it runs: with `rcgen` in Rust, with the `openssl` program in Python, whose
+  tests are skipped, saying so, where the machine has none. No key is
+  committed.
 - A test does not wait on a timeout, and asserts nothing about how fast an
   answer comes. It waits on what the local fake observed, then lets the
   timeout's time pass at once (the tests' `let_pass`).
@@ -136,6 +148,15 @@ records the Python and Unicode versions it was written from, and carries
 the notice of the Unicode data it is derived from. The same command writes
 that notice as `crates/roomkit-providers-llm/LICENSE-UNICODE`, the license
 file the crate ships beside its own: the crate is `MIT AND Unicode-3.0`.
+
+`roomkit-providers-client` is checked the same way for the proxies it reads
+from the environment: `make python-proxy-cases` rewrites
+`crates/roomkit-providers-client/tests/fixtures/python_proxy_cases.json`,
+which proxy the client of RoomKit's Python providers takes for each endpoint
+of a table of environments, or the exception it raises when it is built.
+`PYTHON` needs RoomKit's `openai` extra; the script builds clients and sends
+nothing. A case the crate decides otherwise is named in the test, with the
+reason.
 
 `roomkit-providers-http` is checked the same way: `make python-public-urls`
 rewrites `crates/roomkit-providers-http/tests/fixtures/python_public_urls.json`,

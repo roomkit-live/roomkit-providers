@@ -191,6 +191,12 @@ class OpenAI(Provider):
     the provider is built. There is no ``transport`` parameter: the provider
     builds its own HTTP client.
 
+    The environment of the process is read then too, and only then, for
+    what RoomKit's provider reads there of the host's network: the proxies
+    (``HTTP_PROXY``, ``HTTPS_PROXY``, ``ALL_PROXY``, ``NO_PROXY``) and the
+    certificate authorities (``SSL_CERT_FILE``, ``SSL_CERT_DIR``, else the
+    system's). No key and no URL is read from it.
+
     Cancelling the task that awaits a call stops its request and closes its
     connection; so does closing a stream, or leaving it unread.
     """

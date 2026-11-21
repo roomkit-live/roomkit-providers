@@ -735,6 +735,7 @@ dependencies = [
  "reqwest",
  "roomkit-providers-http",
  "roomkit-providers-llm",
+ "rustls",
  "serde_json",
  "tokio",
  "tracing",
@@ -745,7 +746,9 @@ dependencies = [
 name = "roomkit-providers-http"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "openssl-probe",
  "rustls",
+ "rustls-platform-verifier",
  "thiserror",
  "url",
  "webpki-roots",

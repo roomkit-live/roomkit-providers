@@ -19,13 +19,25 @@ categories = ["web-programming::http-client"]
 
 [dependencies]
 rustls = { workspace = true, features = ["ring", "std", "tls12"] }
+# The certificate verifier of the system, for macOS and Windows. It is
+# compiled on every system, so that the call made there is checked wherever
+# the crate is built.
+rustls-platform-verifier = { workspace = true }
 thiserror = { workspace = true }
 # A host is read as an HTTP client reads it: with the parser `reqwest` reads
 # a URL with, and no client in this crate's tree.
 url = { workspace = true }
 webpki-roots = { workspace = true }
 
+# Where the system keeps its authorities, on the systems whose store is read
+# into the client's own.
+[target.'cfg(all(unix, not(target_vendor = "apple")))'.dependencies]
+openssl-probe = { workspace = true }
+
 [dev-dependencies]
+# The authority and the certificates the tests of the trust store read, made
+# when they run.
+rcgen = { workspace = true }
 # The table of what RoomKit's Python decides, which the tests replay.
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

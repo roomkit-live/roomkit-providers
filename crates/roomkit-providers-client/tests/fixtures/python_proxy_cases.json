@@ -1,0 +1,3100 @@
+{
+ "generator": "scripts/generate_python_proxy_cases.py",
+ "roomkit_version": "0.117.0.dev0",
+ "openai_version": "3.57.0",
+ "httpx2_version": "2.13.1",
+ "python_version": "3.13.3",
+ "cases": [
+  {
+   "name": "nothing_is_set",
+   "environment": [],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "http_proxy_serves_http_alone",
+   "environment": [
+    [
+     "HTTP_PROXY",
+     "http://proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "https_proxy_serves_https_alone",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "all_proxy_serves_both",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_scheme_s_own_proxy_wins_over_all_proxy",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://all.example:1"
+    ],
+    [
+     "HTTPS_PROXY",
+     "http://secure.example:2"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "all.example",
+      "port": 1
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "secure.example",
+      "port": 2
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "the_lower_case_name_wins_when_it_comes_first",
+   "environment": [
+    [
+     "http_proxy",
+     "http://lower.example:1"
+    ],
+    [
+     "HTTP_PROXY",
+     "http://upper.example:2"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "lower.example",
+      "port": 1
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "the_lower_case_name_wins_when_it_comes_last",
+   "environment": [
+    [
+     "HTTP_PROXY",
+     "http://upper.example:2"
+    ],
+    [
+     "http_proxy",
+     "http://lower.example:1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "lower.example",
+      "port": 1
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_empty_lower_case_name_unsets_the_upper_case_one",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://upper.example:2"
+    ],
+    [
+     "https_proxy",
+     ""
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_empty_upper_case_name_leaves_the_lower_case_one",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     ""
+    ],
+    [
+     "https_proxy",
+     "http://lower.example:1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "lower.example",
+      "port": 1
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_empty_name_alone_is_no_proxy",
+   "environment": [
+    [
+     "ALL_PROXY",
+     ""
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_in_mixed_case_is_read",
+   "environment": [
+    [
+     "Https_Proxy",
+     "http://mixed.example:1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "mixed.example",
+      "port": 1
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_that_ends_in_lower_case_wins_as_the_lower_case_one",
+   "environment": [
+    [
+     "HTTPS_proxy",
+     "http://mixed.example:1"
+    ],
+    [
+     "HTTPS_PROXY",
+     "http://upper.example:2"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "mixed.example",
+      "port": 1
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "the_last_of_two_upper_case_spellings_wins",
+   "environment": [
+    [
+     "Https_Proxy",
+     "http://first.example:1"
+    ],
+    [
+     "HTTPS_PROXY",
+     "http://last.example:2"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "last.example",
+      "port": 2
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_that_only_resembles_one_is_not_read",
+   "environment": [
+    [
+     "XHTTPS_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "HTTPSPROXY",
+     "http://proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_cgi_program_drops_http_proxy",
+   "environment": [
+    [
+     "HTTP_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "REQUEST_METHOD",
+     "GET"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_cgi_program_set_to_nothing_drops_it_too",
+   "environment": [
+    [
+     "HTTP_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "REQUEST_METHOD",
+     ""
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_cgi_program_drops_http_proxy_in_mixed_case",
+   "environment": [
+    [
+     "Http_Proxy",
+     "http://proxy.example:3128"
+    ],
+    [
+     "REQUEST_METHOD",
+     "GET"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_cgi_program_keeps_the_lower_case_http_proxy",
+   "environment": [
+    [
+     "http_proxy",
+     "http://proxy.example:3128"
+    ],
+    [
+     "REQUEST_METHOD",
+     "GET"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_cgi_program_keeps_https_proxy_and_all_proxy",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://secure.example:2"
+    ],
+    [
+     "ALL_PROXY",
+     "http://all.example:1"
+    ],
+    [
+     "HTTP_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "REQUEST_METHOD",
+     "GET"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "all.example",
+      "port": 1
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "secure.example",
+      "port": 2
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_without_a_scheme_is_an_http_one",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_without_a_port_takes_its_scheme_s",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 80
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_may_be_reached_over_tls",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "https://proxy.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "https",
+      "host": "proxy.example",
+      "port": 443
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_scheme_is_read_in_any_case",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "HTTP://Proxy.Example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_is_an_ipv4_address",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://10.0.0.7:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "10.0.0.7",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_is_an_ipv6_address",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://[fd00::7]:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "fd00::7",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_path_is_not_part_of_it",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example:3128/a?b#c"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_carries_its_credentials",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://user:placeholder-word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:placeholder-word"
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:placeholder-word"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_credentials_are_decoded",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us%65r:pass%40word%3A@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:pass@word:"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_user_alone_is_sent",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_empty_password_is_sent",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_password_alone_is_sent",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://:word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": ":word"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_empty_credentials_are_none",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://:@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_credentials_end_at_the_last_at_sign",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user@realm:word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user@realm:word"
+    }
+   ]
+  },
+  {
+   "name": "a_socks5_proxy_is_refused",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "socks5://proxy.example:1080"
+    ]
+   ],
+   "refused": "ImportError",
+   "asked": []
+  },
+  {
+   "name": "a_socks5h_proxy_is_refused",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "socks5h://proxy.example:1080"
+    ]
+   ],
+   "refused": "ImportError",
+   "asked": []
+  },
+  {
+   "name": "a_socks4_proxy_is_refused",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "socks4://proxy.example:1080"
+    ]
+   ],
+   "refused": "ValueError",
+   "asked": []
+  },
+  {
+   "name": "a_proxy_of_another_scheme_is_refused",
+   "environment": [
+    [
+     "HTTP_PROXY",
+     "ftp://proxy.example:21"
+    ]
+   ],
+   "refused": "ValueError",
+   "asked": []
+  },
+  {
+   "name": "a_proxy_whose_port_is_no_number_is_refused",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example:port"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "a_proxy_written_between_spaces_is_refused",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     " http://proxy.example:3128 "
+    ]
+   ],
+   "refused": "ValueError",
+   "asked": []
+  },
+  {
+   "name": "a_proxy_with_a_control_character_is_refused",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example\t:3128"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "a_proxy_whose_address_is_none_is_refused",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://10.0.0.999:3128"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "a_proxy_whose_ipv6_address_is_none_is_refused",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://[fd00::g]:3128"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "a_proxy_without_a_host",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "",
+      "port": 80
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_whose_host_is_not_ascii",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://b\u00fccher.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "xn--bcher-kva.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_whose_port_has_a_sign",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example:+3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_whose_port_is_past_the_last",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example:70000"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 70000
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_exempts_itself_and_what_is_under_it",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_is_read_in_any_case",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "LLM.Example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_after_a_dot_exempts_what_is_under_it_alone",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     ".llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_of_one_label_exempts_what_ends_with_it",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://anexample/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_star_before_a_dot_exempts_nothing",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "*.llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_star_before_a_name_exempts_nothing",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "*llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_star_inside_a_name_exempts_nothing",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.*"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_that_ends_in_a_dot_is_another_name",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example."
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example./v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example./v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_endpoint_that_ends_in_a_dot_is_another_name",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example./v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_internationalized_endpoint_is_matched_by_its_labels",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://api.xn--bcher-kva.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_label_is_matched_whole",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "kva.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://api.xn--bcher-kva.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://kva.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_star_exempts_everything",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "*"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://10.0.0.1/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_star_among_others_exempts_everything",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "other.example, *"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_star_keeps_a_proxy_that_does_not_read_from_being_read",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "ftp://proxy.example"
+    ],
+    [
+     "NO_PROXY",
+     "*, [::1]"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_address_exempts_itself",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "10.0.0.1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://10.0.0.1/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://10.0.0.1:8080/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://10.0.0.11/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://110.0.0.1/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_range_exempts_the_one_address_it_is_written_with",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "10.0.0.0/8"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://10.0.0.0/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://10.1.2.3/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://11.0.0.1/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_range_written_with_a_host_exempts_that_host",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "192.168.1.7/24"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://192.168.1.7/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://192.168.1.8/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "the_loopback_address_is_not_the_name_localhost",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "127.0.0.1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://127.0.0.1:8000/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://localhost:8000/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://127.0.0.2/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_address_with_a_port_exempts_that_port",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "10.0.0.1:8080"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://10.0.0.1:8080/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://10.0.0.1/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://10.0.0.1:8081/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_ipv6_address_exempts_itself",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "::1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://[::1]:8000/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://[::2]/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_ipv6_range_exempts_the_one_address_it_is_written_with",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "fd00::/8"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://[fd00::]/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://[fd00::1]/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_ipv6_address_in_brackets_is_refused",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "[::1]"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "an_address_that_is_none_is_a_name",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "10.0.0.999"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://10.0.0.1/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "localhost_exempts_itself_alone",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "localhost"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://localhost:8000/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://LOCALHOST/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://api.localhost/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://127.0.0.1/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "localhost_is_read_in_any_case",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "LocalHost"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://localhost/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://api.localhost/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "localhost_with_a_port_exempts_that_port_and_what_is_under_it",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "localhost:8000"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://localhost:8000/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://localhost/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://api.localhost:8000/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_name_with_a_port_exempts_that_port",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:8443"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example:8443/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://llm.example:8443/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example:8443/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_scheme_s_own_port_is_never_the_port_of_its_endpoint",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:443"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example:443/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://llm.example:443/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_port_left_empty_is_no_port",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_port_alone_exempts_every_host_on_it",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     ":8443"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example:8443/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_port_written_with_zeros_is_its_number",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:08443"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example:8443/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_port_that_is_no_number_is_refused",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:port"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "a_port_with_a_sign",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:+8443"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example:8443/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_port_past_the_last_is_no_endpoint_s",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:70000"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_with_a_scheme_exempts_that_scheme_and_that_host",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "https://llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_s_scheme_is_read_in_any_case",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "HTTPS://llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_s_port_under_a_scheme_in_upper_case_is_kept",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "HTTPS://llm.example:443"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example:443/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_under_all_exempts_every_scheme",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "all://llm.example:8443"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example:8443/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_may_exempt_what_is_under_a_name",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "all://*.llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_may_exempt_a_name_and_what_is_under_it",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "https://*llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://notllm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example.org/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://LLM.Example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_that_is_a_scheme_exempts_it",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "https://"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_that_is_a_scheme_takes_the_place_of_its_proxy",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://secure.example:2"
+    ],
+    [
+     "HTTP_PROXY",
+     "ftp://proxy.example"
+    ],
+    [
+     "NO_PROXY",
+     "http://"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "secure.example",
+      "port": 2
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_that_is_all_takes_the_place_of_all_proxy",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "all://"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_that_is_all_leaves_a_scheme_s_own_proxy",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "HTTPS_PROXY",
+     "http://secure.example:2"
+    ],
+    [
+     "NO_PROXY",
+     "all://"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "secure.example",
+      "port": 2
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_for_every_host_comes_after_the_proxies",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "all://*"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_without_a_scheme_s_name_reads_from_its_slashes",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "://llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_for_an_address_in_brackets",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "all://[::1]"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://[::1]/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://[::2]/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_whose_address_is_none_is_refused",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "https://10.0.0.999"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "an_entry_with_user_information_exempts_its_host_alone",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "user@llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_s_path_is_not_part_of_it",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example/path"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://api.llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "entries_are_trimmed",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     " llm.example , other.example ,,"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://other.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_semicolon_separates_nothing",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example;other.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://other.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "a_space_separates_nothing",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example other.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://other.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_no_host_spells_exempts_nothing",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "<local>"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_entry_that_is_not_ascii_is_refused",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "b\u00fccher.example"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "an_entry_in_punycode_is_refused",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "xn--bcher-kva.example"
+    ]
+   ],
+   "refused": "InvalidCodepoint",
+   "asked": []
+  },
+  {
+   "name": "an_entry_with_a_control_character_is_refused",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example\u007f"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "the_lower_case_no_proxy_wins",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "no_proxy",
+     "llm.example"
+    ],
+    [
+     "NO_PROXY",
+     "other.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://other.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_empty_lower_case_no_proxy_unsets_the_upper_case_one",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "no_proxy",
+     ""
+    ],
+    [
+     "NO_PROXY",
+     "llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "no_proxy_alone_changes_nothing",
+   "environment": [
+    [
+     "NO_PROXY",
+     "llm.example"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_endpoint_s_own_port_is_no_port",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "llm.example:8080"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://llm.example:80/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "https://llm.example:443/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    },
+    {
+     "url": "http://llm.example:8080/v1",
+     "proxy": null,
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_ipv6_endpoint_is_the_text_it_is_written_in",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "::1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://[::1]/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://[0:0:0:0:0:0:0:1]/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  },
+  {
+   "name": "an_ipv4_endpoint_is_the_text_it_is_written_in",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "127.0.0.1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://127.0.0.1/v1",
+     "proxy": null,
+     "credentials": null
+    },
+    {
+     "url": "http://127.1/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null
+    }
+   ]
+  }
+ ]
+}

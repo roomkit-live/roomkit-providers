@@ -97,7 +97,7 @@ pub async fn refuses_a_stream_served_in_one_piece<P: Replays>(
             headers,
             body: Body::Reads(vec![reads.concat()], ending),
         },
-        other @ (Reply::Answer { .. } | Reply::Refused | Reply::Silent) => other,
+        other @ (Reply::Answer { .. } | Reply::Refused | Reply::Silent | Reply::Tunnel(_)) => other,
     };
     for (name, reads) in streams {
         let case = fixture.case(name);

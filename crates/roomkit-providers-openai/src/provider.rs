@@ -89,8 +89,14 @@ const JSON: &str = "application/json";
 ///   4 MiB fails the request; a stream fails at a line or an event past
 ///   1 MiB and past 256 MiB in all, past 1,024 calls, and at a call's
 ///   arguments or a refusal past 4 MiB;
-/// - a redirect is not followed, and no proxy, key or URL is read from the
-///   environment; no compressed answer is asked for;
+/// - a redirect is not followed, a proxy's own among them, and no
+///   compressed answer is asked for;
+/// - the environment is read once, when the provider is built, for the
+///   network of its host and nothing else: the proxies `HTTP_PROXY`,
+///   `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` name, and the certificate
+///   authorities `SSL_CERT_FILE` or `SSL_CERT_DIR` name, the system's
+///   otherwise, as Python's client reads them. No key and no URL is read
+///   from it. A proxy's credentials appear in no failure;
 /// - the timeouts are the configuration's: `connect_timeout` to connect,
 ///   `timeout` for the head of an answer and between two reads of its body,
 ///   which also ends a stream that stalls.
@@ -124,8 +130,10 @@ impl OpenAi {
     ///
     /// A failure before any request: a base URL that is no `http` or
     /// `https` URL, or that has a query or a fragment, which the path of
-    /// the API cannot follow; a default header that is no HTTP header; or a
-    /// client that could not be built.
+    /// the API cannot follow; a default header that is no HTTP header; an
+    /// environment whose proxy variables do not read or name a proxy that
+    /// is neither `http` nor `https`, or whose `SSL_CERT_FILE` names a file
+    /// that holds no certificate; or a client that could not be built.
     pub fn new(config: OpenAiConfig) -> Result<Self, ProviderError> {
         // A provider that cannot be built says why in its own words.
         let nothing_to_hide = Exit::new(NAME, Secrets::default());
