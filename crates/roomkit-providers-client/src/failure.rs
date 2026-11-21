@@ -193,6 +193,21 @@ impl Failure {
         self
     }
 
+    /// The failure with the mark where it quotes a server or a reader: what
+    /// leaves of it where no secret is known to clean a quote of. One the
+    /// contract built is left as it is.
+    fn in_its_own_words(&self) -> Self {
+        let mut own_alone = self.clone();
+        if let Built::Here { said, .. } = &mut own_alone.0 {
+            for piece in said.iter_mut() {
+                if matches!(piece.0, Piece::Told(..)) {
+                    *piece = own(MARK);
+                }
+            }
+        }
+        own_alone
+    }
+
     /// A failure before any request, final: `said`, the provider's own
     /// words.
     pub fn before_request(said: impl Into<Cow<'static, str>>) -> Self {

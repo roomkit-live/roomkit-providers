@@ -18,10 +18,14 @@
 //!   with the [`retry::Rule`] that says where a vendor's SDK differs.
 //! - [`failure`]: a [`Failure`] as a provider builds it, and the one
 //!   [`Exit`] it leaves through as the contract's error, without a secret
-//!   of the configuration, on one line and bounded.
+//!   of the configuration, on one line and bounded. A provider gets its
+//!   exit from its client ([`Client::exit`]), which adds the secrets it
+//!   alone knows.
 //! - [`endpoint`]: the URL of a path under a base URL, with the base URLs
 //!   refused when a provider is built, and whether a base URL is the
 //!   vendor's own endpoint.
+//! - [`catalogue`]: what every provider reads the same way of the model
+//!   catalogue its crate embeds, and of the page a model listing answers.
 //!
 //! Under its `harness` feature, for the tests of a provider crate, the
 //! crate also holds the replay of a fixture of recorded cases through a
@@ -33,6 +37,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod catalogue;
 mod client;
 pub mod endpoint;
 mod exchange;
@@ -48,7 +53,7 @@ mod testing;
 pub use self::client::{Client, Settings, Timeouts};
 #[cfg(feature = "replay")]
 pub use self::client::{ReplayWaits, replayed_at};
-pub use self::exchange::{ANSWER_LIMIT, Call, Pace, USER_AGENT, Wait, is_json};
+pub use self::exchange::{ANSWER_LIMIT, Call, Pace, USER_AGENT, Wait, configured_header, is_json};
 pub use self::failure::{Exit, Failure, Secrets};
 
 // What `tried_again!` logs with, in the crate that calls it.

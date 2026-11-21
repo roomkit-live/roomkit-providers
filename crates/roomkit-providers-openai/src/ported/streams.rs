@@ -151,7 +151,7 @@ async fn the_timeout_bounds_reads_not_the_stream() {
     };
     let fake = Fake::serving(vec![stepped]).await;
     let provider = pointed(elsewhere("local-model"), &fake);
-    let timeout = provider.client.timeouts().read;
+    let timeout = provider.client.timeouts().read();
     let request = hello();
     let mut stream = provider.generate_structured_stream(&request);
     let mut read = String::new();

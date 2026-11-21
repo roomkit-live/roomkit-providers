@@ -9,14 +9,14 @@ use reqwest::header::HeaderMap;
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
 use roomkit_providers_client::stream::{leaving, text};
-use roomkit_providers_client::{Call, Client, Exit, Secrets, Settings, Timeouts, tried_again};
+use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, tried_again};
 use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
     TextStream, checked_stream, listing, request_api_key,
 };
 use serde_json::Value;
 
-use self::build::{Carried, KEY_HEADER, headers_of, key_value, own_endpoint, secrets_of};
+use self::build::{Carried, KEY_HEADER, exit_of, headers_of, key_value, own_endpoint};
 use crate::config::AnthropicConfig;
 use crate::endpoint::ANTHROPIC_BASE_URL;
 use crate::failure::{self, Failure, past_mark};
@@ -142,8 +142,7 @@ impl Anthropic {
     /// client that could not be built.
     pub fn new(config: AnthropicConfig) -> Result<Self, ProviderError> {
         // A provider that cannot be built says why in its own words.
-        let nothing_to_hide = Exit::new(LABEL, Secrets::default());
-        Self::built(config).map_err(|failure| nothing_to_hide.leave(&failure))
+        Self::built(config).map_err(|failure| Exit::unbuilt(LABEL, &failure))
     }
 
     fn built(config: AnthropicConfig) -> Result<Self, Failure> {
@@ -158,7 +157,7 @@ impl Anthropic {
             headers,
             key_replaced,
             credential,
-        } = headers_of(&config, &messages)?;
+        } = headers_of(&config)?;
         let client = Client::new(Settings {
             timeouts: Timeouts::new(config.timeout, config.connect_timeout)?,
             max_retries: config.max_retries,
@@ -166,7 +165,7 @@ impl Anthropic {
             refused: failure::status,
             tried_again: tried_again!("roomkit::providers::anthropic"),
         })?;
-        let exit = Exit::new(LABEL, secrets_of(&config, &client, &messages));
+        let exit = exit_of(&config, &client, &messages);
         Ok(Self {
             own_endpoint: own_endpoint(&config, &messages),
             config: Arc::new(config),

@@ -3,12 +3,16 @@
 //! before it fails.
 
 use reqwest::header::HeaderMap;
+use roomkit_providers_llm::{
+    ProviderError, ProviderErrorOptions, ProviderStream, StreamDone, StreamEvent, StreamTextDelta,
+    Yielder, items, next,
+};
 use serde_json::json;
 
-use crate::Call;
 use crate::harness::fake::{Body, Ending, Fake, Reply};
-use crate::stream::Streamed;
+use crate::stream::{Item, Streamed, text};
 use crate::testing::{client, left, url_on, usual};
+use crate::{ANSWER_LIMIT, Call};
 
 /// An answer of HTTP 200 the server says is `kind`, sent in `reads`, each
 /// one read, which end as `ending` says.
@@ -217,4 +221,96 @@ async fn a_stream_leaves_with_the_request_of_its_generation() {
         );
         assert!(next(&mut leaving).await.is_none());
     }
+}
+
+// An answer the server says is JSON and that gave no event is the document
+// it holds, past the byte order mark it may start with, within what an
+// answer read whole may weigh: a byte more, and it is none.
+#[tokio::test]
+async fn a_document_in_place_of_a_stream_is_kept_within_the_bound_of_a_whole_answer() {
+    const JSON: &str = "application/json";
+    // An empty list of `length` bytes, on lines a stream's reader takes.
+    let document = |length: usize| format!("[{}]", "\n".repeat(length - 2));
+    let replies = vec![
+        answer(JSON, &[&document(ANSWER_LIMIT)], Ending::Ends),
+        answer(JSON, &[&document(ANSWER_LIMIT + 1)], Ending::Ends),
+        answer(JSON, &["\u{feff}{\"error\": {}}"], Ending::Ends),
+    ];
+    let fake = Fake::serving(replies).await;
+    let client = client(usual(), 0);
+    let mut documents = Vec::new();
+    for _ in 0..3 {
+        let mut answer = streamed(&client, &fake).await;
+        assert_eq!(answer.next().await.unwrap(), None);
+        documents.push(answer.unstreamed());
+    }
+    assert_eq!(
+        documents,
+        [Some(json!([])), None, Some(json!({"error": {}}))]
+    );
+}
+
+// A stream that failed gives nothing more: its failure once, then its end.
+#[tokio::test]
+async fn a_stream_that_failed_gives_nothing_more() {
+    let long = format!("data: one\n\n{}", ": padding\n".repeat(64));
+    let reply = answer("text/event-stream", &[&long], Ending::Ends);
+    let fake = Fake::serving(vec![reply]).await;
+    let mut client = client(usual(), 0);
+    client.set_stream_limit(32);
+    let mut bounded = streamed(&client, &fake).await;
+    assert_eq!(bounded.next().await.unwrap().as_deref(), Some("one"));
+    assert!(bounded.next().await.is_err());
+    assert_eq!(bounded.next().await.unwrap(), None);
+}
+
+// The text of a stream of events is its text alone, and ends at its
+// failure: what a stream gives after one is not handed on.
+#[tokio::test]
+async fn the_text_of_a_stream_ends_at_its_failure() {
+    let delta = |text: &str| Ok(StreamEvent::TextDelta(StreamTextDelta::new(text)));
+    let failed = Err(ProviderError::new(
+        "failed",
+        ProviderErrorOptions::default(),
+    ));
+    let given = [
+        delta("one"),
+        Ok(StreamEvent::Done(StreamDone::default())),
+        failed,
+        delta("two"),
+    ];
+    let events: ProviderStream<'_> = Box::pin(items(move |out: Yielder<Item>| async move {
+        for item in given {
+            out.give(item).await;
+        }
+    }));
+    let mut said = text(events);
+    let mut handed = Vec::new();
+    while let Some(item) = next(&mut said).await {
+        handed.push(item.map_err(|error| error.message));
+    }
+    assert_eq!(handed, [Ok("one".to_owned()), Err("failed".to_owned())]);
+}
+
+// The `Debug` form of a streamed answer says how far it was read, and
+// nothing of what it said.
+#[tokio::test]
+async fn the_debug_form_of_a_streamed_answer_says_how_far_it_was_read() {
+    let said = "data: placeholder-of-an-answer\n\n";
+    let reply = answer("text/event-stream", &[said], Ending::Ends);
+    let fake = Fake::serving(vec![reply]).await;
+    let mut answer = streamed(&client(usual(), 0), &fake).await;
+    let mut shown = vec![format!("{answer:?}")];
+    assert!(answer.next().await.unwrap().is_some());
+    shown.push(format!("{answer:?}"));
+    assert_eq!(answer.next().await.unwrap(), None);
+    shown.push(format!("{answer:?}"));
+    assert_eq!(
+        shown,
+        [
+            "Streamed { given: false, ended: false, .. }",
+            "Streamed { given: true, ended: false, .. }",
+            "Streamed { given: true, ended: true, .. }",
+        ]
+    );
 }

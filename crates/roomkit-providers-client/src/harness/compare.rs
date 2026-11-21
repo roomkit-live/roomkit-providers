@@ -50,7 +50,7 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
         }
         // The timeouts are the ones the client was built with.
         let built = replayed.timeouts.map(|timeouts| {
-            let seconds = [("connect", timeouts.connect), ("read", timeouts.read)];
+            let seconds = [("connect", timeouts.connect()), ("read", timeouts.read())];
             seconds.map(|(name, timeout)| (name, timeout.as_secs_f64()))
         });
         for (name, timeout) in built.into_iter().flatten() {

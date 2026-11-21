@@ -8,6 +8,12 @@
 //! there what was said is cleaned, once; the provider's own words are not
 //! searched for a secret.
 //!
+//! A provider gets its exit from its client
+//! ([`Client::exit`](crate::Client::exit)), which adds to the secrets of
+//! the configuration those it alone knows. One that could not be built has
+//! no client: its failure leaves through [`Exit::unbuilt`], in the
+//! provider's own words alone.
+//!
 //! The failure of a generation leaves with its request
 //! ([`Exit::leave_for`], [`leaving`](crate::stream::leaving)): the key a
 //! host lends that request is a secret too, which the exit reads from the
@@ -167,6 +173,16 @@ impl Secrets {
 }
 
 /// Where a failure leaves a provider.
+///
+/// A provider makes none itself: its client does
+/// ([`Client::exit`](crate::Client::exit)), with the secrets it alone
+/// knows.
+///
+/// ```compile_fail,E0624
+/// use roomkit_providers_client::{Exit, Secrets};
+///
+/// let lacking_the_client_s_secrets = Exit::new("vendor", Secrets::default());
+/// ```
 #[derive(Clone, Debug)]
 pub struct Exit {
     /// The provider's label, which each failure carries.
@@ -176,10 +192,25 @@ pub struct Exit {
 
 impl Exit {
     /// The exit of the provider labelled `provider`, whose failures repeat
-    /// none of `secrets`.
-    #[must_use]
-    pub fn new(provider: &'static str, secrets: Secrets) -> Self {
+    /// none of `secrets`: what a client makes, and a test that has none.
+    pub(crate) const fn new(provider: &'static str, secrets: Secrets) -> Self {
         Self { provider, secrets }
+    }
+
+    /// `failure`, the failure of a provider labelled `provider` that could
+    /// not be built, as the contract's error. Such a provider has no client
+    /// yet, so no secret is known to clean a text of: the provider's own
+    /// words leave as they are, and the mark stands where the failure
+    /// quotes a server or a reader. A failure the contract built leaves as
+    /// it is, on one line and bounded.
+    ///
+    /// Nothing else leaves this way: the failure of a request leaves
+    /// through the exit the provider's client makes
+    /// ([`Client::exit`](crate::Client::exit)).
+    #[must_use]
+    pub fn unbuilt(provider: &'static str, failure: &Failure) -> ProviderError {
+        let knowing_no_secret = Self::new(provider, Secrets::default());
+        knowing_no_secret.leave(&failure.in_its_own_words())
     }
 
     /// This exit for the generation that answers `request`: its failures
@@ -209,9 +240,9 @@ impl Exit {
     /// `failure` as the contract's error: the only place one is made.
     ///
     /// It takes no request, so it is for what no request brings a key to:
-    /// a provider that cannot be built, and the model listing, which is
-    /// asked with the configuration's key. The failure of a generation
-    /// leaves with its request: [`leave_for`](Self::leave_for), and
+    /// the model listing, which is asked with the configuration's key. The
+    /// failure of a generation leaves with its request:
+    /// [`leave_for`](Self::leave_for), and
     /// [`leaving`](crate::stream::leaving) for a stream.
     #[must_use]
     pub fn leave(&self, failure: &Failure) -> ProviderError {

@@ -102,4 +102,23 @@ mod tests {
             ]
         );
     }
+
+    // Each of the words names a transient failure, and so does each status
+    // that is retried, a 4xx as a 5xx: a status that is not is none.
+    #[test]
+    fn each_transient_word_and_each_retried_status_is_read() {
+        for transient in [
+            "the model is overloaded",
+            "too many requests, try later",
+            "rate limited",
+            "HTTP 429",
+            "status 408.",
+            "a 529 came back",
+        ] {
+            assert!(names_transient(transient), "{transient}");
+        }
+        for other in ["HTTP 401", "error 4290", "v429", "overloaded_model"] {
+            assert!(!names_transient(other), "{other}");
+        }
+    }
 }

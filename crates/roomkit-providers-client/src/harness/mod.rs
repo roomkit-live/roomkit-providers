@@ -34,6 +34,8 @@
 
 mod compare;
 pub mod fake;
+#[cfg(test)]
+mod least;
 mod lent;
 pub mod named;
 pub mod self_test;
@@ -59,7 +61,7 @@ use serde_json::Value;
 use self::compare::differences;
 use self::fake::{Body, Door, Ending, Fake, Reply, Seen};
 use self::named::{Named, Stated};
-use crate::{Client, Pace, Timeouts};
+use crate::{Client, Exit, Pace, Secrets, Timeouts};
 
 /// How many times the replay lets the provider go on, after the fake went
 /// silent, before it gives up on reading what the fake sent first.
@@ -350,6 +352,14 @@ impl fmt::Debug for Replayed {
     }
 }
 
+/// The exit of a test that has no client to make one: its failures carry
+/// `provider` as their label and repeat none of `keys`. A provider gets its
+/// own from its client ([`Client::exit`]).
+#[must_use]
+pub fn exit(provider: &'static str, keys: impl IntoIterator<Item = String>) -> Exit {
+    Exit::new(provider, Secrets::of(keys))
+}
+
 /// A stream of a provider's items.
 type Items<'a, T> = Pin<Box<dyn futures_core::Stream<Item = Result<T, ProviderError>> + Send + 'a>>;
 
@@ -545,7 +555,7 @@ async fn replay_served<P: Replays>(
             other => panic!("{}: an unknown call {other}", case.name),
         }
     };
-    let outcome = driven(std::pin::pin!(call), &fake, &given, before, timeouts.read).await;
+    let outcome = driven(std::pin::pin!(call), &fake, &given, before, timeouts.read()).await;
     replayed.outcome = Some(outcome);
     // The provider gone, every connection is closed, and the fake ends
     // serving each: what it saw then says how it wrote each answer.
@@ -614,3 +624,6 @@ pub async fn replayed_or_named<P: Replays>(
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     (as_python, otherwise)
 }
+
+#[cfg(test)]
+mod tests;

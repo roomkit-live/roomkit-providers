@@ -5,14 +5,16 @@
 //! read is tried again. A streamed answer is tried until its head came:
 //! what happens to it afterwards is the reader's.
 
+use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 
 use crate::client::Client;
+use crate::endpoint::{has_user_information, shown_url};
 use crate::failure::Failure;
 
 /// The most bytes of an answer read whole: a server that sends more fails
@@ -32,8 +34,8 @@ pub const USER_AGENT: &str = concat!("roomkit-providers/", env!("CARGO_PKG_VERSI
 pub type Wait = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 /// The clock a `retry-after` date is read against, and the wait between
-/// two tries: the system's, which a test replaces
-/// ([`Client::set_pace`]).
+/// two tries: the system's, which a test replaces (`Client::set_pace`,
+/// under the `harness` feature).
 #[derive(Clone)]
 pub struct Pace {
     /// The seconds since 1970.
@@ -55,24 +57,55 @@ impl Default for Pace {
     }
 }
 
-impl std::fmt::Debug for Pace {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for Pace {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Pace").finish_non_exhaustive()
     }
 }
 
 /// What is asked of an endpoint: one request, as each of its tries sends
 /// it.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct Call<'a> {
-    /// Where the request is sent.
+    /// Where the request is sent. Its user information, when it holds
+    /// some, is sent as Basic credentials.
     pub url: &'a reqwest::Url,
     /// The headers the request carries. Every request also names the
     /// client that sends it ([`USER_AGENT`]), and one with a body says that
-    /// its body is JSON, unless a header here already does.
+    /// its body is JSON, unless a header here already does. An
+    /// `Authorization` here is not sent where the URL holds user
+    /// information: the Basic credentials are the request's, as with
+    /// Python's client.
     pub headers: &'a HeaderMap,
     /// The body of a `POST`, a JSON document; `None` for a `GET`.
     pub body: Option<&'a [u8]>,
+}
+
+impl fmt::Debug for Call<'_> {
+    /// Where the request goes, by its origin, the names of its headers and
+    /// how many bytes its body is: never the user information, the path or
+    /// the query of its URL, the value of a header or the body, each of
+    /// which may hold a secret.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let headers: Vec<&str> = self.headers.keys().map(HeaderName::as_str).collect();
+        f.debug_struct("Call")
+            .field("url", &shown_url(self.url.as_str()))
+            .field("headers", &headers)
+            .field("body_bytes", &self.body.map(<[u8]>::len))
+            .finish()
+    }
+}
+
+/// A header of a provider's configuration, as a request carries it: its
+/// name, and its value, which no `Debug` form shows, since a host may put a
+/// credential in a header of any name. `None` for a name or a value that
+/// is no HTTP header's.
+#[must_use]
+pub fn configured_header(name: &str, value: &str) -> Option<(HeaderName, HeaderValue)> {
+    let name = HeaderName::from_bytes(name.as_bytes()).ok()?;
+    let mut value = HeaderValue::from_str(value).ok()?;
+    value.set_sensitive(true);
+    Some((name, value))
 }
 
 /// How a try ended without an answer.
@@ -153,6 +186,33 @@ impl Client {
         }
     }
 
+    /// The request of one try of `call`, with what the client writes of
+    /// its own beside the call's headers.
+    fn request(&self, call: Call<'_>) -> reqwest::RequestBuilder {
+        let mut headers = call.headers.clone();
+        // A header of the provider's replaces the client's own. The name is
+        // written on the request, not given to the HTTP client, which would
+        // also send it to a proxy that opens a tunnel.
+        let agent = headers.entry(reqwest::header::USER_AGENT);
+        agent.or_insert(HeaderValue::from_static(USER_AGENT));
+        // The user information of a URL goes as Basic credentials, which
+        // the HTTP client writes: they are the request's `Authorization`,
+        // in place of one among the call's headers, as with Python's
+        // client.
+        if has_user_information(call.url) {
+            headers.remove(AUTHORIZATION);
+        }
+        let request = match call.body {
+            Some(body) => {
+                let kind = headers.entry(CONTENT_TYPE);
+                kind.or_insert(HeaderValue::from_static(JSON));
+                self.http.post(call.url.clone()).body(body.to_vec())
+            }
+            None => self.http.get(call.url.clone()),
+        };
+        request.headers(headers)
+    }
+
     /// One try, its answer read whole.
     async fn whole(&self, call: Call<'_>, retries_taken: u32) -> Result<(Vec<u8>, bool), Failed> {
         let response = self.head(call, retries_taken, true).await?;
@@ -179,21 +239,7 @@ impl Client {
         whole: bool,
     ) -> Result<reqwest::Response, Failed> {
         let now = (self.pace.now)();
-        let mut headers = call.headers.clone();
-        // A header of the provider's replaces the client's own. The name is
-        // written on the request, not given to the HTTP client, which would
-        // also send it to a proxy that opens a tunnel.
-        let agent = headers.entry(reqwest::header::USER_AGENT);
-        agent.or_insert(HeaderValue::from_static(USER_AGENT));
-        let request = match call.body {
-            Some(body) => {
-                let kind = headers.entry(CONTENT_TYPE);
-                kind.or_insert(HeaderValue::from_static(JSON));
-                self.http.post(call.url.clone()).body(body.to_vec())
-            }
-            None => self.http.get(call.url.clone()),
-        };
-        let response = match request.headers(headers).send().await {
+        let response = match self.request(call).send().await {
             Ok(response) => response,
             // A request that could not be built never left: it fails the
             // same however many times it is tried, so it is final.

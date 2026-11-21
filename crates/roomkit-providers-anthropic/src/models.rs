@@ -4,8 +4,9 @@
 
 use std::sync::LazyLock;
 
+use roomkit_providers_client::catalogue;
+pub(crate) use roomkit_providers_client::catalogue::{reasoning_floor, tagged};
 use roomkit_providers_llm::ModelInfo;
-use serde::Deserialize;
 use serde_json::Value;
 
 const CATALOGUE: &str = include_str!("../catalog/models.json");
@@ -24,24 +25,16 @@ pub(crate) const THINKING_OFF_DISABLED: &str = "thinking_off_disabled";
 pub(crate) const THINKING_OFF_BETWEEN_TOOLS: &str = "thinking_off_between_tools";
 /// The tag of a model that takes no effort above `high` with reasoning off.
 pub(crate) const THINKING_OFF_EFFORT_HIGH: &str = "thinking_off_effort_high";
-/// What starts the tag naming the least reasoning effort a model takes.
-const FLOOR_TAG: &str = "reasoning_floor_";
-
 /// How the name of a model that takes images starts, for a model the
 /// catalogue does not carry (Python's `_VISION_PREFIXES`): every Claude
 /// model since Claude 3 takes them.
 const VISION_PREFIX: &str = "claude-";
 
-#[derive(Deserialize)]
-struct Catalogue {
-    models: Vec<ModelInfo>,
-}
-
 static MODELS: LazyLock<Vec<ModelInfo>> = LazyLock::new(|| read().unwrap_or_default());
 
 /// The embedded catalogue, read whole.
 fn read() -> serde_json::Result<Vec<ModelInfo>> {
-    serde_json::from_str::<Catalogue>(CATALOGUE).map(|catalogue| catalogue.models)
+    catalogue::read(CATALOGUE)
 }
 
 /// Anthropic's curated catalogue.
@@ -51,7 +44,7 @@ pub(crate) fn models() -> &'static [ModelInfo] {
 
 /// The catalogue's entry for `model`.
 pub(crate) fn entry(model: &str) -> Option<&'static ModelInfo> {
-    models().iter().find(|entry| entry.id == model)
+    catalogue::entry(models(), model)
 }
 
 /// Whether `model` takes images, as Python's provider answers it: what the
@@ -66,27 +59,12 @@ pub(crate) fn sees_images(model: &str) -> bool {
 /// reads the page; `None` for a body that is no such page, which is no
 /// listing rather than an empty one.
 pub(crate) fn listed(page: &Value) -> Option<Vec<ModelInfo>> {
-    let listed = page.get("data")?.as_array()?.iter();
-    let read = |model: &Value| {
-        let mut read = ModelInfo::new(model.get("id")?.as_str()?);
+    catalogue::listed(page, |id, model| {
+        let mut read = ModelInfo::new(id);
         let name = model.get("display_name").and_then(Value::as_str);
         read.display_name = name.map(str::to_owned);
-        Some(read)
-    };
-    listed.map(read).collect()
-}
-
-/// Whether `entry` carries `tag`; no entry carries none.
-pub(crate) fn tagged(entry: Option<&ModelInfo>, tag: &str) -> bool {
-    entry.is_some_and(|entry| entry.capabilities.iter().any(|held| held == tag))
-}
-
-/// The least reasoning effort the model takes, as its entry declares it:
-/// its lowest level, for a model that cannot stop reasoning (Python's
-/// `reasoning_floor`).
-pub(crate) fn reasoning_floor(entry: Option<&ModelInfo>) -> Option<&str> {
-    let tags = entry?.capabilities.iter();
-    tags.into_iter().find_map(|tag| tag.strip_prefix(FLOOR_TAG))
+        read
+    })
 }
 
 #[cfg(test)]

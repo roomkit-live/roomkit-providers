@@ -5,9 +5,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT as USER_AGENT_HEADER};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue, USER_AGENT as USER_AGENT_HEADER};
 
-use super::{Call, Pace, USER_AGENT};
+use super::{Call, Pace, USER_AGENT, configured_header};
 use crate::Timeouts;
 use crate::harness::fake::{Ending, Fake, Reply};
 use crate::harness::{let_pass, poll_once};
@@ -23,7 +23,7 @@ const PATH: &str = "/v1/chat/completions";
 async fn a_request_that_gets_no_answer_fails_at_the_read_timeout() {
     const TIMEOUT: Duration = Duration::from_secs(40);
     let fake = Fake::serving(vec![Reply::Silent]).await;
-    let timeouts = Timeouts::new(TIMEOUT, usual().connect).unwrap();
+    let timeouts = Timeouts::new(TIMEOUT, usual().connect()).unwrap();
     let client = client(timeouts, 0);
     let (url, headers) = (url_on(&fake, PATH), HeaderMap::new());
     let call = Call {
@@ -143,6 +143,117 @@ async fn every_request_names_the_client_unless_a_header_of_the_provider_s_does()
     );
 }
 
+// The user information of a URL goes as Basic credentials, as with Python's
+// client: they are the one `Authorization` of the request, in place of the
+// one its call holds, for an answer asked whole, a stream and a listing. A
+// URL that holds none leaves the call its own.
+#[tokio::test]
+async fn the_user_information_of_a_url_takes_the_place_of_a_call_s_authorization() {
+    const OWN: &str = "Bearer placeholder-not-a-key";
+    const BASIC: &str = "Basic dXNlcjpwbGFjZWhvbGRlci1ub3QtYS1wYXNzd29yZA==";
+    let whole = || Reply::json(200, "{}");
+    let stream = Reply::stream(vec![b"data: one\n\n".to_vec()], Ending::Ends);
+    let fake = Fake::serving(vec![whole(), stream, whole(), whole()]).await;
+    let client = client(usual(), 0);
+    let with_a_user = format!(
+        "http://user:placeholder-not-a-password@{}{PATH}",
+        fake.address
+    );
+    let (with_a_user, bare) = (
+        reqwest::Url::parse(&with_a_user).unwrap(),
+        url_on(&fake, PATH),
+    );
+    let mut own = HeaderMap::new();
+    own.insert(AUTHORIZATION, HeaderValue::from_static(OWN));
+    let asked = Call {
+        url: &with_a_user,
+        headers: &own,
+        body: Some(b"{}"),
+    };
+    client.send(asked).await.unwrap();
+    let mut streamed = client.stream(asked).await.unwrap();
+    while streamed.next().await.unwrap().is_some() {}
+    let listing = Call {
+        body: None,
+        ..asked
+    };
+    client.send(listing).await.unwrap();
+    let without = Call {
+        url: &bare,
+        ..asked
+    };
+    client.send(without).await.unwrap();
+    let seen = fake.seen();
+    let authorizations = seen.iter().map(|seen| {
+        let lines = seen.lines.iter();
+        let lines = lines.filter(|(name, _)| name == "authorization");
+        lines.map(|(_, value)| value.as_str()).collect::<Vec<_>>()
+    });
+    assert_eq!(
+        authorizations.collect::<Vec<_>>(),
+        [[BASIC], [BASIC], [BASIC], [OWN]]
+    );
+}
+
+// The `Debug` form of a call says where it goes by its origin, which
+// headers it carries and how many bytes its body is: nothing of what may
+// hold a secret, the rest of its URL, the value of a header, the body.
+#[test]
+fn the_debug_form_of_a_call_shows_no_user_information_header_value_or_body() {
+    let url = "https://user:placeholder-not-a-password@llm.example:8443/v1/hidden?key=hidden";
+    let url = reqwest::Url::parse(url).unwrap();
+    let mut headers = HeaderMap::new();
+    let value = HeaderValue::from_static("placeholder-not-a-value");
+    headers.insert("x-tenant", value);
+    let body = br#"{"said":"hidden"}"#;
+    let call = Call {
+        url: &url,
+        headers: &headers,
+        body: Some(body),
+    };
+    let shown = format!("{call:?}");
+    let expected =
+        r#"Call { url: "https://llm.example:8443", headers: ["x-tenant"], body_bytes: Some(17) }"#;
+    assert_eq!(shown, expected);
+    for hidden in ["user", "placeholder", "hidden", &format!("{body:?}")] {
+        assert!(!shown.contains(hidden), "{hidden} in {shown}");
+    }
+    let listing = Call { body: None, ..call };
+    assert!(format!("{listing:?}").ends_with("body_bytes: None }"));
+}
+
+// A host may put a credential in a header of any name: the value of a
+// header of the configuration is shown by no `Debug` form, its own, that of
+// the headers it is among or that of a call. What is no HTTP header is
+// none.
+#[test]
+fn the_value_of_a_configured_header_is_shown_by_no_debug_form() {
+    let (name, value) = configured_header("X-Tenant", "placeholder-not-a-value").unwrap();
+    assert_eq!(
+        (name.as_str(), value.to_str().unwrap()),
+        ("x-tenant", "placeholder-not-a-value")
+    );
+    let mut headers = HeaderMap::new();
+    headers.insert(name, value.clone());
+    let url = reqwest::Url::parse("https://llm.example/v1").unwrap();
+    let call = Call {
+        url: &url,
+        headers: &headers,
+        body: None,
+    };
+    let shown = format!("{value:?} {headers:?} {call:?}");
+    assert!(shown.contains("x-tenant"), "{shown}");
+    assert!(!shown.contains("placeholder"), "{shown}");
+    for (name, value) in [
+        ("a name", "value"),
+        ("", "value"),
+        ("x-tenant", "two\nlines"),
+    ] {
+        let read = configured_header(name, value);
+        assert!(read.is_none(), "{name:?}: {value:?}");
+    }
+}
+
 // A request that cannot be built never left: it fails the same however
 // many times it is tried, so it is final, and no wait is taken for it.
 #[tokio::test]
@@ -184,3 +295,6 @@ async fn a_request_that_cannot_be_built_is_final() {
     let listed = left(&client.send(asked).await.unwrap_err());
     assert_eq!((listed.retryable, listed.before_request), (false, true));
 }
+
+mod bounds;
+mod tries;

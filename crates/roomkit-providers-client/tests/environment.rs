@@ -30,7 +30,8 @@ use roomkit_providers_client::failure::Stated;
 use roomkit_providers_client::harness::fake::{Fake, Reply};
 use roomkit_providers_client::harness::tls::Authority;
 use roomkit_providers_client::retry::{Past, Rule};
-use roomkit_providers_client::{Call, Client, Exit, Failure, Secrets, Settings, Timeouts};
+use roomkit_providers_client::{Call, Client, Exit, Failure, Settings, Timeouts};
+use roomkit_providers_llm::ProviderError;
 use serde_json::{Value, json};
 
 /// The test a child runs.
@@ -72,8 +73,7 @@ fn settings() -> Settings {
 }
 
 /// What a failure reads as once it left.
-fn left(failure: &Failure) -> Value {
-    let error = Exit::new("test", Secrets::default()).leave(failure);
+fn left(error: &ProviderError) -> Value {
     json!({
         "failed": error.message,
         "retryable": error.retryable,
@@ -110,11 +110,12 @@ async fn a_child_asks_what_its_parent_tells_it() {
     let mut client = match Client::new(settings()) {
         Ok(client) => client,
         Err(failure) => {
-            writeln!(out, "{MARK}{}", left(&failure)).unwrap();
+            let unbuilt = Exit::unbuilt("test", &failure);
+            writeln!(out, "{MARK}{}", left(&unbuilt)).unwrap();
             return;
         }
     };
-    let headers = HeaderMap::new();
+    let (headers, no_headers) = (HeaderMap::new(), [""; 0]);
     for url in asks.split(' ').filter(|url| !url.is_empty()) {
         let mut url = reqwest::Url::parse(url).unwrap();
         if let Some(seam) = &seam {
@@ -125,9 +126,10 @@ async fn a_child_asks_what_its_parent_tells_it() {
             headers: &headers,
             body: Some(b"{}"),
         };
+        let exit = client.exit("test", [], no_headers, &url);
         let came = match client.send(call).await {
             Ok((body, _)) => json!({"answered": String::from_utf8_lossy(&body)}),
-            Err(failure) => left(&failure),
+            Err(failure) => left(&exit.leave(&failure)),
         };
         writeln!(out, "{MARK}{came}").unwrap();
     }

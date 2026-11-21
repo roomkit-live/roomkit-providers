@@ -19,6 +19,7 @@ use super::named::Named;
 use super::{
     Answered, Fixture, Outcome, Replayed, Replays, judged, replay, replay_served, reply_of,
 };
+use crate::Timeouts;
 
 /// One thing made wrong in what a case replayed: its name, a word of the
 /// difference the replay must find, and what makes it wrong.
@@ -163,12 +164,12 @@ pub const REQUEST: [Wrong; 9] = [
     }),
     ("no request", "0 requests sent", |r| r.seen.clear()),
     ("another read timeout", "the read timeout", |r| {
-        let timeouts = r.timeouts.as_mut().unwrap();
-        timeouts.read *= 4;
+        let built = r.timeouts.unwrap();
+        r.timeouts = Timeouts::new(built.read() * 4, built.connect()).ok();
     }),
     ("another connect timeout", "the connect timeout", |r| {
-        let timeouts = r.timeouts.as_mut().unwrap();
-        timeouts.connect = timeouts.read;
+        let built = r.timeouts.unwrap();
+        r.timeouts = Timeouts::new(built.read(), built.read()).ok();
     }),
     ("no user agent", "user-agent is None", |r| {
         drop(r.seen[0].headers.remove("user-agent"));

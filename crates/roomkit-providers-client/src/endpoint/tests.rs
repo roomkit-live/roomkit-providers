@@ -214,3 +214,67 @@ fn a_provider_talks_to_its_vendor_where_the_client_dials_the_vendor_s_url() {
     let elsewhere = joined("https://llm.example/v1", PATH).unwrap();
     assert!(!talks_to_vendor(None, &official, &elsewhere, PATH));
 }
+
+// A base URL with a query, and one with a fragment, are each refused: the
+// path of the API can follow neither.
+#[test]
+fn a_base_url_with_a_query_or_a_fragment_is_refused() {
+    let said = "the provider cannot be built: its base URL has a query or a fragment, which the \
+                path of the API cannot follow";
+    for base_url in [
+        "https://llm.example/v1?version=1",
+        "https://llm.example/v1#part",
+        "https://llm.example/v1?",
+    ] {
+        assert_eq!(unbuilt(base_url).message, said, "{base_url}");
+    }
+}
+
+// A URL holds user information when it names a user, a password, or both.
+#[test]
+fn a_url_holds_user_information_with_a_user_or_with_a_password() {
+    let holds = |url: &str| has_user_information(&reqwest::Url::parse(url).unwrap());
+    assert!(holds("https://user@llm.example/v1"));
+    assert!(holds("https://:placeholder@llm.example/v1"));
+    assert!(holds("https://user:placeholder@llm.example/v1"));
+    assert!(!holds("https://llm.example/v1"));
+}
+
+// Python: is_vendor_endpoint, on what `urlsplit` reads otherwise than it
+// looks: an empty pair before the host is no credentials, a tab is no part
+// of a URL, a port that is no number names no endpoint, and what starts
+// with a digit is no scheme, so it is compared with nothing.
+#[test]
+fn a_base_url_is_compared_as_python_splits_it() {
+    const OFFICIAL: &str = "https://api.vendor.example/v1";
+    let is_vendor_s = |url: &str| is_vendor_endpoint(Some(url), &[OFFICIAL]);
+    assert!(is_vendor_s("https://:@api.vendor.example/v1"));
+    assert!(is_vendor_s("https://api.vendor\t.example/v1"));
+    assert!(!is_vendor_s("https://api.vendor.example:+443/v1"));
+    let numbered = "9https://api.vendor.example/v1";
+    assert!(!is_vendor_endpoint(Some(numbered), &[numbered]));
+}
+
+// A provider talks to its vendor only where the client dials the vendor's
+// own URL, by its scheme, its host, its port and its path, with no user
+// information; and only under a base URL that is the vendor's.
+#[test]
+fn a_provider_talks_to_its_vendor_at_the_vendor_s_own_url_alone() {
+    const OFFICIAL: &str = "https://api.vendor.example/v1";
+    let talks = |base_url: Option<&str>, dialed: &str| {
+        let dialed = reqwest::Url::parse(dialed).unwrap();
+        talks_to_vendor(base_url, &[OFFICIAL], &dialed, PATH)
+    };
+    let own = format!("{OFFICIAL}{PATH}");
+    assert!(talks(None, &own));
+    for elsewhere in [
+        "http://api.vendor.example:443/v1/chat/completions",
+        "https://api.vendor.example:8443/v1/chat/completions",
+        "https://api.vendor.example/v2/chat/completions",
+        "https://user@api.vendor.example/v1/chat/completions",
+        "https://:placeholder@api.vendor.example/v1/chat/completions",
+    ] {
+        assert!(!talks(None, elsewhere), "{elsewhere}");
+    }
+    assert!(!talks(Some("https://llm.example/v1"), &own));
+}

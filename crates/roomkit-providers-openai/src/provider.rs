@@ -8,13 +8,13 @@ use std::sync::atomic::AtomicBool;
 use reqwest::header::HeaderMap;
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
-use roomkit_providers_client::{Call, Client, Exit, Secrets, Settings, Timeouts, tried_again};
+use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, tried_again};
 use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
     TextStream, checked_stream, listing,
 };
 
-use self::build::{headers_of, own_endpoint, secrets_of};
+use self::build::{exit_of, headers_of, own_endpoint};
 use crate::answer;
 use crate::config::OpenAiConfig;
 use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint};
@@ -141,8 +141,7 @@ impl OpenAi {
     /// that holds no certificate; or a client that could not be built.
     pub fn new(config: OpenAiConfig) -> Result<Self, ProviderError> {
         // A provider that cannot be built says why in its own words.
-        let nothing_to_hide = Exit::new(NAME, Secrets::default());
-        Self::built(config).map_err(|failure| nothing_to_hide.leave(&failure))
+        Self::built(config).map_err(|failure| Exit::unbuilt(NAME, &failure))
     }
 
     fn built(config: OpenAiConfig) -> Result<Self, Failure> {
@@ -157,7 +156,7 @@ impl OpenAi {
             refused: failure::status,
             tried_again: tried_again!("roomkit::providers::openai"),
         })?;
-        let exit = Exit::new(NAME, secrets_of(&config, &client, &chat));
+        let exit = exit_of(&config, &client, &chat);
         Ok(Self {
             own_endpoint: own_endpoint(&config, &chat),
             config: Arc::new(config),

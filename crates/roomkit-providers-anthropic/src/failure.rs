@@ -95,8 +95,7 @@ pub(crate) fn said_something(value: &Value) -> bool {
 /// configures.
 #[cfg(test)]
 pub(crate) fn test_exit() -> roomkit_providers_client::Exit {
-    let secrets = roomkit_providers_client::Secrets::of(["placeholder-not-a-key".to_owned()]);
-    roomkit_providers_client::Exit::new("anthropic", secrets)
+    roomkit_providers_client::harness::exit("anthropic", ["placeholder-not-a-key".to_owned()])
 }
 
 #[cfg(test)]

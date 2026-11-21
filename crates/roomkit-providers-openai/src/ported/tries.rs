@@ -99,7 +99,7 @@ async fn a_connection_that_closed_is_tried_again_after_its_backoff() {
 async fn a_timeout_is_tried_again() {
     let replies = vec![Reply::Silent, saying_streamed("Recovered")];
     let (provider, fake, waits) = retrying(replies, retried(1)).await;
-    let timeout = provider.client.timeouts().read;
+    let timeout = provider.client.timeouts().read();
     let mut answered = std::pin::pin!(answer(&provider, true));
     tokio::select! {
         biased;

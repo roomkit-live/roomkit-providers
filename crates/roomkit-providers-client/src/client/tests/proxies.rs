@@ -15,7 +15,7 @@ use crate::harness::fake::{Body, Fake, Reply, Seen};
 use crate::harness::tls::Authority;
 use crate::proxy::Proxies;
 use crate::testing::{left, no_authority, settings, usual};
-use crate::{Call, Client, Exit, Failure, Pace};
+use crate::{Call, Client, Failure, Pace};
 
 /// The path a test asks.
 const PATH: &str = "/v1/chat/completions";
@@ -291,7 +291,7 @@ async fn what_a_proxy_is_given_is_a_secret_however_its_url_writes_it() {
         client.refused = echoing;
         let url = reqwest::Url::parse(&format!("http://llm.example{PATH}")).unwrap();
         let no_headers: [&str; 0] = [];
-        let exit = Exit::new("test", client.secrets([], no_headers, &url));
+        let exit = client.exit("test", [], no_headers, &url);
         let repeated = |said: String| {
             let body = serde_json::json!({"error": {"message": said}}).to_string();
             exit.leave(&echoing(407, body.as_bytes())).message
@@ -384,7 +384,7 @@ async fn a_proxy_s_credentials_appear_in_no_failure_and_no_debug_form() {
     client.refused = echoing;
     let url = reqwest::Url::parse(&format!("http://llm.example{PATH}")).unwrap();
     let no_headers: [&str; 0] = [];
-    let exit = Exit::new("test", client.secrets([], no_headers, &url));
+    let exit = client.exit("test", [], no_headers, &url);
     let headers = HeaderMap::new();
     let call = Call {
         url: &url,

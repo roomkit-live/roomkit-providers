@@ -59,6 +59,29 @@ fn the_debug_form_names_the_origin_the_client_dials() {
     }
 }
 
+// A host may put a credential in a default header of any name: the `Debug`
+// form of what a request goes with, its headers and its call, shows each
+// header's name and no configured value.
+#[test]
+fn the_debug_form_of_a_request_s_headers_shows_no_value_of_a_default_header() {
+    let headers = [
+        ("X-Tenant", "placeholder-of-a-tenant"),
+        ("Cookie", "placeholder-of-a-session"),
+    ];
+    let headers = headers.map(|(name, value)| (name.to_owned(), value.to_owned()));
+    let config = OpenAiConfig {
+        default_headers: Some(headers.into_iter().collect()),
+        ..elsewhere("local-model")
+    };
+    let provider = OpenAi::new(config).unwrap();
+    let shown = format!("{:?} {:?}", provider.headers, provider.asking(b"{}"));
+    assert!(
+        shown.contains("x-tenant") && shown.contains("cookie"),
+        "{shown}"
+    );
+    assert!(!shown.contains("placeholder"), "{shown}");
+}
+
 // A timeout the clock cannot count to the end of is refused when the
 // provider is built: the HTTP client would fail on it at the first read.
 #[tokio::test]

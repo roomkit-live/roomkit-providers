@@ -289,3 +289,6 @@ pub struct Failures {
     /// Those of a response schema.
     pub of_a_schema: usize,
 }
+
+#[cfg(test)]
+mod tests;

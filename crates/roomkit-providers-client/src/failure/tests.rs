@@ -153,6 +153,43 @@ fn what_was_told_is_cleaned_and_bounded_and_the_provider_s_own_words_are_not() {
     assert_eq!(overflowing.context_overflow, Some(true));
 }
 
+// A provider that could not be built has no client yet, and so no secret to
+// clean a text of: its failure leaves in the provider's own words, as they
+// are, with its label. Should such a failure quote a server or a reader,
+// the mark stands where the quote was: nothing told leaves that way.
+#[test]
+fn the_failure_of_a_provider_that_is_not_built_leaves_in_its_own_words_alone() {
+    let unbuilt = Exit::unbuilt("test", &Failure::unbuilt("its base URL names no host"));
+    assert_eq!(
+        unbuilt.message,
+        "the provider cannot be built: its base URL names no host"
+    );
+    assert_eq!(
+        (
+            unbuilt.provider.as_str(),
+            unbuilt.before_request,
+            unbuilt.retryable
+        ),
+        ("test", true, false)
+    );
+    let quoting = Exit::unbuilt("test", &worded(&format!("no {KEY} here")).overflowing());
+    assert_eq!(
+        quoting.message,
+        "the server refused the placeholder-not-a-key: [***]."
+    );
+    assert_eq!(
+        (quoting.status_code, quoting.context_overflow),
+        (Some(400), Some(true))
+    );
+    // A failure the contract built is one piece: it leaves as it is.
+    let built = ProviderError::new(
+        "a\tcontract's\nwords".to_owned(),
+        ProviderErrorOptions::default(),
+    );
+    let carried = Exit::unbuilt("test", &Failure::from(built));
+    assert_eq!(carried.message, "a contract's words");
+}
+
 /// A request that brings `key` for itself.
 fn lending(key: &str) -> AiRequest {
     let mut request = AiRequest::default();
@@ -221,3 +258,6 @@ fn the_key_a_request_brings_is_hidden_in_every_form_a_configured_secret_is() {
         }
     }
 }
+
+mod alike;
+mod secrets;

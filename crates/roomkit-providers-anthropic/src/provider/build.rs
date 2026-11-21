@@ -1,12 +1,12 @@
 //! What a provider is built from: what every request carries, which key a
 //! request goes with, whether the provider talks to Anthropic's own
-//! endpoint, and what no failure may repeat of its configuration.
+//! endpoint, and where its failures leave.
 
 use reqwest::header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderName, HeaderValue};
-use roomkit_providers_client::endpoint::{has_user_information, talks_to_vendor};
-use roomkit_providers_client::{Client, Failure, Secrets};
+use roomkit_providers_client::endpoint::talks_to_vendor;
+use roomkit_providers_client::{Client, Exit, Failure, configured_header};
 
-use super::{JSON, MESSAGES};
+use super::{JSON, LABEL, MESSAGES};
 use crate::config::AnthropicConfig;
 use crate::endpoint::ANTHROPIC_BASE_URL;
 
@@ -19,14 +19,16 @@ const VERSION_HEADER: HeaderName = HeaderName::from_static("anthropic-version");
 /// The version of the Messages API the provider speaks.
 const VERSION: &str = "2023-06-01";
 
-/// What no failure may repeat of `config`: the key, the value of each
-/// extra header and its credentials when it names a scheme before them,
-/// the user information of the base URL, as written and as it reads, and
-/// the `Authorization` the `client` writes from that user information.
-pub(super) fn secrets_of(config: &AnthropicConfig, client: &Client, url: &reqwest::Url) -> Secrets {
+/// Where the failures of the provider of `config` leave, made by its
+/// `client`. They repeat nothing of the key, of the value of each extra
+/// header and of its credentials when it names a scheme before them, of the
+/// user information of the base URL, as written and as it reads, nor of
+/// what the client alone knows: the `Authorization` it writes from that
+/// user information, and the credentials of a proxy.
+pub(super) fn exit_of(config: &AnthropicConfig, client: &Client, url: &reqwest::Url) -> Exit {
     let headers = config.extra_headers.iter().flatten();
     let headers = headers.map(|(_, value)| value.as_str());
-    client.secrets([config.api_key.clone()], headers, url)
+    client.exit(LABEL, [config.api_key.clone()], headers, url)
 }
 
 /// Whether the provider talks to Anthropic's own endpoint, whose models
@@ -61,17 +63,16 @@ pub(super) struct Carried {
 /// The headers every request carries: the key, the version of the API and
 /// what the provider accepts, then the configuration's extra headers, one
 /// of which replaces the provider's of the same name, its key included, as
-/// Python's client lets it. An empty key is written as an empty header, as
-/// Python's SDK writes it. A request goes with it only beside a credential
-/// an extra header brings: a request's own key takes its place, and a
-/// request with no credential is not sent.
+/// Python's client lets it, its value shown by no `Debug` form. An empty
+/// key is written as an empty header, as Python's SDK writes it. A request
+/// goes with it only beside a credential an extra header brings: a
+/// request's own key takes its place, and a request with no credential is
+/// not sent.
 ///
 /// A base URL that holds user information is sent with it as Basic
-/// credentials, which the client writes beside the key: as with Python's
-/// client, they take the place of a configured `Authorization`, which is
-/// not written here.
-pub(super) fn headers_of(config: &AnthropicConfig, url: &reqwest::Url) -> Result<Carried, Failure> {
-    let basic = has_user_information(url);
+/// credentials, which the client writes beside the key, in place of a
+/// configured `Authorization`, as Python's client does.
+pub(super) fn headers_of(config: &AnthropicConfig) -> Result<Carried, Failure> {
     let mut headers = HeaderMap::new();
     headers.insert(ACCEPT, HeaderValue::from_static(JSON));
     headers.insert(VERSION_HEADER, HeaderValue::from_static(VERSION));
@@ -81,14 +82,9 @@ pub(super) fn headers_of(config: &AnthropicConfig, url: &reqwest::Url) -> Result
     let (mut key_replaced, mut authorized) = (false, false);
     for (name, value) in config.extra_headers.iter().flatten() {
         let no_header = || Failure::unbuilt("one of its extra headers is no HTTP header");
-        let name = HeaderName::from_bytes(name.as_bytes()).map_err(|_| no_header())?;
-        let mut value = HeaderValue::from_str(value).map_err(|_| no_header())?;
+        let (name, value) = configured_header(name, value).ok_or_else(no_header)?;
         authorized |= name == AUTHORIZATION && !value.is_empty();
         key_replaced |= name == KEY_HEADER;
-        if basic && name == AUTHORIZATION {
-            continue;
-        }
-        value.set_sensitive(name == AUTHORIZATION || name == KEY_HEADER);
         headers.insert(name, value);
     }
     let keyed = headers.get(KEY_HEADER).is_some_and(|key| !key.is_empty());

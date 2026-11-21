@@ -11,7 +11,7 @@ use roomkit_providers_http::sse::STREAM_LIMIT;
 
 use crate::endpoint::{has_user_information, percent_decoded};
 use crate::exchange::Pace;
-use crate::failure::{Failure, Secrets};
+use crate::failure::{Exit, Failure, Secrets};
 use crate::proxy::{Credentials, Proxies, Route};
 use crate::retry::Rule;
 
@@ -27,13 +27,23 @@ const IDLE_FOR: Duration = Duration::from_secs(5);
 const IDLE_AT_MOST: usize = 100;
 
 /// The timeouts a client is built with: a configuration's.
+///
+/// [`new`](Self::new) is the only way to make them, so that a client is
+/// built with none the clock cannot count: the two are read back
+/// ([`read`](Self::read), [`connect`](Self::connect)) and never written.
+///
+/// ```compile_fail,E0451
+/// use std::time::Duration;
+///
+/// let unchecked = roomkit_providers_client::Timeouts {
+///     read: Duration::MAX,
+///     connect: Duration::MAX,
+/// };
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Timeouts {
-    /// The longest wait for a read: for the head of an answer from the
-    /// moment its request is sent, then between two reads of its body.
-    pub read: Duration,
-    /// The longest wait for a connection.
-    pub connect: Duration,
+    read: Duration,
+    connect: Duration,
 }
 
 /// How long past its timeout a clock must still count: a provider outlives
@@ -59,6 +69,19 @@ impl Timeouts {
             ));
         }
         Ok(Self { read, connect })
+    }
+
+    /// The longest wait for a read: for the head of an answer from the
+    /// moment its request is sent, then between two reads of its body.
+    #[must_use]
+    pub const fn read(&self) -> Duration {
+        self.read
+    }
+
+    /// The longest wait for a connection.
+    #[must_use]
+    pub const fn connect(&self) -> Duration {
+        self.connect
     }
 }
 
@@ -202,25 +225,48 @@ impl Client {
     }
 
     /// Reads `limit` bytes at most of a streamed answer: for a test of the
-    /// bound, which sends no answer of 256 MiB.
+    /// bound, which sends no answer of 256 MiB. A provider has no such
+    /// call: it is there for the crate's tests and under the `harness`
+    /// feature alone.
+    #[cfg(any(test, feature = "harness"))]
     pub fn set_stream_limit(&mut self, limit: usize) {
         self.stream_limit = limit;
     }
 
     /// Replaces the clock a `retry-after` date is read against and the wait
-    /// between two tries: for a test, or a replay, which takes no wait.
+    /// between two tries: for a test, which takes no wait. A provider has
+    /// no such call: it is there for the crate's tests and under the
+    /// `harness` feature alone.
+    #[cfg(any(test, feature = "harness"))]
     pub fn set_pace(&mut self, pace: Pace) {
         self.pace = pace;
     }
 
+    /// Where the failures of the provider labelled `provider` leave: the
+    /// one way a provider gets an [`Exit`], so that none lacks what the
+    /// client alone knows, the credentials of the proxies its environment
+    /// named.
+    ///
+    /// Its failures repeat nothing of the configuration's `keys`, of the
+    /// value of each of its `headers` and of its credentials when it names
+    /// a scheme before them, of the user information of `url`, the URL it
+    /// sends to, nor of the user information of each proxy: as written and
+    /// as it reads, and as the credentials the client writes of it, for
+    /// the endpoint or for a proxy.
+    #[must_use]
+    pub fn exit<'h>(
+        &self,
+        provider: &'static str,
+        keys: impl IntoIterator<Item = String>,
+        headers: impl IntoIterator<Item = &'h str>,
+        url: &reqwest::Url,
+    ) -> Exit {
+        Exit::new(provider, self.secrets(keys, headers, url))
+    }
+
     /// What no failure may repeat of a configuration and of the process:
-    /// the configuration's `keys`, the value of each of its `headers` and
-    /// its credentials when it names a scheme before them, the user
-    /// information of `url`, the URL it sends to, and that of each proxy
-    /// the environment named, as written and as it reads, and the
-    /// credentials the client writes from that user information, for the
-    /// endpoint or for a proxy.
-    pub fn secrets<'h>(
+    /// what [`exit`](Self::exit) says.
+    fn secrets<'h>(
         &self,
         keys: impl IntoIterator<Item = String>,
         headers: impl IntoIterator<Item = &'h str>,

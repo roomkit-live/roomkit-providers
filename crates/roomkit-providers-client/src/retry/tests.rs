@@ -155,8 +155,23 @@ fn a_rule_that_takes_any_wait_waits_its_longest_at_most() {
         ANY_WAIT.should_retry(StatusCode::from_u16(status).unwrap(), &headers(pairs), NOW)
     };
     assert!(again(429, &[("retry-after", "121")]));
+    assert!(again(429, &[("retry-after", "5000000")]));
     assert!(again(429, &[("retry-after", "1e400")]));
     assert!(!again(503, &[("x-should-retry", "false")]));
     assert!(again(400, &[("x-should-retry", "true")]));
     assert!(!again(404, &[("retry-after", "121")]));
+}
+
+// A backoff is drawn anew for each wait, within a quarter below its whole:
+// the waits before one try are not all the same.
+#[test]
+fn a_backoff_is_drawn_anew_for_each_wait() {
+    let drawn: Vec<f64> = (0..64)
+        .map(|_| TWO_MINUTES.delay(0, None, NOW).as_secs_f64())
+        .collect();
+    assert!(
+        drawn.iter().all(|wait| (0.375..=0.5).contains(wait)),
+        "{drawn:?}"
+    );
+    assert!(drawn.iter().any(|wait| (wait - drawn[0]).abs() > 1e-9));
 }

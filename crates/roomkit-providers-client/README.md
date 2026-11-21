@@ -28,12 +28,13 @@ provider.
 
 | Module | What |
 | --- | --- |
-| crate root | `Client`, built from the `Settings` a provider states with its `Timeouts`; `Call`, one request; `Pace`, the clock and the wait a test replaces; `ANSWER_LIMIT`; `USER_AGENT`, how a request names the client; `is_json`; the macro `tried_again!` |
+| crate root | `Client`, built from the `Settings` a provider states with its `Timeouts`, and `Client::exit`, the exit of its failures; `Call`, one request; `configured_header`, a header of a configuration, its value shown by no `Debug` form; `Pace`, the clock and the wait a test replaces; `ANSWER_LIMIT`; `USER_AGENT`, how a request names the client; `is_json`; the macro `tried_again!` |
 | `endpoint` | `joined`, the URL of a path under a base URL, which refuses the base URLs Python's client and this one read otherwise; `has_user_information`; `is_vendor_endpoint` and `talks_to_vendor`, whether a base URL is the vendor's own endpoint; `shown_url`, what a `Debug` form may show of a URL |
 | `retry` | `Rule` and `Past`: whether a failed try is tried again and after what wait, and where the rule of a vendor's SDK differs |
-| `failure` | `Failure`, a failure inside a provider, with the failures every provider words alike; `own`, `told` and `Stated`, for those a provider words; `Exit` and `Secrets`, the one way a failure leaves; `carried`; `described_status`, `retryable_status`, `names_transient`, `past_mark`, `one_line`; `MESSAGE_LIMIT`, `NAME_LIMIT` |
+| `failure` | `Failure`, a failure inside a provider, with the failures every provider words alike; `own`, `told` and `Stated`, for those a provider words; `Exit`, the one way a failure leaves, which a client makes, and `Exit::unbuilt` for a provider that has none yet; `Secrets`; `carried`; `described_status`, `retryable_status`, `names_transient`, `past_mark`, `one_line`; `MESSAGE_LIMIT`, `NAME_LIMIT` |
 | `stream` | `Streamed`, a streamed answer read event by event within `STREAM_LIMIT`; `leaving` and `text`, the streams a provider gives of its events; `Item` |
-| `harness` (feature `harness`) | Test support: `fake`, a local fake of an endpoint or of a proxy, over plain HTTP or over TLS; `tls`, an authority a test makes for itself and the certificates it signs; `Fixture`, `Case`, `Replays`, `replayed_or_named`, the replay of recorded cases; `named`, the cases a provider answers otherwise than Python; `self_test`, the replay held to what it compares; `shape`, a fixture held to its shape, every member of its cases read. With it, `Client::pointed_at`, which sends a provider's requests to a fake, directly |
+| `catalogue` | What every provider reads the same way of its models: `read`, the catalogue a crate embeds; `entry`, the entry of a model; `tagged` and `reasoning_floor`, what an entry's tags say; `listed`, the models the page of a listing names |
+| `harness` (feature `harness`) | Test support: `fake`, a local fake of an endpoint or of a proxy, over plain HTTP or over TLS; `tls`, an authority a test makes for itself and the certificates it signs; `Fixture`, `Case`, `Replays`, `replayed_or_named`, the replay of recorded cases; `named`, the cases a provider answers otherwise than Python; `self_test`, the replay held to what it compares; `shape`, a fixture held to its shape, every member of its cases read; `exit`, the exit of a test that has no client. With it, `Client::pointed_at`, which sends a provider's requests to a fake, directly, `Client::set_pace`, which replaces the clock and the wait between two tries, and `Client::set_stream_limit`, which lowers the bound of a stream: a provider has none of the three |
 | crate root (feature `replay`) | `Client::replaying`, `ReplayWaits` and `replayed_at`: the seam a replay outside a provider crate's tests drives a provider through |
 
 ## What the client does
@@ -50,7 +51,8 @@ provider.
 - **Timeouts** are the provider's `Timeouts`: `connect` to connect, `read` for
   the head of an answer and between two reads of its body, which also ends a
   stream that stalls. A timeout the clock cannot count a hundred years past
-  is refused when the provider is built.
+  is refused when the provider is built: `Timeouts::new` refuses it, and is
+  the only way to make them.
 - **`User-Agent`.** Every request names the client that sends it,
   `roomkit-providers/` and the version of the workspace (`USER_AGENT`): one
   that asks an answer whole, a stream or a listing. A header of the
@@ -298,7 +300,7 @@ says how many proxies it has, and shows no URL.
 ## Writing a provider on it
 
 The provider holds its configuration, the URLs it asks, the headers every
-request carries, a `Client` and an `Exit`
+request carries, a `Client` and the `Exit` that client makes
 (`roomkit-providers-openai/src/provider.rs`, `src/provider/build.rs`).
 
 ```rust
@@ -309,9 +311,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::failure::{Stated, past_mark};
 use roomkit_providers_client::retry::{Past, Rule};
-use roomkit_providers_client::{
-    Call, Client, Exit, Failure, Secrets, Settings, Timeouts, tried_again,
-};
+use roomkit_providers_client::{Call, Client, Exit, Failure, Settings, Timeouts, tried_again};
 use roomkit_providers_llm::{AiRequest, ProviderError};
 use serde_json::Value;
 
@@ -351,8 +351,7 @@ struct Vendor {
 impl Vendor {
     fn new(key: &str, base_url: &str) -> Result<Self, ProviderError> {
         // A provider that cannot be built says why in its own words.
-        let nothing_to_hide = Exit::new(LABEL, Secrets::default());
-        Self::built(key, base_url).map_err(|failure| nothing_to_hide.leave(&failure))
+        Self::built(key, base_url).map_err(|failure| Exit::unbuilt(LABEL, &failure))
     }
 
     fn built(key: &str, base_url: &str) -> Result<Self, Failure> {
@@ -369,13 +368,15 @@ impl Vendor {
             refused,
             tried_again: tried_again!("roomkit::providers::vendor"),
         })?;
+        // The exit is the client's to make: it repeats nothing of the key,
+        // nor of what the client alone knows.
         let no_headers: [&str; 0] = [];
-        let secrets = client.secrets([key.to_owned()], no_headers, &messages);
+        let exit = client.exit(LABEL, [key.to_owned()], no_headers, &messages);
         Ok(Self {
             messages,
             headers,
             client,
-            exit: Arc::new(Exit::new(LABEL, secrets)),
+            exit: Arc::new(exit),
         })
     }
 
@@ -407,8 +408,8 @@ assert_eq!(
 
 What the provider supplies:
 
-- **Its label** (`Exit::new`), which each failure carries as its `provider`,
-  and which `AiProvider::label` answers.
+- **Its label** (`Client::exit`, `Exit::unbuilt`), which each failure
+  carries as its `provider`, and which `AiProvider::label` answers.
 - **Its URLs**, each `endpoint::joined(base_url, path)`: the failure of a
   refused base URL is the client's, and the URL is not repeated in it.
   `endpoint::is_vendor_endpoint(base_url, &[OFFICIAL])` says whether a
@@ -418,15 +419,23 @@ What the provider supplies:
 - **Its headers**, a `HeaderMap` the provider writes, for every request or
   for one: a `Call` carries the headers of its request, so a key a host lends
   one request goes in that request's headers alone. A request with a body
-  says that the body is JSON unless a header already says what it is. Where
-  `endpoint::has_user_information(url)`, the client sends that user
-  information as Basic credentials, which take the place of an
-  `Authorization` the provider would write.
-- **Its secrets**, `Client::secrets(keys, header_values, url)`: the keys, the
-  value of each configured header, and the user information of the URL. The
-  client adds the credentials of the proxies its environment named. The key
-  a host lends one request is not among them: the exit reads it from the
-  request a generation leaves with ([Failures](#failures)).
+  says that the body is JSON unless a header already says what it is. A
+  header of the configuration is made with `configured_header(name, value)`:
+  a host may put a credential in a header of any name, so no `Debug` form
+  shows the value of one, and that of a `Call` shows the names of its
+  headers alone. Where `endpoint::has_user_information(url)`, the client
+  sends that user information as Basic credentials, as Python's client
+  does: they are the request's `Authorization`, and the client leaves out
+  the one the call's headers hold, the key's or a configured one. A provider
+  has nothing to leave out itself.
+- **Its secrets**, to the exit its client makes,
+  `Client::exit(label, keys, header_values, url)`: the keys, the value of
+  each configured header, and the URL, for its user information. The client
+  adds the credentials of the proxies its environment named, which a
+  provider does not know: so the exit comes from the client, and a provider
+  can make none that lacks them. The key a host lends one request is not
+  among them: the exit reads it from the request a generation leaves with
+  ([Failures](#failures)).
 - **Its retry parameters**, a `retry::Rule`: the longest wait a server may
   ask for and what a longer one does. Python's openai SDK takes two minutes
   and gives the request up past them (`longest_asked: 120.0`, `Past::Final`);
@@ -442,6 +451,11 @@ What the provider supplies:
   (`roomkit-providers-openai/src/failure.rs`).
 - **Its log target**, `tried_again!("roomkit::providers::<vendor>")`: the
   line a provider logs when a request is tried again.
+- **Its catalogue**, the `catalog/models.json` its crate embeds and the
+  tags that file names. How it is read is here, in `catalogue`: `read`,
+  `entry`, `tagged`, `reasoning_floor`, and `listed` for the page of a model
+  listing, each model read as the provider says
+  (`roomkit-providers-openai/src/models.rs`).
 
 ### Failures
 
@@ -468,9 +482,14 @@ from it:
 
 The key is searched for in every form a secret of the configuration is. A
 provider holds no exit of a request and adds no secret itself. `Exit::leave`
-takes no request: it is for what no request brings a key to, a provider that
-cannot be built and the model listing, which is asked with the
-configuration's key.
+takes no request: it is for what no request brings a key to, the model
+listing, which is asked with the configuration's key.
+
+**A provider that cannot be built has no client**, and so no exit. Its
+failure leaves through `Exit::unbuilt(label, &failure)`, which knows no
+secret: the provider's own words leave as they are, and the mark stands
+where a failure quotes a server or a reader. Nothing but such a failure
+leaves that way.
 
 The failures every provider words alike are built here: `Failure::unbuilt`,
 `before_request`, `unwritten`, `transport`, `redirect`, `refused`,
@@ -553,6 +572,16 @@ built on the way. It takes the request the stream answers, whose own key no
 failure of the stream repeats, one that comes after events included.
 `stream::text` gives the text of a stream of events that already left.
 
+An answer may end inside an event, with no blank line after it: `next()`
+gives what came of that event, and `was_cut()` then says whether the answer
+was cut inside it, which is when its data does not read as a JSON document.
+A provider reads no such event: its answer is what it was before it,
+complete if it had said how it ends, cut if it had not, and an answer that
+carried no event if nothing came before it. An event whose data reads came
+whole, and is read as any other. A wire that ends on a mark that is no JSON
+(`[DONE]`) looks for its mark before it asks: the mark ends the answer with
+or without a blank line after it.
+
 ## Testing a provider with the harness
 
 The provider crate enables the harness for its tests alone:
@@ -571,6 +600,12 @@ server that answers each connection with the next `Reply` of a script
 what it was sent (`Fake::seen`). No test waits on a timeout: it waits on what
 the fake observed (`Fake::silent`, `Fake::closed`), then lets the time pass
 at once (`harness::let_pass`). `harness::drained` reads a stream to its end.
+
+With the feature, a test has what no provider has: `Client::set_pace`, which
+replaces the clock and the wait between two tries; `Client::set_stream_limit`,
+which lowers the bound of a stream, for a test that sends no answer of
+256 MiB; and `harness::exit(label, keys)`, the exit of a test that has no
+client to make one.
 
 The fake also stands for what a host's network puts before an endpoint:
 

@@ -140,8 +140,7 @@ fn said_of(body: &Value, name: &str) -> Option<String> {
 /// configures.
 #[cfg(test)]
 pub(crate) fn test_exit() -> roomkit_providers_client::Exit {
-    let secrets = roomkit_providers_client::Secrets::of(["placeholder-not-a-key".to_owned()]);
-    roomkit_providers_client::Exit::new("openai", secrets)
+    roomkit_providers_client::harness::exit("openai", ["placeholder-not-a-key".to_owned()])
 }
 
 #[cfg(test)]

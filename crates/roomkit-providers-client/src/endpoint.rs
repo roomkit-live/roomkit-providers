@@ -94,8 +94,9 @@ fn read_otherwise(lowered: &str, base: &reqwest::Url) -> Option<&'static str> {
 }
 
 /// Whether `url` holds user information, which the client sends as Basic
-/// credentials: as with Python's client, they take the place of an
-/// `Authorization` a provider or its configuration would write.
+/// credentials: as with Python's client, they are then the request's
+/// `Authorization`, and one a provider or its configuration writes among
+/// the headers of a call is not sent.
 #[must_use]
 pub fn has_user_information(url: &reqwest::Url) -> bool {
     !url.username().is_empty() || url.password().is_some()

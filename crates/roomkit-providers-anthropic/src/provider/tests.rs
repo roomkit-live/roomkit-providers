@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use roomkit_providers_client::USER_AGENT;
+use roomkit_providers_client::{Call, USER_AGENT};
 use roomkit_providers_llm::{AiProvider, AiRequest};
 use serde_json::json;
 
@@ -198,6 +198,33 @@ async fn extra_headers_replace_the_provider_s_own_whatever_their_case() {
             assert_eq!(headers[name], value);
         }
         let shown = format!("{headers:?}");
+        assert!(!shown.contains("placeholder"), "{shown}");
+    }
+}
+
+// A host may put a credential in an extra header of any name: the `Debug`
+// form of what a request goes with, its headers and its call, shows each
+// header's name and no configured value, for a request that goes with the
+// configuration's key as for one that brings its own.
+#[test]
+fn the_debug_form_of_a_request_s_headers_shows_no_value_of_an_extra_header() {
+    let extra = [
+        ("X-Tenant", "placeholder-of-a-tenant"),
+        ("Cookie", "placeholder-of-a-session"),
+    ];
+    let provider = Anthropic::new(with_headers(elsewhere("local-model"), &extra)).unwrap();
+    for request in [hello(), lending("placeholder-lent-key")] {
+        let headers = provider.headers_of(&request).unwrap();
+        let call = Call {
+            url: provider.endpoint(),
+            headers: &headers,
+            body: Some(b"{}"),
+        };
+        let shown = format!("{headers:?} {call:?}");
+        assert!(
+            shown.contains("x-tenant") && shown.contains("cookie"),
+            "{shown}"
+        );
         assert!(!shown.contains("placeholder"), "{shown}");
     }
 }
