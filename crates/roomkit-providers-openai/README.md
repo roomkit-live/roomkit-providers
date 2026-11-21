@@ -182,11 +182,14 @@ A request the server refuses fails with its status, in these words:
 | The server answered | The failure says |
 | --- | --- |
 | `401` with `{"error": {"message": "Incorrect API key provided.", "type": "invalid_request_error", "code": "invalid_api_key"}}` | `the provider answered HTTP 401 (invalid_request_error, invalid_api_key): Incorrect API key provided.` |
+| `404` with `{"detail": "Model m is not deployed here", "code": "model_not_found"}` | `the provider answered HTTP 404 (model_not_found): Model m is not deployed here` |
 | `502` with an HTML page | `the provider answered HTTP 502: Bad Gateway` |
 | `500` with an empty body | `the provider answered HTTP 500: Internal Server Error` |
 
 The message, the type and the code are read in the body's `error` object,
-or at its top level. `status_code` holds the status, and `retryable` whether
+or at its top level. A body that states no message and words its refusal
+under `detail`, as a text, gives that text for one. `status_code` holds the
+status, and `retryable` whether
 it is one a new request may get past (408, 409, 429, 500 and above).
 `context_overflow` is `true` when the server says the request is past the
 model's context: by the code `context_length_exceeded`, or by its words,

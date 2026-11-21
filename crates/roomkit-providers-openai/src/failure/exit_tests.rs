@@ -185,7 +185,7 @@ async fn an_overflow_said_anywhere_in_the_body_is_an_overflow() {
     let json = |body: Value| json_reply(400, body.to_string());
     let cases = [
         (
-            json(json!({"detail": OVERFLOW})),
+            json(json!({"trace": OVERFLOW})),
             Some(true),
             "the provider answered HTTP 400: Bad Request",
         ),
@@ -215,7 +215,7 @@ async fn an_overflow_said_anywhere_in_the_body_is_an_overflow() {
             "the provider answered HTTP 400 (invalid_api_key): No.",
         ),
         (
-            json(json!({"detail": "The request is not valid."})),
+            json(json!({"trace": "The request is not valid."})),
             None,
             "the provider answered HTTP 400: Bad Request",
         ),

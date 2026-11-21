@@ -2,47 +2,53 @@
 //!
 //! A provider's failure is raised as the package's `ProviderFailure`, built
 //! from its attributes, with the reason of a response schema's failure when
-//! it is one. What the contract refuses as a value (a request that does not
-//! read) is a `ValueError`. The class is Python's, defined in
+//! it is one. A request the contract refuses, one that does not read, is
+//! such a failure too, of before the request. The class is Python's, defined in
 //! `roomkit_providers.llm._failure`: the native module only raises it, and
 //! the package makes it the exception its caller catches.
 
 use std::error::Error as _;
 
-use pyo3::exceptions::{PyRuntimeError, PyValueError};
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use roomkit_providers_llm::{ProviderError, ResponseSchemaError};
+use roomkit_providers_llm::{ProviderError, ProviderErrorOptions, ResponseSchemaError};
 
 /// Why a call gave nothing, before it is a Python exception: a failure is
 /// built off the interpreter's lock and raised under it.
 #[derive(Debug)]
-pub(crate) enum Failure {
-    /// A value the contract refuses, in its reader's words.
-    Value(String),
-    /// A provider's failure.
-    Provider(ProviderError),
-}
+pub(crate) struct Failure(ProviderError);
 
 impl From<ProviderError> for Failure {
     fn from(error: ProviderError) -> Self {
-        Self::Provider(error)
+        Self(error)
     }
 }
 
 impl Failure {
+    /// The failure of a request the contract refuses, in its reader's words
+    /// `said`: nothing was sent, and sending it again changes nothing.
+    pub(crate) fn refused(said: &str) -> Self {
+        let options = ProviderErrorOptions {
+            before_request: true,
+            ..ProviderErrorOptions::default()
+        };
+        Self(ProviderError::new(
+            format!("the request is refused: {said}"),
+            options,
+        ))
+    }
+
     /// The exception Python raises for it.
     pub(crate) fn raised(self) -> PyErr {
-        match self {
-            Self::Value(said) => PyValueError::new_err(said),
-            Self::Provider(error) => Python::attach(|py| {
-                // A package whose error classes cannot be reached still
-                // says what failed.
-                provider_error(py, &error)
-                    .unwrap_or_else(|_| PyRuntimeError::new_err(error.to_string()))
-            }),
-        }
+        let Self(error) = self;
+        Python::attach(|py| {
+            // A package whose error class cannot be reached still says
+            // what failed.
+            provider_error(py, &error)
+                .unwrap_or_else(|_| PyRuntimeError::new_err(error.to_string()))
+        })
     }
 }
 

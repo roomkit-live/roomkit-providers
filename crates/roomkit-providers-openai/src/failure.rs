@@ -141,8 +141,10 @@ impl Failure {
     /// the status is transient: `the provider answered HTTP 401 (type,
     /// code): message`. Of the body it carries what an error object says
     /// of itself and nothing else: its message, its type and its code,
-    /// read under `error` or at the top level. A body that is no JSON is
-    /// not echoed: the text is then the status's reason. Whether the
+    /// read under `error` or at the top level, and, where it states no
+    /// message, the text it words its refusal with under `detail`. A body
+    /// that is no JSON is not echoed: the text is then the status's
+    /// reason. Whether the
     /// request overflowed the model's context is read from the whole body,
     /// echoed or not: the code that says so, or the words. A redirect is a
     /// failure: it is not followed.
@@ -172,12 +174,17 @@ impl Failure {
             (None, None) => {}
         }
         said.push(own(": "));
+        let worded = |name: &str| {
+            let worded = parsed.as_ref()?.get(name)?.as_str()?;
+            Some(worded.to_owned()).filter(|worded| !exit::one_line(worded).is_empty())
+        };
         let bare = || parsed.as_ref()?.get("error")?.as_str().map(str::to_owned);
         let reason = || {
             let status = reqwest::StatusCode::from_u16(status).ok()?;
             status.canonical_reason()
         };
-        said.push(match stated("message").or_else(bare) {
+        let message = stated("message").or_else(bare);
+        said.push(match message.or_else(|| worded("detail")) {
             Some(message) => Said::Told(message, MESSAGE_LIMIT),
             None => own(reason().unwrap_or("no message")),
         });
@@ -431,6 +438,43 @@ mod tests {
         );
     }
 
+    // A server that words its refusal under `detail`, with a code or none:
+    // its text is the message, bounded and cleaned as any other. A message
+    // the body states comes first, and a detail that is no text is not read.
+    #[test]
+    fn a_detail_is_the_message_of_a_body_that_states_no_other() {
+        let said = |status: u16, body: &str| refusal_of(status, body.as_bytes()).message;
+        let coded = r#"{"detail": "Model m is not deployed here", "code": "model_not_found"}"#;
+        assert_eq!(
+            said(404, coded),
+            "the provider answered HTTP 404 (model_not_found): Model m is not deployed here"
+        );
+        assert_eq!(
+            said(403, r#"{"detail": " Not\n authenticated "}"#),
+            "the provider answered HTTP 403: Not authenticated"
+        );
+        assert_eq!(
+            said(401, r#"{"detail": "Wrong key: placeholder-not-a-key"}"#),
+            "the provider answered HTTP 401: Wrong key: [***]"
+        );
+        let long = json!({"detail": "x".repeat(4 * MESSAGE_LIMIT)}).to_string();
+        assert_eq!(said(400, &long).chars().count(), MESSAGE_LIMIT);
+        let both = r#"{"message": "The model is loading.", "detail": "Try again."}"#;
+        assert_eq!(
+            said(503, both),
+            "the provider answered HTTP 503: The model is loading."
+        );
+        for unread in [
+            r#"{"detail": [{"msg": "field required"}]}"#,
+            r#"{"detail": ""}"#,
+        ] {
+            assert_eq!(
+                said(422, unread),
+                "the provider answered HTTP 422: Unprocessable Entity"
+            );
+        }
+    }
+
     // What a host sees of a refused request: the error object's own words,
     // and nothing of a body that is no JSON.
     #[test]
@@ -475,7 +519,7 @@ mod tests {
         assert_eq!(said(529, ""), "the provider answered HTTP 529: no message");
         // An object that says nothing of an error.
         assert_eq!(
-            said(503, r#"{"detail": "busy"}"#),
+            said(503, r#"{"state": "busy"}"#),
             "the provider answered HTTP 503: Service Unavailable"
         );
     }

@@ -232,7 +232,8 @@ its own: what a provider sends and reads stays in the provider crates.
   every item already received at each crossing. A stream is read on the
   bridge between two crossings, at most 64 items ahead of what Python took,
   and a crossing never waits to gather more. A failure crosses as its
-  attributes. A context's metadata does not cross. A key never crosses
+  attributes, and a request the contract refuses is one, of before the
+  request. A context's metadata does not cross. A key never crosses
   inside a JSON text: a configuration's, and the one a host lends one
   request, each cross apart, and the second is put back into the request in
   Rust, where a provider reads it.

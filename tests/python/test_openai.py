@@ -350,15 +350,18 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(self.fake.seen, [])
 
-    async def test_a_context_the_contract_refuses_is_a_value_error(self) -> None:
+    async def test_a_context_the_contract_refuses_fails_before_the_request(self) -> None:
         # RoomKit takes any role and its own provider sends it; the contract
         # knows four.
         context = AIContext(messages=[AIMessage(role="developer", content="Be brief.")])
         provider = self.provider()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ProviderError) as whole:
             await provider.generate(context)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ProviderError) as streamed:
             await anext(provider.generate_structured_stream(context))
+        for refused in (whole.exception, streamed.exception):
+            self.assertTrue(refused.before_request)
+            self.assertFalse(refused.retryable)
         self.assertEqual(self.fake.seen, [])
 
     async def test_the_first_token_of_a_whole_answer_is_recorded_once(self) -> None:

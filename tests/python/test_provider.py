@@ -392,13 +392,17 @@ class FailureTests(unittest.IsolatedAsyncioTestCase):
                     )
                     self.assertEqual(error.args[0].partition(" (")[0], said)
 
-    async def test_a_request_the_contract_refuses_is_a_value_error(self) -> None:
+    async def test_a_request_the_contract_refuses_fails_before_the_request(self) -> None:
+        # RoomKit takes any role; the contract knows four. The refusal is the
+        # failure an AI channel catches, and the provider is asked nothing.
         provider, held = scripted()
         context = AIContext(messages=[AIMessage(role="developer", content="Be brief.")])
-        with self.assertRaises(ValueError):
-            await provider.generate(context)
-        with self.assertRaises(ValueError):
-            await anext(provider.generate_structured_stream(context))
+        for error in await self.failures(provider, context):
+            self.assertIs(type(error), ProviderError)
+            self.assertEqual(
+                (error.before_request, error.retryable, error.status_code), (True, False, None)
+            )
+            self.assertIn("developer", error.args[0])
         self.assertEqual(held.keys(), [])
 
 

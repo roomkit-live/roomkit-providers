@@ -86,7 +86,8 @@ nothing has been released yet.
   each filled from the crate's catalogue where it knows the model.
 - `roomkit-providers-openai`: a request the server refuses fails as
   `the provider answered HTTP <status> (<type>, <code>): <message>`, from
-  the body's error object alone. A body that is no JSON is not echoed. The
+  the body's error object alone, or from the text a server words its
+  refusal with under `detail`. A body that is no JSON is not echoed. The
   failure says the context overflowed when the body says so, by its code or
   by its words.
 - `roomkit-providers-openai`: no failure's text repeats a secret of the
@@ -116,7 +117,8 @@ nothing has been released yet.
   and `ResponseSchemaError`, and records the time to the first token as
   RoomKit's provider does, under the same name. A context's metadata does
   not cross to the provider, and the credential of one request crosses
-  apart. Cancelling a call's task, or closing a stream, closes its
+  apart. A context the contract refuses fails before it is sent, with
+  RoomKit's `ProviderError`. Cancelling a call's task, or closing a stream, closes its
   connection. There is no `transport` parameter. The guide
   (`guide/python.md`) says how to switch and what differs.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with

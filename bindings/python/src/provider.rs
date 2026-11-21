@@ -28,15 +28,16 @@ pub(crate) type Held = Arc<dyn DynAiProvider>;
 pub(crate) fn written<T: Serialize>(value: &T, what: &str) -> Result<String, Failure> {
     serde_json::to_string(value).map_err(|_| {
         let said = format!("{what} could not be written as JSON");
-        Failure::Provider(ProviderError::from(said))
+        Failure::from(ProviderError::from(said))
     })
 }
 
 /// The request `json` writes, in the contract's form, with `api_key`, the
-/// credential of this one request, where a provider reads it.
+/// credential of this one request, where a provider reads it. A request
+/// the contract refuses fails as a provider refuses one before sending it.
 pub(crate) fn request_of(json: &str, api_key: Option<String>) -> Result<AiRequest, Failure> {
     let mut request: AiRequest =
-        serde_json::from_str(json).map_err(|error| Failure::Value(error.to_string()))?;
+        serde_json::from_str(json).map_err(|error| Failure::refused(&error.to_string()))?;
     if let Some(key) = api_key {
         request
             .metadata

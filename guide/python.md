@@ -202,9 +202,9 @@ between Rust and Python, not one each.
 
 | Exception | When |
 | --- | --- |
-| RoomKit's `ProviderError` | A call failed, or a provider could not be built. Its attributes: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
+| RoomKit's `ProviderError` | A call failed, a context was refused before it was sent, or a provider could not be built. Its attributes: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
 | RoomKit's `ResponseSchemaError` | A `ProviderError`: a response schema was set and no answer satisfying it can be returned. `reason` is `unsupported`, `refusal`, `truncated` or `invalid_json` |
-| `ValueError` | A context the contract refuses as a value, or a configuration's value the provider cannot work with. A configuration pydantic refuses is its `ValidationError`, a `ValueError` too |
+| `ValueError` | A configuration's value the provider cannot work with. A configuration pydantic refuses is its `ValidationError`, a `ValueError` too |
 | `TypeError` | A configuration that is not the provider's own: that of another provider, one derived from it |
 | `RuntimeError` | A call in a forked child, or once the interpreter is exiting |
 
@@ -213,8 +213,8 @@ between Rust and Python, not one each.
 What is sent and read is the Rust provider's. Its README lists
 [where it differs on the wire](../crates/roomkit-providers-openai/README.md)
 from RoomKit's Python provider; on a failure, for one, the text holds the
-message, the type and the code of the server's error object, not its whole
-body. Beside the wire:
+message, the type and the code of the server's error object, or what the
+server says under `detail`, not its whole body. Beside the wire:
 
 - **Another class name.** The class is `OpenAI`, where RoomKit's is
   `OpenAIAIProvider`: `type(provider).__name__`, which an AI channel's
@@ -229,10 +229,10 @@ body. Beside the wire:
 - **Not made to be subclassed.** The provider has none of the private hooks
   RoomKit's is derived through, and no `openai` client: what it sends is
   decided in Rust. `provider._client` does not exist.
-- **A context the contract refuses is a `ValueError`**, raised when the call
-  is made and before anything is sent: a message whose role is not
-  `system`, `user`, `assistant` or `tool`, which RoomKit's provider sends as
-  it is.
+- **A context the contract refuses fails before it is sent**, with RoomKit's
+  `ProviderError`, `before_request` set, which an AI channel catches: a
+  message whose role is not `system`, `user`, `assistant` or `tool`, which
+  RoomKit's provider sends as it is.
 - **A response's `tasks` and `observations` stay empty**: the provider fills
   neither, as RoomKit's does not.
 - **The time to the first token of `generate`** is recorded when the call

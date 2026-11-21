@@ -568,9 +568,9 @@ const BY_ITS_OWN_RULE: &[Entry] = &[
     ),
     (
         "context_overflow_by_its_words",
-        "The failure says the context overflowed: its text does not repeat the body, which \
-         says so outside its error's message, so the body is read for it. Python leaves the \
-         question open, for a reader of its message, which holds the body.",
+        "The failure says the context overflowed: the whole body is read for it, whatever \
+         part of it the failure's text repeats, here the words the server gives under `detail`. \
+         Python leaves the question open, for a reader of its message, which holds the body.",
         &["the failure's context_overflow differs: "],
         Instead {
             requests: 1,
@@ -578,7 +578,10 @@ const BY_ITS_OWN_RULE: &[Entry] = &[
                 Some(400),
                 false,
                 Some(true),
-                Says::Exactly("the provider answered HTTP 400: Bad Request"),
+                Says::Exactly(
+                    "the provider answered HTTP 400: This model's maximum context length is \
+                     128000 tokens. However, your messages resulted in 130000 tokens.",
+                ),
             ),
         },
     ),
