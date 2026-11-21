@@ -4,32 +4,92 @@ The OpenAI model provider of RoomKit Providers.
 
 **Early development.** The crate holds today:
 
-- `OpenAiConfig`, what a provider for OpenAI's Chat Completions is configured
-  with. It is the `OpenAIConfig` of RoomKit's Python implementation: the same
-  names, the same defaults, and the JSON it gives with
-  `model_dump(mode="json")`, read and written;
-- the wire cases a provider will have to replay
+- `OpenAiAiProvider`, a provider for OpenAI's Chat Completions and for the
+  servers that speak it behind a base URL. It answers a request whole
+  (`generate`); its streams are not written yet;
+- `OpenAiConfig`, what the provider is configured with. It is the
+  `OpenAIConfig` of RoomKit's Python implementation: the same names, the same
+  defaults, and the JSON it gives with `model_dump(mode="json")`, read and
+  written;
+- the wire cases the provider is held to
   (`tests/fixtures/python_chat_cases.json`): what RoomKit's Python provider
-  sends and reads on Chat Completions, case by case.
-
-The provider itself is not written yet.
+  sends and reads on Chat Completions, case by case. Every case of a whole
+  answer is replayed against the provider through a local fake of the
+  endpoint.
 
 ```rust
-use roomkit_providers_openai::OpenAiConfig;
+use roomkit_providers_core::{AiMessage, AiProvider, AiRequest, AiRole};
+use roomkit_providers_openai::{OpenAiAiProvider, OpenAiConfig};
 
-fn main() -> serde_json::Result<()> {
+async fn ask() -> Result<String, roomkit_providers_core::ProviderError> {
     let config = OpenAiConfig {
         base_url: Some("http://localhost:11434/v1".to_owned()),
         ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
     };
-    // The key is written masked, as Python writes it.
-    let written = serde_json::to_string(&config)?;
-    assert!(written.contains(r#""api_key":"**********""#));
-    Ok(())
+    let provider = OpenAiAiProvider::new(config)?;
+    let request = AiRequest {
+        messages: vec![AiMessage::new(AiRole::User, "Hello")],
+        ..AiRequest::default()
+    };
+    Ok(provider.generate(&request).await?.content)
 }
 ```
 
-It depends on `roomkit-providers-core`, and on neither Python nor RoomKit.
+## What the provider guarantees
+
+- **The key.** It appears in no failure, log, `Debug` form or result. A
+  failure that echoes a server's answer has the key removed from it.
+- **Sizes.** An answer past 4 MiB fails the request. What a failure echoes of
+  a server's answer is on one line, within 500 characters.
+- **Where a request goes.** To the base URL of the configuration, OpenAI's
+  own when it names none, followed by `/chat/completions`. A redirect is not
+  followed: the request fails. A base URL with a query or a fragment is
+  refused when the provider is built.
+- **The environment.** Nothing is read from it: no key, no base URL, no
+  proxy. The client asks for no compressed answer.
+- **Time.** `connect_timeout` bounds a connection, `timeout` the wait between
+  two reads of an answer. A request is tried again only as `max_retries`
+  allows, which is 0 unless the configuration says.
+
+## Where the provider differs from Python's
+
+The provider does as `OpenAIAIProvider` of RoomKit's Python implementation on
+183 of the 203 captured cases of a whole answer. It differs where Python's
+behaviour is the openai SDK's or is questioned, each for a reason:
+
+- **Redirects** are refused, where Python's SDK follows them, a `301`, a
+  `302` or a `303` as a `GET` without the request's body. A request of a
+  model's turn is not sent elsewhere than where the configuration says.
+- **A base URL with a query or a fragment** is refused when the provider is
+  built, where Python sends to a path written after the query.
+- **An empty key** builds a provider that sends no `Authorization`, for a
+  local server that asks for none, where Python's SDK refuses to build a
+  client.
+- **A count of tokens** is read when it is a JSON whole number, a float with
+  no fraction included. Any other (a text, `true`, a fraction, a number below
+  zero) stays unknown, where Python converts some and fails on others with an
+  error of its own.
+- **A failure's message** says what the server answered, as Python's:
+  `Error code: <status> - <body>` for a JSON body, the body itself for any
+  other text. The body is written as JSON, where Python writes its `repr`;
+  and it is cleaned as said above, where Python keeps it whole. A request
+  that got no answer fails in this crate's words, where Python has the
+  SDK's.
+- **`supports_vision`** is the configuration's `vision`, where Python reads
+  its catalogue of models; **`list_models`** is the catalogue, where Python
+  asks the endpoint.
+- **Whether the endpoint is OpenAI's own**, which decides the rules of its
+  models, is Python's comparison of the base URL, and also what the client
+  dials: both must say so.
+
+The rules of a try, which Python leaves to the openai SDK, are the SDK's: a
+connection that failed, a timeout, an answer that says `x-should-retry`, or a
+status of 408, 409, 429 or 500 and above is tried again, after the wait
+`retry-after-ms` or `retry-after` asks within two minutes, else 0.5 s
+doubling to 8 s, up to a quarter less.
+
+It depends on `roomkit-providers-core` and `roomkit-providers-http`, and on
+neither Python nor RoomKit.
 
 ## Where the configuration differs from Python's
 
@@ -87,7 +147,11 @@ Three members say how a replay takes a case:
 
 The crate's tests read every case with `OpenAiConfig` and the contract's
 types, and require every kind of case: a regenerated fixture that loses one
-fails.
+fails. Every case of a whole answer is replayed against the provider: the
+requests it sends, the tries and the waits, and the response or the failure
+it reads are compared with Python's. A case the provider answers otherwise
+is named in the test with its reason and with what the provider does, which
+is asserted; a named case that starts to replay as Python fails the test.
 
 ## License
 

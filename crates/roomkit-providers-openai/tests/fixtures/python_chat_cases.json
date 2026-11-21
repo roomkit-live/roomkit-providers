@@ -57,6 +57,7 @@
   "usage_reasoning_tokens_as_a_word",
   "status_400_whose_body_is_lost",
   "status_400_whose_body_is_lost_on_every_try",
+  "stream_call_name_after_its_arguments",
   "stream_call_id_that_is_no_text",
   "redirect_301",
   "redirect_303",
@@ -35538,6 +35539,7 @@
     "tool_call_streamed"
    ],
    "call": "generate_structured_stream",
+   "questioned": "A possible defect: A call's name that comes after its first arguments: the events of its composition leave those first arguments out, and the whole call holds them.",
    "config": {
     "api_key": "placeholder-not-a-key",
     "model": "local-model",
@@ -37409,7 +37411,7 @@
   {
    "name": "retry_wait_as_a_date_of_rfc_850",
    "kinds": [
-    "retry_after_seconds",
+    "retry_after_date",
     "retry_wait",
     "status_429"
    ],
@@ -37569,7 +37571,7 @@
   {
    "name": "retry_wait_as_a_date_of_asctime",
    "kinds": [
-    "retry_after_seconds",
+    "retry_after_date",
     "retry_wait",
     "status_429"
    ],

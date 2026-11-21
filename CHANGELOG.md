@@ -66,6 +66,13 @@ nothing has been released yet.
   masked. Its `Debug` form prints neither the key nor what a base URL holds
   beside its scheme, host and port. The crate's README lists where it
   differs from Python's. The provider itself is not written yet.
+- `roomkit-providers-openai`: `OpenAiAiProvider`, a provider for OpenAI's
+  Chat Completions and the servers that speak it behind a base URL. It
+  answers a request whole (`generate`), as `OpenAIAIProvider` of RoomKit's
+  Python implementation does on the cases captured from it; its README lists
+  where it differs and why. A redirect is refused, the key appears in no
+  failure, an answer past 4 MiB fails, and nothing is read from the
+  environment. Its streams are not written yet.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of

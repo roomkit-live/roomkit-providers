@@ -113,13 +113,19 @@ the crate lists: the same command writes the notice of that data as
 `crates/roomkit-providers-http/LICENSE-UNICODE`, and the crate is
 `MIT AND Unicode-3.0` too.
 
-`roomkit-providers-openai` has two fixtures, written with the same `PYTHON`,
-which needs RoomKit's `openai` extra for the second:
+`roomkit-providers-openai` has two fixtures and a catalogue, written with
+the same `PYTHON`, which needs RoomKit's `openai` extra for the second:
 
 ```sh
 make python-openai-config
 make python-openai-chat-cases
+make python-openai-catalogue
 ```
+
+The catalogue (`catalog/models.json`) is OpenAI's models as RoomKit's Python
+lists them: the provider reads from it what OpenAI's own endpoint takes of a
+model. A wire case names the catalogue facts it rests on, and the replay
+fails when the catalogue of the crate says otherwise.
 
 - `python_config_forms.json` holds the JSON forms of Python's `OpenAIConfig`:
   what it dumps of a table of keyword arguments, the inputs it refuses, the

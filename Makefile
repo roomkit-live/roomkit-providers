@@ -8,6 +8,7 @@ PYTHON ?= python3
 
 .PHONY: all fmt fmt-check clippy test doc deny check-core-deps msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-openai-config python-openai-chat-cases \
+	python-openai-catalogue \
 	printable-table
 
 all: fmt-check clippy test doc deny check-core-deps
@@ -61,6 +62,11 @@ python-public-urls:
 # Rewrites the fixture of the JSON forms of RoomKit's Python `OpenAIConfig`.
 python-openai-config:
 	$(PYTHON) scripts/generate_openai_config_forms.py
+
+# Rewrites the catalogue of OpenAI's models the provider reads, from
+# RoomKit's Python.
+python-openai-catalogue:
+	$(PYTHON) scripts/generate_openai_catalogue.py
 
 # Rewrites the fixture of what RoomKit's Python OpenAI provider sends and
 # reads on Chat Completions, case by case. PYTHON needs roomkit's `openai`

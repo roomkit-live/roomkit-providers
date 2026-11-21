@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 readme = "README.md"
-include = ["/LICENSE", "/README.md", "/src", "/tests"]
+include = ["/LICENSE", "/README.md", "/catalog", "/src", "/tests"]
 keywords = ["llm", "ai", "provider", "openai", "chat"]
 categories = ["api-bindings"]
 
@@ -16,8 +16,24 @@ categories = ["api-bindings"]
 # The contract: the request a provider is given, what it answers, and the
 # JSON object a configuration's extra body is.
 roomkit-providers-core = { workspace = true }
+# The TLS configuration the client is built with.
+roomkit-providers-http = { workspace = true }
+# An HTTP date a server's `retry-after` names.
+jiff = { workspace = true }
+# `rustls-no-provider` makes the client take the configuration given it.
+reqwest = { workspace = true, features = ["rustls-no-provider"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+# The wait between two tries of a request.
+tokio = { workspace = true, features = ["time"] }
+tracing = { workspace = true }
+# The parser the client reads a URL with: named here to hold, at compile
+# time, that the client's URL type is this one.
+url = { workspace = true }
+
+[dev-dependencies]
+# The fake of the wire the provider is replayed against: a local server.
+tokio = { workspace = true, features = ["macros", "rt", "net", "io-util", "test-util"] }
 
 [lints]
 workspace = true

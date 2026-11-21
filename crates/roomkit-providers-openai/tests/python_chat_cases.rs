@@ -232,7 +232,7 @@ const TO_DECIDE: &str = "A difference to decide: ";
 /// planned otherwise and the maintainer decides. A replay may set them
 /// aside, or expect otherwise once each is settled: a case joins or leaves
 /// this list with that decision.
-const QUESTIONED: [&str; 38] = [
+const QUESTIONED: [&str; 39] = [
     "answer_200_that_is_no_completion",
     "authorization_among_the_default_headers",
     "base_url_with_a_trailing_slash_and_a_query",
@@ -249,6 +249,7 @@ const QUESTIONED: [&str; 38] = [
     "status_400_whose_body_is_lost_on_every_try",
     "stream_answered_with_a_json_error_object",
     "stream_call_id_that_is_no_text",
+    "stream_call_name_after_its_arguments",
     "stream_last_event_without_its_blank_line",
     "stream_last_event_without_its_line_end",
     "stream_status_400_whose_body_is_lost",
@@ -419,11 +420,11 @@ fn the_fixture_says_where_it_comes_from_and_how_it_is_written() {
         let hexadecimal = commit.bytes().all(|byte| byte.is_ascii_hexdigit());
         assert!(commit.len() == 40 && hexadecimal, "{commit}");
     }
-    // Whether the files were clean is said with the commit, and only with it.
-    assert_eq!(
-        fixture.roomkit_dirty.is_some(),
-        fixture.roomkit_commit.is_some()
-    );
+    // Whether the files were clean is said with the commit, and only with
+    // it; a fixture captured from files with changes not committed names a
+    // commit it was not written from.
+    let clean = fixture.roomkit_commit.as_ref().map(|_| false);
+    assert_eq!(fixture.roomkit_dirty, clean);
     assert_eq!(fixture.clock, "2026-01-01T00:00:00Z");
     for note in [
         "environment",

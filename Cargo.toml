@@ -13,13 +13,25 @@ publish = false
 
 [workspace.dependencies]
 roomkit-providers-core = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-core" }
+roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 futures-core = { version = "0.3", default-features = false }
+# An HTTP date a server's `retry-after` names.
+jiff = { version = "0.2", default-features = false, features = ["std"] }
+# The HTTP client of the providers. No default feature: no system TLS
+# library, no HTTP/2, no proxy from the system and no charset support; a
+# crate enables what it needs.
+reqwest = { version = "0.13", default-features = false }
 # TLS with the ring provider, given to an HTTP client as a whole
 # configuration.
 rustls = { version = "0.23", default-features = false }
 serde = "1"
 serde_json = "1"
 thiserror = "2"
+# The wait between two tries of a request, and the timeouts of a client.
+tokio = { version = "1", default-features = false }
+# What a provider reports of its work: a request tried again, a setting left
+# out of a request.
+tracing = { version = "0.1", default-features = false }
 # The URL parser `reqwest` reads a URL with: the 2.x line, so that a tree
 # holds one version of it, the client's.
 url = "2.5"

@@ -183,7 +183,7 @@ impl OpenAiConfig {
     /// Whether the token bound goes as `max_completion_tokens`: the switch
     /// when set, else Python's profile of a modern model on `OpenAI`'s own
     /// endpoint (`OpenAIConfig.model_post_init`).
-    fn takes_max_completion_tokens(&self) -> bool {
+    pub(crate) fn takes_max_completion_tokens(&self) -> bool {
         self.use_max_completion_tokens
             .unwrap_or_else(|| self.profiled(&MAX_COMPLETION_TOKEN_MODELS))
     }
@@ -191,7 +191,7 @@ impl OpenAiConfig {
     /// Whether a temperature is sent: the switch when set, else unless
     /// Python's profile fixes the model's temperature on `OpenAI`'s own
     /// endpoint.
-    fn takes_temperature(&self) -> bool {
+    pub(crate) fn takes_temperature(&self) -> bool {
         self.supports_custom_temperature
             .unwrap_or_else(|| !self.profiled(&FIXED_TEMPERATURE_MODELS))
     }

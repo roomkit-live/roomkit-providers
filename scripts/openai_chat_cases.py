@@ -2756,18 +2756,18 @@ case(
 
 # -- More waits, and more redirects --------------------------------------------------------
 
-for name, headers in (
-    ("in_seconds_with_a_fraction", {"retry-after": "1.5"}),
-    ("as_a_date_of_rfc_850", {"retry-after": "Thursday, 01-Jan-26 00:00:07 GMT"}),
-    ("as_a_date_of_asctime", {"retry-after": "Thu Jan  1 00:00:07 2026"}),
+for name, kind, wait in (
+    ("in_seconds_with_a_fraction", "retry_after_seconds", "1.5"),
+    ("as_a_date_of_rfc_850", "retry_after_date", "Thursday, 01-Jan-26 00:00:07 GMT"),
+    ("as_a_date_of_asctime", "retry_after_date", "Thu Jan  1 00:00:07 2026"),
 ):
     case(
         f"retry_wait_{name}",
-        f"{WAIT} status_429 retry_after_seconds",
+        f"{WAIT} status_429 {kind}",
         GENERATE,
         RETRIED,
         HELLO,
-        answer(LIMITED, 429, **headers),
+        answer(LIMITED, 429, **{"retry-after": wait}),
         answer(completion()),
         sdk=SDK_RETRIES,
     )
@@ -3060,6 +3060,10 @@ POSSIBLE_DEFECTS = {
     "stream_call_id_that_is_no_text": (
         "A streamed call whose id is a number fails the stream, where a whole answer reads "
         "the id as its text."
+    ),
+    "stream_call_name_after_its_arguments": (
+        "A call's name that comes after its first arguments: the events of its composition "
+        "leave those first arguments out, and the whole call holds them."
     ),
     "redirect_301": TURNED_INTO_A_GET,
     "redirect_303": TURNED_INTO_A_GET,
