@@ -1,13 +1,15 @@
-//! What a provider refuses to be built with, and what its `Debug` form
-//! says of where it sends.
+//! What a provider refuses to be built with, what its `Debug` form says of
+//! where it sends, and how each of its requests names its client.
 
 use std::time::Duration;
 
+use roomkit_providers_client::USER_AGENT;
 use roomkit_providers_llm::AiProvider;
 use serde_json::json;
 
-use crate::ported::support::{KEY, hello, pointed, saying};
-use crate::replay::fake::Fake;
+use crate::ported::support::{KEY, chunk, elsewhere, ending, events, hello, pointed, saying};
+use crate::replay::drained;
+use crate::replay::fake::{Fake, Reply};
 use crate::{OpenAi, OpenAiConfig};
 
 fn behind(base_url: &str) -> OpenAiConfig {
@@ -82,5 +84,47 @@ async fn a_timeout_the_clock_cannot_count_is_refused() {
         };
         let provider = pointed(config, &fake);
         assert_eq!(provider.generate(&hello()).await.unwrap().content, "Yes.");
+    }
+}
+
+// Every request names the client that sends it, `roomkit-providers/` and
+// the version of the workspace, where Python's SDK names itself: an answer
+// asked whole, a stream and the model listing. A default header that names
+// a `User-Agent`, in any case, replaces it.
+#[tokio::test]
+async fn every_request_names_its_client_unless_a_default_header_does() {
+    assert_eq!(
+        USER_AGENT,
+        format!("roomkit-providers/{}", env!("CARGO_PKG_VERSION"))
+    );
+    let replies = || {
+        let mut chunks = vec![chunk(&json!({"content": "Yes."}))];
+        chunks.extend(ending("stop", 12, 3));
+        let listing = Reply::json(200, r#"{"data": []}"#);
+        vec![saying("Yes."), events(&chunks), listing]
+    };
+    let header = ("USER-agent".to_owned(), "example/1.0".to_owned());
+    let named = OpenAiConfig {
+        default_headers: Some([header].into_iter().collect()),
+        ..elsewhere("local-model")
+    };
+    for (config, agent) in [
+        (elsewhere("local-model"), USER_AGENT),
+        (named, "example/1.0"),
+    ] {
+        let fake = Fake::serving(replies()).await;
+        let provider = pointed(config, &fake);
+        provider.generate(&hello()).await.unwrap();
+        let (_, failure) = drained(provider.generate_structured_stream(&hello())).await;
+        assert!(failure.is_none(), "{failure:?}");
+        provider.list_models().await.unwrap();
+        let seen = fake.seen();
+        assert_eq!(seen.len(), 3);
+        for request in seen {
+            let lines = request.lines.iter();
+            let agents = lines.filter(|(name, _)| name == "user-agent");
+            let agents: Vec<_> = agents.map(|(_, value)| value.as_str()).collect();
+            assert_eq!(agents, [agent], "{} {}", request.method, request.target);
+        }
     }
 }

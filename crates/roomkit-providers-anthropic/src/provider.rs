@@ -8,7 +8,7 @@ use std::sync::Arc;
 use reqwest::header::HeaderMap;
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
-use roomkit_providers_client::stream::{leaving_with, text};
+use roomkit_providers_client::stream::{leaving, text};
 use roomkit_providers_client::{Call, Client, Exit, Secrets, Settings, Timeouts, tried_again};
 use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
@@ -125,7 +125,9 @@ pub struct Anthropic {
     /// the bounds of what it reads.
     pub(crate) client: Client,
     own_endpoint: bool,
-    /// Where every failure leaves, cleaned of the configuration's secrets.
+    /// Where every failure leaves, cleaned of the configuration's secrets:
+    /// the failure of a generation with its request, whose own key it is
+    /// then cleaned of too.
     exit: Arc<Exit>,
 }
 
@@ -203,15 +205,6 @@ impl Anthropic {
             Ok(Cow::Borrowed(&self.headers))
         } else {
             Err(failure::no_key())
-        }
-    }
-
-    /// Where the failures of the generation answering `request` leave: the
-    /// provider's exit, which hides the key `request` brings too.
-    fn exit_of(&self, request: &AiRequest) -> Exit {
-        match request_api_key(request) {
-            Some(key) => self.exit.with_secrets([key.to_owned()]),
-            None => Exit::clone(&self.exit),
         }
     }
 
@@ -373,10 +366,11 @@ impl AiProvider for Anthropic {
     /// tells of its input, the reasoning and the text, the composition of
     /// each call and the call itself, then the done event. An answer
     /// constrained by a response schema is checked before its done event,
-    /// which its failure replaces.
+    /// which its failure replaces. A failure leaves with `request`, whose
+    /// own key it does not repeat.
     fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
         let checked = checked_stream(stream::events(self, request), request, LABEL, refusal);
-        leaving_with(checked, self.exit_of(request))
+        leaving(checked, &self.exit, request)
     }
 }
 

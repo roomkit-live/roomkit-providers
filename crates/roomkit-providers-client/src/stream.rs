@@ -12,7 +12,7 @@ use roomkit_providers_http::sse::Events;
 /// The most bytes read of a streamed answer, envelopes included.
 pub use roomkit_providers_http::sse::STREAM_LIMIT;
 use roomkit_providers_llm::{
-    ProviderError, ProviderStream, StreamEvent, TextStream, Yielder, items, next,
+    AiRequest, ProviderError, ProviderStream, StreamEvent, TextStream, Yielder, items, next,
 };
 use serde_json::Value;
 
@@ -152,36 +152,32 @@ impl Streamed {
     }
 }
 
-/// `events` as they leave a provider: each failure, the one the stream
-/// carried ([`carried`](crate::failure::carried)) or one the contract's
-/// check built on the way, through `exit`, and nothing after it.
-pub fn leaving<'a>(mut events: ProviderStream<'a>, exit: &'a Exit) -> ProviderStream<'a> {
+/// The events of the generation that answers `request`, as they leave a
+/// provider: each failure, the one the stream carried
+/// ([`carried`](crate::failure::carried)) or one the contract's check built
+/// on the way, through `exit` with `request`, whose own key no failure
+/// repeats either ([`Exit::leave_for`]); and nothing after it.
+pub fn leaving<'a>(
+    mut events: ProviderStream<'a>,
+    exit: &'a Exit,
+    request: &'a AiRequest,
+) -> ProviderStream<'a> {
     Box::pin(items(move |out: Yielder<Item>| async move {
         while let Some(event) = next(&mut events).await {
             match event {
                 Ok(event) => out.give(Ok(event)).await,
-                Err(error) => return out.give(Err(exit.leave_carried(error))).await,
-            }
-        }
-    }))
-}
-
-/// As [`leaving`], through an exit the stream keeps: the exit of one
-/// request that brings a secret of its own, a key a host lends it
-/// ([`Exit::with_secrets`]).
-pub fn leaving_with(mut events: ProviderStream<'_>, exit: Exit) -> ProviderStream<'_> {
-    Box::pin(items(move |out: Yielder<Item>| async move {
-        while let Some(event) = next(&mut events).await {
-            match event {
-                Ok(event) => out.give(Ok(event)).await,
-                Err(error) => return out.give(Err(exit.leave_carried(error))).await,
+                Err(error) => {
+                    let left = exit.leave_carried(request, error);
+                    return out.give(Err(left)).await;
+                }
             }
         }
     }))
 }
 
 /// The text of `events`, as it comes: its reasoning, its calls and its end
-/// are left out, a failure is the last item.
+/// are left out, a failure is the last item, as it is. The events are
+/// those of a generation that already left ([`leaving`]).
 pub fn text(mut events: ProviderStream<'_>) -> TextStream<'_> {
     Box::pin(items(
         move |out: Yielder<Result<String, ProviderError>>| async move {

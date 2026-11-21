@@ -66,11 +66,20 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
 /// one the provider must not send.
 const TRANSPORT_HEADERS: [&str; 2] = ["host", "content-length"];
 
+/// The header a client names itself in.
+const USER_AGENT: &str = "user-agent";
+
 /// Where the headers of the request `seen`, the one at `at`, differ from
 /// those Python `sent`: each recorded header as Python sent it, or absent
 /// where Python sent none, no header twice, and no other header than the
 /// transport's own. A recorded header names the key it carried, the
 /// configuration's or the request's, where `replayed` holds it.
+///
+/// The `User-Agent` is the one header compared otherwise. A fixture leaves
+/// out the one Python's SDK writes, so no case records it but one whose
+/// configuration sets it, which is compared as any header. On every other
+/// request the provider must name its client, and nothing else
+/// ([`USER_AGENT`](crate::USER_AGENT)).
 fn headers_differ(
     at: usize,
     seen: &Seen,
@@ -78,6 +87,11 @@ fn headers_differ(
     replayed: &Replayed,
     found: &mut Vec<String>,
 ) {
+    let own_agent = !sent.headers.contains_key(USER_AGENT);
+    let agent = seen.headers.get(USER_AGENT);
+    if own_agent && agent.map(String::as_str) != Some(crate::USER_AGENT) {
+        found.push(format!("request {at}: {USER_AGENT} is {agent:?}"));
+    }
     let keyed = |value: &String| {
         let value = value.replace("<config key>", &replayed.key);
         match &replayed.request_key {
@@ -99,7 +113,8 @@ fn headers_differ(
         if times != 1 {
             found.push(format!("request {at}: {name} is sent {times} times"));
         }
-        if !sent.headers.contains_key(name) && !TRANSPORT_HEADERS.contains(&name.as_str()) {
+        let own = TRANSPORT_HEADERS.contains(&name.as_str()) || name == USER_AGENT;
+        if !sent.headers.contains_key(name) && !own {
             found.push(format!(
                 "request {at}: {name} is sent, which Python does not send"
             ));

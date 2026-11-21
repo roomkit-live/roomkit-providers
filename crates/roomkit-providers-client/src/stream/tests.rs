@@ -111,33 +111,56 @@ async fn what_a_stream_gave_before_it_failed_is_given_first() {
     );
 }
 
-// A stream that leaves through an exit it keeps, the exit of one request
-// that brings a secret of its own: the failure it carried leaves without
-// that secret, the events before it as they were, and nothing after it.
+// A stream leaves with the request of its generation: the failure it
+// carried leaves without the key that request brings, the events before it
+// as they were, and nothing after it. So does a failure the contract's
+// check built on the way. The stream of a request that brings no key
+// leaves as it is.
 #[tokio::test]
-async fn a_stream_leaves_through_the_exit_of_its_request() {
-    use roomkit_providers_llm::{StreamEvent, StreamTextDelta, Yielder, items, next};
+async fn a_stream_leaves_with_the_request_of_its_generation() {
+    use roomkit_providers_llm::{
+        API_KEY_METADATA_KEY, AiRequest, ProviderError, ProviderErrorOptions, StreamEvent,
+        StreamTextDelta, Yielder, items, next,
+    };
 
     use crate::failure::{Exit, Failure, Secrets, carried, told};
-    use crate::stream::{Item, leaving_with};
+    use crate::stream::{Item, leaving};
 
     const LENT: &str = "placeholder-of-one-request";
     let said = || StreamEvent::TextDelta(StreamTextDelta::new("Hel"));
-    let events = Box::pin(items(move |out: Yielder<Item>| async move {
-        out.give(Ok(said())).await;
-        let echoed = told(format!("Wrong key: {LENT}."), 500);
-        let failure = Failure::said(vec![echoed], false, Some(401));
-        out.give(Err(carried(failure))).await;
-        out.give(Ok(said())).await;
-    }));
-    let exit = Exit::new("test", Secrets::default()).with_secrets([LENT.to_owned()]);
-    let mut leaving = leaving_with(events, exit);
-    assert_eq!(next(&mut leaving).await.unwrap().unwrap(), said());
-    let error = next(&mut leaving).await.unwrap().unwrap_err();
-    assert_eq!(error.message, "Wrong key: [***].");
-    assert_eq!(
-        (error.status_code, error.provider.as_str()),
-        (Some(401), "test")
-    );
-    assert!(next(&mut leaving).await.is_none());
+    let events = |failure: ProviderError| {
+        Box::pin(items(move |out: Yielder<Item>| async move {
+            out.give(Ok(said())).await;
+            out.give(Err(failure)).await;
+            out.give(Ok(said())).await;
+        }))
+    };
+    let echoed = told(format!("Wrong key: {LENT}."), 500);
+    let refused = carried(Failure::said(vec![echoed], false, Some(401)));
+    let quoting = format!("The answer quotes {LENT}.");
+    let checked = ProviderError::new(quoting, ProviderErrorOptions::default());
+    let mut lending = AiRequest::default();
+    let key = (API_KEY_METADATA_KEY.to_owned(), LENT.into());
+    lending.metadata.extend([key]);
+    let exit = Exit::new("test", Secrets::default());
+    let streams = [
+        (refused.clone(), &lending, "Wrong key: [***].", Some(401)),
+        (checked, &lending, "The answer quotes [***].", None),
+        (
+            refused,
+            &AiRequest::default(),
+            "Wrong key: placeholder-of-one-request.",
+            Some(401),
+        ),
+    ];
+    for (failure, request, message, status) in streams {
+        let mut leaving = leaving(events(failure), &exit, request);
+        assert_eq!(next(&mut leaving).await.unwrap().unwrap(), said());
+        let error = next(&mut leaving).await.unwrap().unwrap_err();
+        assert_eq!(
+            (error.message.as_str(), error.status_code),
+            (message, status)
+        );
+        assert!(next(&mut leaving).await.is_none());
+    }
 }

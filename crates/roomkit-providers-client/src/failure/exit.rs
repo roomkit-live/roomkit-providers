@@ -7,12 +7,19 @@
 //! Only [`Exit::leave`] makes the contract's `ProviderError` of it, and
 //! there what was said is cleaned, once; the provider's own words are not
 //! searched for a secret.
+//!
+//! The failure of a generation leaves with its request
+//! ([`Exit::leave_for`], [`leaving`](crate::stream::leaving)): the key a
+//! host lends that request is a secret too, which the exit reads from the
+//! request itself.
 
+use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
 use roomkit_providers_llm::{
-    ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions, repr,
+    AiRequest, ProviderError, ProviderErrorOptions, ResponseSchemaError,
+    ResponseSchemaErrorOptions, repr, request_api_key,
 };
 
 use super::{Built, Failure, MESSAGE_LIMIT, Piece};
@@ -175,17 +182,37 @@ impl Exit {
         Self { provider, secrets }
     }
 
-    /// This exit, whose failures repeat none of `texts` either: the exit of
-    /// one request that brings a secret of its own, a key a host lends it.
-    #[must_use]
-    pub fn with_secrets(&self, texts: impl IntoIterator<Item = String>) -> Self {
-        Self {
-            provider: self.provider,
-            secrets: self.secrets.with(texts),
+    /// This exit for the generation that answers `request`: its failures
+    /// do not repeat the key `request` brings for itself either, read as
+    /// the contract reads it (`request_api_key`) and searched for in every
+    /// form a secret of the configuration is. The exit itself when
+    /// `request` brings none.
+    fn answering(&self, request: &AiRequest) -> Cow<'_, Self> {
+        match request_api_key(request) {
+            Some(key) => Cow::Owned(Self {
+                provider: self.provider,
+                secrets: self.secrets.with([key.to_owned()]),
+            }),
+            None => Cow::Borrowed(self),
         }
     }
 
+    /// `failure`, the failure of the generation that answers `request`, as
+    /// the contract's error: as [`leave`](Self::leave), without the key
+    /// `request` brings for itself either, whether the provider sends that
+    /// key or not.
+    #[must_use]
+    pub fn leave_for(&self, request: &AiRequest, failure: &Failure) -> ProviderError {
+        self.answering(request).leave(failure)
+    }
+
     /// `failure` as the contract's error: the only place one is made.
+    ///
+    /// It takes no request, so it is for what no request brings a key to:
+    /// a provider that cannot be built, and the model listing, which is
+    /// asked with the configuration's key. The failure of a generation
+    /// leaves with its request: [`leave_for`](Self::leave_for), and
+    /// [`leaving`](crate::stream::leaving) for a stream.
     #[must_use]
     pub fn leave(&self, failure: &Failure) -> ProviderError {
         let (said, built) = match &failure.0 {
@@ -257,21 +284,21 @@ impl Exit {
         ProviderError::new(message, options)
     }
 
-    /// An item of a stream that went through the contract's check: the
-    /// failure it carries leaves, and so does one the check built.
-    #[must_use]
-    pub fn leave_carried(&self, error: ProviderError) -> ProviderError {
+    /// An item of the stream of the generation that answers `request`,
+    /// once it went through the contract's check: the failure it carries
+    /// leaves with `request`, and so does one the check built.
+    pub(crate) fn leave_carried(&self, request: &AiRequest, error: ProviderError) -> ProviderError {
         let carried = error.source();
         match carried.and_then(|cause| cause.downcast_ref::<Carried>()) {
-            Some(carried) => self.leave(&carried.0),
-            None => self.leave(&Failure::from(error)),
+            Some(carried) => self.leave_for(request, &carried.0),
+            None => self.leave_for(request, &Failure::from(error)),
         }
     }
 }
 
 /// A failure on its way out through a stream of the contract's errors: the
-/// source of an error that says nothing, which [`Exit::leave_carried`]
-/// unwraps.
+/// source of an error that says nothing, which the exit unwraps where the
+/// stream leaves.
 #[derive(Debug)]
 struct Carried(Failure);
 
@@ -284,7 +311,8 @@ impl fmt::Display for Carried {
 impl Error for Carried {}
 
 /// `failure` as an item of a stream of the contract's errors, to leave
-/// through [`Exit::leave_carried`]. It says nothing by itself.
+/// where its stream does ([`leaving`](crate::stream::leaving)). It says
+/// nothing by itself.
 #[must_use]
 pub fn carried(failure: Failure) -> ProviderError {
     ProviderError::new(String::new(), ProviderErrorOptions::default()).with_source(Carried(failure))

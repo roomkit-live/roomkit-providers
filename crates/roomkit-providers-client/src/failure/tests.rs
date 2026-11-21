@@ -1,7 +1,9 @@
 //! How the failures every provider words alike read once they left, and
 //! what the exit does of a failure a provider words itself.
 
-use roomkit_providers_llm::ProviderError;
+use roomkit_providers_llm::{
+    API_KEY_METADATA_KEY, AiRequest, ProviderError, ProviderErrorOptions, repr,
+};
 use serde_json::{Value, json};
 
 use super::*;
@@ -151,28 +153,71 @@ fn what_was_told_is_cleaned_and_bounded_and_the_provider_s_own_words_are_not() {
     assert_eq!(overflowing.context_overflow, Some(true));
 }
 
-// A request may bring a secret of its own, a key a host lends it: the exit
-// of that request removes it beside the configuration's, and the
-// provider's exit, which other requests leave through, is as it was.
+/// A request that brings `key` for itself.
+fn lending(key: &str) -> AiRequest {
+    let mut request = AiRequest::default();
+    let lent = (API_KEY_METADATA_KEY.to_owned(), key.into());
+    request.metadata.extend([lent]);
+    request
+}
+
+// A request may bring a secret of its own, a key a host lends it: the
+// failure of its generation leaves with it, without that key beside the
+// configuration's. What leaves without a request is as it was, and so is
+// the failure of a request that brings no key.
 #[test]
-fn a_secret_of_one_request_is_removed_beside_the_configuration_s() {
+fn the_key_a_request_brings_is_removed_beside_the_configuration_s() {
     let lent = "placeholder-of-one-request";
     let echoed = format!("{KEY} then {lent}");
-    let exit = test_exit();
-    let of_the_request = exit.with_secrets([lent.to_owned()]);
+    let (exit, request) = (test_exit(), lending(lent));
     assert_eq!(
-        left(&of_the_request, &worded(&echoed)).message,
+        exit.leave_for(&request, &worded(&echoed)).message,
         "the server refused the placeholder-not-a-key: [***] then [***]."
     );
-    assert_eq!(
-        left(&exit, &worded(&echoed)).message,
-        format!("the server refused the placeholder-not-a-key: [***] then {lent}.")
-    );
+    let as_it_was = format!("the server refused the placeholder-not-a-key: [***] then {lent}.");
+    assert_eq!(left(&exit, &worded(&echoed)).message, as_it_was);
+    for no_key in [AiRequest::default(), lending("")] {
+        let error = exit.leave_for(&no_key, &worded(&echoed));
+        assert_eq!(error.message, as_it_was);
+    }
     // A failure the contract built is cleaned of both too.
-    let built = ProviderError::new(
-        echoed,
-        roomkit_providers_llm::ProviderErrorOptions::default(),
-    );
-    let carried = of_the_request.leave(&Failure::from(built));
+    let built = ProviderError::new(echoed, ProviderErrorOptions::default());
+    let carried = exit.leave_for(&request, &Failure::from(built));
     assert_eq!(carried.message, "[***] then [***]");
+}
+
+// The key a request brings is searched for in every form a secret of the
+// configuration is: as a server sent it, as the code that builds a failure
+// writes it again, with other white space, split by a character that shows
+// nothing; in a failure a provider words as in one built elsewhere.
+#[test]
+fn the_key_a_request_brings_is_hidden_in_every_form_a_configured_secret_is() {
+    let lent = "placeholder \"of\" one\\request's\tkey";
+    let forms = [
+        lent.to_owned(),
+        serde_json::to_string(lent).unwrap(),
+        format!("{lent:?}"),
+        repr(&lent.into()),
+        repr(&format!("{lent}\"").into()),
+        lent.replace(' ', "\n  "),
+        lent.replace("one", "o\u{200b}ne"),
+    ];
+    let configured = Exit::new("test", Secrets::of([lent.to_owned()]));
+    let (bare, request) = (Exit::new("test", Secrets::default()), lending(lent));
+    for form in forms {
+        let echoed = format!("refused: {form} !");
+        let worded = Failure::said(vec![told(echoed.clone(), MESSAGE_LIMIT)], false, Some(401));
+        let built = ProviderError::new(echoed, ProviderErrorOptions::default());
+        for failure in [worded, Failure::from(built)] {
+            let hidden = bare.leave_for(&request, &failure);
+            assert_eq!(hidden.message, configured.leave(&failure).message);
+            let printed = format!("{hidden} {hidden:?}");
+            assert!(
+                printed.contains(MARK) && !printed.contains("placeholder"),
+                "{form}: {printed}"
+            );
+            // Without the request, the key is a text like another.
+            assert!(bare.leave(&failure).message.contains("placeholder"));
+        }
+    }
 }

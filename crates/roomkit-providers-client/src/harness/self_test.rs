@@ -147,9 +147,10 @@ pub const OTHERWISE: &str = "it differs from Python otherwise than its entry sta
 pub const NOT_INSTEAD: &str = "not Instead";
 
 /// A request that is not Python's, for a case that posts one request and is
-/// answered: its body, its method, how many are sent, and the timeouts of
-/// the client that sent it.
-pub const REQUEST: [Wrong; 7] = [
+/// answered, and whose configuration names no `User-Agent`: its body, its
+/// method, how many are sent, the timeouts of the client that sent it, and
+/// the name the client gives itself.
+pub const REQUEST: [Wrong; 9] = [
     ("another body", "its body", |r| {
         r.seen[0].body = b"{}".to_vec();
     }),
@@ -168,6 +169,14 @@ pub const REQUEST: [Wrong; 7] = [
     ("another connect timeout", "the connect timeout", |r| {
         let timeouts = r.timeouts.as_mut().unwrap();
         timeouts.connect = timeouts.read;
+    }),
+    ("no user agent", "user-agent is None", |r| {
+        drop(r.seen[0].headers.remove("user-agent"));
+        r.seen[0].lines.retain(|(name, _)| name != "user-agent");
+    }),
+    ("another user agent", "user-agent is Some", |r| {
+        let (name, other) = ("user-agent".to_owned(), "example/1.0".to_owned());
+        r.seen[0].headers.insert(name, other);
     }),
 ];
 

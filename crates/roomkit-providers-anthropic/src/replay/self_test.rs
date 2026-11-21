@@ -57,6 +57,14 @@ async fn the_replay_refuses_a_request_that_is_not_python_s() {
     refuses::<Anthropic>(&fixture, "plain_answer", &wrongs).await;
     // A listing sends no content type: one that does is refused.
     refuses::<Anthropic>(&fixture, "list_models", &LISTING).await;
+    // A case whose configuration names a `User-Agent` is held to that one:
+    // the client's own name is refused there.
+    let named: [Wrong; 1] = [("the client's own name", "user-agent is Some", |r| {
+        let own = roomkit_providers_client::USER_AGENT.to_owned();
+        r.seen[0].headers.insert("user-agent".to_owned(), own);
+    })];
+    let configured = "extra_headers_in_place_of_the_sdk_s_own";
+    refuses::<Anthropic>(&fixture, configured, &named).await;
 }
 
 // The fake serves a stream cut as its case records it, and the replay says

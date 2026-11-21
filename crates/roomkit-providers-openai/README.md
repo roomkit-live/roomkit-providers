@@ -103,7 +103,10 @@ catalogue, with no request.
   a server's answer holds: the key, the value of each default header (and,
   where the value names a scheme such as `Bearer`, what follows it), and the
   user information of the base URL, as it is written, as it reads once
-  decoded, and as the `Authorization` the client writes from it. Each is
+  decoded, and as the `Authorization` the client writes from it. Nor does
+  the failure of a generation repeat the key a host lends its request, under
+  `api_key` in the request's metadata: the provider does not send that key,
+  here as in Python, and still holds it for a secret of the request. Each is
   replaced by `[***]`. This holds whatever built the failure: the provider,
   the contract's check of a response schema, or a reader. A secret is found
   as the server sent it and as the code that builds a failure writes it
@@ -206,10 +209,15 @@ catalogue, with no request.
   that differs from Python's client, and what was not verified: nothing
   here was run on macOS or on Windows. `examples/behind_a_proxy.rs` shows a
   host behind a proxy, with nothing of the proxy in its configuration.
-- **Idle connections** are kept 5 seconds, 100 of them for a host at most,
-  as Python's client keeps them. The connections in use are not capped: the
+- **Idle connections.** A request takes again a connection no request used
+  for 5 seconds or less, as with Python's client, and 100 of them are kept
+  for a host at most. One left with no request is closed between 5 and 10
+  seconds after its last request. The connections in use are not capped: the
   HTTP client has no such bound, where Python's client holds 1,000 at most
   and makes the calls past them wait.
+- **`User-Agent`.** Every request names its client,
+  `roomkit-providers/` and the version of the crate, unless a default header
+  of the configuration names a `User-Agent`, in any case, which replaces it.
 - **No compressed answer.** The client sends no `accept-encoding`, whatever
   compression a host's build turns on in the HTTP client, so a server has no
   reason to compress. An answer compressed all the same is not decompressed:
@@ -270,6 +278,12 @@ model listing. It differs on the others, each for a reason:
 - **An empty key** builds a provider that sends no `Authorization`, for a
   local server that asks for none, where Python's SDK refuses to build a
   client.
+- **`User-Agent`** is `roomkit-providers/` and the version of the crate,
+  where Python's SDK names itself (`AsyncOpenAI/Python` and its version). A
+  default header that names one replaces it, here as in Python.
+- **An idle connection the client no longer takes** is closed by the client
+  itself, between 5 and 10 seconds after its last request, where Python's
+  client closes it when its pool is next asked for a connection.
 - **The proxies and the certificate authorities** are those Python's client
   reads from the same environment, with these differences: a SOCKS proxy is
   refused when the provider is built, where Python's client takes one once

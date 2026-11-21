@@ -3,10 +3,14 @@
 
 use std::net::SocketAddr;
 
-use roomkit_providers_llm::{AiProvider, ProviderError};
+use roomkit_providers_llm::{AiProvider, AiRequest, ProviderError};
+use serde_json::json;
 use tokio::net::TcpSocket;
 
-use super::support::{KEY, asked, elsewhere, hello, json_reply, pointed, saying, streamed};
+use super::support::{
+    KEY, asked, chunk, elsewhere, events, hello, json_reply, pointed, saying, streamed, text_of,
+};
+use crate::replay::drained;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
 use crate::{OpenAi, OpenAiConfig};
 use roomkit_providers_client::ANSWER_LIMIT;
@@ -98,6 +102,55 @@ async fn the_api_key_an_error_answer_echoes_reaches_no_failure() {
         assert!(!printed.contains(KEY), "{printed}");
         assert_eq!(error.message, said);
     }
+}
+
+// A key a host lends one request is that request's secret, which the
+// provider does not send: a server that repeats it, in a refusal or in an
+// error inside its stream, after an event, finds it in no failure, of an
+// answer asked whole, of a stream of events or of a stream of text.
+#[tokio::test]
+async fn the_key_a_request_lends_reaches_no_failure() {
+    const LENT: &str = "placeholder-lent-key";
+    let lending = AiRequest {
+        metadata: [("api_key".to_owned(), LENT.into())].into_iter().collect(),
+        ..hello()
+    };
+    let said = format!("{KEY} and {LENT} are refused");
+    let refusal = json!({"error": {"message": said, "type": "invalid_request_error"}});
+    let refused = || json_reply(401, refusal.to_string());
+    let whole = asked(refused(), &lending).await.unwrap_err();
+    let (_, of_events) = streamed(refused(), &lending).await;
+    let fake = Fake::serving(vec![refused()]).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    let (_, of_text) = drained(provider.generate_stream(&lending)).await;
+    // The key was never sent: the request went with the configuration's.
+    assert_eq!(
+        fake.seen()[0].headers["authorization"],
+        format!("Bearer {KEY}")
+    );
+    let hidden = "the provider answered HTTP 401 (invalid_request_error): [***] and [***] are \
+                  refused";
+    for error in [whole, of_events.unwrap(), of_text.unwrap()] {
+        assert_eq!(error.message, hidden);
+        let printed = format!("{error} {error:?}");
+        assert!(
+            !printed.contains(LENT) && !printed.contains(KEY),
+            "{printed}"
+        );
+    }
+    // An error inside the stream, after an event.
+    let error = json!({"error": {"message": said, "type": "server_error"}});
+    let reply = events(&[chunk(&json!({"content": "Hel"})), error]);
+    let (given, failure) = streamed(reply, &lending).await;
+    assert_eq!(text_of(&given), "Hel");
+    let failure = failure.unwrap();
+    assert_eq!(failure.message, "[***] and [***] are refused");
+    assert_eq!((failure.status_code, failure.retryable), (Some(500), true));
+    let printed = format!("{failure} {failure:?}");
+    assert!(
+        !printed.contains(LENT) && !printed.contains(KEY),
+        "{printed}"
+    );
 }
 
 /// A local address whose connections are refused for as long as the socket

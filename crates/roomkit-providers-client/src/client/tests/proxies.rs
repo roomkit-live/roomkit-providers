@@ -85,6 +85,7 @@ async fn what_a_proxy_answers_a_request_handed_to_it_reads_as_the_endpoint_s_ans
     assert_eq!((proxy.seen().len(), waits.load(Ordering::Relaxed)), (1, 0));
     assert_eq!(proxy.seen()[0].target, url);
     assert_eq!(proxy.seen()[0].headers["proxy-authorization"], BASIC);
+    assert_eq!(proxy.seen()[0].headers["user-agent"], crate::USER_AGENT);
 
     let proxy = Fake::serving(vec![page(502), page(502), page(502)]).await;
     let (client, waits) = behind(&proxy.address.to_string(), 2);
@@ -112,6 +113,9 @@ async fn a_tunnel_a_proxy_refuses_is_a_connection_that_failed() {
         let tunnel = (asked[0].method.as_str(), asked[0].target.as_str());
         assert_eq!(tunnel, ("CONNECT", "llm.example:443"));
         assert_eq!(asked[0].headers["proxy-authorization"], BASIC);
+        // The client names itself to the endpoint, in the request the
+        // tunnel carries, and not to the proxy that opens it.
+        assert_eq!(asked[0].headers.get("user-agent"), None);
     }
 }
 

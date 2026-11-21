@@ -34,6 +34,7 @@
 
 mod compare;
 pub mod fake;
+mod lent;
 pub mod named;
 pub mod self_test;
 pub mod shape;
@@ -86,6 +87,15 @@ pub trait Replays: AiProvider + Sized {
     /// each to the path it had: what the provider knows of its endpoint
     /// stays what its configuration says.
     fn point_at(&mut self, fake: SocketAddr);
+
+    /// What the provider's endpoint answers a request whose key it refuses:
+    /// a 401 whose error object says `said` for its message, under `error`.
+    /// A provider whose wire words a refusal otherwise writes its own.
+    #[must_use]
+    fn key_refused(said: &str) -> Reply {
+        let error = serde_json::json!({"type": "authentication_error", "message": said});
+        Reply::json(401, serde_json::json!({"error": error}).to_string())
+    }
 }
 
 /// A fixture of wire cases, as the script that captured them on Python's
@@ -569,6 +579,10 @@ fn judged<P: Replays>(
 /// as Python, and how many are among `named` and differ and do as their
 /// entry states. Fails for a case that is neither, and for a named case
 /// that replays as Python.
+///
+/// Each case of a generation is then asked once more, its request lending
+/// a key that a 401 repeats: fails for a failure that holds that key, and
+/// for a call none of whose cases shows the key kept out.
 pub async fn replayed_or_named<P: Replays>(
     fixture: &Fixture,
     named: &Named,
@@ -576,6 +590,7 @@ pub async fn replayed_or_named<P: Replays>(
 ) -> (usize, usize) {
     let named = named.stated();
     let (mut as_python, mut otherwise, mut failures) = (0, 0, Vec::new());
+    let mut kept_out = 0;
     // The cases are replayed one after the other, on one port.
     let door = Door::open().await;
     for case in fixture.cases.iter().filter(|case| case.call == call) {
@@ -585,6 +600,16 @@ pub async fn replayed_or_named<P: Replays>(
             Ok(false) => otherwise += 1,
             Err(wrong) => failures.push(format!("{}: {wrong}", case.name)),
         }
+        match lent::kept_out::<P>(case, &door).await {
+            Ok(shown) => kept_out += usize::from(shown),
+            Err(wrong) => failures.push(format!("{}: {wrong}", case.name)),
+        }
+    }
+    // A listing is asked with the configuration's key: no request lends one.
+    if call != "list_models" && kept_out == 0 {
+        failures.push(format!(
+            "{call}: no case shows the key lent to a request kept out of a failure"
+        ));
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     (as_python, otherwise)

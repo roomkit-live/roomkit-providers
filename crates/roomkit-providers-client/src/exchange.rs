@@ -23,6 +23,11 @@ pub const ANSWER_LIMIT: usize = 4 * 1024 * 1024;
 /// provider's says otherwise.
 const JSON: &str = "application/json";
 
+/// What every request names the client with, in its `User-Agent`, unless a
+/// header of the provider's does: `roomkit-providers/` and the version of
+/// the workspace.
+pub const USER_AGENT: &str = concat!("roomkit-providers/", env!("CARGO_PKG_VERSION"));
+
 /// A wait a client takes between two tries.
 pub type Wait = Pin<Box<dyn Future<Output = ()> + Send>>;
 
@@ -62,8 +67,9 @@ impl std::fmt::Debug for Pace {
 pub struct Call<'a> {
     /// Where the request is sent.
     pub url: &'a reqwest::Url,
-    /// The headers the request carries. One with a body also says that its
-    /// body is JSON, unless a header here already says what it is.
+    /// The headers the request carries. Every request also names the
+    /// client that sends it ([`USER_AGENT`]), and one with a body says that
+    /// its body is JSON, unless a header here already does.
     pub headers: &'a HeaderMap,
     /// The body of a `POST`, a JSON document; `None` for a `GET`.
     pub body: Option<&'a [u8]>,
@@ -174,9 +180,13 @@ impl Client {
     ) -> Result<reqwest::Response, Failed> {
         let now = (self.pace.now)();
         let mut headers = call.headers.clone();
+        // A header of the provider's replaces the client's own. The name is
+        // written on the request, not given to the HTTP client, which would
+        // also send it to a proxy that opens a tunnel.
+        let agent = headers.entry(reqwest::header::USER_AGENT);
+        agent.or_insert(HeaderValue::from_static(USER_AGENT));
         let request = match call.body {
             Some(body) => {
-                // A header of the provider's replaces the client's own.
                 let kind = headers.entry(CONTENT_TYPE);
                 kind.or_insert(HeaderValue::from_static(JSON));
                 self.http.post(call.url.clone()).body(body.to_vec())

@@ -48,7 +48,7 @@ mod testing;
 pub use self::client::{Client, Settings, Timeouts};
 #[cfg(feature = "replay")]
 pub use self::client::{ReplayWaits, replayed_at};
-pub use self::exchange::{ANSWER_LIMIT, Call, Pace, Wait, is_json};
+pub use self::exchange::{ANSWER_LIMIT, Call, Pace, USER_AGENT, Wait, is_json};
 pub use self::failure::{Exit, Failure, Secrets};
 
 // What `tried_again!` logs with, in the crate that calls it.

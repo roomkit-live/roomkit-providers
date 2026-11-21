@@ -50,4 +50,5 @@ fn a_timeout_leaves_the_clock_a_hundred_years() {
 }
 
 mod certificates;
+mod idle;
 mod proxies;

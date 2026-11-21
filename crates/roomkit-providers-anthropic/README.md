@@ -85,9 +85,11 @@ SDK writes them: `max_tokens`, `messages`, `model`, `output_config`,
   configuration and no credential among the extra headers, is refused before
   it is sent, as Python's SDK refuses it.
 - **Headers.** `anthropic-version: 2023-06-01`, `accept: application/json`,
-  and `content-type` on a request with a body; then the configuration's
-  `extra_headers`, one of which replaces the provider's of the same name,
-  the key included, as Python's SDK lets a default header do.
+  `content-type` on a request with a body, and a `User-Agent` that names the
+  client, `roomkit-providers/` and the version of the crate; then the
+  configuration's `extra_headers`, one of which replaces the provider's of
+  the same name, the key and the `User-Agent` included, as Python's SDK lets
+  a default header do.
 
 ## Streams
 
@@ -296,8 +298,14 @@ reason:
   for each of the last eight keys.
 - **The connections in use are not capped**: the HTTP client has no such
   bound, where Python's client holds 1,000 at most and makes the calls past
-  them wait. A connection no request uses is kept 5 seconds, and 100 of
-  them for a host at most, as Python's client keeps them.
+  them wait. A request takes again a connection no request used for 5
+  seconds or less, and 100 of them are kept for a host at most, as with
+  Python's client. One left with no request is closed by the client itself,
+  between 5 and 10 seconds after its last request, where Python's client
+  closes it when its pool is next asked for a connection.
+- **`User-Agent`** is `roomkit-providers/` and the version of the crate,
+  where Python's SDK names itself (`AsyncAnthropic/Python` and its
+  version). An extra header that names one replaces it, here as in Python.
 - **No time to the first token is measured**, where Python's provider
   reports one to its host.
 - **Whether the endpoint is Anthropic's own**, which decides the check of

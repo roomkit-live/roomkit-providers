@@ -5,11 +5,11 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use reqwest::header::HeaderMap;
+use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT as USER_AGENT_HEADER};
 
-use super::{Call, Pace};
+use super::{Call, Pace, USER_AGENT};
 use crate::Timeouts;
-use crate::harness::fake::{Fake, Reply};
+use crate::harness::fake::{Ending, Fake, Reply};
 use crate::harness::{let_pass, poll_once};
 use crate::testing::{client, left, url_on, usual};
 
@@ -96,6 +96,51 @@ async fn a_connection_that_does_not_open_fails_at_the_connect_timeout() {
         ("the provider did not answer in time", true, None)
     );
     drop((listener, filling));
+}
+
+// Every request names the client that sends it, once: one that asks an
+// answer whole, one that asks a stream and one that asks a listing. A
+// header of the provider's that names another replaces it.
+#[tokio::test]
+async fn every_request_names_the_client_unless_a_header_of_the_provider_s_does() {
+    assert_eq!(
+        USER_AGENT,
+        format!("roomkit-providers/{}", env!("CARGO_PKG_VERSION"))
+    );
+    let whole = || Reply::json(200, "{}");
+    let stream = Reply::stream(vec![b"data: one\n\n".to_vec()], Ending::Ends);
+    let fake = Fake::serving(vec![whole(), stream, whole(), whole()]).await;
+    let client = client(usual(), 0);
+    let (url, own) = (url_on(&fake, PATH), HeaderMap::new());
+    let asked = Call {
+        url: &url,
+        headers: &own,
+        body: Some(b"{}"),
+    };
+    client.send(asked).await.unwrap();
+    let mut streamed = client.stream(asked).await.unwrap();
+    while streamed.next().await.unwrap().is_some() {}
+    let listing = Call {
+        body: None,
+        ..asked
+    };
+    client.send(listing).await.unwrap();
+    let mut named = HeaderMap::new();
+    named.insert(USER_AGENT_HEADER, HeaderValue::from_static("example/1.0"));
+    let renamed = Call {
+        headers: &named,
+        ..asked
+    };
+    client.send(renamed).await.unwrap();
+    let seen = fake.seen();
+    let agents = seen.iter().map(|seen| {
+        let lines = seen.lines.iter().filter(|(name, _)| name == "user-agent");
+        lines.map(|(_, value)| value.as_str()).collect::<Vec<_>>()
+    });
+    assert_eq!(
+        agents.collect::<Vec<_>>(),
+        [[USER_AGENT], [USER_AGENT], [USER_AGENT], ["example/1.0"]]
+    );
 }
 
 // A request that cannot be built never left: it fails the same however

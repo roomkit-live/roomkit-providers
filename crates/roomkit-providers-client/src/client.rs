@@ -14,8 +14,11 @@ use crate::failure::{Failure, Secrets};
 use crate::proxy::Proxies;
 use crate::retry::Rule;
 
-/// How long a connection no request uses is kept: the 5 seconds the client
-/// of Python's providers keeps one (httpx's `keepalive_expiry`).
+/// For how long a request takes again a connection no request uses: the 5
+/// seconds the client of Python's providers keeps one (httpx's
+/// `keepalive_expiry`). The HTTP client closes those it no longer takes
+/// when it looks at the connections it keeps, at this same interval: one
+/// left with no request stays open between once and twice this time.
 const IDLE_FOR: Duration = Duration::from_secs(5);
 
 /// How many idle connections are kept for a host: the 100 the client of
@@ -94,8 +97,13 @@ pub struct Settings {
 /// - No redirect is followed, a proxy's own among them.
 /// - No compressed answer is asked for, whatever compression a host's
 ///   build turns on in the HTTP client.
-/// - A connection no request uses is kept 5 seconds, 100 of them for a
-///   host, as the client of Python's providers keeps them.
+/// - A request takes again a connection no request used for 5 seconds or
+///   less, as with the client of Python's providers, and the client closes
+///   one left idle between 5 and 10 seconds after its last request. It
+///   keeps 100 idle connections for a host at most.
+/// - Every request names the client in its `User-Agent`
+///   ([`USER_AGENT`](crate::USER_AGENT)), unless a header of the provider's
+///   does.
 #[derive(Clone)]
 pub struct Client {
     pub(crate) http: reqwest::Client,
@@ -155,8 +163,9 @@ impl Client {
             .proxy(reqwest::Proxy::custom(move |url| through.for_url(url)))
             .read_timeout(timeouts.read)
             .connect_timeout(timeouts.connect)
-            // A connection no request uses is kept as long, and as many of
-            // them, as the client of Python's providers keeps.
+            // A connection no request uses is taken again for as long, and
+            // as many of them are kept, as with the client of Python's
+            // providers.
             .pool_idle_timeout(IDLE_FOR)
             .pool_max_idle_per_host(IDLE_AT_MOST)
             .redirect(reqwest::redirect::Policy::none())

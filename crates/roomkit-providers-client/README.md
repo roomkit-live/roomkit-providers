@@ -28,11 +28,11 @@ provider.
 
 | Module | What |
 | --- | --- |
-| crate root | `Client`, built from the `Settings` a provider states with its `Timeouts`; `Call`, one request; `Pace`, the clock and the wait a test replaces; `ANSWER_LIMIT`; `is_json`; the macro `tried_again!` |
+| crate root | `Client`, built from the `Settings` a provider states with its `Timeouts`; `Call`, one request; `Pace`, the clock and the wait a test replaces; `ANSWER_LIMIT`; `USER_AGENT`, how a request names the client; `is_json`; the macro `tried_again!` |
 | `endpoint` | `joined`, the URL of a path under a base URL, which refuses the base URLs Python's client and this one read otherwise; `has_user_information`; `is_vendor_endpoint` and `talks_to_vendor`, whether a base URL is the vendor's own endpoint; `shown_url`, what a `Debug` form may show of a URL |
 | `retry` | `Rule` and `Past`: whether a failed try is tried again and after what wait, and where the rule of a vendor's SDK differs |
 | `failure` | `Failure`, a failure inside a provider, with the failures every provider words alike; `own`, `told` and `Stated`, for those a provider words; `Exit` and `Secrets`, the one way a failure leaves; `carried`; `described_status`, `retryable_status`, `names_transient`, `past_mark`, `one_line`; `MESSAGE_LIMIT`, `NAME_LIMIT` |
-| `stream` | `Streamed`, a streamed answer read event by event within `STREAM_LIMIT`; `leaving`, `leaving_with` and `text`, the streams a provider gives of its events; `Item` |
+| `stream` | `Streamed`, a streamed answer read event by event within `STREAM_LIMIT`; `leaving` and `text`, the streams a provider gives of its events; `Item` |
 | `harness` (feature `harness`) | Test support: `fake`, a local fake of an endpoint or of a proxy, over plain HTTP or over TLS; `tls`, an authority a test makes for itself and the certificates it signs; `Fixture`, `Case`, `Replays`, `replayed_or_named`, the replay of recorded cases; `named`, the cases a provider answers otherwise than Python; `self_test`, the replay held to what it compares; `shape`, a fixture held to its shape, every member of its cases read |
 | crate root (feature `replay`) | `Client::replaying`, `ReplayWaits` and `replayed_at`: the seam a replay outside a provider crate's tests drives a provider through |
 
@@ -51,8 +51,21 @@ provider.
   the head of an answer and between two reads of its body, which also ends a
   stream that stalls. A timeout the clock cannot count a hundred years past
   is refused when the provider is built.
-- **Idle connections**: one that no request uses is kept 5 seconds, 100 of
-  them for a host, as the client of Python's providers keeps them.
+- **`User-Agent`.** Every request names the client that sends it,
+  `roomkit-providers/` and the version of the workspace (`USER_AGENT`): one
+  that asks an answer whole, a stream or a listing. A header of the
+  provider's that names a `User-Agent`, in any case, replaces it: an extra
+  header of its configuration. The SDKs under RoomKit's Python providers
+  name themselves there (`AsyncOpenAI/Python` and `AsyncAnthropic/Python`,
+  each with its version), which the recorded cases leave out. The request
+  that asks a proxy for a tunnel carries none, as with Python's client.
+- **Idle connections.** A request takes again a connection no request used
+  for 5 seconds or less, and never one that waited longer, as with the
+  client of Python's providers. The client closes those it no longer takes
+  when it looks at the connections it keeps, every 5 seconds: one left with
+  no request stays open between 5 and 10 seconds, where Python's client
+  closes it when its pool is next asked for a connection. 100 idle
+  connections are kept for a host at most, as that client keeps them.
 - **Tries.** A request that fails is tried again up to `max_retries` times: a
   connection lost, an answer that did not come in time, and an answer its
   `retry::Rule` says is worth another try (`x-should-retry`, else a 408, a
@@ -233,7 +246,7 @@ use roomkit_providers_client::retry::{Past, Rule};
 use roomkit_providers_client::{
     Call, Client, Exit, Failure, Secrets, Settings, Timeouts, tried_again,
 };
-use roomkit_providers_llm::ProviderError;
+use roomkit_providers_llm::{AiRequest, ProviderError};
 use serde_json::Value;
 
 /// The label the provider's failures carry.
@@ -300,8 +313,9 @@ impl Vendor {
         })
     }
 
-    /// One whole answer. Every failure leaves through the exit.
-    async fn ask(&self, body: &[u8]) -> Result<Value, ProviderError> {
+    /// One whole answer to `request`, written as `body`. Every failure
+    /// leaves through the exit, with the request it answers.
+    async fn ask(&self, request: &AiRequest, body: &[u8]) -> Result<Value, ProviderError> {
         let call = Call {
             url: &self.messages,
             headers: &self.headers,
@@ -311,7 +325,7 @@ impl Vendor {
         let read = answered.and_then(|(body, _json)| {
             serde_json::from_slice(past_mark(&body)).map_err(|error| Failure::malformed(&error))
         });
-        read.map_err(|failure| self.exit.leave(&failure))
+        read.map_err(|failure| self.exit.leave_for(request, &failure))
     }
 }
 
@@ -344,9 +358,9 @@ What the provider supplies:
   `Authorization` the provider would write.
 - **Its secrets**, `Client::secrets(keys, header_values, url)`: the keys, the
   value of each configured header, and the user information of the URL. The
-  client adds the credentials of the proxies its environment named.
-  `Exit::with_secrets` gives the exit of one request that brings a key of its
-  own.
+  client adds the credentials of the proxies its environment named. The key
+  a host lends one request is not among them: the exit reads it from the
+  request a generation leaves with ([Failures](#failures)).
 - **Its retry parameters**, a `retry::Rule`: the longest wait a server may
   ask for and what a longer one does. Python's openai SDK takes two minutes
   and gives the request up past them (`longest_asked: 120.0`, `Past::Final`);
@@ -374,6 +388,24 @@ form the code that builds a failure writes them in, put on one line without a
 control character, and bounded; the whole text is within `MESSAGE_LIMIT`. A
 secret shorter than 8 characters is not searched for.
 
+**A generation leaves with its request.** A host may lend a key to one
+request (`request.metadata["api_key"]`, the contract's `request_api_key`),
+and no failure of that request may repeat it, whether the provider sends it
+or not. So the exit of a generation takes the request, and reads the key
+from it:
+
+- `Exit::leave_for(request, &failure)` for an answer asked whole
+  (`generate`);
+- `stream::leaving(events, exit, request)` for a stream of events
+  (`generate_structured_stream`), and `stream::text` over it for a stream of
+  text (`generate_stream`).
+
+The key is searched for in every form a secret of the configuration is. A
+provider holds no exit of a request and adds no secret itself. `Exit::leave`
+takes no request: it is for what no request brings a key to, a provider that
+cannot be built and the model listing, which is asked with the
+configuration's key.
+
 The failures every provider words alike are built here: `Failure::unbuilt`,
 `before_request`, `unwritten`, `transport`, `redirect`, `refused`,
 `malformed`, `unreadable`, `unreadable_value`, `error_object` (Python's
@@ -396,7 +428,8 @@ use roomkit_providers_client::failure::carried;
 use roomkit_providers_client::stream::{Item, Streamed, leaving, text};
 use roomkit_providers_client::{Exit, Failure};
 use roomkit_providers_llm::{
-    ProviderStream, StreamDone, StreamEvent, StreamTextDelta, TextStream, Yielder, items,
+    AiRequest, ProviderStream, StreamDone, StreamEvent, StreamTextDelta, TextStream, Yielder,
+    items,
 };
 
 /// Reads `answer`, handing its events to `out` as they come.
@@ -428,16 +461,20 @@ fn events<'a>(answer: Streamed) -> ProviderStream<'a> {
     }))
 }
 
-/// What `generate_structured_stream` returns: every failure through the
-/// exit, after the contract's check where the provider has one
-/// (`checked_stream`).
-fn structured<'a>(answer: Streamed, exit: &'a Exit) -> ProviderStream<'a> {
-    leaving(events(answer), exit)
+/// What `generate_structured_stream` returns for `request`: every failure
+/// through the exit, with the request, after the contract's check where
+/// the provider has one (`checked_stream`).
+fn structured<'a>(
+    answer: Streamed,
+    exit: &'a Exit,
+    request: &'a AiRequest,
+) -> ProviderStream<'a> {
+    leaving(events(answer), exit, request)
 }
 
 /// What `generate_stream` returns: the text of the same events.
-fn as_text<'a>(answer: Streamed, exit: &'a Exit) -> TextStream<'a> {
-    text(structured(answer, exit))
+fn as_text<'a>(answer: Streamed, exit: &'a Exit, request: &'a AiRequest) -> TextStream<'a> {
+    text(structured(answer, exit, request))
 }
 ```
 
@@ -446,9 +483,9 @@ the `Streamed` drops the request with its connection. A failure of the stream
 does not leave where it is built: it is `carried` as the last item, so that
 the contract's `checked_stream` may run over the events first, and
 `stream::leaving` lets it out through the `Exit`, with any failure the check
-built on the way; `stream::leaving_with` does so through an exit the stream
-keeps, the exit of one request that brings a key of its own
-(`Exit::with_secrets`). `stream::text` gives the text of a stream of events.
+built on the way. It takes the request the stream answers, whose own key no
+failure of the stream repeats, one that comes after events included.
+`stream::text` gives the text of a stream of events that already left.
 
 ## Testing a provider with the harness
 
@@ -500,6 +537,9 @@ replay it (`roomkit-providers-openai/src/replay/`):
    the provider of a case's configuration; `client`, the `Client` it is built
    on, whose clock the replay sets and whose waits it keeps; `point_at`, which
    sends its requests to the fake (`endpoint::moved_to` on each of its URLs).
+   `key_refused`, the 401 its endpoint refuses a key with, is written for it:
+   an error object that says why under `error`. A provider whose wire words a
+   refusal otherwise writes its own.
 2. **The named cases**, a `harness::named::Named` of three lists of `Entry`:
    `questioned_otherwise`, `only_python` and `by_its_own_rule`. An entry is a
    case's name, the reason the provider answers it otherwise than Python, the
@@ -513,6 +553,18 @@ replay it (`roomkit-providers-openai/src/replay/`):
    `harness::replayed_or_named::<Provider>(&fixture, &NAMED, "generate")`
    gives how many cases replayed as Python and how many are named and do as
    their entry states, and fails for a case that is neither.
+
+   The same call holds the provider to the key of one request, with nothing
+   to write: each case of a generation is asked once more, its request
+   lending a key, by a fake that refuses it with a 401 whose message repeats
+   that key (`key_refused`). The failure must say what the 401 says without
+   the key, in its message and in its `Debug` form. A failure that says
+   nothing of the 401 fails too, since it would show nothing; a case whose
+   request is never sent is not counted, and a call none of whose cases
+   shows the key kept out fails. It lives there, and is no member a provider
+   must write, because every provider's replay already goes through it, once
+   for each of the three generations: a provider cannot replay its fixture
+   and leave the check out.
 4. **Two tests of the named cases**: `Named::set_apart(&fixture)`, which
    fails for an entry in the wrong list, and one that holds a data file equal
    to `Named::as_data(notes)`, for a replay outside the crate, a binding's.
@@ -553,6 +605,13 @@ puts it back; what a request carries there that is no key (an empty text, a
 number) is written as it is in both. Any other member of a case is the provider's own, which
 `Case::member` gives as it is: what Python's provider read of its model's
 catalogue entry, a capability it answers.
+
+One header is compared otherwise than the fixture records it, once, in the
+harness: the `User-Agent`. A fixture leaves out the one Python's SDK writes,
+so a case records none unless its configuration sets one. The replay
+requires that one where it is recorded, as any header, and on every other
+request exactly the client's own (`USER_AGENT`): a provider that sends none,
+or another, differs from its case.
 
 ## The replay seam
 

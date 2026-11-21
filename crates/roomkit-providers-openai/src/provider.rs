@@ -73,10 +73,13 @@ const JSON: &str = "application/json";
 ///
 /// # What it guarantees
 ///
-/// - no failure's text repeats a secret of the configuration that a
-///   server's answer holds, as it is or as the code that builds the
-///   failure writes it again: the key, the value of a default header, the
-///   user information of the base URL. This holds whatever built the
+/// - no failure's text repeats a secret of the configuration or of the
+///   request that a server's answer holds, as it is or as the code that
+///   builds the failure writes it again: the key, the value of a default
+///   header, the user information of the base URL, and the key a host
+///   lends one request
+///   ([`API_KEY_METADATA_KEY`](roomkit_providers_llm::API_KEY_METADATA_KEY)),
+///   which the provider does not send. This holds whatever built the
 ///   failure. A secret shorter than 8 characters is not searched for, and
 ///   one a server itself sends back in another form cannot be recognised;
 ///   the `Debug` forms print none;
@@ -119,7 +122,9 @@ pub struct OpenAi {
     pub(crate) client: Client,
     own_endpoint: bool,
     left_out_warned: Arc<AtomicBool>,
-    /// Where every failure leaves, cleaned of the configuration's secrets.
+    /// Where every failure leaves, cleaned of the configuration's secrets:
+    /// the failure of a generation with its request, whose own key it is
+    /// then cleaned of too.
     exit: Arc<Exit>,
 }
 
@@ -329,9 +334,12 @@ impl AiProvider for OpenAi {
         true
     }
 
+    /// One whole answer. Its failure leaves with `request`: the key a host
+    /// lends the request, which the provider does not send, is in no
+    /// failure either.
     async fn generate(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
         let answered = self.answer(request).await;
-        answered.map_err(|failure| self.exit.leave(&failure))
+        answered.map_err(|failure| self.exit.leave_for(request, &failure))
     }
 
     /// The text of [`generate_structured_stream`], as it comes: its
@@ -346,10 +354,11 @@ impl AiProvider for OpenAi {
     /// reasoning (a `<think>` block that opens the answer, or a reasoning
     /// field), the composition of each call, then the whole calls and the
     /// done event. An answer constrained by a response schema is checked
-    /// before its done event, which its failure replaces.
+    /// before its done event, which its failure replaces. A failure leaves
+    /// with `request`, as that of [`generate`](AiProvider::generate).
     fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
         let checked = checked_stream(stream::events(self, request), request, NAME, refusal);
-        roomkit_providers_client::stream::leaving(checked, &self.exit)
+        roomkit_providers_client::stream::leaving(checked, &self.exit, request)
     }
 }
 

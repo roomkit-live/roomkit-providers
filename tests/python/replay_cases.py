@@ -15,6 +15,7 @@ crate writes of them, ``named_cases.json``.
 from __future__ import annotations
 
 import json
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -25,7 +26,8 @@ from roomkit.providers.ai import AIContext, ProviderError, ResponseSchemaError
 from roomkit_providers import _native
 from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
-FIXTURES = Path(__file__).resolve().parents[2] / "crates/roomkit-providers-openai/tests/fixtures"
+ROOT = Path(__file__).resolve().parents[2]
+FIXTURES = ROOT / "crates/roomkit-providers-openai/tests/fixtures"
 
 # The fixture's clock, in seconds since 1970: 2026-01-01T00:00:00Z.
 CLOCK = 1_767_225_600.0
@@ -34,6 +36,13 @@ CLOCK = 1_767_225_600.0
 # provider decides: any other header the fixture does not record is one the
 # provider must not send.
 TRANSPORT_HEADERS = ("host", "content-length")
+
+# What a provider names its client with, in the one header compared
+# otherwise: the fixture leaves out the one Python's SDK writes, so no case
+# records it but one whose configuration sets it. On every other request the
+# provider must name its client, with the version of the crates.
+_CRATES = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
+USER_AGENT = f"roomkit-providers/{_CRATES['workspace']['package']['version']}"
 
 # How a recorded stream of reads ends, as the fake serves it.
 ENDINGS = {"the stream ends": "ends", "the connection is lost": "lost"}
@@ -205,6 +214,9 @@ def _requests_differ(case: dict[str, Any], replayed: Replayed, found: list[str])
 
 
 def _headers_differ(at: int, seen: Seen, sent: dict[str, Any], key: str, found: list[str]) -> None:
+    own_agent = "user-agent" not in sent["headers"]
+    if own_agent and seen.headers.get("user-agent") != USER_AGENT:
+        found.append(f"request {at}: user-agent is {seen.headers.get('user-agent')!r}")
     for name, value in sent["headers"].items():
         expected = None if value is None else value.replace("Bearer <config key>", f"Bearer {key}")
         if seen.headers.get(name) != expected:
@@ -213,7 +225,7 @@ def _headers_differ(at: int, seen: Seen, sent: dict[str, Any], key: str, found: 
     for name in names:
         if names.count(name) != 1:
             found.append(f"request {at}: {name} is sent {names.count(name)} times")
-        if name not in sent["headers"] and name not in TRANSPORT_HEADERS:
+        if name not in sent["headers"] and name not in (*TRANSPORT_HEADERS, "user-agent"):
             found.append(f"request {at}: {name} is sent, which Python does not send")
 
 
