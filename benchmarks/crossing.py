@@ -34,6 +34,7 @@ import asyncio
 import base64
 import json
 import os
+import socket
 import statistics
 import subprocess
 import sys
@@ -265,11 +266,32 @@ def show(results: dict[str, Any]) -> None:
     print("\n" + json.dumps(results))
 
 
+def routed() -> bool:
+    """Whether a route leads off the machine, asked of the kernel: a UDP
+    socket connected to an address kept for documentation needs a route
+    there, and sends nothing."""
+    for family, address in ((socket.AF_INET, "192.0.2.1"), (socket.AF_INET6, "2001:db8::1")):
+        try:
+            with socket.socket(family, socket.SOCK_DGRAM) as probe:
+                probe.connect((address, 9))
+        except OSError:
+            continue
+        return True
+    return False
+
+
 def without_network() -> None:
     """Runs this program again where no network is reachable but loopback
-    (scripts/no-network.sh), unless it runs there already: a bench that
-    lost its way to its local fake then reaches no service."""
-    if os.environ.get("ROOMKIT_PROVIDERS_NO_NETWORK"):
+    (scripts/no-network.sh), unless no route leads off the machine already:
+    a bench that lost its way to its local fake then reaches no service.
+
+    What decides is what is true, never a variable this program inherits.
+    It runs with a route off the machine only where the script could make
+    no namespace and said so, under the opt-out the script names."""
+    if not routed():
+        return
+    allowed = os.environ.get("ROOMKIT_PROVIDERS_ALLOW_NETWORK") == "1"
+    if allowed and os.environ.get("ROOMKIT_PROVIDERS_NO_NETWORK") == "unavailable":
         return
     wrapper = str(ROOT / "scripts/no-network.sh")
     os.execv(wrapper, [wrapper, sys.executable, *sys.argv])

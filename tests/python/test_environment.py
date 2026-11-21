@@ -11,6 +11,7 @@ was when the test ends. A test changes it only while no call is under way.
 from __future__ import annotations
 
 import os
+import socket
 import unittest
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -44,6 +45,20 @@ READ = ("request_method", "ssl_cert_file", "ssl_cert_dir")
 NO_NAMESPACE = (
     "this test asks for OpenAI's own endpoint, and runs only where no network is reachable"
 )
+
+
+def routed() -> bool:
+    """Whether a route leads off the machine, asked of the kernel: a UDP
+    socket connected to an address kept for documentation needs a route
+    there, and sends nothing. No variable of the environment is believed."""
+    for family, address in ((socket.AF_INET, "192.0.2.1"), (socket.AF_INET6, "2001:db8::1")):
+        try:
+            with socket.socket(family, socket.SOCK_DGRAM) as probe:
+                probe.connect((address, 9))
+        except OSError:
+            continue
+        return True
+    return False
 
 
 def is_read(name: str) -> bool:
@@ -242,7 +257,7 @@ class UnreadTests(unittest.IsolatedAsyncioTestCase):
         for name in ("openai-organization", "openai-project"):
             self.assertNotIn(name, sent)
 
-    @unittest.skipUnless(os.environ.get("ROOMKIT_PROVIDERS_NO_NETWORK") == "1", NO_NAMESPACE)
+    @unittest.skipIf(routed(), NO_NAMESPACE)
     async def test_no_base_url_is_read_from_the_environment(self) -> None:
         named, proxy = await Fake().start(), await Fake().start()
         self.addAsyncCleanup(named.stop)

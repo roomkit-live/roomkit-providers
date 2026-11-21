@@ -10,7 +10,8 @@ DENY_FLAGS ?=
 # package is built for and tested on: CPython 3.12 or newer.
 PYTHON ?= python3
 PYTHON_MANIFEST := bindings/python/Cargo.toml
-# Runs a command with no network but loopback, where this machine allows it.
+# Runs a command with no network but loopback, and nothing where this machine
+# lets a user make no such place (scripts/no-network.sh).
 NO_NETWORK := scripts/no-network.sh
 # The Python tools, each run at a version within its range: name a local
 # installation in place of one (MATURIN=.venv/bin/maturin).
@@ -20,7 +21,8 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	scripts/native-notices.py scripts/artifact_files.py scripts/api-snapshot.py \
 	scripts/roomkit_env.py scripts/wheel_paths.py
 
-.PHONY: all fmt fmt-check clippy test examples doc deny check-contract-deps msrv msrv-toolchain hooks \
+.PHONY: all fmt fmt-check clippy no-network-test test examples doc deny check-contract-deps \
+	msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-proxy-cases python-openai-config \
 	python-openai-chat-cases \
 	python-openai-catalogue \
@@ -28,7 +30,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	printable-table outside-text-tables python-outside-text named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
-all: fmt-check clippy test examples doc deny check-contract-deps
+all: fmt-check clippy no-network-test test examples doc deny check-contract-deps
 
 fmt:
 	$(CARGO) fmt --all
@@ -38,6 +40,14 @@ fmt-check:
 
 clippy:
 	$(CARGO) clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+# Checks the script the tests, the examples and the benches go through
+# (scripts/no-network-test.sh): that its command has no network whatever the
+# environment names, and that it runs nothing where it can make no
+# namespace. The check says where it was run, and what it could not show
+# there.
+no-network-test:
+	bash scripts/no-network-test.sh
 
 # The tests are built, then run where no network is reachable but loopback
 # (scripts/no-network.sh): each answers from a local fake, and one that lost

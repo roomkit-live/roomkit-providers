@@ -41,7 +41,7 @@ uv pip install --python .venv/bin/python ../roomkit
 | Command | Scope |
 | --- | --- |
 | `make fmt` | Format the workspace |
-| `make all` | Formatting, Clippy, tests, the examples, rustdoc, dependency policy and the contract crate's dependency allow list |
+| `make all` | Formatting, Clippy, the check of `scripts/no-network.sh`, tests, the examples, rustdoc, dependency policy and the contract crate's dependency allow list |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
 | `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed beside the RoomKit of `PYTHON`'s environment and tested |
 | `make python-msrv` | Check the binding on the minimum Rust toolchain |
@@ -381,9 +381,13 @@ its own: what a provider sends and reads stays in the provider crates.
   benches run where no network is reachable but loopback
   (`scripts/no-network.sh`, which `make test`, `make examples` and
   `scripts/check-python.py` go through): a test that lost its way to its
-  local fake fails there instead of reaching a service. The script says so
-  where the machine lets a user make no such namespace, and then runs the
-  command as it is.
+  local fake fails there instead of reaching a service. Where the machine
+  lets a user make no such namespace, the script runs nothing and fails,
+  unless `ROOMKIT_PROVIDERS_ALLOW_NETWORK=1` is set: it then says that the
+  network is reachable and runs the command as it is. CI sets no such
+  variable: each job that runs tests first lets its runner's user make the
+  namespace. `make no-network-test`, which `make all` runs, checks the
+  script.
 - `benchmarks/crossing.py` measures a turn through the package's provider
   and through RoomKit's own, `benchmarks/footprint.py` the threads and the
   connections a busy provider holds, `benchmarks/fork_children.py` the

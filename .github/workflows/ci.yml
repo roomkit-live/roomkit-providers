@@ -21,6 +21,20 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      # The tests run where no network is reachable but loopback, in a
+      # network namespace scripts/no-network.sh makes as the runner's user.
+      # Ubuntu's AppArmor refuses a user that namespace by default: the
+      # restriction is lifted here, for the machine of this job, and the
+      # script's own test then fails the job if it still can make none.
+      # Nothing sets ROOMKIT_PROVIDERS_ALLOW_NETWORK: no test of CI runs with
+      # the network reachable.
+      - name: Let the tests make a network namespace
+        run: |
+          restriction=kernel.apparmor_restrict_unprivileged_userns
+          if sysctl -n "$restriction" >/dev/null 2>&1; then
+            sudo sysctl -w "$restriction=0"
+          fi
+          make no-network-test
       - run: make fmt-check clippy test doc check-contract-deps
 
   python:
@@ -44,6 +58,20 @@ jobs:
       # from RoomKit's repository meanwhile.
       - run: python -m pip install 'roomkit @ git+https://github.com/roomkit-live/roomkit'
       - run: cargo install cargo-deny --locked --version 0.20.2
+      # The Python tests and the examples run where no network is reachable
+      # but loopback, in a network namespace scripts/no-network.sh makes as
+      # the runner's user. Ubuntu's AppArmor refuses a user that namespace by
+      # default: the restriction is lifted here, for the machine of this job,
+      # and the script's own test then fails the job if it still can make
+      # none. Nothing sets ROOMKIT_PROVIDERS_ALLOW_NETWORK: no test of CI
+      # runs with the network reachable.
+      - name: Let the tests make a network namespace
+        run: |
+          restriction=kernel.apparmor_restrict_unprivileged_userns
+          if sysctl -n "$restriction" >/dev/null 2>&1; then
+            sudo sysctl -w "$restriction=0"
+          fi
+          make no-network-test
       # The binding's lint, docs and dependency policy, the Python lint, then
       # a wheel and a source distribution, each installed beside RoomKit and
       # tested: what every provider shares against a scripted provider, the

@@ -82,5 +82,19 @@ jobs:
       - name: Check downloaded files
         working-directory: dist
         run: sha256sum --check SHA256SUMS
+      # The Python tests and the examples run where no network is reachable
+      # but loopback, in a network namespace scripts/no-network.sh makes as
+      # the runner's user. Where Ubuntu's AppArmor refuses a user that
+      # namespace, the restriction is lifted here, for the machine of this
+      # job, and the script's own test then fails the job if it still can
+      # make none. Nothing sets ROOMKIT_PROVIDERS_ALLOW_NETWORK: no test of
+      # this workflow runs with the network reachable.
+      - name: Let the tests make a network namespace
+        run: |
+          restriction=kernel.apparmor_restrict_unprivileged_userns
+          if sysctl -n "$restriction" >/dev/null 2>&1; then
+            sudo sysctl -w "$restriction=0"
+          fi
+          make no-network-test
       - name: Validate both installations
         run: python scripts/check-python.py --wheel dist/roomkit_providers-*.whl --sdist dist/roomkit_providers-*.tar.gz

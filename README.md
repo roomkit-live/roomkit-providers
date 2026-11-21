@@ -111,7 +111,7 @@ provider.
 | `benchmarks/footprint.py`, `benchmarks/fork_children.py` | The threads and the connections a busy provider holds, and how often a child forked under load hangs |
 | `guide/python.md` | The Python guide |
 | `scripts/check-python.py` | Builds a wheel and a source distribution, installs each beside RoomKit and runs the Python tests and the examples on it (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshot, `scripts/roomkit_env.py` names the RoomKit of the environment) |
-| `scripts/no-network.sh` | Runs a command where no network is reachable but loopback, without the proxy and certificate variables of the machine: the tests, the examples and the benches go through it |
+| `scripts/no-network.sh` | Runs a command where no network is reachable but loopback, without the proxy and certificate variables of the machine: the tests, the examples and the benches go through it. Where the machine lets a user make no such place, it runs nothing and fails, unless `ROOMKIT_PROVIDERS_ALLOW_NETWORK=1` is set (`scripts/no-network-test.sh` checks it) |
 | `scripts/generate_openai_catalogue.py` | Writes OpenAI's model catalogue of RoomKit's Python, which the provider reads its models' rules from |
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
