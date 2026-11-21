@@ -41,6 +41,8 @@ especially boundaries, failures, cancellation and cleanup.
   fake of the wire it speaks.
 - No key belongs in a fixture, a test or a command. Default checks require no
   external service and no credentials.
+- No test asks a name of the network. A test of `validate_public_url` gives
+  its own answers for the names it resolves, or uses a URL that needs none.
 - A bug fix brings the test that failed before it.
 
 ## One public API
@@ -98,6 +100,14 @@ records the Python and Unicode versions it was written from, and carries
 the notice of the Unicode data it is derived from. The same command writes
 that notice as `crates/roomkit-providers-core/LICENSE-UNICODE`, the license
 file the crate ships beside its own: the crate is `MIT AND Unicode-3.0`.
+
+`roomkit-providers-http` is checked the same way: `make python-public-urls`
+rewrites `crates/roomkit-providers-http/tests/fixtures/python_public_urls.json`,
+what RoomKit's Python `validate_public_url` decides of a table of URLs and
+addresses, with the same `PYTHON`. The script answers its own lookups from a
+table the fixture carries, and the test resolves from that table. A case
+where the crate does not decide as Python is named in the test, with the
+reason, never left out of the fixture.
 
 ## Implementation boundaries
 

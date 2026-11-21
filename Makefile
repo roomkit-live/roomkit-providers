@@ -2,12 +2,12 @@ CARGO ?= cargo
 MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' Cargo.toml).0
 DENY_FLAGS ?=
 # The interpreter of the generated files: one with RoomKit's Python package
-# installed for python-forms, the Python version RoomKit is tested with for
-# printable-table.
+# installed for python-forms and python-public-urls, the Python version
+# RoomKit is tested with for printable-table.
 PYTHON ?= python3
 
 .PHONY: all fmt fmt-check clippy test doc deny check-core-deps msrv msrv-toolchain hooks \
-	python-forms printable-table
+	python-forms python-public-urls printable-table
 
 all: fmt-check clippy test doc deny check-core-deps
 
@@ -49,6 +49,11 @@ hooks:
 # fixtures: `make all` needs no Python.
 python-forms:
 	$(PYTHON) scripts/generate_python_forms.py
+
+# Rewrites the fixture of what RoomKit's Python decides of a table of URLs.
+# The script answers its own lookups: nothing is asked of the network.
+python-public-urls:
+	$(PYTHON) scripts/generate_python_public_urls.py
 
 # Rewrites the table of the characters Python's `repr` writes as they are,
 # from the Unicode data of PYTHON, the Python version RoomKit is tested with,

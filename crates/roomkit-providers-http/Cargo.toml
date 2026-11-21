@@ -1,0 +1,29 @@
+[package]
+name = "roomkit-providers-http"
+description = "Outbound URL validation and shared HTTP support for model providers"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+readme = "README.md"
+keywords = ["llm", "ai", "provider", "http", "ssrf"]
+categories = ["web-programming::http-client"]
+
+[dependencies]
+# The URL a destination is checked as is the one the client dials: the
+# client's own parser. `rustls-no-provider` makes the client take the
+# configuration `tls_config` builds.
+reqwest = { workspace = true, features = ["rustls-no-provider"] }
+rustls = { workspace = true, features = ["ring", "std", "tls12"] }
+thiserror = { workspace = true }
+webpki-roots = { workspace = true }
+
+[dev-dependencies]
+# The table of what RoomKit's Python decides, which the tests replay.
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

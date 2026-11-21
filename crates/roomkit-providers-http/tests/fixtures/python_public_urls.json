@@ -1,0 +1,5590 @@
+{
+    "generator": "scripts/generate_python_public_urls.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "unicode_version": "15.1.0",
+    "delimiter_lookalikes": [
+        "\u2047",
+        "\u2048",
+        "\u2049",
+        "\u2100",
+        "\u2101",
+        "\u2105",
+        "\u2106",
+        "\u2a74",
+        "\ufe13",
+        "\ufe16",
+        "\ufe55",
+        "\ufe56",
+        "\ufe5f",
+        "\ufe6b",
+        "\uff03",
+        "\uff0f",
+        "\uff1a",
+        "\uff1f",
+        "\uff20"
+    ],
+    "answers": {
+        "service.example": [
+            "93.184.216.34"
+        ],
+        "xn--caf-dma.example": [
+            "93.184.216.34"
+        ],
+        "xn--a.example": [
+            "93.184.216.34"
+        ],
+        "a_b.example": [
+            "93.184.216.34"
+        ],
+        "-a.example": [
+            "93.184.216.34"
+        ],
+        "v6.example": [
+            "2606:4700:4700::1111"
+        ],
+        "both.example": [
+            "93.184.216.34",
+            "2606:4700:4700::1111"
+        ],
+        "mixed.example": [
+            "93.184.216.34",
+            "127.0.0.1"
+        ],
+        "mixed-v6.example": [
+            "93.184.216.34",
+            "::1"
+        ],
+        "inside.example": [
+            "10.0.0.5"
+        ],
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example": [
+            "93.184.216.34"
+        ],
+        "service..example": [
+            "93.184.216.34"
+        ],
+        "sub.localhost": [
+            "127.0.0.1"
+        ],
+        "localhost.localdomain": [
+            "::1"
+        ],
+        "nowhere.example": null,
+        "4294967296": null,
+        "999.1.1.1": null,
+        "1.2.3.4.5": null,
+        "08.1.1.1": null,
+        "example.123": null,
+        "example.0x10": null,
+        "0x": null,
+        "address-0.example": [
+            "93.184.216.34"
+        ],
+        "address-1.example": [
+            "1.1.1.1"
+        ],
+        "address-2.example": [
+            "8.8.8.8"
+        ],
+        "address-3.example": [
+            "127.0.0.1"
+        ],
+        "address-4.example": [
+            "127.255.255.254"
+        ],
+        "address-5.example": [
+            "10.0.0.1"
+        ],
+        "address-6.example": [
+            "10.255.255.255"
+        ],
+        "address-7.example": [
+            "9.255.255.255"
+        ],
+        "address-8.example": [
+            "11.0.0.0"
+        ],
+        "address-9.example": [
+            "172.15.255.255"
+        ],
+        "address-10.example": [
+            "172.16.0.1"
+        ],
+        "address-11.example": [
+            "172.31.255.255"
+        ],
+        "address-12.example": [
+            "172.32.0.1"
+        ],
+        "address-13.example": [
+            "192.167.255.255"
+        ],
+        "address-14.example": [
+            "192.168.0.1"
+        ],
+        "address-15.example": [
+            "192.169.0.1"
+        ],
+        "address-16.example": [
+            "169.253.255.255"
+        ],
+        "address-17.example": [
+            "169.254.0.1"
+        ],
+        "address-18.example": [
+            "169.254.169.254"
+        ],
+        "address-19.example": [
+            "169.255.0.1"
+        ],
+        "address-20.example": [
+            "0.0.0.0"
+        ],
+        "address-21.example": [
+            "0.1.2.3"
+        ],
+        "address-22.example": [
+            "1.0.0.0"
+        ],
+        "address-23.example": [
+            "100.63.255.255"
+        ],
+        "address-24.example": [
+            "100.64.0.1"
+        ],
+        "address-25.example": [
+            "100.127.255.255"
+        ],
+        "address-26.example": [
+            "100.128.0.1"
+        ],
+        "address-27.example": [
+            "192.0.0.1"
+        ],
+        "address-28.example": [
+            "192.0.0.8"
+        ],
+        "address-29.example": [
+            "192.0.0.9"
+        ],
+        "address-30.example": [
+            "192.0.0.10"
+        ],
+        "address-31.example": [
+            "192.0.0.11"
+        ],
+        "address-32.example": [
+            "192.0.0.170"
+        ],
+        "address-33.example": [
+            "192.0.1.1"
+        ],
+        "address-34.example": [
+            "192.0.2.1"
+        ],
+        "address-35.example": [
+            "198.17.255.255"
+        ],
+        "address-36.example": [
+            "198.18.0.1"
+        ],
+        "address-37.example": [
+            "198.19.255.255"
+        ],
+        "address-38.example": [
+            "198.20.0.1"
+        ],
+        "address-39.example": [
+            "198.51.100.7"
+        ],
+        "address-40.example": [
+            "203.0.113.9"
+        ],
+        "address-41.example": [
+            "192.88.99.1"
+        ],
+        "address-42.example": [
+            "223.255.255.255"
+        ],
+        "address-43.example": [
+            "224.0.0.1"
+        ],
+        "address-44.example": [
+            "239.255.255.255"
+        ],
+        "address-45.example": [
+            "240.0.0.1"
+        ],
+        "address-46.example": [
+            "255.255.255.255"
+        ],
+        "address-47.example": [
+            "2606:4700:4700::1111"
+        ],
+        "address-48.example": [
+            "2001:4860:4860::8888"
+        ],
+        "address-49.example": [
+            "2000::1"
+        ],
+        "address-50.example": [
+            "2001:200::1"
+        ],
+        "address-51.example": [
+            "2001:db9::1"
+        ],
+        "address-52.example": [
+            "2620:fe::fe"
+        ],
+        "address-53.example": [
+            "::1"
+        ],
+        "address-54.example": [
+            "::"
+        ],
+        "address-55.example": [
+            "::2"
+        ],
+        "address-56.example": [
+            "::ffff:127.0.0.1"
+        ],
+        "address-57.example": [
+            "::ffff:10.0.0.1"
+        ],
+        "address-58.example": [
+            "::ffff:169.254.169.254"
+        ],
+        "address-59.example": [
+            "::ffff:0.0.0.0"
+        ],
+        "address-60.example": [
+            "::ffff:93.184.216.34"
+        ],
+        "address-61.example": [
+            "::ffff:192.0.0.9"
+        ],
+        "address-62.example": [
+            "::127.0.0.1"
+        ],
+        "address-63.example": [
+            "::93.184.216.34"
+        ],
+        "address-64.example": [
+            "64:ff9b::7f00:1"
+        ],
+        "address-65.example": [
+            "64:ff9b:1::1"
+        ],
+        "address-66.example": [
+            "2002:7f00:1::1"
+        ],
+        "address-67.example": [
+            "2002::1"
+        ],
+        "address-68.example": [
+            "2001::1"
+        ],
+        "address-69.example": [
+            "2001:1::1"
+        ],
+        "address-70.example": [
+            "2001:1::2"
+        ],
+        "address-71.example": [
+            "2001:1::3"
+        ],
+        "address-72.example": [
+            "2001:2::1"
+        ],
+        "address-73.example": [
+            "2001:3::1"
+        ],
+        "address-74.example": [
+            "2001:4:112::1"
+        ],
+        "address-75.example": [
+            "2001:4:113::1"
+        ],
+        "address-76.example": [
+            "2001:10::1"
+        ],
+        "address-77.example": [
+            "2001:20::1"
+        ],
+        "address-78.example": [
+            "2001:3f:ffff::1"
+        ],
+        "address-79.example": [
+            "2001:40::1"
+        ],
+        "address-80.example": [
+            "2001:1ff::1"
+        ],
+        "address-81.example": [
+            "2001:db8::1"
+        ],
+        "address-82.example": [
+            "3fff::1"
+        ],
+        "address-83.example": [
+            "3fff:fff:ffff::1"
+        ],
+        "address-84.example": [
+            "3fff:1000::1"
+        ],
+        "address-85.example": [
+            "100::1"
+        ],
+        "address-86.example": [
+            "100:0:0:1::1"
+        ],
+        "address-87.example": [
+            "fc00::1"
+        ],
+        "address-88.example": [
+            "fd12:3456:789a::1"
+        ],
+        "address-89.example": [
+            "fe80::1"
+        ],
+        "address-90.example": [
+            "febf:ffff::1"
+        ],
+        "address-91.example": [
+            "fec0::1"
+        ],
+        "address-92.example": [
+            "ff02::1"
+        ],
+        "address-93.example": [
+            "ff00::"
+        ],
+        "address-94.example": [
+            "1::1"
+        ],
+        "address-95.example": [
+            "4000::1"
+        ],
+        "address-96.example": [
+            "5f00::1"
+        ],
+        "address-97.example": [
+            "8000::1"
+        ],
+        "address-98.example": [
+            "a000::1"
+        ],
+        "address-99.example": [
+            "c000::1"
+        ],
+        "address-100.example": [
+            "e000::1"
+        ],
+        "address-101.example": [
+            "f000::1"
+        ],
+        "address-102.example": [
+            "f800::1"
+        ],
+        "address-103.example": [
+            "fe00::1"
+        ]
+    },
+    "cases": [
+        {
+            "name": "https",
+            "url": "https://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "http",
+            "url": "http://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "path_query_and_fragment",
+            "url": "https://service.example:8443/A?q=1#fragment",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    8443
+                ]
+            ]
+        },
+        {
+            "name": "upper_case",
+            "url": "HTTPS://Service.EXAMPLE/Path",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "user_and_password",
+            "url": "https://user:pass@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "escaped_user",
+            "url": "https://user%40mail:p%40ss@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "user_past_ascii",
+            "url": "https://caf\u00e9@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "user_empty",
+            "url": "https://@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "user_and_password_empty",
+            "url": "https://:@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "password_with_colons",
+            "url": "https://user:pa:ss@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "trailing_dot",
+            "url": "https://service.example./",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "trailing_dots",
+            "url": "https://service.example../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "leading_space",
+            "url": " https://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "leading_tab",
+            "url": "\thttps://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "leading_line_break",
+            "url": "\r\nhttps://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "leading_no_break_space",
+            "url": "\u00a0https://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "path_past_ascii",
+            "url": "https://service.example/caf\u00e9?q=\u00e9t\u00e9",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "underscore_in_a_name",
+            "url": "https://a_b.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "a_b.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "hyphen_first_in_a_name",
+            "url": "https://-a.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "-a.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "punycode_in_upper_case",
+            "url": "https://XN--CAF-DMA.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "xn--caf-dma.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "punycode_that_decodes_to_nothing",
+            "url": "https://xn--a.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "xn--a.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "label_past_63_characters",
+            "url": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "empty_label_in_a_name",
+            "url": "https://service..example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service..example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "name_not_resolved",
+            "url": "https://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "unknown_name_not_resolved",
+            "url": "https://nowhere.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "port_empty",
+            "url": "https://service.example:/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "port_zero",
+            "url": "https://service.example:0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "port_with_zeros",
+            "url": "https://service.example:00443/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "port_of_the_other_scheme",
+            "url": "http://service.example:443/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "port_largest",
+            "url": "https://service.example:65535/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    65535
+                ]
+            ]
+        },
+        {
+            "name": "port_past_the_largest",
+            "url": "https://service.example:65536/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port out of range 0-65535",
+            "lookups": []
+        },
+        {
+            "name": "port_past_any_integer",
+            "url": "https://service.example:99999999999999999999/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port out of range 0-65535",
+            "lookups": []
+        },
+        {
+            "name": "port_no_number",
+            "url": "https://service.example:invalid/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as 'invalid'",
+            "lookups": []
+        },
+        {
+            "name": "port_no_number_not_resolved",
+            "url": "https://service.example:invalid/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as 'invalid'",
+            "lookups": []
+        },
+        {
+            "name": "port_of_an_address_no_number",
+            "url": "https://93.184.216.34:invalid/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as 'invalid'",
+            "lookups": []
+        },
+        {
+            "name": "port_of_an_address_past_the_largest",
+            "url": "https://93.184.216.34:65536/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "Port out of range 0-65535",
+            "lookups": []
+        },
+        {
+            "name": "port_two_colons",
+            "url": "https://service.example:1:2/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as '1:2'",
+            "lookups": []
+        },
+        {
+            "name": "port_signed",
+            "url": "https://service.example:+80/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as '+80'",
+            "lookups": []
+        },
+        {
+            "name": "port_negative",
+            "url": "https://service.example:-1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as '-1'",
+            "lookups": []
+        },
+        {
+            "name": "port_with_a_letter",
+            "url": "https://service.example:8080x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as '8080x'",
+            "lookups": []
+        },
+        {
+            "name": "port_with_a_quote",
+            "url": "https://service.example:it's/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as \"it's\"",
+            "lookups": []
+        },
+        {
+            "name": "port_past_ascii",
+            "url": "https://service.example:\u00e9/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as '\u00e9'",
+            "lookups": []
+        },
+        {
+            "name": "port_no_break_space",
+            "url": "https://service.example:\u00a0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port could not be cast to integer value as '\\xa0'",
+            "lookups": []
+        },
+        {
+            "name": "scheme_not_allowed",
+            "url": "ftp://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL scheme must be one of ('http', 'https'), got 'ftp'",
+            "lookups": []
+        },
+        {
+            "name": "scheme_http_where_https_alone",
+            "url": "http://service.example/",
+            "allowed_schemes": [
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL scheme must be one of ('https',), got 'http'",
+            "lookups": []
+        },
+        {
+            "name": "scheme_https_where_https_alone",
+            "url": "https://service.example/",
+            "allowed_schemes": [
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "scheme_none_allowed",
+            "url": "https://service.example/",
+            "allowed_schemes": [],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL scheme must be one of (), got 'https'",
+            "lookups": []
+        },
+        {
+            "name": "scheme_allowed_in_upper_case",
+            "url": "https://service.example/",
+            "allowed_schemes": [
+                "HTTPS"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL scheme must be one of ('HTTPS',), got 'https'",
+            "lookups": []
+        },
+        {
+            "name": "scheme_of_an_application",
+            "url": "service://service.example/resource",
+            "allowed_schemes": [
+                "service"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "scheme_of_an_application_port",
+            "url": "service://service.example:443/resource",
+            "allowed_schemes": [
+                "service"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "scheme_of_an_application_loopback",
+            "url": "service://127.1/resource",
+            "allowed_schemes": [
+                "service"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '127.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "scheme_with_signs",
+            "url": "svc+tls.v1://service.example/",
+            "allowed_schemes": [
+                "svc+tls.v1"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "scheme_refused_after_its_authority",
+            "url": "ftp://\\evil.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid URL authority",
+            "lookups": []
+        },
+        {
+            "name": "no_scheme",
+            "url": "service.example",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "empty",
+            "url": "",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "one_slash",
+            "url": "https:/service.example",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "no_authority",
+            "url": "https://",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "no_authority_before_a_path",
+            "url": "https:///path",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "no_authority_before_a_query",
+            "url": "https://?q=1",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "no_authority_before_a_fragment",
+            "url": "https://#fragment",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "no_scheme_before_the_slashes",
+            "url": "://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "scheme_starting_with_a_digit",
+            "url": "1https://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "scheme_with_a_slash",
+            "url": "a/b://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "user_and_no_host",
+            "url": "https://user@/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host must be an ASCII DNS name or IP address",
+            "lookups": []
+        },
+        {
+            "name": "port_and_no_host",
+            "url": "https://:80/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host must be an ASCII DNS name or IP address",
+            "lookups": []
+        },
+        {
+            "name": "host_of_one_dot",
+            "url": "https://./",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host must be an ASCII DNS name or IP address",
+            "lookups": []
+        },
+        {
+            "name": "host_of_dots",
+            "url": "https://../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host must be an ASCII DNS name or IP address",
+            "lookups": []
+        },
+        {
+            "name": "backslash_first",
+            "url": "https://\\evil.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid URL authority",
+            "lookups": []
+        },
+        {
+            "name": "backslash_before_an_at",
+            "url": "https://service.example\\@evil.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid URL authority",
+            "lookups": []
+        },
+        {
+            "name": "space_in_a_name",
+            "url": "https://service .example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid URL authority",
+            "lookups": []
+        },
+        {
+            "name": "tab_in_a_name",
+            "url": "https://service\t.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid URL authority",
+            "lookups": []
+        },
+        {
+            "name": "delete_in_a_name",
+            "url": "https://service\u007f.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid URL authority",
+            "lookups": []
+        },
+        {
+            "name": "two_ats",
+            "url": "https://one@two@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid URL authority",
+            "lookups": []
+        },
+        {
+            "name": "escape_in_a_name",
+            "url": "https://service%2Eexample/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host must be an ASCII DNS name or IP address",
+            "lookups": []
+        },
+        {
+            "name": "name_past_ascii",
+            "url": "https://caf\u00e9.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host must be an ASCII DNS name or IP address",
+            "lookups": []
+        },
+        {
+            "name": "name_of_a_kelvin_sign",
+            "url": "https://\u212a.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host must be an ASCII DNS name or IP address",
+            "lookups": []
+        },
+        {
+            "name": "fragment_before_an_at",
+            "url": "https://service.example#@evil.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "query_before_an_at",
+            "url": "https://service.example?@evil.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "bracket_text_after",
+            "url": "https://[::1]x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
+            "lookups": []
+        },
+        {
+            "name": "bracket_no_address",
+            "url": "https://[::g]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
+            "lookups": []
+        },
+        {
+            "name": "bracket_not_closed",
+            "url": "https://[::1",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
+            "lookups": []
+        },
+        {
+            "name": "bracket_empty",
+            "url": "https://[]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
+            "lookups": []
+        },
+        {
+            "name": "bracket_zone",
+            "url": "https://[fe80::1%25eth0]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
+            "lookups": []
+        },
+        {
+            "name": "bracket_future_address",
+            "url": "https://[v1.x]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
+            "lookups": []
+        },
+        {
+            "name": "bracket_two_parts",
+            "url": "https://[1:2]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "At least 3 parts expected in '1:2'",
+            "lookups": []
+        },
+        {
+            "name": "bracket_ipv4",
+            "url": "https://[127.0.0.1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "At least 3 parts expected in '127.0.0.1'",
+            "lookups": []
+        },
+        {
+            "name": "bracket_two_runs",
+            "url": "https://[1::2::3]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "At most one '::' permitted in '1::2::3'",
+            "lookups": []
+        },
+        {
+            "name": "bracket_port_no_number",
+            "url": "https://[::1]:x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
+            "lookups": []
+        },
+        {
+            "name": "bracket_port_past_the_largest",
+            "url": "https://[::1]:99999/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port out of range 0-65535",
+            "lookups": []
+        },
+        {
+            "name": "bracket_port_empty",
+            "url": "https://[::1]:/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '::1' resolves to loopback address ::1",
+            "lookups": []
+        },
+        {
+            "name": "bracket_port",
+            "url": "https://[2606:4700:4700::1111]:8443/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "bracket_in_upper_case",
+            "url": "https://[2001:DB8::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '2001:db8::1' resolves to private address 2001:db8::1",
+            "lookups": []
+        },
+        {
+            "name": "bracket_in_full",
+            "url": "https://[0:0:0:0:0:0:0:1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0:0:0:0:0:0:0:1' resolves to loopback address ::1",
+            "lookups": []
+        },
+        {
+            "name": "bracket_open_in_the_user",
+            "url": "https://us[er@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 URL",
+            "lookups": []
+        },
+        {
+            "name": "bracket_pair_in_the_user",
+            "url": "https://us[e]r@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "'service.example' does not appear to be an IPv4 or IPv6 address",
+            "lookups": []
+        },
+        {
+            "name": "bracket_pair_in_the_port",
+            "url": "https://service.example:[1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Invalid IPv6 URL",
+            "lookups": []
+        },
+        {
+            "name": "bracket_pair_in_the_user_of_an_address",
+            "url": "https://us[e]r@[2606:4700:4700::1111]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "user_with_a_wide_number_sign",
+            "url": "https://user\uff03name@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "netloc 'user\uff03name@service.example' contains invalid characters under NFKC normalization",
+            "lookups": []
+        },
+        {
+            "name": "user_with_a_wide_at",
+            "url": "https://us\uff20er@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "netloc 'us\uff20er@service.example' contains invalid characters under NFKC normalization",
+            "lookups": []
+        },
+        {
+            "name": "user_with_an_account_of_sign",
+            "url": "https://it's\u2100@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "netloc 'it's\u2100@service.example' contains invalid characters under NFKC normalization",
+            "lookups": []
+        },
+        {
+            "name": "user_with_a_wide_letter",
+            "url": "https://\uff21@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "service.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "port_with_a_wide_colon",
+            "url": "https://service.example:\uff1a80/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "netloc 'service.example:\uff1a80' contains invalid characters under NFKC normalization",
+            "lookups": []
+        },
+        {
+            "name": "wide_colon_before_the_scheme_is_judged",
+            "url": "ftp://us\uff1aer@service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "netloc 'us\uff1aer@service.example' contains invalid characters under NFKC normalization",
+            "lookups": []
+        },
+        {
+            "name": "localhost",
+            "url": "http://localhost/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='localhost')",
+            "lookups": []
+        },
+        {
+            "name": "localhost_in_upper_case",
+            "url": "https://LOCALHOST/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='localhost')",
+            "lookups": []
+        },
+        {
+            "name": "localhost_with_a_dot",
+            "url": "https://localhost./",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='localhost.')",
+            "lookups": []
+        },
+        {
+            "name": "localhost_with_dots",
+            "url": "https://localhost../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='localhost..')",
+            "lookups": []
+        },
+        {
+            "name": "localhost_not_resolved",
+            "url": "https://localhost/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='localhost')",
+            "lookups": []
+        },
+        {
+            "name": "localhost_of_an_application",
+            "url": "service://localhost/resource",
+            "allowed_schemes": [
+                "service"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='localhost')",
+            "lookups": []
+        },
+        {
+            "name": "ip6_localhost",
+            "url": "http://ip6-localhost/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='ip6-localhost')",
+            "lookups": []
+        },
+        {
+            "name": "ip6_loopback",
+            "url": "http://ip6-loopback:8080/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must not point to localhost (host='ip6-loopback')",
+            "lookups": []
+        },
+        {
+            "name": "localhost_after_its_port",
+            "url": "https://localhost:99999/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Port out of range 0-65535",
+            "lookups": []
+        },
+        {
+            "name": "name_under_localhost",
+            "url": "https://sub.localhost/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'sub.localhost' resolves to loopback address 127.0.0.1",
+            "lookups": [
+                [
+                    "sub.localhost",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "name_starting_with_localhost",
+            "url": "https://localhost.localdomain/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'localhost.localdomain' resolves to loopback address ::1",
+            "lookups": [
+                [
+                    "localhost.localdomain",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "ipv4_two_parts",
+            "url": "http://127.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '127.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_one_number",
+            "url": "http://2130706433/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '2130706433' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_octal",
+            "url": "http://0177.0.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0177.0.0.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_octal_one_number",
+            "url": "http://017700000001/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '017700000001' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_hexadecimal",
+            "url": "http://0x7f000001/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0x7f000001' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_hexadecimal_in_upper_case",
+            "url": "http://0x7F.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0x7f.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_hexadecimal_parts",
+            "url": "http://0x7f.0.0.0x1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0x7f.0.0.0x1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_with_a_dot",
+            "url": "http://127.0.0.1./",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '127.0.0.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_three_parts_public",
+            "url": "http://1.2.3/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv4_three_parts_private",
+            "url": "http://192.168.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '192.168.1' resolves to private address 192.168.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_two_parts_private",
+            "url": "http://10.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '10.1' resolves to private address 10.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_largest",
+            "url": "http://4294967295/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '4294967295' resolves to private address 255.255.255.255",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_zero",
+            "url": "http://0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0' resolves to private address 0.0.0.0",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_octal_public",
+            "url": "http://010.0.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv4_octal_private",
+            "url": "http://0300.0250.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0300.0250.0.1' resolves to private address 192.168.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_hexadecimal_mark_in_upper_case",
+            "url": "http://0X7F.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0x7f.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_with_dots",
+            "url": "http://127.0.0.1../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '127.0.0.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_public_with_a_dot",
+            "url": "http://93.184.216.34./",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv6_with_zeros",
+            "url": "https://[::0001]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '::0001' resolves to loopback address ::1",
+            "lookups": []
+        },
+        {
+            "name": "ipv6_run_in_the_middle",
+            "url": "https://[0::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0::1' resolves to loopback address ::1",
+            "lookups": []
+        },
+        {
+            "name": "ipv6_mapped_in_hexadecimal",
+            "url": "https://[::FFFF:7F00:1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '::ffff:7f00:1' resolves to loopback address ::ffff:127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv6_mapped_public_in_hexadecimal",
+            "url": "https://[::ffff:5db8:d822]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv6_ipv4_with_a_zero",
+            "url": "https://[::ffff:01.2.3.4]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Leading zeros are not permitted in '01' in '01.2.3.4' in '::ffff:01.2.3.4'",
+            "lookups": []
+        },
+        {
+            "name": "ipv6_ipv4_of_three_parts",
+            "url": "https://[::1.2.3]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Expected 4 octets in '1.2.3' in '::1.2.3'",
+            "lookups": []
+        },
+        {
+            "name": "ipv6_eight_parts",
+            "url": "https://[2606:4700:4700:0:0:0:0:1111]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv6_nine_parts",
+            "url": "https://[1:2:3:4:5:6:7:8:9]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "Exactly 8 parts expected without '::' in '1:2:3:4:5:6:7:8:9'",
+            "lookups": []
+        },
+        {
+            "name": "ipv6_part_of_five_digits",
+            "url": "https://[00001::]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "At most 4 characters permitted in '00001' in '00001::'",
+            "lookups": []
+        },
+        {
+            "name": "number_past_the_largest",
+            "url": "http://4294967296/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '4294967296' did not resolve to any address",
+            "lookups": [
+                [
+                    "4294967296",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "number_past_the_largest_not_resolved",
+            "url": "http://4294967296/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "part_past_255",
+            "url": "http://999.1.1.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '999.1.1.1' did not resolve to any address",
+            "lookups": [
+                [
+                    "999.1.1.1",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "part_past_255_not_resolved",
+            "url": "http://999.1.1.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "five_parts",
+            "url": "http://1.2.3.4.5/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '1.2.3.4.5' did not resolve to any address",
+            "lookups": [
+                [
+                    "1.2.3.4.5",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "five_parts_not_resolved",
+            "url": "http://1.2.3.4.5/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "octal_with_an_eight",
+            "url": "http://08.1.1.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '08.1.1.1' did not resolve to any address",
+            "lookups": [
+                [
+                    "08.1.1.1",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "octal_with_an_eight_not_resolved",
+            "url": "http://08.1.1.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "name_ending_in_a_number",
+            "url": "http://example.123/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'example.123' did not resolve to any address",
+            "lookups": [
+                [
+                    "example.123",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "name_ending_in_a_number_not_resolved",
+            "url": "http://example.123/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "hexadecimal_of_no_digit",
+            "url": "http://0x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0x' did not resolve to any address",
+            "lookups": [
+                [
+                    "0x",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "hexadecimal_of_no_digit_not_resolved",
+            "url": "http://0x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "name_ending_in_a_hexadecimal_number",
+            "url": "http://example.0x10/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'example.0x10' did not resolve to any address",
+            "lookups": [
+                [
+                    "example.0x10",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "name_ending_in_a_hexadecimal_number_not_resolved",
+            "url": "http://example.0x10/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "no_answer",
+            "url": "https://nowhere.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'nowhere.example' did not resolve to any address",
+            "lookups": [
+                [
+                    "nowhere.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "answer_ipv6",
+            "url": "https://v6.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "v6.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "answers_of_both_families",
+            "url": "https://both.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "both.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "answers_one_loopback",
+            "url": "https://mixed.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'mixed.example' resolves to loopback address 127.0.0.1",
+            "lookups": [
+                [
+                    "mixed.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "answers_one_ipv6_loopback",
+            "url": "https://mixed-v6.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'mixed-v6.example' resolves to loopback address ::1",
+            "lookups": [
+                [
+                    "mixed-v6.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "answer_private",
+            "url": "https://inside.example:8443/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'inside.example' resolves to private address 10.0.0.5",
+            "lookups": [
+                [
+                    "inside.example",
+                    8443
+                ]
+            ]
+        },
+        {
+            "name": "answer_private_not_resolved",
+            "url": "https://inside.example:8443/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_0_written",
+            "url": "https://93.184.216.34/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_0_resolved",
+            "url": "https://address-0.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-0.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_1_written",
+            "url": "https://1.1.1.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_1_resolved",
+            "url": "https://address-1.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-1.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_2_written",
+            "url": "https://8.8.8.8/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_2_resolved",
+            "url": "https://address-2.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-2.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_3_written",
+            "url": "https://127.0.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '127.0.0.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_3_resolved",
+            "url": "https://address-3.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-3.example' resolves to loopback address 127.0.0.1",
+            "lookups": [
+                [
+                    "address-3.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_4_written",
+            "url": "https://127.255.255.254/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '127.255.255.254' resolves to loopback address 127.255.255.254",
+            "lookups": []
+        },
+        {
+            "name": "address_4_resolved",
+            "url": "https://address-4.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-4.example' resolves to loopback address 127.255.255.254",
+            "lookups": [
+                [
+                    "address-4.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_5_written",
+            "url": "https://10.0.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '10.0.0.1' resolves to private address 10.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_5_resolved",
+            "url": "https://address-5.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-5.example' resolves to private address 10.0.0.1",
+            "lookups": [
+                [
+                    "address-5.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_6_written",
+            "url": "https://10.255.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '10.255.255.255' resolves to private address 10.255.255.255",
+            "lookups": []
+        },
+        {
+            "name": "address_6_resolved",
+            "url": "https://address-6.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-6.example' resolves to private address 10.255.255.255",
+            "lookups": [
+                [
+                    "address-6.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_7_written",
+            "url": "https://9.255.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_7_resolved",
+            "url": "https://address-7.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-7.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_8_written",
+            "url": "https://11.0.0.0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_8_resolved",
+            "url": "https://address-8.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-8.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_9_written",
+            "url": "https://172.15.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_9_resolved",
+            "url": "https://address-9.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-9.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_10_written",
+            "url": "https://172.16.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '172.16.0.1' resolves to private address 172.16.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_10_resolved",
+            "url": "https://address-10.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-10.example' resolves to private address 172.16.0.1",
+            "lookups": [
+                [
+                    "address-10.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_11_written",
+            "url": "https://172.31.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '172.31.255.255' resolves to private address 172.31.255.255",
+            "lookups": []
+        },
+        {
+            "name": "address_11_resolved",
+            "url": "https://address-11.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-11.example' resolves to private address 172.31.255.255",
+            "lookups": [
+                [
+                    "address-11.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_12_written",
+            "url": "https://172.32.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_12_resolved",
+            "url": "https://address-12.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-12.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_13_written",
+            "url": "https://192.167.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_13_resolved",
+            "url": "https://address-13.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-13.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_14_written",
+            "url": "https://192.168.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '192.168.0.1' resolves to private address 192.168.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_14_resolved",
+            "url": "https://address-14.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-14.example' resolves to private address 192.168.0.1",
+            "lookups": [
+                [
+                    "address-14.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_15_written",
+            "url": "https://192.169.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_15_resolved",
+            "url": "https://address-15.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-15.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_16_written",
+            "url": "https://169.253.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_16_resolved",
+            "url": "https://address-16.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-16.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_17_written",
+            "url": "https://169.254.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '169.254.0.1' resolves to private address 169.254.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_17_resolved",
+            "url": "https://address-17.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-17.example' resolves to private address 169.254.0.1",
+            "lookups": [
+                [
+                    "address-17.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_18_written",
+            "url": "https://169.254.169.254/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '169.254.169.254' resolves to private address 169.254.169.254",
+            "lookups": []
+        },
+        {
+            "name": "address_18_resolved",
+            "url": "https://address-18.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-18.example' resolves to private address 169.254.169.254",
+            "lookups": [
+                [
+                    "address-18.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_19_written",
+            "url": "https://169.255.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_19_resolved",
+            "url": "https://address-19.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-19.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_20_written",
+            "url": "https://0.0.0.0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '0.0.0.0' resolves to private address 0.0.0.0",
+            "lookups": []
+        },
+        {
+            "name": "address_20_resolved",
+            "url": "https://address-20.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-20.example' resolves to private address 0.0.0.0",
+            "lookups": [
+                [
+                    "address-20.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_21_written",
+            "url": "https://0.1.2.3/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '0.1.2.3' resolves to private address 0.1.2.3",
+            "lookups": []
+        },
+        {
+            "name": "address_21_resolved",
+            "url": "https://address-21.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-21.example' resolves to private address 0.1.2.3",
+            "lookups": [
+                [
+                    "address-21.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_22_written",
+            "url": "https://1.0.0.0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_22_resolved",
+            "url": "https://address-22.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-22.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_23_written",
+            "url": "https://100.63.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_23_resolved",
+            "url": "https://address-23.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-23.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_24_written",
+            "url": "https://100.64.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_24_resolved",
+            "url": "https://address-24.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-24.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_25_written",
+            "url": "https://100.127.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_25_resolved",
+            "url": "https://address-25.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-25.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_26_written",
+            "url": "https://100.128.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_26_resolved",
+            "url": "https://address-26.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-26.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_27_written",
+            "url": "https://192.0.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '192.0.0.1' resolves to private address 192.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_27_resolved",
+            "url": "https://address-27.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-27.example' resolves to private address 192.0.0.1",
+            "lookups": [
+                [
+                    "address-27.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_28_written",
+            "url": "https://192.0.0.8/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '192.0.0.8' resolves to private address 192.0.0.8",
+            "lookups": []
+        },
+        {
+            "name": "address_28_resolved",
+            "url": "https://address-28.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-28.example' resolves to private address 192.0.0.8",
+            "lookups": [
+                [
+                    "address-28.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_29_written",
+            "url": "https://192.0.0.9/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_29_resolved",
+            "url": "https://address-29.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-29.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_30_written",
+            "url": "https://192.0.0.10/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_30_resolved",
+            "url": "https://address-30.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-30.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_31_written",
+            "url": "https://192.0.0.11/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '192.0.0.11' resolves to private address 192.0.0.11",
+            "lookups": []
+        },
+        {
+            "name": "address_31_resolved",
+            "url": "https://address-31.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-31.example' resolves to private address 192.0.0.11",
+            "lookups": [
+                [
+                    "address-31.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_32_written",
+            "url": "https://192.0.0.170/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '192.0.0.170' resolves to private address 192.0.0.170",
+            "lookups": []
+        },
+        {
+            "name": "address_32_resolved",
+            "url": "https://address-32.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-32.example' resolves to private address 192.0.0.170",
+            "lookups": [
+                [
+                    "address-32.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_33_written",
+            "url": "https://192.0.1.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_33_resolved",
+            "url": "https://address-33.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-33.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_34_written",
+            "url": "https://192.0.2.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '192.0.2.1' resolves to private address 192.0.2.1",
+            "lookups": []
+        },
+        {
+            "name": "address_34_resolved",
+            "url": "https://address-34.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-34.example' resolves to private address 192.0.2.1",
+            "lookups": [
+                [
+                    "address-34.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_35_written",
+            "url": "https://198.17.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_35_resolved",
+            "url": "https://address-35.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-35.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_36_written",
+            "url": "https://198.18.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '198.18.0.1' resolves to private address 198.18.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_36_resolved",
+            "url": "https://address-36.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-36.example' resolves to private address 198.18.0.1",
+            "lookups": [
+                [
+                    "address-36.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_37_written",
+            "url": "https://198.19.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '198.19.255.255' resolves to private address 198.19.255.255",
+            "lookups": []
+        },
+        {
+            "name": "address_37_resolved",
+            "url": "https://address-37.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-37.example' resolves to private address 198.19.255.255",
+            "lookups": [
+                [
+                    "address-37.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_38_written",
+            "url": "https://198.20.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_38_resolved",
+            "url": "https://address-38.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-38.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_39_written",
+            "url": "https://198.51.100.7/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '198.51.100.7' resolves to private address 198.51.100.7",
+            "lookups": []
+        },
+        {
+            "name": "address_39_resolved",
+            "url": "https://address-39.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-39.example' resolves to private address 198.51.100.7",
+            "lookups": [
+                [
+                    "address-39.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_40_written",
+            "url": "https://203.0.113.9/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '203.0.113.9' resolves to private address 203.0.113.9",
+            "lookups": []
+        },
+        {
+            "name": "address_40_resolved",
+            "url": "https://address-40.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-40.example' resolves to private address 203.0.113.9",
+            "lookups": [
+                [
+                    "address-40.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_41_written",
+            "url": "https://192.88.99.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_41_resolved",
+            "url": "https://address-41.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-41.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_42_written",
+            "url": "https://223.255.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_42_resolved",
+            "url": "https://address-42.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-42.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_43_written",
+            "url": "https://224.0.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '224.0.0.1' resolves to multicast address 224.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_43_resolved",
+            "url": "https://address-43.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-43.example' resolves to multicast address 224.0.0.1",
+            "lookups": [
+                [
+                    "address-43.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_44_written",
+            "url": "https://239.255.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '239.255.255.255' resolves to multicast address 239.255.255.255",
+            "lookups": []
+        },
+        {
+            "name": "address_44_resolved",
+            "url": "https://address-44.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-44.example' resolves to multicast address 239.255.255.255",
+            "lookups": [
+                [
+                    "address-44.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_45_written",
+            "url": "https://240.0.0.1/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '240.0.0.1' resolves to private address 240.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_45_resolved",
+            "url": "https://address-45.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-45.example' resolves to private address 240.0.0.1",
+            "lookups": [
+                [
+                    "address-45.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_46_written",
+            "url": "https://255.255.255.255/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '255.255.255.255' resolves to private address 255.255.255.255",
+            "lookups": []
+        },
+        {
+            "name": "address_46_resolved",
+            "url": "https://address-46.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-46.example' resolves to private address 255.255.255.255",
+            "lookups": [
+                [
+                    "address-46.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_47_written",
+            "url": "https://[2606:4700:4700::1111]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_47_resolved",
+            "url": "https://address-47.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-47.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_48_written",
+            "url": "https://[2001:4860:4860::8888]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_48_resolved",
+            "url": "https://address-48.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-48.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_49_written",
+            "url": "https://[2000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_49_resolved",
+            "url": "https://address-49.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-49.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_50_written",
+            "url": "https://[2001:200::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_50_resolved",
+            "url": "https://address-50.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-50.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_51_written",
+            "url": "https://[2001:db9::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_51_resolved",
+            "url": "https://address-51.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-51.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_52_written",
+            "url": "https://[2620:fe::fe]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_52_resolved",
+            "url": "https://address-52.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-52.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_53_written",
+            "url": "https://[::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::1' resolves to loopback address ::1",
+            "lookups": []
+        },
+        {
+            "name": "address_53_resolved",
+            "url": "https://address-53.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-53.example' resolves to loopback address ::1",
+            "lookups": [
+                [
+                    "address-53.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_54_written",
+            "url": "https://[::]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::' resolves to private address ::",
+            "lookups": []
+        },
+        {
+            "name": "address_54_resolved",
+            "url": "https://address-54.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-54.example' resolves to private address ::",
+            "lookups": [
+                [
+                    "address-54.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_55_written",
+            "url": "https://[::2]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::2' resolves to reserved address ::2",
+            "lookups": []
+        },
+        {
+            "name": "address_55_resolved",
+            "url": "https://address-55.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-55.example' resolves to reserved address ::2",
+            "lookups": [
+                [
+                    "address-55.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_56_written",
+            "url": "https://[::ffff:127.0.0.1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::ffff:127.0.0.1' resolves to loopback address ::ffff:127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_56_resolved",
+            "url": "https://address-56.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-56.example' resolves to loopback address ::ffff:127.0.0.1",
+            "lookups": [
+                [
+                    "address-56.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_57_written",
+            "url": "https://[::ffff:10.0.0.1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::ffff:10.0.0.1' resolves to private address ::ffff:10.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_57_resolved",
+            "url": "https://address-57.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-57.example' resolves to private address ::ffff:10.0.0.1",
+            "lookups": [
+                [
+                    "address-57.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_58_written",
+            "url": "https://[::ffff:169.254.169.254]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::ffff:169.254.169.254' resolves to private address ::ffff:169.254.169.254",
+            "lookups": []
+        },
+        {
+            "name": "address_58_resolved",
+            "url": "https://address-58.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-58.example' resolves to private address ::ffff:169.254.169.254",
+            "lookups": [
+                [
+                    "address-58.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_59_written",
+            "url": "https://[::ffff:0.0.0.0]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::ffff:0.0.0.0' resolves to private address ::ffff:0.0.0.0",
+            "lookups": []
+        },
+        {
+            "name": "address_59_resolved",
+            "url": "https://address-59.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-59.example' resolves to private address ::ffff:0.0.0.0",
+            "lookups": [
+                [
+                    "address-59.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_60_written",
+            "url": "https://[::ffff:93.184.216.34]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_60_resolved",
+            "url": "https://address-60.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-60.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_61_written",
+            "url": "https://[::ffff:192.0.0.9]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_61_resolved",
+            "url": "https://address-61.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-61.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_62_written",
+            "url": "https://[::127.0.0.1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::127.0.0.1' resolves to reserved address ::7f00:1",
+            "lookups": []
+        },
+        {
+            "name": "address_62_resolved",
+            "url": "https://address-62.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-62.example' resolves to reserved address ::7f00:1",
+            "lookups": [
+                [
+                    "address-62.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_63_written",
+            "url": "https://[::93.184.216.34]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::93.184.216.34' resolves to reserved address ::5db8:d822",
+            "lookups": []
+        },
+        {
+            "name": "address_63_resolved",
+            "url": "https://address-63.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-63.example' resolves to reserved address ::5db8:d822",
+            "lookups": [
+                [
+                    "address-63.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_64_written",
+            "url": "https://[64:ff9b::7f00:1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '64:ff9b::7f00:1' resolves to reserved address 64:ff9b::7f00:1",
+            "lookups": []
+        },
+        {
+            "name": "address_64_resolved",
+            "url": "https://address-64.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-64.example' resolves to reserved address 64:ff9b::7f00:1",
+            "lookups": [
+                [
+                    "address-64.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_65_written",
+            "url": "https://[64:ff9b:1::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '64:ff9b:1::1' resolves to private address 64:ff9b:1::1",
+            "lookups": []
+        },
+        {
+            "name": "address_65_resolved",
+            "url": "https://address-65.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-65.example' resolves to private address 64:ff9b:1::1",
+            "lookups": [
+                [
+                    "address-65.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_66_written",
+            "url": "https://[2002:7f00:1::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2002:7f00:1::1' resolves to private address 2002:7f00:1::1",
+            "lookups": []
+        },
+        {
+            "name": "address_66_resolved",
+            "url": "https://address-66.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-66.example' resolves to private address 2002:7f00:1::1",
+            "lookups": [
+                [
+                    "address-66.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_67_written",
+            "url": "https://[2002::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2002::1' resolves to private address 2002::1",
+            "lookups": []
+        },
+        {
+            "name": "address_67_resolved",
+            "url": "https://address-67.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-67.example' resolves to private address 2002::1",
+            "lookups": [
+                [
+                    "address-67.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_68_written",
+            "url": "https://[2001::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001::1' resolves to private address 2001::1",
+            "lookups": []
+        },
+        {
+            "name": "address_68_resolved",
+            "url": "https://address-68.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-68.example' resolves to private address 2001::1",
+            "lookups": [
+                [
+                    "address-68.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_69_written",
+            "url": "https://[2001:1::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_69_resolved",
+            "url": "https://address-69.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-69.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_70_written",
+            "url": "https://[2001:1::2]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_70_resolved",
+            "url": "https://address-70.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-70.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_71_written",
+            "url": "https://[2001:1::3]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001:1::3' resolves to private address 2001:1::3",
+            "lookups": []
+        },
+        {
+            "name": "address_71_resolved",
+            "url": "https://address-71.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-71.example' resolves to private address 2001:1::3",
+            "lookups": [
+                [
+                    "address-71.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_72_written",
+            "url": "https://[2001:2::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001:2::1' resolves to private address 2001:2::1",
+            "lookups": []
+        },
+        {
+            "name": "address_72_resolved",
+            "url": "https://address-72.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-72.example' resolves to private address 2001:2::1",
+            "lookups": [
+                [
+                    "address-72.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_73_written",
+            "url": "https://[2001:3::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_73_resolved",
+            "url": "https://address-73.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-73.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_74_written",
+            "url": "https://[2001:4:112::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_74_resolved",
+            "url": "https://address-74.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-74.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_75_written",
+            "url": "https://[2001:4:113::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001:4:113::1' resolves to private address 2001:4:113::1",
+            "lookups": []
+        },
+        {
+            "name": "address_75_resolved",
+            "url": "https://address-75.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-75.example' resolves to private address 2001:4:113::1",
+            "lookups": [
+                [
+                    "address-75.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_76_written",
+            "url": "https://[2001:10::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001:10::1' resolves to private address 2001:10::1",
+            "lookups": []
+        },
+        {
+            "name": "address_76_resolved",
+            "url": "https://address-76.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-76.example' resolves to private address 2001:10::1",
+            "lookups": [
+                [
+                    "address-76.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_77_written",
+            "url": "https://[2001:20::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_77_resolved",
+            "url": "https://address-77.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-77.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_78_written",
+            "url": "https://[2001:3f:ffff::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_78_resolved",
+            "url": "https://address-78.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-78.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_79_written",
+            "url": "https://[2001:40::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001:40::1' resolves to private address 2001:40::1",
+            "lookups": []
+        },
+        {
+            "name": "address_79_resolved",
+            "url": "https://address-79.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-79.example' resolves to private address 2001:40::1",
+            "lookups": [
+                [
+                    "address-79.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_80_written",
+            "url": "https://[2001:1ff::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001:1ff::1' resolves to private address 2001:1ff::1",
+            "lookups": []
+        },
+        {
+            "name": "address_80_resolved",
+            "url": "https://address-80.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-80.example' resolves to private address 2001:1ff::1",
+            "lookups": [
+                [
+                    "address-80.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_81_written",
+            "url": "https://[2001:db8::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '2001:db8::1' resolves to private address 2001:db8::1",
+            "lookups": []
+        },
+        {
+            "name": "address_81_resolved",
+            "url": "https://address-81.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-81.example' resolves to private address 2001:db8::1",
+            "lookups": [
+                [
+                    "address-81.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_82_written",
+            "url": "https://[3fff::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '3fff::1' resolves to private address 3fff::1",
+            "lookups": []
+        },
+        {
+            "name": "address_82_resolved",
+            "url": "https://address-82.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-82.example' resolves to private address 3fff::1",
+            "lookups": [
+                [
+                    "address-82.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_83_written",
+            "url": "https://[3fff:fff:ffff::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '3fff:fff:ffff::1' resolves to private address 3fff:fff:ffff::1",
+            "lookups": []
+        },
+        {
+            "name": "address_83_resolved",
+            "url": "https://address-83.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-83.example' resolves to private address 3fff:fff:ffff::1",
+            "lookups": [
+                [
+                    "address-83.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_84_written",
+            "url": "https://[3fff:1000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_84_resolved",
+            "url": "https://address-84.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-84.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_85_written",
+            "url": "https://[100::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '100::1' resolves to private address 100::1",
+            "lookups": []
+        },
+        {
+            "name": "address_85_resolved",
+            "url": "https://address-85.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-85.example' resolves to private address 100::1",
+            "lookups": [
+                [
+                    "address-85.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_86_written",
+            "url": "https://[100:0:0:1::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '100:0:0:1::1' resolves to reserved address 100:0:0:1::1",
+            "lookups": []
+        },
+        {
+            "name": "address_86_resolved",
+            "url": "https://address-86.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-86.example' resolves to reserved address 100:0:0:1::1",
+            "lookups": [
+                [
+                    "address-86.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_87_written",
+            "url": "https://[fc00::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'fc00::1' resolves to private address fc00::1",
+            "lookups": []
+        },
+        {
+            "name": "address_87_resolved",
+            "url": "https://address-87.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-87.example' resolves to private address fc00::1",
+            "lookups": [
+                [
+                    "address-87.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_88_written",
+            "url": "https://[fd12:3456:789a::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'fd12:3456:789a::1' resolves to private address fd12:3456:789a::1",
+            "lookups": []
+        },
+        {
+            "name": "address_88_resolved",
+            "url": "https://address-88.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-88.example' resolves to private address fd12:3456:789a::1",
+            "lookups": [
+                [
+                    "address-88.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_89_written",
+            "url": "https://[fe80::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'fe80::1' resolves to private address fe80::1",
+            "lookups": []
+        },
+        {
+            "name": "address_89_resolved",
+            "url": "https://address-89.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-89.example' resolves to private address fe80::1",
+            "lookups": [
+                [
+                    "address-89.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_90_written",
+            "url": "https://[febf:ffff::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'febf:ffff::1' resolves to private address febf:ffff::1",
+            "lookups": []
+        },
+        {
+            "name": "address_90_resolved",
+            "url": "https://address-90.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-90.example' resolves to private address febf:ffff::1",
+            "lookups": [
+                [
+                    "address-90.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_91_written",
+            "url": "https://[fec0::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_91_resolved",
+            "url": "https://address-91.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-91.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_92_written",
+            "url": "https://[ff02::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'ff02::1' resolves to multicast address ff02::1",
+            "lookups": []
+        },
+        {
+            "name": "address_92_resolved",
+            "url": "https://address-92.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-92.example' resolves to multicast address ff02::1",
+            "lookups": [
+                [
+                    "address-92.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_93_written",
+            "url": "https://[ff00::]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'ff00::' resolves to multicast address ff00::",
+            "lookups": []
+        },
+        {
+            "name": "address_93_resolved",
+            "url": "https://address-93.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-93.example' resolves to multicast address ff00::",
+            "lookups": [
+                [
+                    "address-93.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_94_written",
+            "url": "https://[1::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '1::1' resolves to reserved address 1::1",
+            "lookups": []
+        },
+        {
+            "name": "address_94_resolved",
+            "url": "https://address-94.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-94.example' resolves to reserved address 1::1",
+            "lookups": [
+                [
+                    "address-94.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_95_written",
+            "url": "https://[4000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '4000::1' resolves to reserved address 4000::1",
+            "lookups": []
+        },
+        {
+            "name": "address_95_resolved",
+            "url": "https://address-95.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-95.example' resolves to reserved address 4000::1",
+            "lookups": [
+                [
+                    "address-95.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_96_written",
+            "url": "https://[5f00::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '5f00::1' resolves to reserved address 5f00::1",
+            "lookups": []
+        },
+        {
+            "name": "address_96_resolved",
+            "url": "https://address-96.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-96.example' resolves to reserved address 5f00::1",
+            "lookups": [
+                [
+                    "address-96.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_97_written",
+            "url": "https://[8000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '8000::1' resolves to reserved address 8000::1",
+            "lookups": []
+        },
+        {
+            "name": "address_97_resolved",
+            "url": "https://address-97.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-97.example' resolves to reserved address 8000::1",
+            "lookups": [
+                [
+                    "address-97.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_98_written",
+            "url": "https://[a000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'a000::1' resolves to reserved address a000::1",
+            "lookups": []
+        },
+        {
+            "name": "address_98_resolved",
+            "url": "https://address-98.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-98.example' resolves to reserved address a000::1",
+            "lookups": [
+                [
+                    "address-98.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_99_written",
+            "url": "https://[c000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'c000::1' resolves to reserved address c000::1",
+            "lookups": []
+        },
+        {
+            "name": "address_99_resolved",
+            "url": "https://address-99.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-99.example' resolves to reserved address c000::1",
+            "lookups": [
+                [
+                    "address-99.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_100_written",
+            "url": "https://[e000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'e000::1' resolves to reserved address e000::1",
+            "lookups": []
+        },
+        {
+            "name": "address_100_resolved",
+            "url": "https://address-100.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-100.example' resolves to reserved address e000::1",
+            "lookups": [
+                [
+                    "address-100.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_101_written",
+            "url": "https://[f000::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'f000::1' resolves to reserved address f000::1",
+            "lookups": []
+        },
+        {
+            "name": "address_101_resolved",
+            "url": "https://address-101.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-101.example' resolves to reserved address f000::1",
+            "lookups": [
+                [
+                    "address-101.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_102_written",
+            "url": "https://[f800::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'f800::1' resolves to reserved address f800::1",
+            "lookups": []
+        },
+        {
+            "name": "address_102_resolved",
+            "url": "https://address-102.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-102.example' resolves to reserved address f800::1",
+            "lookups": [
+                [
+                    "address-102.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_103_written",
+            "url": "https://[fe00::1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'fe00::1' resolves to reserved address fe00::1",
+            "lookups": []
+        },
+        {
+            "name": "address_103_resolved",
+            "url": "https://address-103.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-103.example' resolves to reserved address fe00::1",
+            "lookups": [
+                [
+                    "address-103.example",
+                    443
+                ]
+            ]
+        }
+    ]
+}

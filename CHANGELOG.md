@@ -50,3 +50,9 @@ nothing has been released yet.
   the characters Python's `repr` writes as they are is derived from Unicode
   data, and the crate ships that data's license, `LICENSE-UNICODE`, beside
   its own.
+- `roomkit-providers-http`: `validate_public_url`, which checks that a URL
+  names a public destination before a transport is given it, and refuses a
+  loopback, private, reserved or multicast address however it is written or
+  resolved. It decides as `validate_public_url` of RoomKit's Python
+  implementation, in the same words, on a table of 370 URLs and addresses;
+  its README lists where it differs.
