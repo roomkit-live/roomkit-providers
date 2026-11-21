@@ -266,6 +266,10 @@ fn end_differs(case: &Case, error: Option<&ProviderError>, found: &mut Vec<Strin
 /// the provider replays the case as Python.
 pub(super) fn differences(case: &Case, replayed: &Replayed) -> Vec<String> {
     let mut found = Vec::new();
+    if let Some(unread) = &replayed.unread {
+        found.push(format!("the request is not read: {unread}"));
+        return found;
+    }
     if let Some(unbuilt) = &replayed.unbuilt {
         found.push(format!("the provider is not built: {}", unbuilt.message));
         return found;

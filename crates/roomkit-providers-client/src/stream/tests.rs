@@ -110,3 +110,34 @@ async fn what_a_stream_gave_before_it_failed_is_given_first() {
         (vec!["one".to_owned()], Some(said.to_owned()))
     );
 }
+
+// A stream that leaves through an exit it keeps, the exit of one request
+// that brings a secret of its own: the failure it carried leaves without
+// that secret, the events before it as they were, and nothing after it.
+#[tokio::test]
+async fn a_stream_leaves_through_the_exit_of_its_request() {
+    use roomkit_providers_llm::{StreamEvent, StreamTextDelta, Yielder, items, next};
+
+    use crate::failure::{Exit, Failure, Secrets, carried, told};
+    use crate::stream::{Item, leaving_with};
+
+    const LENT: &str = "placeholder-of-one-request";
+    let said = || StreamEvent::TextDelta(StreamTextDelta::new("Hel"));
+    let events = Box::pin(items(move |out: Yielder<Item>| async move {
+        out.give(Ok(said())).await;
+        let echoed = told(format!("Wrong key: {LENT}."), 500);
+        let failure = Failure::said(vec![echoed], false, Some(401));
+        out.give(Err(carried(failure))).await;
+        out.give(Ok(said())).await;
+    }));
+    let exit = Exit::new("test", Secrets::default()).with_secrets([LENT.to_owned()]);
+    let mut leaving = leaving_with(events, exit);
+    assert_eq!(next(&mut leaving).await.unwrap().unwrap(), said());
+    let error = next(&mut leaving).await.unwrap().unwrap_err();
+    assert_eq!(error.message, "Wrong key: [***].");
+    assert_eq!(
+        (error.status_code, error.provider.as_str()),
+        (Some(401), "test")
+    );
+    assert!(next(&mut leaving).await.is_none());
+}

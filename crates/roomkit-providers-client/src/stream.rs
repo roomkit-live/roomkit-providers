@@ -166,6 +166,20 @@ pub fn leaving<'a>(mut events: ProviderStream<'a>, exit: &'a Exit) -> ProviderSt
     }))
 }
 
+/// As [`leaving`], through an exit the stream keeps: the exit of one
+/// request that brings a secret of its own, a key a host lends it
+/// ([`Exit::with_secrets`]).
+pub fn leaving_with(mut events: ProviderStream<'_>, exit: Exit) -> ProviderStream<'_> {
+    Box::pin(items(move |out: Yielder<Item>| async move {
+        while let Some(event) = next(&mut events).await {
+            match event {
+                Ok(event) => out.give(Ok(event)).await,
+                Err(error) => return out.give(Err(exit.leave_carried(error))).await,
+            }
+        }
+    }))
+}
+
 /// The text of `events`, as it comes: its reasoning, its calls and its end
 /// are left out, a failure is the last item.
 pub fn text(mut events: ProviderStream<'_>) -> TextStream<'_> {

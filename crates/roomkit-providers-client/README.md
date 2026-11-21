@@ -32,8 +32,8 @@ provider.
 | `endpoint` | `joined`, the URL of a path under a base URL, which refuses the base URLs Python's client and this one read otherwise; `has_user_information`; `is_vendor_endpoint` and `talks_to_vendor`, whether a base URL is the vendor's own endpoint; `shown_url`, what a `Debug` form may show of a URL |
 | `retry` | `Rule` and `Past`: whether a failed try is tried again and after what wait, and where the rule of a vendor's SDK differs |
 | `failure` | `Failure`, a failure inside a provider, with the failures every provider words alike; `own`, `told` and `Stated`, for those a provider words; `Exit` and `Secrets`, the one way a failure leaves; `carried`; `described_status`, `retryable_status`, `names_transient`, `past_mark`, `one_line`; `MESSAGE_LIMIT`, `NAME_LIMIT` |
-| `stream` | `Streamed`, a streamed answer read event by event within `STREAM_LIMIT`; `leaving` and `text`, the two streams a provider gives of its events; `Item` |
-| `harness` (feature `harness`) | Test support: `fake`, a local fake of an endpoint or of a proxy, over plain HTTP or over TLS; `tls`, an authority a test makes for itself and the certificates it signs; `Fixture`, `Case`, `Replays`, `replayed_or_named`, the replay of recorded cases; `named`, the cases a provider answers otherwise than Python; `self_test`, the replay held to what it compares |
+| `stream` | `Streamed`, a streamed answer read event by event within `STREAM_LIMIT`; `leaving`, `leaving_with` and `text`, the streams a provider gives of its events; `Item` |
+| `harness` (feature `harness`) | Test support: `fake`, a local fake of an endpoint or of a proxy, over plain HTTP or over TLS; `tls`, an authority a test makes for itself and the certificates it signs; `Fixture`, `Case`, `Replays`, `replayed_or_named`, the replay of recorded cases; `named`, the cases a provider answers otherwise than Python; `self_test`, the replay held to what it compares; `shape`, a fixture held to its shape, every member of its cases read |
 | crate root (feature `replay`) | `Client::replaying`, `ReplayWaits` and `replayed_at`: the seam a replay outside a provider crate's tests drives a provider through |
 
 ## What the client does
@@ -446,7 +446,9 @@ the `Streamed` drops the request with its connection. A failure of the stream
 does not leave where it is built: it is `carried` as the last item, so that
 the contract's `checked_stream` may run over the events first, and
 `stream::leaving` lets it out through the `Exit`, with any failure the check
-built on the way. `stream::text` gives the text of a stream of events.
+built on the way; `stream::leaving_with` does so through an exit the stream
+keeps, the exit of one request that brings a key of its own
+(`Exit::with_secrets`). `stream::text` gives the text of a stream of events.
 
 ## Testing a provider with the harness
 
@@ -503,8 +505,10 @@ replay it (`roomkit-providers-openai/src/replay/`):
    case's name, the reason the provider answers it otherwise than Python, the
    differences its replay then shows, each by the words it starts with, and
    what the provider does `Instead` (`Does::Unbuilt`, `Fails`, `Answers`,
-   `AsksWithoutAKey`). No case is skipped: a case is replayed as Python, or it
-   is named.
+   `Unread`, `AsksWithoutAKey`). No case is skipped: a case is replayed as
+   Python, or it is named. `Does::Unread` is a case whose request the
+   contract, stricter than Python's on what a request holds, does not read:
+   nothing is asked.
 3. **One test for each call**, which states its counts:
    `harness::replayed_or_named::<Provider>(&fixture, &NAMED, "generate")`
    gives how many cases replayed as Python and how many are named and do as
@@ -522,6 +526,19 @@ replay it (`roomkit-providers-openai/src/replay/`):
    `NAMED_FAILURE`, `NAMED_UNBUILT`); the provider names the cases of its
    fixture each is run on, and adds the wrongs of its own wire: another path,
    another key, a header it does not send.
+6. **The shape of the fixture** (`harness::shape`), in a test of the crate's
+   `tests/`: `shape::Fixture::read` reads every member of every case,
+   strictly, and each check holds the fixture to what a replay rests on: the
+   requests and the results read as the contract's types and write back
+   unchanged, every failure says what a replay reproduces of it and whose
+   words its message holds, the questioned cases are the ones the test
+   lists, each request went where its case expects, each chunk is the bytes
+   of one read, and the fixture shows every kind of case. The provider
+   states what is its own in a `shape::Shape` (its label, its SDK's classes
+   and sentences, the members of a case that are its own), and checks
+   beside them its configuration, its catalogue and its URLs
+   (`roomkit-providers-openai/tests/python_chat_cases.rs`).
+
 What a fixture must hold for the harness to read it: `clock`, the instant
 Python's clock was stopped at; and for each case `name`, `call` (`generate`,
 `generate_structured_stream`, `generate_stream` or `list_models`), `config`
@@ -532,7 +549,8 @@ the `wait` taken before the next try), `expected`, and, where they apply,
 and `request_api_key`. A recorded header names the key it carried as
 `<config key>` or `<request key>`; the key a request carries for itself is
 written masked in `request` and plain under `request_api_key`, and the replay
-puts it back. Any other member of a case is the provider's own, which
+puts it back; what a request carries there that is no key (an empty text, a
+number) is written as it is in both. Any other member of a case is the provider's own, which
 `Case::member` gives as it is: what Python's provider read of its model's
 catalogue entry, a capability it answers.
 

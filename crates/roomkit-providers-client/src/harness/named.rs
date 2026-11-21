@@ -36,6 +36,9 @@ pub enum Does {
     /// failure: it says this text, stops for this reason, and counts this
     /// usage.
     Answers(&'static str, &'static str, &'static str),
+    /// Nothing is asked: the contract, stricter than Python's on what a
+    /// request holds, does not read the case's request, and says why.
+    Unread(Says),
     /// It is built where Python's is not, and asks without the header that
     /// carries its key: the fake, which the case gives no answer, answers
     /// its 599.
@@ -94,7 +97,11 @@ impl Stated {
         }
         if !self.instead.is_done::<P>(replayed) {
             let (unbuilt, outcome) = (&replayed.unbuilt, &replayed.outcome);
-            return Err(format!("not {:?}: {unbuilt:?} {outcome:?}", self.instead));
+            let unread = &replayed.unread;
+            return Err(format!(
+                "not {:?}: {unread:?} {unbuilt:?} {outcome:?}",
+                self.instead
+            ));
         }
         Ok(())
     }
@@ -118,19 +125,24 @@ impl Instead {
         if replayed.seen.len() != self.requests {
             return false;
         }
+        let said = |said: &str, says: Says| match says {
+            Says::Exactly(words) => said == words,
+            Says::Holding(words) => said.contains(words),
+        };
         let failed = |error: &ProviderError, expected: Does| {
             let Does::Fails(status, retryable, overflow, says) = expected else {
                 return false;
             };
-            let said = match says {
-                Says::Exactly(words) => error.message == words,
-                Says::Holding(words) => error.message.contains(words),
-            };
-            said && error.status_code == status
+            said(&error.message, says)
+                && error.status_code == status
                 && error.retryable == retryable
                 && error.context_overflow == overflow
                 && !error.before_request
         };
+        if let Does::Unread(says) = self.does {
+            let unread = replayed.unread.as_deref();
+            return unread.is_some_and(|unread| said(unread, says)) && replayed.outcome.is_none();
+        }
         match (self.does, &replayed.unbuilt, &replayed.outcome) {
             (Does::Unbuilt(words), Some(error), None) => {
                 error.before_request && !error.retryable && error.message == words
@@ -141,7 +153,8 @@ impl Instead {
                 Some(
                     Outcome::Response(Err(error))
                     | Outcome::Models(Err(error))
-                    | Outcome::Events(_, Some(error)),
+                    | Outcome::Events(_, Some(error))
+                    | Outcome::Text(_, Some(error)),
                 ),
             ) => failed(error, self.does),
             (Does::AsksWithoutAKey, None, Some(Outcome::Response(Err(error)))) => {
@@ -289,6 +302,7 @@ fn does_as_data(does: Does) -> serde_json::Value {
             "finish_reason": finish_reason,
             "usage": serde_json::from_str::<serde_json::Value>(usage).unwrap(),
         }),
+        Does::Unread(says) => serde_json::json!({"kind": "unread", "says": says_as_data(says)}),
         Does::AsksWithoutAKey => serde_json::json!({"kind": "asks_without_a_key"}),
     }
 }

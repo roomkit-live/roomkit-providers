@@ -16,7 +16,8 @@
 //! in that and in nothing else, and the provider must do exactly that. A
 //! named case that starts to replay as Python fails the test.
 //! [`replayed_or_named`] replays the cases of one call, and [`self_test`]
-//! holds the replay to what it says it compares.
+//! holds the replay to what it says it compares. [`shape`] holds a fixture
+//! to its shape: every member of its cases read, strictly.
 //!
 //! A provider is driven through [`Replays`], which its crate implements in
 //! its tests. Everything here fails a test by panicking: it is never for a
@@ -35,6 +36,7 @@ mod compare;
 pub mod fake;
 pub mod named;
 pub mod self_test;
+pub mod shape;
 pub mod tls;
 
 use std::collections::BTreeMap;
@@ -136,8 +138,9 @@ pub struct Case {
     pub config: Value,
     supports_vision: Option<bool>,
     request: Value,
-    /// The key the request carries for itself, which its JSON form masks.
-    request_api_key: Option<String>,
+    /// What the request carries under its key for itself, which its JSON
+    /// form masks when it is a key: a text that is not empty.
+    request_api_key: Option<Value>,
     exchanges: Vec<Exchange>,
     expected: Expected,
     compare: Option<Compare>,
@@ -161,14 +164,26 @@ impl Case {
     /// its JSON form holds a mask.
     #[must_use]
     pub fn asked(&self) -> AiRequest {
-        let mut request: AiRequest = serde_json::from_value(self.request.clone()).unwrap();
+        self.read_request().unwrap()
+    }
+
+    /// As [`asked`](Self::asked), or why the contract does not read the
+    /// request: it is stricter than Python's on what a request holds.
+    fn read_request(&self) -> serde_json::Result<AiRequest> {
+        let mut request: AiRequest = serde_json::from_value(self.request.clone())?;
         if let Some(key) = &self.request_api_key {
-            let key = Value::from(key.as_str());
+            let key = key.clone();
             request
                 .metadata
                 .insert(API_KEY_METADATA_KEY.to_owned(), key);
         }
-        request
+        Ok(request)
+    }
+
+    /// The key the case's request carries for itself, when it carries one.
+    fn request_key(&self) -> Option<String> {
+        let key = self.request_api_key.as_ref().and_then(Value::as_str);
+        key.filter(|key| !key.is_empty()).map(str::to_owned)
     }
 
     /// What a fake answers each exchange of the case with, in order.
@@ -292,6 +307,9 @@ pub struct Replayed {
     key: String,
     /// The key the case's request carries for itself.
     request_key: Option<String>,
+    /// Why the contract did not read the case's request, when it did not:
+    /// nothing was asked then.
+    pub unread: Option<String>,
     /// Why the provider was not built, when it was not.
     pub unbuilt: Option<ProviderError>,
     /// What the call gave, once the provider was built.
@@ -311,6 +329,7 @@ impl fmt::Debug for Replayed {
     /// What the replay gave: neither of its keys.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Replayed")
+            .field("unread", &self.unread)
             .field("unbuilt", &self.unbuilt)
             .field("outcome", &self.outcome)
             .field("seen", &self.seen)
@@ -455,13 +474,21 @@ async fn replay_served<P: Replays>(
 ) -> Replayed {
     let mut replayed = Replayed {
         key: case.key(),
-        request_key: case.request_api_key.clone(),
+        request_key: case.request_key(),
+        unread: None,
         unbuilt: None,
         outcome: None,
         seen: Vec::new(),
         waits: Vec::new(),
         timeouts: None,
         vision: None,
+    };
+    let request = match case.read_request() {
+        Ok(request) => request,
+        Err(error) => {
+            replayed.unread = Some(error.to_string());
+            return replayed;
+        }
     };
     let mut provider = match P::built(&case.config) {
         Ok(provider) => provider,
@@ -486,7 +513,6 @@ async fn replay_served<P: Replays>(
             Box::pin(std::future::ready(()))
         }),
     });
-    let request = case.asked();
     // What a stream gives before a silence, as Python read it.
     let expected = &case.expected;
     let before = expected.events.as_ref().map_or(0, Vec::len);
