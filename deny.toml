@@ -28,6 +28,9 @@ exceptions = [
     # roomkit-providers-openai depends on for WebAssembly targets alone: the
     # lock file lists it, and no target this workspace builds compiles it.
     { crate = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] },
+    # PyO3's detection of the build's target, in the Python binding's tree
+    # alone (`make python-check`): a build script's dependency.
+    { crate = "target-lexicon", allow = ["Apache-2.0 WITH LLVM-exception"] },
 ]
 confidence-threshold = 0.9
 

@@ -16,6 +16,18 @@ make hooks
 
 `make hooks` enables the optional commit-message hook.
 
+The Python package also needs CPython 3.12 or newer and
+[uv](https://docs.astral.sh/uv/), which runs maturin and ruff at a version
+within the range the `Makefile` names. Name a local installation in their
+place, for instance one in a virtual environment of the repository (`.venv`
+is ignored by git):
+
+```sh
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python 'maturin>=1.15,<2' 'ruff>=0.14,<1'
+make python-check PYTHON=.venv/bin/python MATURIN=$PWD/.venv/bin/maturin RUFF=$PWD/.venv/bin/ruff
+```
+
 ## Validation gates
 
 | Command | Scope |
@@ -23,9 +35,18 @@ make hooks
 | `make fmt` | Format the workspace |
 | `make all` | Formatting, Clippy, tests, the examples, rustdoc, dependency policy and the core dependency allow list |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
+| `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed alone and tested |
+| `make python-msrv` | Check the binding on the minimum Rust toolchain |
+| `make python-wheel` | Build the optimized wheel into `dist/` |
+| `make api-snapshot` | Rewrite the snapshot of the Python public API from a freshly built wheel |
 
 Run relevant checks during development, then `make all`. Run the MSRV check
-after adding dependencies or using newer standard-library APIs.
+after adding dependencies or using newer standard-library APIs. For a change
+to the Python package, the binding or what they are built from, also run
+`make python-check`, and `make python-msrv` after a change of dependencies.
+
+`make all` needs no Python interpreter: the binding is a workspace of its
+own (`bindings/python`), which the Rust workspace does not build.
 
 With populated Cargo caches and an advisory database, an offline check can use
 `CARGO_NET_OFFLINE=true make DENY_FLAGS=--offline all`. This checks cached
@@ -180,6 +201,64 @@ fails when the catalogue of the crate says otherwise.
   the reason, the differences from Python its replay shows, and what the
   provider does instead. Both are asserted: a named case that differs
   otherwise than its entry states fails as one that does otherwise.
+
+## The Python package
+
+`python/roomkit_providers` wraps the native module `roomkit_providers._native`
+(`bindings/python`), which holds no behaviour of its own: what a provider
+sends and reads stays in the provider crates.
+
+- **What crosses is JSON text**, both ways, in the contract's forms: a
+  request as one text, a whole answer as one text, a stream as the list of
+  every item already received at each crossing. A stream is read on the
+  bridge between two crossings, at most 64 items ahead of what Python took,
+  and a crossing never waits to gather more. A failure crosses as the
+  attributes of the package's exception. A key never crosses inside a JSON
+  text.
+- **Every call that waits returns an awaitable.** It is stopped by dropping
+  its future: when its task is cancelled, when its stream is closed, and
+  when the interpreter exits.
+- **The tests** (`tests/python`, `unittest`, no dependency) run against the
+  installed package and a local fake of the endpoint
+  (`tests/python/fake_endpoint.py`). `scripts/check-python.py` builds a
+  wheel and a source distribution, installs each alone in a new
+  environment, checks what each contains, and runs the tests and
+  `examples/local_server.py` on both. A test waits on what the fake
+  observed, never on a timer.
+- **The replay.** `tests/python/test_replay.py` replays the recorded wire
+  cases through the package, and compares as the Rust replay does. The cases
+  the provider answers otherwise than Python are read from
+  `crates/roomkit-providers-openai/tests/fixtures/named_cases.json`, which
+  the Rust replay writes from its own list: after a change to
+  `src/replay/named.rs`, run `make named-cases` and commit the file; a test
+  of the crate fails while the two differ. The replay drives a provider
+  through a seam of the OpenAI crate, its `replay` feature, which sends to a
+  loopback address only, sets the clock a `retry-after` date is read against
+  and keeps the waits between two tries instead of taking them. The seam is
+  a private method of the native module, for this replay, never for a host.
+  The cases whose fake stops answering under way stay with the Rust replay,
+  which moves its own clock.
+- **The public API snapshot.** `tests/python/public_api_names.json` and
+  `public_api_signatures.json` hold every public name, each signature, and
+  the keys of each typed dict. A test fails while they differ from the
+  code, a compatible addition included: the commit that changes the Python
+  surface rewrites them with `make api-snapshot`.
+- **Licenses.** The wheel ships the notices of every crate its extension
+  links (`python/roomkit_providers/licenses/native_dependencies.txt`).
+  After a change of dependencies, regenerate them with
+  `python scripts/native-notices.py write`; the check fails for a crate
+  with no notice. A crate published without its license file gets a copy
+  of its upstream's under `bindings/python/licenses/upstream`.
+- **What a distribution contains** is the repository's files and what the
+  build generates: a file git ignores must not reach a wheel or a source
+  distribution (`scripts/artifact_files.py`).
+- `benchmarks/crossing.py` measures a turn through the package. It is no
+  test and no gate.
+
+CI runs `make python-check` on CPython 3.12 and 3.14, and the binding's
+MSRV check; the `Python distributions` workflow builds the Linux x86_64
+wheel and the source distribution on demand and checks both. Nothing is
+published from either.
 
 ## Implementation boundaries
 

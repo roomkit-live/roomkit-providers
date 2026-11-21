@@ -442,6 +442,59 @@ async fn every_listing_case_replays_as_python_or_is_named() {
     assert_eq!(replayed_or_named("list_models").await, (5, 5));
 }
 
+// The seam a replay outside this crate drives a provider through does what
+// this replay does of its own: the requests go to the fake, a date is read
+// against the clock given, and the waits are kept, not taken.
+#[cfg(feature = "replay")]
+#[tokio::test]
+async fn the_seam_of_a_replay_outside_the_crate_does_as_this_one() {
+    let fixture = fixture();
+    let case = |name: &str| fixture.cases.iter().find(|case| case.name == name).unwrap();
+    let dated = case("retry_after_the_wait_asked_as_a_date");
+    let config: OpenAiConfig = serde_json::from_value(dated.config.clone()).unwrap();
+    let replies = dated.exchanges.iter().map(|e| reply_of(&e.response));
+    let fake = Fake::serving(replies.collect()).await;
+    let provider = OpenAiAiProvider::new(config.clone()).unwrap();
+    let (provider, waits) = provider.replaying(fake.address, CLOCK).unwrap();
+    let request: AiRequest = serde_json::from_value(dated.request.clone()).unwrap();
+    let response = provider.generate(&request).await.unwrap();
+    let expected = dated.expected.response.as_ref().unwrap().to_string();
+    assert_eq!(serde_json::to_string(&response).unwrap(), expected);
+    assert_eq!(fake.seen().len(), 2);
+    assert_eq!(waits.taken(), [7.0]);
+    // Read against the system's clock, the date is long past: the wait is
+    // the backoff's, within a quarter below half a second.
+    let fake = Fake::serving(
+        dated
+            .exchanges
+            .iter()
+            .map(|e| reply_of(&e.response))
+            .collect(),
+    )
+    .await;
+    let provider = OpenAiAiProvider::new(config.clone()).unwrap();
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH);
+    let (provider, waits) = provider
+        .replaying(fake.address, now.unwrap().as_secs_f64())
+        .unwrap();
+    provider.generate(&request).await.unwrap();
+    let [wait] = waits.taken()[..] else {
+        panic!("one wait: {:?}", waits.taken());
+    };
+    assert!((0.375..=0.5).contains(&wait), "{wait}");
+    // Nothing is sent off the machine.
+    let elsewhere = "192.0.2.1:80".parse().unwrap();
+    let refused = OpenAiAiProvider::new(config)
+        .unwrap()
+        .replaying(elsewhere, CLOCK);
+    let refused = refused.unwrap_err();
+    assert!(refused.before_request && !refused.retryable);
+    assert_eq!(
+        refused.message,
+        "the provider cannot be built: a replay sends to a loopback address only"
+    );
+}
+
 /// The catalogue of the crate says of each model what the cases rest on:
 /// a case that changed because Python's catalogue did shows here.
 #[test]

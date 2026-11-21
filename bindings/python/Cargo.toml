@@ -1,0 +1,79 @@
+[package]
+name = "roomkit-providers-python"
+description = "Optional Python bindings for the RoomKit model providers"
+version = "0.1.0-alpha.1"
+edition = "2024"
+rust-version = "1.94"
+license = "MIT"
+# The native module of the roomkit-providers Python package, shipped in its
+# wheel.
+publish = false
+
+# The standalone Rust workspace must not require a Python interpreter or bridge.
+[workspace]
+resolver = "3"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The contract: the request read from JSON, the response and the events
+# written as JSON, the failure a call raises.
+roomkit-providers-core = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-core" }
+# The provider, which brings the HTTP crate. `replay` is the seam the Python
+# replay of the recorded cases drives a provider through: a private method
+# of the native module, which sends to a loopback address only.
+roomkit-providers-openai = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-openai", features = ["replay"] }
+# The trait of the stream a provider's events come as.
+futures-core = { version = "0.3", default-features = false }
+# Stable CPython ABI, with a separate Tokio/asyncio bridge for awaitable I/O.
+pyo3 = { version = "0.30", features = ["abi3-py312"] }
+pyo3-async-runtimes = { version = "0.30", features = ["tokio-runtime"] }
+# The contract's values are written as JSON text.
+serde = "1"
+serde_json = "1"
+# One shared runtime for every call, independent of Python event-loop
+# lifetimes, and the token that stops its calls when the interpreter exits.
+tokio = { version = "1", default-features = false, features = ["rt", "sync"] }
+tokio-util = { version = "0.7", default-features = false, features = ["rt"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+unused_qualifications = "warn"
+unused_lifetimes = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+let_underscore_drop = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+# The bridge never panics on what Python hands it: no unwrap, expect, panic,
+# indexing or string slicing.
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+indexing_slicing = "warn"
+string_slice = "warn"
+todo = "warn"
+unimplemented = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+wildcard_enum_match_arm = "warn"
+clone_on_ref_ptr = "warn"
+
+[lints.rustdoc]
+broken_intra_doc_links = "warn"
+private_intra_doc_links = "warn"
+missing_crate_level_docs = "warn"
+bare_urls = "warn"

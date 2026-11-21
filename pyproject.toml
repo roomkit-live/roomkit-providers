@@ -1,0 +1,55 @@
+[build-system]
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[project]
+name = "roomkit-providers"
+version = "0.1.0a1"
+description = "Model providers implemented in Rust, for Python and RoomKit"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT AND Unicode-3.0"
+# The MIT license, the notice of the Unicode data two of the crates the
+# extension links derive a table from, and the notices of its dependencies.
+license-files = [
+    "LICENSE",
+    "crates/roomkit-providers-core/LICENSE-UNICODE",
+    "crates/roomkit-providers-http/LICENSE-UNICODE",
+    "python/roomkit_providers/licenses/native_dependencies.txt",
+]
+keywords = ["llm", "ai", "provider", "openai", "asyncio", "roomkit"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Rust",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Changelog = "https://github.com/roomkit-live/roomkit-providers/blob/main/CHANGELOG.md"
+Repository = "https://github.com/roomkit-live/roomkit-providers"
+Issues = "https://github.com/roomkit-live/roomkit-providers/issues"
+
+# The RoomKit adapter is not written yet: the extra names no requirement
+# until it is, and a core installation has no Python dependency.
+[project.optional-dependencies]
+roomkit = []
+
+[tool.maturin]
+manifest-path = "bindings/python/Cargo.toml"
+python-source = "python"
+module-name = "roomkit_providers._native"
+features = ["pyo3/extension-module"]
+exclude = ["docs/**", "AGENTS.md"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+include = ["python/**/*.py", "tests/python/**/*.py", "examples/*.py", "benchmarks/*.py", "scripts/check-python.py", "scripts/native-notices.py", "scripts/artifact_files.py", "scripts/api-snapshot.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]

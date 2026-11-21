@@ -364,6 +364,13 @@ replay must differ in those and in nothing else, and the provider must do
 that and nothing else. A named case that starts to replay as Python fails
 the test.
 
+`tests/fixtures/named_cases.json` holds the named cases as data, written
+from the test's own list and kept equal to it by a test: a replay outside
+the crate, the Python package's, reads it. That replay drives a provider
+through the crate's `replay` feature, which is no part of the provider a
+host uses: a provider's requests are sent to a loopback address, its clock
+is set, and its waits are kept instead of taken.
+
 ## License
 
 MIT

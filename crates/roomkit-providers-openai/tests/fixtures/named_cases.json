@@ -1,0 +1,725 @@
+{
+  "notes": "The cases of python_chat_cases.json the provider answers otherwise than Python, as src/replay/named.rs states them, for a replay outside the crate. 'differs' lists the differences from Python a replay finds, each by the words it starts with; 'requests' is how many requests the provider sends; 'does' is what the call gives. A test of the crate keeps this file equal to the source: rewrite it with make named-cases.",
+  "cases": [
+    {
+      "name": "base_url_with_a_trailing_slash_and_a_query",
+      "list": "questioned_otherwise",
+      "reason": "A base URL with a query is refused when the provider is built: the maintainer's decision. Python sends to a path written after the query.",
+      "differs": [
+        "the provider is not built: "
+      ],
+      "requests": 0,
+      "does": {
+        "kind": "unbuilt",
+        "says": "the provider cannot be built: its base URL has a query or a fragment, which the path of the API cannot follow"
+      }
+    },
+    {
+      "name": "redirect",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 307,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (307), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_301",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 301,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (301), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_302_to_another_host",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 302,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (302), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_303",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 303,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (303), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_308",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 308,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (308), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirects_past_the_hop_limit",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision.",
+      "differs": [
+        "1 requests sent, where Python sent 21",
+        "the failure's status_code differs: ",
+        "the failure's retryable differs: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 307,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (307), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "usage_completion_tokens_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "usage_counts_that_are_true",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
+      "name": "usage_cached_tokens_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "usage_reasoning_tokens_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "usage_cache_write_written_as_text_in_the_details",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "usage_counts_below_zero",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
+      "name": "stream_usage_completion_tokens_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "stream_usage_counts_that_are_true",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
+      "name": "stream_usage_cached_tokens_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "stream_usage_reasoning_tokens_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "stream_last_event_without_its_blank_line",
+      "list": "questioned_otherwise",
+      "reason": "An event the answer ends on with no blank line after it is read: the maintainer's decision. Python's client drops it.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
+      "name": "stream_last_event_without_its_line_end",
+      "list": "questioned_otherwise",
+      "reason": "An event the answer ends on with no blank line after it is read: the maintainer's decision. Python's client drops it.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
+      "name": "empty_key",
+      "list": "only_python",
+      "reason": "The openai SDK builds no client without a key. The provider is built, as the source's, and sends no Authorization.",
+      "differs": [
+        "1 requests sent, where Python sent 0",
+        "a OpenAIError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "asks_without_a_key"
+      }
+    },
+    {
+      "name": "choices_that_are_no_list",
+      "list": "only_python",
+      "reason": "Python raises a raw AttributeError. The body is no completion.",
+      "differs": [
+        "a AttributeError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: not a chat completion"
+        }
+      }
+    },
+    {
+      "name": "usage_prompt_tokens_as_text",
+      "list": "only_python",
+      "reason": "Python raises a raw TypeError. The count stays unknown.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "usage_cached_tokens_as_a_word",
+      "list": "only_python",
+      "reason": "Python raises a raw TypeError. The count stays unknown.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "usage_completion_tokens_as_a_word",
+      "list": "only_python",
+      "reason": "Python raises a raw ValidationError. The count stays unknown.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "usage_counts_with_a_fraction",
+      "list": "only_python",
+      "reason": "Python raises a raw ValidationError. The counts stay unknown.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
+      "name": "usage_reasoning_tokens_as_a_word",
+      "list": "only_python",
+      "reason": "Python raises a raw ValidationError. The count stays unknown.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "list_models_status_401",
+      "list": "only_python",
+      "reason": "Python's list_models wraps no error: the openai SDK's is raised as it is. The provider fails as it does for a completion.",
+      "differs": [
+        "a AuthenticationError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 401,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 401 (invalid_request_error, invalid_api_key): Incorrect API key provided."
+        }
+      }
+    },
+    {
+      "name": "list_models_connection_refused",
+      "list": "only_python",
+      "reason": "Python's list_models wraps no error: the openai SDK's is raised as it is. The provider fails as it does for a completion.",
+      "differs": [
+        "a APIConnectionError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the connection to the provider failed"
+        }
+      }
+    },
+    {
+      "name": "list_models_page_without_its_models",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError.",
+      "differs": [
+        "a TypeError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "list_models_entry_without_an_id",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError.",
+      "differs": [
+        "a ValidationError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "list_models_answered_with_a_page",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError.",
+      "differs": [
+        "a AttributeError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "status_502_with_a_page",
+      "list": "by_its_own_rule",
+      "reason": "A body that is no JSON is not echoed into the failure: the message is the status's reason. Python's message is the body.",
+      "differs": [
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 502,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 502: Bad Gateway"
+        }
+      }
+    },
+    {
+      "name": "status_400_with_a_plain_text",
+      "list": "by_its_own_rule",
+      "reason": "A body that is no JSON is not echoed into the failure: the message is the status's reason. Python's message is the body.",
+      "differs": [
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 400,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 400: Bad Request"
+        }
+      }
+    },
+    {
+      "name": "context_overflow_by_its_words",
+      "list": "by_its_own_rule",
+      "reason": "The failure says the context overflowed: its text does not repeat the body, which says so outside its error's message, so the body is read for it. Python leaves the question open, for a reader of its message, which holds the body.",
+      "differs": [
+        "the failure's context_overflow differs: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 400,
+        "retryable": false,
+        "context_overflow": true,
+        "says": {
+          "exactly": "the provider answered HTTP 400: Bad Request"
+        }
+      }
+    },
+    {
+      "name": "stream_usage_prompt_tokens_as_text",
+      "list": "by_its_own_rule",
+      "reason": "Python fails the stream on a count that is no whole number. The count stays unknown, as in a whole answer.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_usage_completion_tokens_as_a_word",
+      "list": "by_its_own_rule",
+      "reason": "Python fails the stream on a count that is no whole number. The count stays unknown, as in a whole answer.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "stream_usage_counts_with_a_fraction",
+      "list": "by_its_own_rule",
+      "reason": "Python fails the stream on a count that is no whole number. The count stays unknown, as in a whole answer.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {}
+      }
+    },
+    {
+      "name": "stream_usage_cached_tokens_as_a_word",
+      "list": "by_its_own_rule",
+      "reason": "Python fails the stream on a count that is no whole number. The count stays unknown, as in a whole answer.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "stream_usage_reasoning_tokens_as_a_word",
+      "list": "by_its_own_rule",
+      "reason": "Python fails the stream on a count that is no whole number. The count stays unknown, as in a whole answer.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 45
+        }
+      }
+    },
+    {
+      "name": "stream_event_with_no_data",
+      "list": "by_its_own_rule",
+      "reason": "An event that holds no data is no event, as the format of a stream of events says. Python's client reads it as JSON and fails.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_call_index_that_is_a_text",
+      "list": "by_its_own_rule",
+      "reason": "A call's index is a whole number: another fails the stream. Python takes any value as the key of the call.",
+      "differs": [
+        "the events: []",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "holding": "invalid type: string \"0\", expected u64"
+        }
+      }
+    }
+  ]
+}

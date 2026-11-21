@@ -46,3 +46,6 @@ mod think_tags;
 
 pub use config::OpenAiConfig;
 pub use provider::OpenAiAiProvider;
+#[cfg(feature = "replay")]
+#[doc(hidden)]
+pub use provider::ReplayWaits;

@@ -8,6 +8,9 @@
 *.egg-info/
 __pycache__/
 *.py[cod]
+# The native module a local build leaves beside the package's sources.
+/python/roomkit_providers/*.so
+/python/roomkit_providers/*.pyd
 
 # Local credentials must not be published.
 .env

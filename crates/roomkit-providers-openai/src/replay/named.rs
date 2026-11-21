@@ -581,6 +581,80 @@ pub(super) fn named() -> BTreeMap<&'static str, Stated> {
     named.map(stated).collect()
 }
 
+/// What a failure says, as the data file writes it.
+fn says_as_data(says: Says) -> serde_json::Value {
+    match says {
+        Says::Exactly(words) => serde_json::json!({"exactly": words}),
+        Says::Holding(words) => serde_json::json!({"holding": words}),
+    }
+}
+
+/// What the provider does of a named case, as the data file writes it.
+fn does_as_data(does: Does) -> serde_json::Value {
+    match does {
+        Does::Unbuilt(says) => serde_json::json!({"kind": "unbuilt", "says": says}),
+        Does::Fails(status_code, retryable, context_overflow, says) => serde_json::json!({
+            "kind": "fails",
+            "status_code": status_code,
+            "retryable": retryable,
+            "context_overflow": context_overflow,
+            "says": says_as_data(says),
+        }),
+        Does::Answers(text, finish_reason, usage) => serde_json::json!({
+            "kind": "answers",
+            "text": text,
+            "finish_reason": finish_reason,
+            "usage": serde_json::from_str::<serde_json::Value>(usage).unwrap(),
+        }),
+        Does::AsksWithoutAKey => serde_json::json!({"kind": "asks_without_a_key"}),
+    }
+}
+
+/// The named cases as a data file, for a replay outside this crate: each
+/// with the list it stands in, its reason, the differences from Python its
+/// replay shows and what the provider does instead.
+fn named_as_data() -> String {
+    let lists = [
+        ("questioned_otherwise", QUESTIONED_OTHERWISE),
+        ("only_python", ONLY_PYTHON),
+        ("by_its_own_rule", BY_ITS_OWN_RULE),
+    ];
+    let mut cases = Vec::new();
+    for (list, entries) in lists {
+        for (name, reason, differs, instead) in entries {
+            cases.push(serde_json::json!({
+                "name": name,
+                "list": list,
+                "reason": reason,
+                "differs": differs,
+                "requests": instead.requests,
+                "does": does_as_data(instead.does),
+            }));
+        }
+    }
+    let notes = "The cases of python_chat_cases.json the provider answers otherwise than \
+                 Python, as src/replay/named.rs states them, for a replay outside the crate. \
+                 'differs' lists the differences from Python a replay finds, each by the words \
+                 it starts with; 'requests' is how many requests the provider sends; 'does' \
+                 is what the call gives. A test of the crate keeps this file equal to the \
+                 source: rewrite it with make named-cases.";
+    let file = serde_json::json!({"notes": notes, "cases": cases});
+    serde_json::to_string_pretty(&file).unwrap() + "\n"
+}
+
+/// The data file of the named cases is what this module states. Run with
+/// `NAMED_CASES_OUT` naming a file, it writes the file instead.
+#[test]
+fn the_named_cases_file_is_what_this_module_states() {
+    let stated = named_as_data();
+    if let Some(out) = std::env::var_os("NAMED_CASES_OUT") {
+        std::fs::write(out, stated).unwrap();
+        return;
+    }
+    let held = include_str!("../../tests/fixtures/named_cases.json");
+    assert!(held == stated, "run make named-cases, and commit the file");
+}
+
 /// Each named case is a case of the fixture, in the list its case belongs
 /// to: questioned there, failing with what no provider reproduces, or
 /// neither; and it says why.

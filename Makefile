@@ -4,12 +4,22 @@ DENY_FLAGS ?=
 # The interpreter of the generated files: one with RoomKit's Python package
 # installed for python-forms, python-public-urls and the python-openai
 # targets, the Python version RoomKit is tested with for printable-table.
+# For python-check, python-wheel and api-snapshot, the interpreter the
+# package is built for and tested on: CPython 3.12 or newer.
 PYTHON ?= python3
+PYTHON_MANIFEST := bindings/python/Cargo.toml
+# The Python tools, each run at a version within its range: name a local
+# installation in place of one (MATURIN=.venv/bin/maturin).
+MATURIN ?= uv tool run --from 'maturin>=1.15,<2' maturin
+RUFF ?= uv tool run --from 'ruff>=0.14,<1' ruff
+PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.py \
+	scripts/native-notices.py scripts/artifact_files.py scripts/api-snapshot.py
 
 .PHONY: all fmt fmt-check clippy test examples doc deny check-core-deps msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-openai-config python-openai-chat-cases \
 	python-openai-catalogue \
-	printable-table
+	printable-table named-cases \
+	python-wheel python-check python-msrv api-snapshot
 
 all: fmt-check clippy test examples doc deny check-core-deps
 
@@ -64,6 +74,37 @@ msrv-toolchain:
 hooks:
 	git config core.hooksPath .githooks
 
+# The Python package (CONTRIBUTING.md): an optional bridge over the crates.
+# The Rust gates above stay free of any interpreter; these targets need
+# CPython 3.12 or newer and uv.
+
+# Builds the wheel of the Python package into dist/, optimized.
+python-wheel:
+	$(MATURIN) build --locked --release --interpreter $(PYTHON) --out dist
+
+# The binding's own lint, documentation and dependency policy, the Python
+# lint, then scripts/check-python.py: a wheel and a source distribution are
+# built, each installed alone in a new environment, and the Python tests
+# and the example run on each. The tests answer from a local fake: nothing
+# is asked of a network.
+python-check:
+	$(CARGO) fmt --manifest-path $(PYTHON_MANIFEST) --all -- --check
+	$(CARGO) clippy --manifest-path $(PYTHON_MANIFEST) --all-targets --locked -- -D warnings
+	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --manifest-path $(PYTHON_MANIFEST) --no-deps --locked
+	$(CARGO) deny --manifest-path $(PYTHON_MANIFEST) --config deny.toml $(DENY_FLAGS) check
+	$(RUFF) check $(PYTHON_SOURCES)
+	$(RUFF) format --check $(PYTHON_SOURCES)
+	MATURIN="$(MATURIN)" $(PYTHON) scripts/check-python.py
+
+python-msrv:
+	$(CARGO) +$(MSRV) check --manifest-path $(PYTHON_MANIFEST) --all-targets --locked
+
+# Rewrites the snapshot of the Python public API from a freshly built wheel.
+# The Python tests fail while the snapshot differs from the code: the commit
+# that changes the public surface rewrites it.
+api-snapshot:
+	MATURIN="$(MATURIN)" $(PYTHON) scripts/api-snapshot.py
+
 # Rewrites the fixtures of what RoomKit's Python gives: the JSON forms of its
 # models and the decisions of its call rules. The tests only read the
 # fixtures: `make all` needs no Python.
@@ -91,6 +132,13 @@ python-openai-catalogue:
 # extra. The script answers its own requests: nothing is sent to a network.
 python-openai-chat-cases:
 	$(PYTHON) scripts/generate_openai_chat_cases.py
+
+# Rewrites the data file of the cases the OpenAI provider answers otherwise
+# than Python, from the replay's own list: a replay outside the crate reads
+# it, and a test of the crate fails while the two differ.
+named-cases:
+	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-openai/tests/fixtures/named_cases.json) \
+		$(CARGO) test --locked -p roomkit-providers-openai --lib the_named_cases_file
 
 # Rewrites the table of the characters Python's `repr` writes as they are,
 # from the Unicode data of PYTHON, the Python version RoomKit is tested with,

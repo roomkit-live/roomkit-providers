@@ -14,8 +14,10 @@ contract.
 > **Early development.** The contract crate is written: what a provider
 > implements, what it is asked and what it answers. So is the HTTP support
 > the providers share, and the OpenAI provider: whole answers, streams and
-> the model listing. Nothing is released. The [changelog](CHANGELOG.md) says
-> what exists; the rest of this page says where the project is going.
+> the model listing. A Python package calls that provider through a native
+> extension, without RoomKit. Nothing is released. The
+> [changelog](CHANGELOG.md) says what exists; the rest of this page says
+> where the project is going.
 
 ## Goals
 
@@ -45,10 +47,39 @@ In this order:
    whole or as a stream and lists its endpoint's models, replaying the cases
    captured on RoomKit's Python provider;
 3. a Python package calling the same implementation through a native
-   extension;
+   extension, `roomkit-providers`: written, not released, for Linux x86_64
+   and without RoomKit ([Python](#python));
 4. adapters for RoomKit, in Rust and in Python.
 
-Items 3 and 4 are not started.
+Item 4 is not started.
+
+## Python
+
+The Python package holds the same OpenAI provider behind a native extension,
+for asynchronous programs on CPython 3.12 or newer. It has no Python
+dependency. A request and its answer are plain dicts in the contract's JSON
+form:
+
+```python
+from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+
+config = OpenAIConfig(
+    api_key="placeholder-not-a-key",
+    model="local-model",
+    base_url="http://localhost:11434/v1",
+)
+provider = OpenAIAIProvider(config)
+
+
+async def ask() -> str:
+    request = {"messages": [{"role": "user", "content": "Hello"}]}
+    return (await provider.generate(request))["content"]
+```
+
+Nothing is published: `make python-wheel` builds the wheel from this
+repository. The [Python guide](guide/python.md) says how to install it, what
+the package holds, how a call is cancelled and how it fails, and where it
+differs from RoomKit's Python provider.
 
 ## Layout
 
@@ -57,6 +88,13 @@ Items 3 and 4 are not started.
 | `crates/roomkit-providers-core` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests |
 | `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients |
 | `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAiAiProvider`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and an example against a local server |
+| `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter |
+| `python/roomkit_providers` | The Python package: `roomkit_providers.openai` (`OpenAIAIProvider`, `OpenAIConfig`), its errors and the typed dicts of the contract's JSON forms |
+| `tests/python` | The Python tests: the replay of the recorded wire cases through the package, cancellation, event loops and threads, the interpreter's exit, and the snapshot of the public API |
+| `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
+| `benchmarks/crossing.py` | What a turn costs through the Python package, and through RoomKit's Python provider when it is installed |
+| `guide/python.md` | The Python guide |
+| `scripts/check-python.py` | Builds a wheel and a source distribution, installs each alone and runs the Python tests and the example on it (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshot) |
 | `scripts/generate_openai_catalogue.py` | Writes OpenAI's model catalogue of RoomKit's Python, which the provider reads its models' rules from |
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
@@ -68,8 +106,9 @@ Items 3 and 4 are not started.
 ## Development
 
 ```sh
-make all    # formatting, lints, tests, examples, docs and dependency policy
-make msrv   # the minimum supported Rust version
+make all            # formatting, lints, tests, examples, docs and dependency policy
+make msrv           # the minimum supported Rust version
+make python-check   # the Python package: lints, a wheel and a source distribution, tests
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the environment, the checks and
@@ -86,3 +125,7 @@ from Unicode data, under the Unicode License V3, which each crate ships as
 its `LICENSE-UNICODE`
 ([core](crates/roomkit-providers-core/LICENSE-UNICODE),
 [http](crates/roomkit-providers-http/LICENSE-UNICODE)).
+
+The Python package links both, so it is `MIT AND Unicode-3.0` too, and ships
+the notices of the crates its extension is built from
+(`roomkit_providers/licenses/native_dependencies.txt`).

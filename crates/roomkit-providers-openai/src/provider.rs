@@ -187,12 +187,57 @@ impl OpenAiAiProvider {
     /// its configuration says.
     #[cfg(test)]
     pub(crate) fn point_at(&mut self, address: std::net::SocketAddr) {
-        for url in [&mut self.chat, &mut self.models] {
-            let moved = url.set_scheme("http").is_ok()
+        assert!(
+            self.moved_to(address),
+            "the endpoint is pointed at the fake"
+        );
+    }
+
+    /// Writes `address` as the host and the port of every URL the provider
+    /// asks, over plain HTTP; `false` when a URL could not take it.
+    #[cfg(any(test, feature = "replay"))]
+    fn moved_to(&mut self, address: std::net::SocketAddr) -> bool {
+        [&mut self.chat, &mut self.models].into_iter().all(|url| {
+            url.set_scheme("http").is_ok()
                 && url.set_ip_host(address.ip()).is_ok()
-                && url.set_port(Some(address.port())).is_ok();
-            assert!(moved, "the endpoint is pointed at the fake");
+                && url.set_port(Some(address.port())).is_ok()
+        })
+    }
+
+    /// The provider as a replay of recorded cases drives it, outside this
+    /// crate's tests: its requests go to `fake`, a local fake of its
+    /// endpoint, over plain HTTP, each to the path it had and with the user
+    /// information it had; a `retry-after` date is read against `clock`, in
+    /// seconds since 1970; and no wait is taken between two tries: each is
+    /// kept, in the waits returned. What the provider knows of its endpoint
+    /// stays what its configuration says.
+    ///
+    /// # Errors
+    ///
+    /// A `fake` that is no loopback address: a replay sends nothing off the
+    /// machine.
+    #[cfg(feature = "replay")]
+    #[doc(hidden)]
+    pub fn replaying(
+        mut self,
+        fake: std::net::SocketAddr,
+        clock: f64,
+    ) -> Result<(Self, ReplayWaits), ProviderError> {
+        let no_loopback = refused("a replay sends to a loopback address only");
+        let no_loopback = self.exit.leave(&no_loopback);
+        if !fake.ip().is_loopback() || !self.moved_to(fake) {
+            return Err(no_loopback);
         }
+        let waits = ReplayWaits::default();
+        let kept = waits.clone();
+        self.pace = Pace {
+            now: Arc::new(move || clock),
+            wait: Arc::new(move |wait| {
+                kept.keep(wait.as_secs_f64());
+                Box::pin(std::future::ready(()))
+            }),
+        };
+        Ok((self, waits))
     }
 
     /// What a request is written for.
@@ -322,6 +367,34 @@ impl AiProvider for OpenAiAiProvider {
     fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
         let checked = checked_stream(stream::events(self, request), request, NAME, refusal);
         stream::leaving(checked, &self.exit)
+    }
+}
+
+/// The waits a replayed provider did not take between its tries (see
+/// `OpenAiAiProvider::replaying`).
+#[cfg(feature = "replay")]
+#[doc(hidden)]
+#[derive(Clone, Debug, Default)]
+pub struct ReplayWaits(Arc<std::sync::Mutex<Vec<f64>>>);
+
+#[cfg(feature = "replay")]
+impl ReplayWaits {
+    fn keep(&self, seconds: f64) {
+        let mut waits = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        waits.push(seconds);
+    }
+
+    /// The waits so far, in seconds, in the order they were asked.
+    #[must_use]
+    pub fn taken(&self) -> Vec<f64> {
+        let waits = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        waits.clone()
     }
 }
 

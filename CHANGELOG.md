@@ -103,6 +103,15 @@ nothing has been released yet.
 - `roomkit-providers-openai`: an example, `local_server`, that asks a
   stand-in server on a local port once whole and once streamed. `make all`
   runs it.
+- `roomkit-providers`, the Python package (CPython 3.12 or newer, Linux
+  x86_64, built from the repository): `roomkit_providers.openai` holds
+  `OpenAIAIProvider` and `OpenAIConfig`, the Rust OpenAI provider behind a
+  native extension, used without RoomKit. A request and its answer are plain
+  dicts in the contract's JSON form, named by typed dicts (`AIRequest`,
+  `AIResponse`, the stream events, `ModelInfo`); a failure is the package's
+  `ProviderError` or `ResponseSchemaError`. Cancelling a call's task, or
+  closing a stream, closes its connection. The guide (`guide/python.md`)
+  lists where it differs from RoomKit's Python provider.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of

@@ -12,6 +12,13 @@ include = ["/LICENSE", "/README.md", "/catalog", "/examples", "/src", "/tests"]
 keywords = ["llm", "ai", "provider", "openai", "chat"]
 categories = ["api-bindings"]
 
+[features]
+# For a replay of recorded cases outside this crate's tests, a binding's:
+# a provider's requests are sent to a local fake of its endpoint, its clock
+# is set and its waits are kept instead of taken. Not for a host: nothing
+# of it shows in the documentation.
+replay = []
+
 [dependencies]
 # The contract: the request a provider is given, what it answers, and the
 # JSON object a configuration's extra body is.

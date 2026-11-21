@@ -1,0 +1,79 @@
+name: Python distributions
+
+# Build and test artifacts on demand. Nothing is published from here.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Linux x86_64 distributions
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - run: python -m pip install 'uv>=0.9,<1'
+      - name: Read pinned Rust toolchain
+        id: toolchain
+        run: |
+          python - <<'PYTHON'
+          import os, pathlib, tomllib
+          channel = tomllib.loads(pathlib.Path("rust-toolchain.toml").read_text())["toolchain"]["channel"]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"channel={channel}", file=output)
+          PYTHON
+      - name: Build optimized wheel in manylinux
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          maturin-version: "1.16.0"
+          rust-toolchain: ${{ steps.toolchain.outputs.channel }}
+          manylinux: "2_34"
+          container: quay.io/pypa/manylinux_2_34_x86_64@sha256:834a2a31de5eabacd4411417b3bbc9fcb6ff9f959972711ab3b73355e7b0928d
+          args: --locked --release --strip --auditwheel check --interpreter python3.12 --out dist
+      - name: Build the source distribution
+        run: uv tool run --from 'maturin==1.16.0' maturin sdist --out dist
+      - name: Check package metadata and description rendering
+        run: uv tool run --from 'twine>=6,<7' twine check --strict dist/*.whl dist/*.tar.gz
+      - name: Hash distributions
+        working-directory: dist
+        run: sha256sum -- *.whl *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: python-distributions
+          path: dist/*
+          if-no-files-found: error
+
+  validate:
+    name: Install distributions on Python ${{ matrix.python }}
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - run: python -m pip install 'uv>=0.9,<1'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-distributions
+          path: dist
+      - name: Check downloaded files
+        working-directory: dist
+        run: sha256sum --check SHA256SUMS
+      - name: Validate both installations
+        run: python scripts/check-python.py --wheel dist/roomkit_providers-*.whl --sdist dist/roomkit_providers-*.tar.gz

@@ -1,0 +1,33 @@
+{
+  "roomkit_providers": [
+    "AIContentPart",
+    "AIImagePart",
+    "AIMessage",
+    "AIRequest",
+    "AIResponse",
+    "AITextPart",
+    "AIThinkingPart",
+    "AITool",
+    "AIToolCall",
+    "AIToolCallPart",
+    "AIToolResultPart",
+    "ModelInfo",
+    "ModelPricing",
+    "ProviderError",
+    "ResponseSchemaError",
+    "ResponseSchemaFailure",
+    "ServedCall",
+    "StreamDone",
+    "StreamEvent",
+    "StreamTextDelta",
+    "StreamThinkingDelta",
+    "StreamToolCall",
+    "StreamToolCallDelta",
+    "StreamUsage",
+    "ToolCallOutcome"
+  ],
+  "roomkit_providers.openai": [
+    "OpenAIAIProvider",
+    "OpenAIConfig"
+  ]
+}
