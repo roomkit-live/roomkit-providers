@@ -149,6 +149,30 @@ the notice of the Unicode data it is derived from. The same command writes
 that notice as `crates/roomkit-providers-llm/LICENSE-UNICODE`, the license
 file the crate ships beside its own: the crate is `MIT AND Unicode-3.0`.
 
+The contract also holds two of RoomKit's rules for a text a model reads that
+neither the host nor the provider wrote (RFC §6.4), for the provider whose
+wire has no place of its own for such a text: `fence`, which sets a text
+apart in a block it cannot close, and `identifier`, which writes a name
+outside any quote. Both are exported for provider crates, hidden from the
+documentation a host reads, and both decide as Python's (`roomkit._text`):
+
+```sh
+make outside-text-tables PYTHON=path/to/venv/bin/python
+make python-outside-text PYTHON=path/to/venv/bin/python
+```
+
+- `outside-text-tables` rewrites `src/outside/tables/`: what each character
+  reads as in a tag, from the look-alikes RoomKit's Python holds, the
+  classes of characters its patterns use, and canonical composition, from
+  the Unicode data of `PYTHON`. Neither function reads the Unicode data of
+  Rust's standard library, but to lower the case of a letter of a tag's
+  name that the tables do not hold. The headers record the RoomKit, Python
+  and Unicode versions, and the command writes the same `LICENSE-UNICODE`.
+- `python-outside-text` rewrites `tests/fixtures/python_outside_text.json`,
+  what Python's `fence` and `identifier` give of a table of texts and
+  names, which the `python_outside_text` test compares the Rust functions
+  with. A new forgery of a tag joins the script's table, never the test.
+
 `roomkit-providers-client` is checked the same way for the proxies it reads
 from the environment: `make python-proxy-cases` rewrites
 `crates/roomkit-providers-client/tests/fixtures/python_proxy_cases.json`,

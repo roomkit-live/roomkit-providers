@@ -65,6 +65,17 @@ Python's, and what the JSON parser reads differently.
 
 `MIT AND Unicode-3.0`.
 
-The crate is under the MIT license (`LICENSE`). Its table of the characters
-Python's `repr` writes as they are (`src/python/printable.rs`) is derived
-from Unicode data, under the Unicode License V3 (`LICENSE-UNICODE`).
+The crate is under the MIT license (`LICENSE`). Its tables derived from
+Unicode data are under the Unicode License V3 (`LICENSE-UNICODE`):
+
+- the characters Python's `repr` writes as they are
+  (`src/python/printable.rs`);
+- what a text from outside is read with where a provider sets it apart in a
+  model's context (`src/outside/tables/`): what each character reads as in a
+  tag, from Unicode's confusables as RoomKit's Python reads them
+  (`look_alikes.rs`), the classes of characters a tag and an identifier are
+  read with (`classes.rs`), and canonical composition, NFC
+  (`normalization.rs`).
+
+Each is generated from the Unicode data of the Python RoomKit is tested
+with, and its header records the versions it was written from.

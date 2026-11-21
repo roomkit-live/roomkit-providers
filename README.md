@@ -90,7 +90,7 @@ provider.
 
 | Path | Contents |
 | --- | --- |
-| `crates/roomkit-providers-llm` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests |
+| `crates/roomkit-providers-llm` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests, and, for a provider crate, RoomKit's rules for a text from outside written in a model's context |
 | `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients, which trusts the certificate authorities the environment or the system names |
 | `crates/roomkit-providers-client` | The HTTP client a provider is built on, written once for every provider: a request and its tries, the proxies it reads from the environment, the bounds of an answer and of a stream, the base URLs refused when a provider is built, the one exit of failures, and, for a provider's tests, the replay of its recorded wire cases against a local fake |
 | `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy |
@@ -111,7 +111,9 @@ provider.
 | `scripts/generate_openai_config_forms.py` | Writes the JSON forms of RoomKit's Python `OpenAIConfig`, which the OpenAI crate's tests compare with |
 | `scripts/generate_openai_chat_cases.py` | Runs RoomKit's Python OpenAI provider against a fake endpoint and writes what it sends and reads, case by case (`scripts/openai_chat_cases.py` holds the cases) |
 | `scripts/generate_printable_ranges.py` | Writes the table of the characters Python's `repr` writes as they are |
-| `scripts/unicode_notice.py` | The notice of the Unicode License V3, which the two scripts that read Python's Unicode data write as their crate's `LICENSE-UNICODE` |
+| `scripts/generate_outside_text_tables.py` | Writes the tables the contract reads a text from outside with: what each character reads as in a tag, the classes of characters, and canonical composition |
+| `scripts/generate_python_outside_text.py` | Writes what RoomKit's Python `fence` and `identifier` make of a table of texts and names, which the contract's tests compare with |
+| `scripts/unicode_notice.py` | The notice of the Unicode License V3, which the scripts that read Python's Unicode data write as their crate's `LICENSE-UNICODE` |
 
 ## Development
 
@@ -130,7 +132,7 @@ vulnerability.
 [MIT](LICENSE).
 
 `roomkit-providers-llm` and `roomkit-providers-http` are
-`MIT AND Unicode-3.0`: the first holds a table and the second a list derived
+`MIT AND Unicode-3.0`: the first holds tables and the second a list derived
 from Unicode data, under the Unicode License V3, which each crate ships as
 its `LICENSE-UNICODE`
 ([llm](crates/roomkit-providers-llm/LICENSE-UNICODE),

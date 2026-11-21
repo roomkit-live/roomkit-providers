@@ -104,6 +104,7 @@ pub mod catalog;
 mod data_uri;
 pub mod error;
 pub mod mock;
+mod outside;
 pub mod provider;
 mod python;
 pub mod request;
@@ -131,6 +132,11 @@ pub use self::error::{
     ProviderError, ProviderErrorOptions, ValueError, is_context_overflow_message,
 };
 pub use self::mock::{MockAiProvider, MockAiProviderOptions};
+// For a provider crate: text from outside as `RoomKit` writes it in a
+// model's context where a wire has no place of its own for it, a tool's
+// result in a block it cannot close and a name outside any quote.
+#[doc(hidden)]
+pub use self::outside::{fence, identifier};
 pub use self::provider::{
     API_KEY_METADATA_KEY, AiProvider, DynAiProvider, ProviderStream, TextStream, request_api_key,
 };

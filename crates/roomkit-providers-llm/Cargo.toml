@@ -4,14 +4,16 @@ description = "Runtime-independent contracts for model providers: requests, resp
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-# MIT, and the Unicode License V3 for the table of printable characters,
-# which is derived from Unicode data (src/python/printable.rs).
+# MIT, and the Unicode License V3 for the tables derived from Unicode data:
+# the printable characters (src/python/printable.rs), and what a text from
+# outside is read with, look-alikes, classes of characters and canonical
+# composition (src/outside/tables/).
 license = "MIT AND Unicode-3.0"
 repository.workspace = true
 publish.workspace = true
 readme = "README.md"
 # What a published crate carries, both license files by name: the MIT
-# license, and the notice of the Unicode data its table is derived from.
+# license, and the notice of the Unicode data its tables are derived from.
 include = ["/LICENSE", "/LICENSE-UNICODE", "/README.md", "/src", "/tests"]
 keywords = ["llm", "ai", "provider", "model", "streaming"]
 categories = ["api-bindings"]

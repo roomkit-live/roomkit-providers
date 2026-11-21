@@ -48,10 +48,15 @@ nothing has been released yet.
   JSON string only, as Python reads them. A refusal that names a value quotes
   it as Python's `repr` does. The crate's documentation lists where input is
   stricter than Python's and what the JSON parser reads differently.
+- `roomkit-providers-llm`: for a provider crate, RoomKit's two rules for a
+  text a model reads that neither the host nor the provider wrote: `fence`,
+  which sets a text apart in a block it cannot close, and `identifier`,
+  which writes a name outside any quote. Both decide as RoomKit's Python on
+  a table of 275 texts and 35 names.
 - `roomkit-providers-llm` is licensed `MIT AND Unicode-3.0`: its table of
-  the characters Python's `repr` writes as they are is derived from Unicode
-  data, and the crate ships that data's license, `LICENSE-UNICODE`, beside
-  its own.
+  the characters Python's `repr` writes as they are, and the tables it reads
+  a text from outside with, are derived from Unicode data, and the crate
+  ships that data's license, `LICENSE-UNICODE`, beside its own.
 - `roomkit-providers-http`: `validate_public_url`, which checks that a URL
   names a public destination before a transport is given it. It refuses a
   host that is this machine by name, an address that is loopback, private,

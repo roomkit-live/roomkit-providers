@@ -8,8 +8,9 @@ yanked = "deny"
 # Unicode-3.0 covers the crates that hold or read Unicode data: the ICU crates
 # behind the URL parser, unicode-ident behind the derive macros, and the two
 # crates of this repository that ship that data's notice (LICENSE-UNICODE):
-# the contract crate for its table of printable characters, the HTTP support
-# crate for its list of the characters that normalize to a URL's delimiter.
+# the contract crate for its table of printable characters and the tables it
+# reads a text from outside with, the HTTP support crate for its list of the
+# characters that normalize to a URL's delimiter.
 allow = ["MIT", "Apache-2.0", "Unicode-3.0"]
 # Any other license is allowed for the one crate that needs it.
 exceptions = [

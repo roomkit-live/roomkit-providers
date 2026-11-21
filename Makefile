@@ -2,9 +2,10 @@ CARGO ?= cargo
 MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' Cargo.toml).0
 DENY_FLAGS ?=
 # The interpreter of the generated files: one with RoomKit's Python package
-# installed for python-forms, python-public-urls, python-proxy-cases and the
-# python-openai targets, the Python version RoomKit is tested with for
-# printable-table.
+# installed for python-forms, python-public-urls, python-proxy-cases,
+# python-outside-text, outside-text-tables and the python-openai and
+# python-anthropic targets, the Python version RoomKit is tested with for
+# printable-table and outside-text-tables.
 # For python-check, python-wheel and api-snapshot, the interpreter the
 # package is built for and tested on: CPython 3.12 or newer.
 PYTHON ?= python3
@@ -24,7 +25,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	python-openai-chat-cases \
 	python-openai-catalogue \
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
-	printable-table named-cases \
+	printable-table outside-text-tables python-outside-text named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
 all: fmt-check clippy test examples doc deny check-contract-deps
@@ -186,3 +187,16 @@ named-cases:
 # and the license file of that data.
 printable-table:
 	$(PYTHON) scripts/generate_printable_ranges.py
+
+# Rewrites the tables the contract reads a text from outside with (`fence`,
+# `identifier`): what each character reads as in a tag, the classes of
+# characters, and canonical composition, from RoomKit's Python and the
+# Unicode data of PYTHON, the Python version RoomKit is tested with, and the
+# license file of that data.
+outside-text-tables:
+	$(PYTHON) scripts/generate_outside_text_tables.py
+
+# Rewrites the fixture of what RoomKit's Python `fence` and `identifier` make
+# of a table of texts and names, which the contract's tests compare with.
+python-outside-text:
+	$(PYTHON) scripts/generate_python_outside_text.py
