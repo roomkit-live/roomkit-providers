@@ -54,10 +54,11 @@ nothing has been released yet.
 - `roomkit-providers-http`: `validate_public_url`, which checks that a URL
   names a public destination before a transport is given it. It refuses a
   host that is this machine by name, an address that is loopback, private,
-  reserved or multicast in the forms the URL parser of `reqwest` reads, and
-  a name one of whose addresses is, as it resolves when the call is made. It
-  decides as `validate_public_url` of RoomKit's Python implementation, in
-  the same words, on a table of 398 URLs and addresses. Its README lists
+  reserved or multicast, or otherwise off the public internet, in the forms
+  the URL parser of `reqwest` reads, and a name one of whose addresses is,
+  as it resolves when the call is made. It decides as `validate_public_url`
+  of RoomKit's Python implementation, in the same words, on a table of 406
+  URLs and addresses. Its README lists
   where it differs and what it does not guard: a name the client resolves
   again, a client behind a proxy, redirects, and a name when resolution is
   turned off.

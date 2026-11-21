@@ -4,7 +4,9 @@
 //! `RoomKit`'s Python validator reads it, which applies the same
 //! special-purpose ranges and the same reading of an IPv4-mapped address on
 //! earlier patch releases. The explicit exceptions tell special-purpose
-//! networks from their public subranges.
+//! networks from their public subranges. Two ranges `ipaddress` calls
+//! neither private nor reserved are no public destination either: the
+//! shared address space, and the site-local addresses.
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
@@ -51,6 +53,18 @@ const V6_EXCEPTIONS: &[(u128, u32)] = &[
     (0x2001_0020_0000_0000_0000_0000_0000_0000, 27),  // 2001:20::/27
 ];
 
+/// The shared address space (RFC 6598): carrier-grade NAT and overlay
+/// networks.
+const V4_SHARED: &[(u32, u32)] = &[
+    (0x6440_0000, 10), // 100.64.0.0/10
+];
+
+/// The site-local addresses (RFC 3879): deprecated, and still routed
+/// inside sites.
+const V6_SITE_LOCAL: &[(u128, u32)] = &[
+    (0xfec0_0000_0000_0000_0000_0000_0000_0000, 10), // fec0::/10
+];
+
 const V6_RESERVED: &[(u128, u32)] = &[
     (0x0000_0000_0000_0000_0000_0000_0000_0000, 3), // ::/3
     (0x4000_0000_0000_0000_0000_0000_0000_0000, 2), // 4000::/2
@@ -95,6 +109,8 @@ fn ipv4_reason(address: Ipv4Addr) -> Option<&'static str> {
         Some("private")
     } else if address.is_multicast() {
         Some("multicast")
+    } else if within(V4_SHARED) {
+        Some("non-public")
     } else {
         None
     }
@@ -115,6 +131,8 @@ fn ipv6_reason(address: Ipv6Addr) -> Option<&'static str> {
         Some("reserved")
     } else if address.is_multicast() {
         Some("multicast")
+    } else if within(V6_SITE_LOCAL) {
+        Some("non-public")
     } else {
         None
     }
@@ -139,11 +157,29 @@ mod tests {
             ("192.0.0.9", true),
             ("::ffff:192.0.0.9", true),
             ("::ffff:127.0.0.1", false),
+            ("100.63.255.255", true),
+            ("100.64.0.0", false),
+            ("100.127.255.255", false),
+            ("100.128.0.0", true),
+            ("::ffff:100.64.0.1", false),
+            ("fec0::1", false),
+            ("feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", false),
         ] {
             assert_eq!(
                 check("service.example", literal.parse().unwrap()).is_ok(),
                 public,
                 "{literal}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_shared_or_site_local_address_is_refused_as_non_public() {
+        for literal in ["100.64.0.1", "::ffff:100.127.0.1", "fec0::1"] {
+            let address: IpAddr = literal.parse().unwrap();
+            assert_eq!(
+                check("service.example", address).unwrap_err(),
+                format!("URL host 'service.example' resolves to non-public address {address}")
             );
         }
     }

@@ -401,6 +401,18 @@
         ],
         "address-103.example": [
             "fe00::1"
+        ],
+        "address-104.example": [
+            "100.64.0.0"
+        ],
+        "address-105.example": [
+            "100.128.0.0"
+        ],
+        "address-106.example": [
+            "::ffff:100.64.0.1"
+        ],
+        "address-107.example": [
+            "feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
         ]
     },
     "cases": [
@@ -3646,8 +3658,8 @@
                 "https"
             ],
             "resolve_dns": false,
-            "accepted": true,
-            "error": null,
+            "accepted": false,
+            "error": "URL host '100.64.0.1' resolves to non-public address 100.64.0.1",
             "lookups": []
         },
         {
@@ -3658,8 +3670,8 @@
                 "https"
             ],
             "resolve_dns": true,
-            "accepted": true,
-            "error": null,
+            "accepted": false,
+            "error": "URL host 'address-24.example' resolves to non-public address 100.64.0.1",
             "lookups": [
                 [
                     "address-24.example",
@@ -3675,8 +3687,8 @@
                 "https"
             ],
             "resolve_dns": false,
-            "accepted": true,
-            "error": null,
+            "accepted": false,
+            "error": "URL host '100.127.255.255' resolves to non-public address 100.127.255.255",
             "lookups": []
         },
         {
@@ -3687,8 +3699,8 @@
                 "https"
             ],
             "resolve_dns": true,
-            "accepted": true,
-            "error": null,
+            "accepted": false,
+            "error": "URL host 'address-25.example' resolves to non-public address 100.127.255.255",
             "lookups": [
                 [
                     "address-25.example",
@@ -5589,8 +5601,8 @@
                 "https"
             ],
             "resolve_dns": false,
-            "accepted": true,
-            "error": null,
+            "accepted": false,
+            "error": "URL host 'fec0::1' resolves to non-public address fec0::1",
             "lookups": []
         },
         {
@@ -5601,8 +5613,8 @@
                 "https"
             ],
             "resolve_dns": true,
-            "accepted": true,
-            "error": null,
+            "accepted": false,
+            "error": "URL host 'address-91.example' resolves to non-public address fec0::1",
             "lookups": [
                 [
                     "address-91.example",
@@ -5954,6 +5966,122 @@
             "lookups": [
                 [
                     "address-103.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_104_written",
+            "url": "https://100.64.0.0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '100.64.0.0' resolves to non-public address 100.64.0.0",
+            "lookups": []
+        },
+        {
+            "name": "address_104_resolved",
+            "url": "https://address-104.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-104.example' resolves to non-public address 100.64.0.0",
+            "lookups": [
+                [
+                    "address-104.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_105_written",
+            "url": "https://100.128.0.0/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "address_105_resolved",
+            "url": "https://address-105.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": [
+                [
+                    "address-105.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_106_written",
+            "url": "https://[::ffff:100.64.0.1]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '::ffff:100.64.0.1' resolves to non-public address ::ffff:100.64.0.1",
+            "lookups": []
+        },
+        {
+            "name": "address_106_resolved",
+            "url": "https://address-106.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-106.example' resolves to non-public address ::ffff:100.64.0.1",
+            "lookups": [
+                [
+                    "address-106.example",
+                    443
+                ]
+            ]
+        },
+        {
+            "name": "address_107_written",
+            "url": "https://[feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host 'feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff' resolves to non-public address feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+            "lookups": []
+        },
+        {
+            "name": "address_107_resolved",
+            "url": "https://address-107.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host 'address-107.example' resolves to non-public address feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+            "lookups": [
+                [
+                    "address-107.example",
                     443
                 ]
             ]

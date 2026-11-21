@@ -439,6 +439,13 @@ ADDRESSES: list[str] = [
     "f000::1",
     "f800::1",
     "fe00::1",
+    # The ends of the shared address space, the first address past it, one
+    # of its addresses written in IPv6, and the last site-local address:
+    # added last, so that the cases above keep their names.
+    "100.64.0.0",
+    "100.128.0.0",
+    "::ffff:100.64.0.1",
+    "feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
 ]
 
 LOOKUPS: list[list[Any]] = []

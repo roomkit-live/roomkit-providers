@@ -183,7 +183,7 @@ fn the_validator_decides_as_python_does() {
         }
     }
     assert_eq!(differing, Vec::<String>::new());
-    assert!(fixture.cases.len() >= 398, "the fixture lost cases");
+    assert!(fixture.cases.len() >= 406, "the fixture lost cases");
 }
 
 /// The characters this crate refuses in an authority are the ones Python's

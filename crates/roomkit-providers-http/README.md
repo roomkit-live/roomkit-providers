@@ -18,9 +18,9 @@ assert_eq!(
 ```
 
 A URL is refused when its host is this machine by name, an address that is
-loopback, private, reserved or multicast, in any of the forms the client's
-parser reads (`127.1`, `0177.0.0.1`, `0x7f000001`), or a name one of whose
-addresses is. By default a name is resolved and every answer is checked.
+loopback, private, reserved or multicast, or that is otherwise off the
+public internet, in any of the forms the client's parser reads (`127.1`,
+`0177.0.0.1`, `0x7f000001`), or a name one of whose addresses is. By default a name is resolved and every answer is checked.
 
 The crate also holds what the provider crates build their HTTP on, hidden
 from its documentation: a bounded reader of server-sent events and the TLS
