@@ -201,3 +201,31 @@ fn vision_is_no_part_of_the_form_and_headers_are_written_sorted() {
         }
     );
 }
+
+/// What the JSON parser reads otherwise than Python's, and what the form
+/// writes whole, as Python's does: only the key is masked.
+#[test]
+fn a_member_twice_a_large_integer_and_what_the_form_does_not_hide() {
+    let twice = r#"{"api_key": "placeholder-not-a-key", "model": "a", "model": "b"}"#;
+    assert!(serde_json::from_str::<OpenAiConfig>(twice).is_err());
+    let large = r#"{"api_key": "", "model": "a", "extra_body": {"seed": 18446744073709551616}}"#;
+    let config: OpenAiConfig = serde_json::from_str(large).unwrap();
+    let seed = &config.extra_body.unwrap()["seed"];
+    assert_eq!(seed.as_f64(), Some(18_446_744_073_709_551_616.0));
+    assert!(!seed.is_u64());
+
+    let config = OpenAiConfig {
+        base_url: Some("https://user:placeholder-in-the-url@llm.example/v1".to_owned()),
+        default_headers: Some(BTreeMap::from([(
+            "Authorization".to_owned(),
+            "Basic placeholder-in-a-header".to_owned(),
+        )])),
+        ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
+    };
+    let written = serde_json::to_string(&config).unwrap();
+    assert!(written.contains("placeholder-in-the-url"));
+    assert!(written.contains("placeholder-in-a-header"));
+    assert!(!written.contains("placeholder-not-a-key"));
+    let shown = format!("{config:?}");
+    assert!(!shown.contains("placeholder"), "{shown}");
+}

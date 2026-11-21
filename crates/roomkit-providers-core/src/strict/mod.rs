@@ -16,6 +16,7 @@ mod name;
 mod object;
 mod tagged;
 
-pub(crate) use self::name::read_name;
-pub(crate) use self::object::{ObjectOnly, read_as_object};
+pub use self::name::read_name;
+pub use self::object::ObjectOnly;
+pub(crate) use self::object::read_as_object;
 pub(crate) use self::tagged::{Tagged, read_tagged};

@@ -158,6 +158,8 @@ pub use self::schema::{
 };
 #[doc(hidden)]
 pub use self::schema::{check_schema_answer, checked_stream, schema_for_generate};
+#[doc(hidden)]
+pub use self::strict::{ObjectOnly, read_name};
 pub use self::tools::{
     AiTool, ToolCallOutcome, ToolResult, ToolResultPart, declared_parameters,
     some_vendor_accepts_tool_name,

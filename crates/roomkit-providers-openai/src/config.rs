@@ -70,6 +70,19 @@ const FIXED_TEMPERATURE_MODELS: [&str; 5] = ["gpt-5", "gpt-6", "o1", "o3", "o4"]
 /// `default_headers` are written sorted by name, where Python keeps the
 /// order they were given in.
 ///
+/// Two more differences come from the JSON parser, `serde_json`, where
+/// Python reads with its `json` module:
+///
+/// - a member written twice is refused, where Python keeps the last:
+///   `{"model": "a", "model": "b"}`. This holds when the text itself is
+///   read: a `serde_json::Value` has already kept the last;
+/// - an integer of `extra_body` outside 64 bits is read as a float:
+///   `18446744073709551616` reads as `1.8446744073709552e19`.
+///
+/// The form is not for showing: like Python's, it writes a default header's
+/// value and the credentials a base URL carries whole. Only the key is
+/// masked. The `Debug` form hides all three.
+///
 /// # Debug
 ///
 /// The `Debug` form never prints the API key, nor the base URL's user

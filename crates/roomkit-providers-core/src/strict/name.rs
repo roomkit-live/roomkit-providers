@@ -8,7 +8,14 @@ use serde::de::{Error, Unexpected, Visitor};
 /// Reads what a JSON string names: `named` gives it, `None` for a name it
 /// does not know. Anything but a string is refused, where a derived enum
 /// also takes an object of one key.
-pub(crate) fn read_name<'de, D, T>(
+///
+/// For a provider crate too: the reader of a name its configuration holds.
+///
+/// # Errors
+///
+/// The source's error for anything but a string, or for a name `named` does
+/// not know, saying what `expecting` says.
+pub fn read_name<'de, D, T>(
     deserializer: D,
     expecting: &'static str,
     named: fn(&str) -> Option<T>,

@@ -10,7 +10,7 @@ names one the test does not know, fails there.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 KEY = "placeholder-not-a-key"
@@ -34,8 +34,8 @@ class Reply:
     headers: dict[str, str] = field(default_factory=dict)
     body: Any = None
     text: str | None = None
-    chunks: list[str] | None = None
-    cut: bool = False
+    chunks: list[str] | list[bytes] | None = None
+    cut: str | None = None
     failure: str | None = None
 
 
@@ -51,6 +51,7 @@ class Case:
     replies: tuple[Reply, ...]
     note: str | None = None
     sdk: str | None = None
+    questioned: str | None = None
 
 
 CASES: list[Case] = []
@@ -73,6 +74,11 @@ def case(
     CASES.append(Case(name, frozenset(kinds.split()), call, config, request, replies, note, sdk))
 
 
+def raw_call(**members: Any) -> dict[str, Any]:
+    """A streamed entry of ``tool_calls``, written member by member."""
+    return chunk({"tool_calls": [members]})
+
+
 # -- What the fake answers ---------------------------------------------------
 
 USAGE = {"prompt_tokens": 12, "completion_tokens": 5, "total_tokens": 17}
@@ -87,8 +93,20 @@ def page(text: str, status: int, content_type: str = "text/html") -> Reply:
     return Reply(status=status, headers={"content-type": content_type}, text=text)
 
 
-def stream(chunks: list[str], *, cut: bool = False, status: int = 200) -> Reply:
+LOST = "the connection is lost"
+TIMEOUT = "the read times out"
+
+
+def stream(chunks: list[str] | list[bytes], *, cut: str | None = None, status: int = 200) -> Reply:
+    """A streamed answer, read chunk by chunk; ``cut`` is how its reads fail
+    after them, ``LOST`` or ``TIMEOUT``."""
     return Reply(status=status, headers=dict(EVENTS), chunks=chunks, cut=cut)
+
+
+def half(body: Any, cut: str) -> Reply:
+    """A whole answer whose body fails midway, ``LOST`` or ``TIMEOUT``."""
+    text = json.dumps(body)
+    return Reply(status=200, headers=dict(JSON), chunks=[text[: len(text) // 2]], cut=cut)
 
 
 def completion(
@@ -122,7 +140,7 @@ def chunk(
     *,
     finish: str | None = None,
     usage: dict[str, Any] | None = None,
-    model: str = ANSWERED_BY,
+    model: str | None = ANSWERED_BY,
 ) -> dict[str, Any]:
     choices = [] if delta is None else [{"index": 0, "delta": delta, "finish_reason": finish}]
     body: dict[str, Any] = {
@@ -132,25 +150,34 @@ def chunk(
         "model": model,
         "choices": choices,
     }
+    if model is None:
+        del body["model"]
     if usage is not None:
         body["usage"] = usage
     return body
 
 
-def sse(*events: Any, done: bool = True) -> list[str]:
-    """Each event as one read of the stream, then the end mark."""
-    lines = [f"data: {json.dumps(event, separators=(',', ':'))}\n\n" for event in events]
+def sse(*events: Any, done: bool = True, escaped: bool = True) -> list[str]:
+    """Each event as one read of the stream, then the end mark. A character
+    past ASCII is written as it is unless ``escaped``."""
+    written = [json.dumps(event, separators=(",", ":"), ensure_ascii=escaped) for event in events]
+    lines = [f"data: {event}\n\n" for event in written]
     return [*lines, "data: [DONE]\n\n"] if done else lines
 
 
-def said(*texts: str, finish: str = "stop", usage: dict[str, Any] | None = USAGE) -> list[str]:
+def said(
+    *texts: str,
+    finish: str = "stop",
+    usage: dict[str, Any] | None = USAGE,
+    escaped: bool = True,
+) -> list[str]:
     """A streamed answer: the role, each text, the end, then the usage."""
     events = [chunk({"role": "assistant", "content": ""})]
     events += [chunk({"content": text}) for text in texts]
     events.append(chunk({}, finish=finish))
     if usage is not None:
         events.append(chunk(usage=usage))
-    return sse(*events)
+    return sse(*events, escaped=escaped)
 
 
 def fragment(index: int, call_id: str | None, name: str | None, arguments: str) -> dict[str, Any]:
@@ -794,10 +821,9 @@ case(
     "extra_body",
     "extra_body",
     GENERATE,
-    {**LOCAL, "extra_body": {"top_k": 40, "temperature": 0.9, "model": "another-model"}},
+    {**LOCAL, "extra_body": {"top_k": 40, "min_p": 0.05}},
     {**HELLO, "temperature": 0.2},
     answer(completion(model="local-model")),
-    note="A member of extra_body replaces the provider's own of the same name.",
 )
 case(
     "default_headers",
@@ -1075,7 +1101,7 @@ case(
 )
 case(
     "answer_200_that_is_no_completion",
-    "not_json",
+    "not_a_completion",
     GENERATE,
     LOCAL,
     HELLO,
@@ -1527,7 +1553,7 @@ case(
     HELLO,
     stream(
         sse(chunk({"role": "assistant", "content": "Hel"}), chunk({"content": "lo"}), done=False),
-        cut=True,
+        cut=LOST,
     ),
     note="The text read before the cut was given; the error follows it.",
 )
@@ -1538,7 +1564,7 @@ case(
     OPENAI,
     HELLO,
     stream(
-        [*sse(chunk({"content": "Hel"}), done=False), 'data: {"id":"chatcmpl-1","choi'], cut=True
+        [*sse(chunk({"content": "Hel"}), done=False), 'data: {"id":"chatcmpl-1","choi'], cut=LOST
     ),
 )
 case(
@@ -1635,6 +1661,1463 @@ case(
     STREAM,
     RETRIED,
     HELLO,
-    stream(sse(chunk({"content": "Hel"}), done=False), cut=True),
+    stream(sse(chunk({"content": "Hel"}), done=False), cut=LOST),
     sdk="A stream is tried again until its head came, never after.",
 )
+
+# -- What extra_body may replace -------------------------------------------------
+
+case(
+    "extra_body_replacing_the_request_s_own",
+    "extra_body",
+    GENERATE,
+    {
+        **LOCAL,
+        "extra_body": {
+            "model": "another-model",
+            "temperature": 0.9,
+            "messages": [{"role": "user", "content": "Something else"}],
+        },
+    },
+    {**HELLO, "temperature": 0.2},
+    answer(completion(model="another-model")),
+)
+
+# -- Reads that cut inside a character --------------------------------------------
+
+E_ACUTE, EURO, GRIN = chr(0xE9), chr(0x20AC), chr(0x1F600)
+# Characters of two, three and four bytes.
+WIDE = f"caf{E_ACUTE} {EURO} {GRIN}"
+INSIDE = "stream stream_cut_inside_a_character"
+
+
+def cut_inside_characters(chunks: list[str]) -> list[bytes]:
+    """The same bytes, each character of several bytes read one byte at a
+    time: a read ends before it, and after each of its bytes."""
+    text = "".join(chunks)
+    data = text.encode("utf-8")
+    edges, at = {0, len(data)}, 0
+    for character in text:
+        size = len(character.encode("utf-8"))
+        if size > 1:
+            edges.update(range(at, at + size + 1))
+        at += size
+    ordered = sorted(edges)
+    return [data[start:end] for start, end in zip(ordered, ordered[1:], strict=False)]
+
+
+def one_byte_at_a_time(chunks: list[str]) -> list[bytes]:
+    data = "".join(chunks).encode("utf-8")
+    return [data[at : at + 1] for at in range(len(data))]
+
+
+case(
+    "stream_text_cut_inside_characters",
+    INSIDE,
+    STREAM,
+    OPENAI,
+    HELLO,
+    stream(cut_inside_characters(said("Un ", WIDE, ".", escaped=False))),
+)
+case(
+    "stream_call_arguments_cut_inside_characters",
+    f"{INSIDE} tool_call_streamed",
+    STREAM,
+    OPENAI,
+    TOOLS,
+    stream(
+        cut_inside_characters(
+            sse(
+                fragment(0, "call_1", "lookup_order", '{"number": "'),
+                fragment(0, None, None, f'{WIDE}"}}'),
+                chunk({}, finish="tool_calls"),
+                escaped=False,
+            )
+        )
+    ),
+)
+case(
+    "stream_reasoning_cut_inside_characters",
+    f"{INSIDE} thinking_read",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(
+        cut_inside_characters(
+            sse(
+                chunk({"reasoning_content": WIDE}),
+                chunk({"content": "Oui."}),
+                chunk({}, finish="stop"),
+                escaped=False,
+            )
+        )
+    ),
+)
+case(
+    "stream_one_byte_per_read",
+    f"{INSIDE} stream_cut_anywhere",
+    STREAM,
+    OPENAI,
+    HELLO,
+    stream(one_byte_at_a_time(said(WIDE, usage=None, escaped=False))),
+)
+
+# -- A body that fails midway -------------------------------------------------------
+
+AFTER_ITS_HEAD = "A stream is tried again until its head came, never after."
+case(
+    "answer_lost_midway",
+    "body_lost",
+    GENERATE,
+    OPENAI,
+    HELLO,
+    half(completion(), LOST),
+    sdk=SDK_WORDS,
+)
+case(
+    "answer_lost_midway_on_every_try",
+    "body_lost retries_exhausted",
+    GENERATE,
+    RETRIED,
+    HELLO,
+    half(completion(), LOST),
+    half(completion(), LOST),
+    half(completion(), LOST),
+    sdk=SDK_RETRIES,
+)
+case(
+    "answer_lost_midway_then_whole",
+    "body_lost retry_succeeds",
+    GENERATE,
+    RETRIED,
+    HELLO,
+    half(completion(), LOST),
+    answer(completion()),
+    sdk=SDK_RETRIES,
+)
+case(
+    "answer_timed_out_midway_on_every_try",
+    "body_lost timeout retries_exhausted",
+    GENERATE,
+    {**OPENAI, "max_retries": 1},
+    HELLO,
+    half(completion(), TIMEOUT),
+    half(completion(), TIMEOUT),
+    sdk=SDK_RETRIES,
+)
+case(
+    "stream_read_timeout_after_an_event",
+    "stream stream_cut timeout",
+    STREAM,
+    RETRIED,
+    HELLO,
+    stream(sse(chunk({"content": "Hel"}), done=False), cut=TIMEOUT),
+    sdk=AFTER_ITS_HEAD,
+)
+case(
+    "stream_status_400_whose_body_is_lost",
+    "stream status_400 body_lost",
+    STREAM,
+    OPENAI,
+    HELLO,
+    Reply(status=400, headers=dict(JSON), chunks=['{"error": {"mess'], cut=LOST),
+    sdk="The openai SDK reads the body of a refused stream request before it raises.",
+)
+
+# -- How a streamed call is folded ---------------------------------------------------
+
+FOLDING = "stream tool_call_streamed tool_call_folding"
+ENDED = chunk({}, finish="tool_calls")
+case(
+    "stream_second_object_under_one_index",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            fragment(0, "call_1", "clock", '{"zone": "utc"}'),
+            fragment(0, None, None, '{"zone": "local"}'),
+            ENDED,
+        )
+    ),
+    note="A new JSON object after whole arguments, under no id and no name: another call.",
+)
+case(
+    "stream_another_name_under_one_index",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            fragment(0, "call_1", "lookup_order", '{"number": "A-1"}'),
+            fragment(0, None, "clock", "{}"),
+            ENDED,
+        )
+    ),
+)
+case(
+    "stream_call_id_alone_then_its_name",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(index=0, id="call_1", type="function"),
+            fragment(0, None, "clock", "{}"),
+            ENDED,
+        )
+    ),
+)
+case(
+    "stream_call_arguments_as_an_object",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(
+                index=0,
+                id="call_1",
+                type="function",
+                function={"name": "lookup_order", "arguments": {"number": "A-1"}},
+            ),
+            ENDED,
+        )
+    ),
+)
+case(
+    "stream_call_indexes_far_apart",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            fragment(7, "call_7", "clock", "{}"),
+            fragment(3, "call_3", "lookup_order", '{"number": '),
+            fragment(3, None, None, '"A-1"}'),
+            ENDED,
+        )
+    ),
+    note="The events number the calls in the order they came, not by their wire index.",
+)
+case(
+    "stream_call_with_explicit_nulls",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(
+                index=0, id=None, type="function", function={"name": None, "arguments": None}
+            ),
+            raw_call(
+                index=None, id="call_1", type=None, function={"name": "clock", "arguments": None}
+            ),
+            fragment(0, None, None, "{}"),
+            ENDED,
+        )
+    ),
+)
+case(
+    "stream_call_name_repeated_on_every_fragment",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            fragment(0, "call_1", "lookup_order", '{"number": '),
+            fragment(0, "call_1", "lookup_order", '"A-1"}'),
+            fragment(0, None, "lookup_order", " "),
+            ENDED,
+        )
+    ),
+)
+case(
+    "stream_call_entry_with_no_function",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(index=0, id="call_1", type="custom", custom={"name": "x", "input": "y"}),
+            chunk({"content": "Done."}),
+            ENDED,
+        )
+    ),
+)
+case(
+    "stream_tool_call_that_ends_without_an_ending",
+    "stream tool_call_streamed",
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(sse(fragment(0, "call_1", "lookup_order", '{"number": "A-1"}'), done=False)),
+)
+
+# -- Think tags, held and not ----------------------------------------------------------
+
+THOUGHTS = "thinking_read"
+case(
+    "stream_ends_holding_the_start_of_a_think_tag",
+    f"stream {THOUGHTS}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(said("<thi")),
+    note="A start that never became the tag is text.",
+)
+case(
+    "stream_ends_holding_the_start_of_a_closing_tag",
+    f"stream {THOUGHTS}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(said("<think>They greet me.", "</thi")),
+    note="The end of a block never closed is reasoning.",
+)
+case(
+    "stream_empty_think_block",
+    f"stream {THOUGHTS}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(said("<think>", "</think>", "Hello.")),
+)
+for name, text in (
+    ("think_tag_after_text", "Hello. <think>is text</think> Bye."),
+    ("thinking_tag_of_another_name", "<thinking>A plan.</thinking>Hello."),
+    ("empty_think_block", "<think></think>Hello."),
+    ("think_block_after_blank_lines_and_tabs", " \t\r\n<think>They greet me.</think>Hello."),
+):
+    case(name, THOUGHTS, GENERATE, LOCAL, HELLO, answer(completion(text, model="local-model")))
+
+# -- A call's arguments ----------------------------------------------------------------
+
+ARGUMENTS = "tool_call call_arguments"
+case(
+    "call_arguments_with_numbers_json_does_not_name",
+    ARGUMENTS,
+    GENERATE,
+    OPENAI,
+    TOOLS,
+    answer(
+        completion(
+            None,
+            finish="tool_calls",
+            tool_calls=[
+                called("call_1", "lookup_order", '{"number": NaN}'),
+                called("call_2", "lookup_order", '{"number": 1e999}'),
+                called("call_3", "lookup_order", '{"number": -Infinity}'),
+            ],
+        )
+    ),
+)
+case(
+    "call_arguments_that_are_no_text",
+    ARGUMENTS,
+    GENERATE,
+    LOCAL,
+    TOOLS,
+    answer(
+        completion(
+            None,
+            finish="tool_calls",
+            model="local-model",
+            tool_calls=[
+                called("call_1", "lookup_order", {"number": "A-1"}),
+                called("call_2", "clock", None),
+                called("call_3", "clock", "null"),
+                called("call_4", "clock", '"text"'),
+                called("call_5", "clock", 7),
+            ],
+        )
+    ),
+)
+case(
+    "round_replayed_with_arguments_of_several_members",
+    "tool_round_replayed call_arguments",
+    GENERATE,
+    OPENAI,
+    {
+        "messages": [
+            ROUND[0],
+            {
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "tool_call",
+                        "id": "call_1",
+                        "name": "lookup_order",
+                        "arguments": {
+                            "number": "A-1",
+                            "city": f"Montr{E_ACUTE}al",
+                            "note": WIDE,
+                            "quote": 'say "hi"\n',
+                            "weight": 1.5,
+                            "count": 3,
+                            "large": 1e22,
+                            "gift": True,
+                            "none": None,
+                            "tags": ["a", "b"],
+                            "nested": {"b": 1, "a": [1.0, 2]},
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_call_id": "call_1",
+                        "name": "lookup_order",
+                        "result": "Shipped.",
+                    }
+                ],
+            },
+        ]
+    },
+    answer(completion("It shipped.")),
+    note=(
+        "A call's arguments go back as Python's json.dumps writes them: its separators, "
+        "its escapes past ASCII, its numbers."
+    ),
+)
+
+# -- Usage in other shapes ---------------------------------------------------------------
+
+
+def used(usage: Any) -> Reply:
+    return answer(completion(model="local-model", usage=usage))
+
+
+SHAPES = "usage_shapes"
+for name, usage in (
+    (
+        "usage_cache_write_beside_the_details",
+        {"prompt_tokens": 1200, "completion_tokens": 45, "cache_write_tokens": 300},
+    ),
+    (
+        "usage_cache_write_that_is_no_whole_number",
+        {"prompt_tokens": 1200, "completion_tokens": 45, "cache_write_tokens": 1.5},
+    ),
+    (
+        "usage_cache_write_written_as_text_in_the_details",
+        {
+            "prompt_tokens": 1200,
+            "completion_tokens": 45,
+            "prompt_tokens_details": {"cache_write_tokens": "300"},
+        },
+    ),
+    (
+        "usage_cached_above_the_prompt",
+        {
+            "prompt_tokens": 100,
+            "completion_tokens": 45,
+            "prompt_tokens_details": {"cached_tokens": 800},
+        },
+    ),
+    ("usage_without_completion_tokens", {"prompt_tokens": 12}),
+    ("usage_counts_below_zero", {"prompt_tokens": -12, "completion_tokens": -5}),
+):
+    case(name, SHAPES, GENERATE, LOCAL, HELLO, used(usage))
+case(
+    "stream_usage_on_chunks_that_hold_a_choice",
+    f"stream {SHAPES}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(
+        sse(
+            chunk({"content": "Hel"}, usage={"prompt_tokens": 1, "completion_tokens": 1}),
+            chunk(
+                {"content": "lo."},
+                finish="stop",
+                usage={"prompt_tokens": 12, "completion_tokens": 5},
+            ),
+        )
+    ),
+    note="The last usage a chunk carried is the stream's.",
+)
+case(
+    "stream_chunks_naming_no_model",
+    f"stream {SHAPES}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(sse(chunk({"content": "Hello."}, model=None), chunk({}, finish="stop", model=None))),
+)
+
+# -- The reasoning switch and its order -------------------------------------------------
+
+SWITCH = "reasoning_effort reasoning_switch"
+GPT_5 = {"api_key": KEY, "model": "gpt-5", "reasoning_effort": "high"}
+HIGH = {**MODERN, "reasoning_effort": "high"}
+for name, config, request in (
+    ("thinking_budget_of_zero", GPT_5, {"thinking_budget": 0}),
+    ("thinking_budget_above_zero", HIGH, {"thinking_budget": 2048}),
+    (
+        "thinking_budget_over_the_switch_and_the_effort",
+        GPT_5,
+        {"thinking_budget": 2048, "enable_thinking": False, "reasoning_effort": "medium"},
+    ),
+    (
+        "thinking_budget_of_zero_over_the_switch",
+        GPT_5,
+        {"thinking_budget": 0, "enable_thinking": True, "reasoning_effort": "medium"},
+    ),
+    (
+        "switch_on_over_an_effort_of_none",
+        GPT_5,
+        {"enable_thinking": True, "reasoning_effort": "none"},
+    ),
+    ("switch_off_over_an_effort", GPT_5, {"enable_thinking": False, "reasoning_effort": "medium"}),
+    ("reasoning_turned_off_on_a_model_that_can", HIGH, {"enable_thinking": False}),
+    ("effort_of_none_on_a_model_that_can", HIGH, {"reasoning_effort": "none"}),
+    ("effort_behind_a_base_url_without_tools", {**LOCAL, "reasoning_effort": "high"}, {}),
+    (
+        "switch_off_behind_a_base_url",
+        {**LOCAL, "reasoning_effort": "high"},
+        {"enable_thinking": False},
+    ),
+    (
+        "effort_on_a_model_that_takes_no_tools_without_tools",
+        {"api_key": KEY, "model": "gpt-6-astra"},
+        {"reasoning_effort": "none"},
+    ),
+):
+    case(name, SWITCH, GENERATE, config, {**HELLO, **request}, answer(completion()))
+case(
+    "tools_and_effort_on_a_model_the_catalogue_does_not_tag",
+    f"{SWITCH} tools",
+    GENERATE,
+    {**OPENAI, "reasoning_effort": "high"},
+    TOOLS,
+    answer(completion()),
+    note="Left out, and warned of once in Python's log.",
+)
+
+# -- Refusals before the request, in their order -----------------------------------------
+
+BAD_TOOL = {"name": "orders.lookup", "description": "Find an order"}
+BAD_IMAGE = {"role": "user", "content": [{"type": "image", "url": "data:image/png;base64,***"}]}
+EVERY_FAULT = {"messages": [BAD_IMAGE], "tools": [BAD_TOOL], "response_schema": CITY}
+NO_SCHEMA = {"supports_response_schema": False}
+case(
+    "refusals_the_model_first",
+    "before_request",
+    GENERATE,
+    {"api_key": KEY, "model": "gpt-5.5-pro", **NO_SCHEMA},
+    EVERY_FAULT,
+    note="Of a model, an image, a schema and a tool name to refuse, the model is refused.",
+)
+case(
+    "refusals_the_image_next",
+    "before_request image_data_uri",
+    GENERATE,
+    {**OPENAI, **NO_SCHEMA},
+    EVERY_FAULT,
+)
+case(
+    "refusals_the_schema_before_the_tool_name",
+    "before_request response_schema_unsupported",
+    GENERATE,
+    {**OPENAI, **NO_SCHEMA},
+    {**HELLO, "tools": [BAD_TOOL], "response_schema": CITY},
+)
+case(
+    "refusals_in_a_stream_the_schema_before_the_tool_name",
+    "stream before_request response_schema_unsupported",
+    STREAM,
+    {**OPENAI, **NO_SCHEMA},
+    {**HELLO, "tools": [BAD_TOOL], "response_schema": CITY},
+)
+
+# -- A response schema, on the paths left ---------------------------------------------
+
+case(
+    "stream_response_schema_with_a_tool_call",
+    "stream response_schema response_schema_with_tools tool_call_streamed",
+    STREAM,
+    OPENAI,
+    {**TOOLS, "response_schema": CITY},
+    stream(CALL_STREAMED),
+    note="A round that calls tools is a step of the loop: its text is not checked.",
+)
+case(
+    "stream_response_schema_content_filter",
+    "stream response_schema refusal finish_content_filter",
+    STREAM,
+    OPENAI,
+    ASKED_A_CITY,
+    stream(said(finish="content_filter")),
+)
+case(
+    "response_schema_with_no_choice",
+    "response_schema empty_answer",
+    GENERATE,
+    OPENAI,
+    ASKED_A_CITY,
+    answer({**completion(), "choices": []}),
+)
+
+# -- Errors read from a body ---------------------------------------------------------------
+
+case(
+    "answer_200_that_is_an_error_with_a_status_for_code",
+    "error_object",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer({"error": {"message": "Try again later.", "code": 503}}),
+)
+case(
+    "answer_200_that_is_an_error_with_a_status_as_text",
+    "error_object",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer({"error": {"message": "Slow down.", "code": "429"}}),
+)
+for name, message in (
+    ("a_rate_limit", "Rate limit reached, slow down."),
+    ("too_many_requests", "Too many requests."),
+    ("an_overload", "The engine is overloaded."),
+    ("a_status_worth_a_retry", "Upstream answered 502."),
+    ("a_final_status", "Upstream answered 404."),
+    ("a_token_limit", "The token limit was reached."),
+    ("a_longer_number", "Request 5021 failed to generate."),
+    ("a_longer_word", "The engine is overloadedness itself."),
+):
+    case(
+        f"stream_error_that_names_{name}",
+        "stream stream_error_event transient_words",
+        STREAM,
+        LOCAL,
+        HELLO,
+        stream(sse({"error": {"message": message}})),
+        sdk="The openai SDK raises a stream's error event with the event's message.",
+    )
+case(
+    "status_529",
+    "status_529",
+    GENERATE,
+    OPENAI,
+    HELLO,
+    answer(failed("Overloaded.", "overloaded_error"), 529),
+)
+case("status_204", "status_204", GENERATE, LOCAL, HELLO, Reply(status=204, text=""))
+
+# -- Answers in other shapes ---------------------------------------------------------------
+
+ODD = "odd_shapes"
+case(
+    "message_null",
+    f"{ODD} empty_answer",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer({**completion(), "choices": [{"index": 0, "message": None, "finish_reason": "stop"}]}),
+)
+case(
+    "choices_that_are_no_list",
+    ODD,
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer({**completion(), "choices": "none"}),
+)
+case(
+    "nulls_for_absent_members",
+    ODD,
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer(
+        {
+            "id": None,
+            "object": "chat.completion",
+            "created": None,
+            "model": None,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "Hello.",
+                        "tool_calls": None,
+                        "refusal": None,
+                        "reasoning_content": None,
+                    },
+                    "finish_reason": None,
+                    "logprobs": None,
+                }
+            ],
+            "usage": None,
+            "system_fingerprint": None,
+        }
+    ),
+)
+case(
+    "stream_nulls_for_absent_members",
+    f"stream {ODD}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(
+        sse(
+            {
+                "id": None,
+                "object": "chat.completion.chunk",
+                "model": None,
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "role": None,
+                            "content": "Hello.",
+                            "tool_calls": None,
+                            "refusal": None,
+                            "reasoning_content": None,
+                        },
+                        "finish_reason": None,
+                    }
+                ],
+                "usage": None,
+            },
+            {"choices": None},
+            chunk({}, finish="stop"),
+        )
+    ),
+)
+
+# -- The request, in other shapes -----------------------------------------------------------
+
+case(
+    "tool_parameters_without_a_type",
+    "tools",
+    GENERATE,
+    OPENAI,
+    {
+        **HELLO,
+        "tools": [
+            {
+                "name": "lookup_order",
+                "description": "Find an order",
+                "parameters": {
+                    "properties": {"number": {"type": "string"}},
+                    "required": ["number"],
+                },
+            },
+            {"name": "clock", "description": "Tell the time", "parameters": {}},
+        ],
+    },
+    answer(completion()),
+    note="A root without a type is declared an object's.",
+)
+case(
+    "token_bound_of_zero_in_the_request",
+    "plain",
+    GENERATE,
+    OPENAI,
+    {**HELLO, "max_tokens": 0},
+    answer(completion()),
+)
+case(
+    "token_bound_of_zero_in_the_configuration",
+    "plain",
+    GENERATE,
+    {**OPENAI, "max_tokens": 0},
+    HELLO,
+    answer(completion()),
+)
+
+# -- Streams in other shapes -----------------------------------------------------------------
+
+LAST = json.dumps(chunk({"content": "lo."}, finish="stop"), separators=(",", ":"))
+case(
+    "stream_last_event_without_its_blank_line",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([*sse(chunk({"content": "Hel"}), done=False), f"data: {LAST}\n"]),
+)
+case(
+    "stream_last_event_without_its_line_end",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([*sse(chunk({"content": "Hel"}), done=False), f"data: {LAST}"]),
+)
+case(
+    "stream_that_starts_with_a_byte_order_mark",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([chr(0xFEFF) + "".join(sse(chunk({"content": "Hello."}), chunk({}, finish="stop")))]),
+)
+case(
+    "stream_of_the_end_mark_alone",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(["data: [DONE]\n\n"]),
+)
+
+# -- A redirect to another host --------------------------------------------------------------
+
+case(
+    "redirect_302_to_another_host",
+    "redirect",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    Reply(
+        status=302, headers={"location": "https://elsewhere.example/v1/chat/completions"}, text=""
+    ),
+    answer(completion(model="local-model")),
+    sdk="The openai SDK's client follows a redirect, each hop through the transport.",
+)
+
+# -- The waits between two tries ----------------------------------------------------------------
+
+WAIT = "retry_wait"
+case(
+    "retry_waits_double_up_to_eight_seconds",
+    f"{WAIT} retries_exhausted status_503",
+    GENERATE,
+    {**OPENAI, "max_retries": 6},
+    HELLO,
+    *[answer(OVERLOADED, 503)] * 7,
+    sdk=SDK_RETRIES,
+)
+for name, headers, tried_again in (
+    ("of_exactly_two_minutes", {"retry-after": "120"}, True),
+    ("of_zero", {"retry-after": "0"}, True),
+    ("below_zero", {"retry-after": "-5"}, True),
+    ("that_does_not_read", {"retry-after": "soon"}, True),
+    ("as_a_date_already_past", {"retry-after": "Wed, 31 Dec 2025 23:59:00 GMT"}, True),
+    ("in_milliseconds_that_do_not_read", {"retry-after-ms": "soon", "retry-after": "3"}, True),
+    (
+        "past_two_minutes_where_the_answer_says_to_retry",
+        {"retry-after": "121", "x-should-retry": "true"},
+        False,
+    ),
+):
+    again = [answer(completion())] if tried_again else []
+    case(
+        f"retry_wait_{name}",
+        f"{WAIT} status_429 retry_after_seconds",
+        GENERATE,
+        RETRIED,
+        HELLO,
+        answer(LIMITED, 429, **headers),
+        *again,
+        sdk=SDK_RETRIES,
+    )
+for status in (502, 504):
+    case(
+        f"retry_of_status_{status}",
+        f"{WAIT} retry_succeeds status_{status}",
+        GENERATE,
+        RETRIED,
+        HELLO,
+        answer(failed("Upstream failed.", "server_error"), status),
+        answer(completion()),
+        sdk=SDK_RETRIES,
+    )
+
+# -- Counts that are no whole number ------------------------------------------------------
+
+PRICED = {"prompt_tokens": 1200, "completion_tokens": 45}
+MALFORMED_USAGE: tuple[tuple[str, Any], ...] = (
+    ("prompt_tokens_as_text", {"prompt_tokens": "12", "completion_tokens": 5}),
+    ("completion_tokens_as_text", {"prompt_tokens": 12, "completion_tokens": "5"}),
+    ("completion_tokens_as_a_word", {"prompt_tokens": 12, "completion_tokens": "five"}),
+    ("counts_with_a_fraction", {"prompt_tokens": 12.5, "completion_tokens": 5.5}),
+    ("counts_as_whole_floats", {"prompt_tokens": 12.0, "completion_tokens": 5.0}),
+    ("counts_that_are_true", {"prompt_tokens": True, "completion_tokens": True}),
+    ("cached_tokens_as_text", {**PRICED, "prompt_tokens_details": {"cached_tokens": "800"}}),
+    ("cached_tokens_as_a_word", {**PRICED, "prompt_tokens_details": {"cached_tokens": "many"}}),
+    (
+        "reasoning_tokens_as_text",
+        {**PRICED, "completion_tokens_details": {"reasoning_tokens": "30"}},
+    ),
+    (
+        "reasoning_tokens_as_a_word",
+        {**PRICED, "completion_tokens_details": {"reasoning_tokens": "many"}},
+    ),
+    ("cache_write_beside_the_details_as_text", {**PRICED, "cache_write_tokens": "300"}),
+    ("that_is_a_text", "12 tokens"),
+    (
+        "details_that_are_a_text",
+        {**PRICED, "prompt_tokens_details": "none", "completion_tokens_details": "none"},
+    ),
+)
+for name, usage in MALFORMED_USAGE:
+    case(f"usage_{name}", SHAPES, GENERATE, LOCAL, HELLO, used(usage))
+    case(
+        f"stream_usage_{name}",
+        f"stream {SHAPES}",
+        STREAM,
+        LOCAL,
+        HELLO,
+        stream(said("Hello.", usage=usage)),
+    )
+
+# -- A body lost before it starts, and a refusal whose body is lost ------------------------
+
+case(
+    "answer_lost_before_any_byte",
+    "body_lost",
+    GENERATE,
+    OPENAI,
+    HELLO,
+    Reply(status=200, headers=dict(JSON), chunks=[], cut=LOST),
+    sdk=SDK_WORDS,
+)
+case(
+    "stream_lost_before_any_byte",
+    "stream body_lost stream_cut",
+    STREAM,
+    OPENAI,
+    HELLO,
+    stream([], cut=LOST),
+    sdk=SDK_WORDS,
+)
+LOST_400 = Reply(status=400, headers=dict(JSON), chunks=['{"error": {"mess'], cut=LOST)
+READ_BEFORE_IT_RAISES = "The openai SDK reads the body of a refused request before it raises."
+case(
+    "status_400_whose_body_is_lost",
+    "status_400 body_lost",
+    GENERATE,
+    OPENAI,
+    HELLO,
+    LOST_400,
+    sdk=READ_BEFORE_IT_RAISES,
+)
+case(
+    "status_400_whose_body_is_lost_on_every_try",
+    "status_400 body_lost retries_exhausted",
+    GENERATE,
+    RETRIED,
+    HELLO,
+    LOST_400,
+    LOST_400,
+    LOST_400,
+    sdk=SDK_RETRIES,
+)
+case(
+    "stream_choices_that_are_no_list",
+    f"stream {ODD}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(sse({**chunk({"content": "Hel"}), "choices": "none"}, chunk({}, finish="stop"))),
+)
+
+# -- More of how a streamed call is folded -------------------------------------------------
+
+case(
+    "stream_one_id_on_two_indexes",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            fragment(0, "call_1", "clock", "{}"),
+            fragment(1, "call_1", "lookup_order", '{"number": "A-1"}'),
+            ENDED,
+        )
+    ),
+)
+case(
+    "stream_call_with_an_empty_function",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(sse(raw_call(index=0, id="call_1", type="function", function={}), ENDED)),
+)
+case(
+    "stream_call_name_after_its_arguments",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(index=0, id="call_1", type="function", function={"arguments": '{"number": '}),
+            fragment(0, None, "lookup_order", '"A-1"}'),
+            ENDED,
+        )
+    ),
+)
+case(
+    "call_id_that_is_no_text",
+    "tool_call",
+    GENERATE,
+    LOCAL,
+    TOOLS,
+    answer(
+        completion(
+            None,
+            finish="tool_calls",
+            model="local-model",
+            tool_calls=[called(7, "clock", "{}")],
+        )
+    ),
+    note="A whole answer's call id that is a number reads as its text.",
+)
+case(
+    "stream_call_id_that_is_no_text",
+    FOLDING,
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(
+                index=0, id=7, type="function", function={"name": "clock", "arguments": "{}"}
+            ),
+            ENDED,
+        )
+    ),
+)
+
+# -- More of where a think tag stands ------------------------------------------------------
+
+case(
+    "stream_think_tag_across_chunks_after_text",
+    f"stream {THOUGHTS}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(said("Hello. <th", "ink>is text</think>")),
+)
+for name, text in (
+    ("think_block_after_a_byte_order_mark", chr(0xFEFF) + "<think>They greet me.</think>Hello."),
+    ("think_block_after_a_no_break_space", chr(0xA0) + "<think>They greet me.</think>Hello."),
+    ("second_think_block", "<think>One.</think>Hello.<think>Two.</think>Bye."),
+):
+    case(name, THOUGHTS, GENERATE, LOCAL, HELLO, answer(completion(text, model="local-model")))
+
+# -- A response schema beside tools, and a refusal that is no text ---------------------------
+
+ASKED_BOTH = {**TOOLS, "response_schema": CITY}
+BESIDE_TOOLS = "response_schema response_schema_with_tools"
+UNREAD = called("call_1", "lookup_order", "number A-1")
+case(
+    "response_schema_with_a_call_that_does_not_read",
+    f"{BESIDE_TOOLS} tool_call_unreadable",
+    GENERATE,
+    OPENAI,
+    ASKED_BOTH,
+    answer(completion(None, finish="tool_calls", tool_calls=[UNREAD])),
+)
+case(
+    "stream_response_schema_with_a_call_that_does_not_read",
+    f"stream {BESIDE_TOOLS} tool_call_unreadable",
+    STREAM,
+    OPENAI,
+    ASKED_BOTH,
+    stream(sse(fragment(0, "call_1", "lookup_order", "number A-1"), ENDED)),
+)
+case(
+    "response_schema_with_tools_and_an_answer_that_does_not_fit",
+    f"{BESIDE_TOOLS} response_schema_mismatch",
+    GENERATE,
+    OPENAI,
+    ASKED_BOTH,
+    answer(completion("Paris is a city.")),
+    note=PYTHON_WORDS,
+)
+case(
+    "response_schema_refusal_that_is_no_text",
+    "response_schema refusal",
+    GENERATE,
+    OPENAI,
+    ASKED_A_CITY,
+    answer(completion(None, refusal=True)),
+)
+
+# -- More waits, and more redirects --------------------------------------------------------
+
+for name, headers in (
+    ("in_seconds_with_a_fraction", {"retry-after": "1.5"}),
+    ("as_a_date_of_rfc_850", {"retry-after": "Thursday, 01-Jan-26 00:00:07 GMT"}),
+    ("as_a_date_of_asctime", {"retry-after": "Thu Jan  1 00:00:07 2026"}),
+):
+    case(
+        f"retry_wait_{name}",
+        f"{WAIT} status_429 retry_after_seconds",
+        GENERATE,
+        RETRIED,
+        HELLO,
+        answer(LIMITED, 429, **headers),
+        answer(completion()),
+        sdk=SDK_RETRIES,
+    )
+case(
+    "no_retry_where_the_answer_says_so_in_upper_case",
+    f"{WAIT} status_400",
+    GENERATE,
+    RETRIED,
+    HELLO,
+    answer(BAD_REQUEST, 400, **{"x-should-retry": "TRUE"}),
+    sdk=SDK_RETRIES,
+)
+FOLLOWED = "The openai SDK's client follows a redirect, each hop through the transport."
+MOVED = {"location": "https://llm.example/moved/v1/chat/completions"}
+for status in (301, 303, 308):
+    case(
+        f"redirect_{status}",
+        "redirect",
+        GENERATE,
+        LOCAL,
+        HELLO,
+        Reply(status=status, headers=MOVED, text=""),
+        answer(completion(model="local-model")),
+        sdk=FOLLOWED,
+    )
+AROUND = Reply(
+    status=307, headers={"location": "https://llm.example/v1/chat/completions"}, text=""
+)
+case(
+    "redirects_past_the_hop_limit",
+    "redirect",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    *[AROUND] * 21,
+    sdk=FOLLOWED,
+)
+
+# -- More of the request -------------------------------------------------------------------
+
+
+def shown(url: str) -> dict[str, Any]:
+    """A request that shows one image."""
+    return {"messages": [{"role": "user", "content": [{"type": "image", "url": url}]}]}
+
+
+case(
+    "image_with_no_payload",
+    "image_data_uri before_request",
+    GENERATE,
+    OPENAI,
+    shown("data:image/png;base64,"),
+)
+case(
+    "image_in_url_safe_base64",
+    "image_data_uri before_request",
+    GENERATE,
+    OPENAI,
+    shown("data:image/png;base64,iVBORw0KGgo-_w=="),
+)
+case(
+    "thinking_budget_below_zero",
+    SWITCH,
+    GENERATE,
+    GPT_5,
+    {**HELLO, "thinking_budget": -1},
+    answer(completion()),
+)
+
+# -- More of how a stream is framed --------------------------------------------------------
+
+SAID = "".join(said("Hello."))
+SPLIT = json.dumps(chunk({"content": "Hello."}, finish="stop"), separators=(",", ":"))
+HEAD, _, REST = SPLIT.partition(",")
+case(
+    "stream_with_carriage_returns_alone",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([SAID.replace("\n", "\r")]),
+)
+case(
+    "stream_data_without_a_space",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([SAID.replace("data: ", "data:")]),
+)
+case(
+    "stream_event_of_several_data_lines",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([f"data: {HEAD},\ndata: {REST}\n\n", "data: [DONE]\n\n"]),
+)
+case(
+    "stream_text_after_the_end_mark",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([*said("Hello."), *sse(chunk({"content": " More."}), done=False)]),
+)
+
+# -- More error bodies ---------------------------------------------------------------------
+
+case(
+    "stream_that_sends_a_bare_error_text",
+    "stream stream_error_event",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(sse({"error": "the model is loading"})),
+    sdk="The openai SDK raises a stream's error event with the event's message.",
+)
+case(
+    "answer_200_that_is_an_error_with_a_status_in_words",
+    "error_object",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer({"error": {"message": "Quota exhausted.", "status": "RESOURCE_EXHAUSTED"}}),
+)
+
+# -- A model of the catalogue, behind a base URL -------------------------------------------
+
+UNREAD_CATALOGUE = "Behind a base URL the catalogue is not read."
+case(
+    "model_that_takes_no_tools_behind_a_base_url",
+    "tools reasoning_effort",
+    GENERATE,
+    {**LOCAL, "model": "gpt-6-astra", "reasoning_effort": "high"},
+    TOOLS,
+    answer(completion(model="gpt-6-astra")),
+    note=UNREAD_CATALOGUE,
+)
+case(
+    "model_served_on_responses_only_behind_a_base_url",
+    "plain",
+    GENERATE,
+    {**LOCAL, "model": "gpt-5.5-pro"},
+    HELLO,
+    answer(completion(model="gpt-5.5-pro")),
+    note=UNREAD_CATALOGUE,
+)
+case(
+    "model_that_takes_tools_without_reasoning_behind_a_base_url",
+    "tools reasoning_effort",
+    GENERATE,
+    {
+        **LOCAL,
+        "model": "gpt-5.4",
+        "reasoning_effort": "high",
+        "supports_reasoning_effort_with_tools": True,
+    },
+    TOOLS,
+    answer(completion(model="gpt-5.4")),
+    note=UNREAD_CATALOGUE,
+)
+
+# -- More answers in other shapes ----------------------------------------------------------
+
+case("answer_naming_an_empty_model", ODD, GENERATE, LOCAL, HELLO, answer(completion(model="")))
+case(
+    "stream_of_usage_alone",
+    f"stream {ODD}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(sse(chunk(usage=USAGE))),
+)
+case("answer_200_that_is_a_list", ODD, GENERATE, LOCAL, HELLO, answer([]))
+
+# -- What the openai SDK decides, beside its retries --------------------------------------
+
+BODY_READ_BY_THE_SDK = "The openai SDK decides how a body that is no JSON is handed on."
+ALSO_DECIDED_BY_THE_SDK = {
+    "extra_body": "The openai SDK merges extra_body into the body, last.",
+    "extra_body_replacing_the_request_s_own": (
+        "The openai SDK merges extra_body into the body, last."
+    ),
+    "authorization_among_the_default_headers": (
+        "The openai SDK lets a default header replace the header it writes the key in."
+    ),
+    "base_url_with_a_trailing_slash_and_a_query": (
+        "The openai SDK joins the path of a request to the base URL."
+    ),
+    "status_500_with_an_empty_body": "No body came: the message is the openai SDK's.",
+    "stream_cut_before_its_end": SDK_WORDS,
+    "stream_cut_inside_an_event": SDK_WORDS,
+    "stream_that_sends_an_error_event": (
+        "The openai SDK raises a stream's error event with the event's message."
+    ),
+    "stream_that_sends_an_error_naming_no_status": (
+        "The openai SDK raises a stream's error event with the event's message."
+    ),
+    "stream_that_sends_an_overload_event": (
+        "The openai SDK raises a stream's error event with the event's message."
+    ),
+    "answer_200_that_is_a_page": BODY_READ_BY_THE_SDK,
+    "answer_200_that_is_no_json": BODY_READ_BY_THE_SDK,
+    "stream_event_that_is_no_json": BODY_READ_BY_THE_SDK,
+    "stream_answered_with_a_page": BODY_READ_BY_THE_SDK,
+    "status_204": BODY_READ_BY_THE_SDK,
+    "stream_last_event_without_its_blank_line": (
+        "The openai SDK's reader hands on an event at the blank line that ends it."
+    ),
+    "stream_last_event_without_its_line_end": (
+        "The openai SDK's reader hands on an event at the blank line that ends it."
+    ),
+    "stream_that_starts_with_a_byte_order_mark": (
+        "The openai SDK's reader drops no byte order mark: the line it starts is no data."
+    ),
+}
+
+
+# -- What is under question ----------------------------------------------------------------
+
+# Behaviours of Python reported upstream as possible defects. A case pins
+# each as Python has it today; a replay may set the case aside, or expect
+# otherwise once upstream decides.
+LOST_REFUSAL = (
+    "A refused request whose body is lost reads as a lost connection, worth a retry, "
+    "without the status the server answered."
+)
+TURNED_INTO_A_GET = (
+    "The redirect is followed as a GET, without the body, and what it answers is read as "
+    "the completion."
+)
+RAW_VALIDATION = (
+    "A count that is no whole number escapes generate as a raw ValidationError of pydantic, "
+    "no ProviderError; a stream fails with a ProviderError."
+)
+READ_SILENTLY = (
+    "A count that is no JSON whole number is read as one without a word: a text as the "
+    "number it spells, true as one."
+)
+POSSIBLE_DEFECTS = {
+    "answer_200_that_is_no_completion": (
+        "A 200 JSON body that is no completion reads as an empty answer, not as a failure."
+    ),
+    "base_url_with_a_trailing_slash_and_a_query": (
+        "A base URL with a query: the request's path is written after the query."
+    ),
+    "extra_body_replacing_the_request_s_own": (
+        "extra_body replaces the request's own model, temperature and messages."
+    ),
+    "stream_that_ends_without_an_ending": (
+        "A stream that ends with no finish reason and no end mark reads as complete."
+    ),
+    "stream_tool_call_that_ends_without_an_ending": (
+        "A stream that ends with no finish reason and no end mark hands its call as whole."
+    ),
+    "stream_answered_with_a_json_error_object": (
+        "A JSON error object answering a stream request is final and names no status, "
+        "where generate reads the same body as the status it names."
+    ),
+    "key_of_the_request": "The key a request carries is not read: the configuration's is sent.",
+    "redirect_302_to_another_host": (
+        "A 302 to another host is followed: as a GET, without the body and without the key, "
+        "and what that host answers is read as the completion."
+    ),
+    "usage_counts_below_zero": (
+        "An input count below zero reads as zero; an output count below zero is handed on."
+    ),
+    "choices_that_are_no_list": (
+        "Choices that are no list escape generate as a raw AttributeError, no ProviderError."
+    ),
+    "token_bound_of_zero_in_the_request": (
+        "A token bound of zero in the request is read as none: the configuration's is sent, "
+        "where a zero in the configuration is sent as it is."
+    ),
+    "stream_last_event_without_its_blank_line": (
+        "The last event of a stream that ends without its blank line is not read."
+    ),
+    "stream_last_event_without_its_line_end": (
+        "The last event of a stream that ends without its blank line is not read."
+    ),
+    "stream_status_400_whose_body_is_lost": LOST_REFUSAL,
+    "stream_that_starts_with_a_byte_order_mark": (
+        "The first event of a stream that starts with a byte order mark is not read."
+    ),
+    "status_400_whose_body_is_lost": LOST_REFUSAL,
+    "status_400_whose_body_is_lost_on_every_try": (
+        f"{LOST_REFUSAL} The SDK tries the refused request again."
+    ),
+    "stream_call_id_that_is_no_text": (
+        "A streamed call whose id is a number fails the stream, where a whole answer reads "
+        "the id as its text."
+    ),
+    "redirect_301": TURNED_INTO_A_GET,
+    "redirect_303": TURNED_INTO_A_GET,
+    "redirects_past_the_hop_limit": (
+        "Redirects without end read, after twenty-one requests, as a lost connection, "
+        "worth a retry."
+    ),
+    # A usage that is malformed and raises no ProviderError.
+    "usage_prompt_tokens_as_text": (
+        "A prompt count written as text escapes generate as a raw TypeError, no "
+        "ProviderError; a stream fails with a ProviderError."
+    ),
+    "usage_cached_tokens_as_a_word": (
+        "A cached count that is a word escapes generate as a raw TypeError, no "
+        "ProviderError; a stream fails with a ProviderError."
+    ),
+    "usage_completion_tokens_as_a_word": RAW_VALIDATION,
+    "usage_counts_with_a_fraction": RAW_VALIDATION,
+    "usage_reasoning_tokens_as_a_word": RAW_VALIDATION,
+    # A count that is malformed and read without a word.
+    **{
+        name: READ_SILENTLY
+        for shape in (
+            "completion_tokens_as_text",
+            "counts_that_are_true",
+            "cached_tokens_as_text",
+            "reasoning_tokens_as_text",
+        )
+        for name in (f"usage_{shape}", f"stream_usage_{shape}")
+    },
+    "usage_cache_write_written_as_text_in_the_details": READ_SILENTLY,
+}
+
+# Points where the Rust provider is planned otherwise than Python does, which
+# the maintainer decides: no defect of Python's is claimed.
+TO_DECIDE = {
+    "authorization_among_the_default_headers": (
+        "An Authorization default header replaces the configuration's key."
+    ),
+    "redirect": "A redirect to the same host is followed.",
+    "redirect_308": "A redirect to the same host is followed.",
+}
+
+QUESTIONED = {
+    **{name: f"A possible defect: {what}" for name, what in POSSIBLE_DEFECTS.items()},
+    **{name: f"A difference to decide: {what}" for name, what in TO_DECIDE.items()},
+}
+
+
+def annotate() -> None:
+    """Write the tables above into their cases."""
+    by_name = {found.name: at for at, found in enumerate(CASES)}
+    for table, member in ((ALSO_DECIDED_BY_THE_SDK, "sdk"), (QUESTIONED, "questioned")):
+        for name, sentence in table.items():
+            found = CASES[by_name[name]]
+            if getattr(found, member) is not None:
+                raise AssertionError(f"{name} already says {member}")
+            CASES[by_name[name]] = replace(found, **{member: sentence})
+
+
+annotate()

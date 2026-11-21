@@ -5,11 +5,12 @@
 use std::error::Error;
 
 use roomkit_providers_core::{
-    AiRequest, AiResponse, AiToolCall, DataUriError, MockAiProvider, ModelInfo, ProviderError,
-    ResponseSchemaError, ResponseSchemaFailure, StreamDone, StreamEvent, check_schema_answer,
-    checked_stream, dumps, listing, parse_data_uri, read_tool_calls, request_api_key,
-    schema_for_generate,
+    AiRequest, AiResponse, AiToolCall, DataUriError, MockAiProvider, ModelInfo, ObjectOnly,
+    ProviderError, ResponseSchemaError, ResponseSchemaFailure, StreamDone, StreamEvent,
+    check_schema_answer, checked_stream, dumps, listing, parse_data_uri, read_name,
+    read_tool_calls, request_api_key, schema_for_generate,
 };
+use serde::{Deserialize, Deserializer};
 use serde_json::{Map, Value, json};
 
 /// A schema of one required text.
@@ -136,4 +137,73 @@ fn a_wire_s_calls_a_listing_and_a_request_s_key_are_read() {
     assert_eq!(request_api_key(&AiRequest::default()), None);
     let _whole: Option<AiResponse> = None;
     let _event: Option<StreamEvent> = None;
+}
+
+/// What a provider's configuration could look like: a model read from an
+/// object only, and a name read from a string only.
+#[derive(Debug, PartialEq)]
+struct Endpoint {
+    api: Api,
+    retries: u32,
+}
+
+#[derive(Debug, PartialEq)]
+enum Api {
+    Chat,
+    Responses,
+}
+
+impl<'de> Deserialize<'de> for Api {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        read_name(
+            deserializer,
+            "an API, `chat` or `responses`",
+            |name| match name {
+                "chat" => Some(Self::Chat),
+                "responses" => Some(Self::Responses),
+                _ => None,
+            },
+        )
+    }
+}
+
+#[derive(Deserialize)]
+struct EndpointForm {
+    api: Api,
+    #[serde(default)]
+    retries: u32,
+}
+
+impl<'de> Deserialize<'de> for Endpoint {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let form = EndpointForm::deserialize(ObjectOnly(deserializer))?;
+        Ok(Self {
+            api: form.api,
+            retries: form.retries,
+        })
+    }
+}
+
+// A provider reading its configuration as narrowly as the contract reads a
+// model: an object and a name. A list of the fields in order and an object
+// of one key, which the readers serde derives also take, are refused.
+#[test]
+fn a_configuration_is_read_from_an_object_and_a_name_from_a_string() {
+    let read = |value: Value| serde_json::from_value::<Endpoint>(value).ok();
+    let chat = Endpoint {
+        api: Api::Chat,
+        retries: 2,
+    };
+    assert_eq!(read(json!({"api": "chat", "retries": 2})), Some(chat));
+    let responses = read(json!({"api": "responses"}));
+    assert_eq!(responses.map(|endpoint| endpoint.api), Some(Api::Responses));
+    for refused in [
+        json!(["chat", 2]),
+        json!("chat"),
+        json!({"api": {"chat": null}}),
+        json!({"api": "other"}),
+        json!({"api": 1}),
+    ] {
+        assert_eq!(read(refused.clone()), None, "{refused}");
+    }
 }

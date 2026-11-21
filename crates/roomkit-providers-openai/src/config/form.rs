@@ -5,40 +5,14 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use roomkit_providers_core::Metadata;
-use serde::de::{Error as _, Visitor};
+use roomkit_providers_core::{Metadata, ObjectOnly};
+use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::OpenAiConfig;
 
 /// What Python writes in place of a key (`SecretStr`).
 const MASK: &str = "**********";
-
-/// A source that reads an object whatever its reader asks for.
-///
-/// A derived struct asks its source for a struct, which a JSON source also
-/// answers with a list, each item read as the field at its place. Asked
-/// through this one, the source is asked for an object, and refuses a list
-/// as it refuses a number, as Python refuses both.
-struct ObjectOnly<D>(D);
-
-impl<'de, D: Deserializer<'de>> Deserializer<'de> for ObjectOnly<D> {
-    type Error = D::Error;
-
-    fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        self.0.deserialize_map(visitor)
-    }
-
-    fn is_human_readable(&self) -> bool {
-        self.0.is_human_readable()
-    }
-
-    serde::forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-        bytes byte_buf option unit unit_struct newtype_struct seq tuple
-        tuple_struct map struct enum identifier ignored_any
-    }
-}
 
 /// [`OpenAiConfig`] as it is read.
 #[derive(Deserialize)]
@@ -142,6 +116,8 @@ impl From<ConfigForm> for OpenAiConfig {
 }
 
 impl<'de> Deserialize<'de> for OpenAiConfig {
+    /// From a JSON object only: a list or a number is refused, as Python
+    /// refuses both.
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         ConfigForm::deserialize(ObjectOnly(deserializer)).map(Self::from)
     }

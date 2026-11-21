@@ -307,6 +307,396 @@
             }
         },
         {
+            "name": "profile_of_gpt-4.1",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gpt-4.1"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "gpt-4.1",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_gpt-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gpt-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "gpt-5",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_gpt-6-luna",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gpt-6-luna"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "gpt-6-luna",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_o1",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "o1"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "o1",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_o1-mini",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "o1-mini"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "o1-mini",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_o3-pro",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "o3-pro"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "o3-pro",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_o4-mini",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "o4-mini"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "o4-mini",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_gpt-4",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gpt-4"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "gpt-4",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_gpt-4-turbo",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gpt-4-turbo"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "gpt-4-turbo",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_gpt-3.5-turbo",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gpt-3.5-turbo"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "gpt-3.5-turbo",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_o2",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "o2"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "o2",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_ft:gpt-5:acme",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "ft:gpt-5:acme"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "ft:gpt-5:acme",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_my-o3",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "my-o3"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "my-o3",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_chatgpt-4.1",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "chatgpt-4.1"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "chatgpt-4.1",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "profile_of_GPT-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "GPT-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": null,
+                "model": "GPT-5",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
             "name": "no_token_bound",
             "given": {
                 "api_key": "placeholder-not-a-key",
@@ -602,6 +992,33 @@
                 "supports_custom_temperature": true,
                 "reasoning_effort": null,
                 "default_headers": {},
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
+            "name": "base_url_with_credentials",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gpt-4o",
+                "base_url": "https://user:word@llm.example/v1?k=word"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://user:word@llm.example/v1?k=word",
+                "model": "gpt-4o",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
                 "extra_body": null,
                 "supports_response_schema": null,
                 "supports_response_schema_with_tools": null,

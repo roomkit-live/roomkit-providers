@@ -9,7 +9,10 @@ use serde::de::Visitor;
 /// answers with a list, each item read as the field at its place. Asked
 /// through this one, the source is asked for an object, and refuses a list
 /// as it refuses a number. The source is read once: nothing is held back.
-pub(crate) struct ObjectOnly<D>(pub(crate) D);
+///
+/// For a provider crate too: the reader of its configuration.
+#[derive(Debug)]
+pub struct ObjectOnly<D>(pub D);
 
 impl<'de, D: Deserializer<'de>> Deserializer<'de> for ObjectOnly<D> {
     type Error = D::Error;

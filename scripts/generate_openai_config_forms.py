@@ -79,6 +79,28 @@ EXAMPLES: list[tuple[str, dict[str, Any]]] = [
         "old_model_with_its_switches_stated",
         {**OLD, "use_max_completion_tokens": True, "supports_custom_temperature": False},
     ),
+    # Each model prefix Python profiles, and names that hold one without
+    # starting with it.
+    *[
+        (f"profile_of_{model}", {"api_key": KEY, "model": model})
+        for model in (
+            "gpt-4.1",
+            "gpt-5",
+            "gpt-6-luna",
+            "o1",
+            "o1-mini",
+            "o3-pro",
+            "o4-mini",
+            "gpt-4",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo",
+            "o2",
+            "ft:gpt-5:acme",
+            "my-o3",
+            "chatgpt-4.1",
+            "GPT-5",
+        )
+    ],
     # Members one by one.
     ("no_token_bound", {**OLD, "max_tokens": None}),
     ("empty_key", {**OLD, "api_key": ""}),
@@ -91,6 +113,7 @@ EXAMPLES: list[tuple[str, dict[str, Any]]] = [
     ("reasoning_effort", {**MODERN, "reasoning_effort": "low"}),
     ("headers", {**OLD, "default_headers": {"Authorization": "Basic placeholder", "X-A": "1"}}),
     ("no_header", {**OLD, "default_headers": {}}),
+    ("base_url_with_credentials", {**OLD, "base_url": "https://user:word@llm.example/v1?k=word"}),
     ("extra_body", {**OLD, "extra_body": {"repetition_penalty": 1.1, "nested": {"b": 1, "a": 2}}}),
     ("empty_extra_body", {**OLD, "extra_body": {}}),
     ("response_schema_switches", {**OLD, "supports_response_schema": False}),

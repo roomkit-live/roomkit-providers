@@ -131,11 +131,33 @@ make python-openai-chat-cases
   cases are listed in `scripts/openai_chat_cases.py`, each with the kinds of
   behaviour it shows; the `python_chat_cases` test requires every kind, so a
   case is added there with its kind, and a kind is never dropped. Nothing
-  that changes from a run to the next is recorded: the script stops the
-  SDK's clock, counts the ids Python mints instead of drawing them, and
-  leaves out the headers of the SDK. It must write the same bytes twice.
-  Where the openai SDK decides a behaviour, not RoomKit, the case says so
-  under `sdk`: the Rust provider has no SDK under it.
+  that changes from a run to the next is recorded. The script:
+  - removes every `OPENAI_*` variable of the environment, which the SDK
+    reads its key and its base URL from when a client is given none;
+  - stops the SDK's clock, at the instant the fixture names;
+  - counts the ids Python mints instead of drawing them;
+  - takes none of the SDK's waits, and records each;
+  - leaves out the headers of the SDK and of the platform.
+
+  It must write the same bytes twice. The fixture names the commit of
+  RoomKit it ran against and whether its files were clean, when RoomKit was
+  imported from its own checkout, and, on a case that calls OpenAI's own
+  endpoint, what the provider read of the model's catalogue entry. It is
+  written with an indent of one: one member per line, for a diff to read.
+- A case says how a replay takes it. Where the openai SDK decides a
+  behaviour, not RoomKit, the case says so under `sdk`: the Rust provider
+  has no SDK under it. A case that fails says under `compare` what a replay
+  reproduces of the failure, and whose words its message holds: RoomKit's
+  and the server's are compared, the SDK's and Python's are not. The test
+  derives that label again from the failure and from what the fake sent. A
+  case that pins a behaviour of Python that is not settled says so under
+  `questioned`: a possible defect reported upstream (`POSSIBLE_DEFECTS` of
+  the cases' module), or a point where the Rust provider is planned
+  otherwise and the maintainer decides (`TO_DECIDE`). The test lists both:
+  a case joins or leaves the module's table and the test's with the
+  decision.
+- A stream's body is a list of reads, each any bytes: a read that is UTF-8
+  is written as its text, any other in hexadecimal.
 
 ## Implementation boundaries
 

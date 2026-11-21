@@ -48,13 +48,18 @@ It depends on `roomkit-providers-core`, and on neither Python nor RoomKit.
 - Input is stricter: a value pydantic would convert (`"30"` for a number,
   `1024.0` for an integer, `1` for a boolean) and an integer outside 32 bits
   without a sign are refused.
+- A member written twice in the JSON text is refused, where Python keeps the
+  last, and an integer of `extra_body` outside 64 bits is read as a float:
+  both come from the JSON parser.
 - A base URL that Python's URL reader refuses (a bracket that holds no IPv6
   address, a character that normalizes to a delimiter) makes Python refuse
   the configuration. Here the configuration is a plain value: it is not
   OpenAI's endpoint, and nothing is refused.
 
 The `Debug` form never prints the key, nor the base URL's user information,
-path or query, nor a default header's value.
+path or query, nor a default header's value. The JSON form is not for
+showing: like Python's, it masks the key alone, and writes a default
+header's value and the credentials a base URL carries whole.
 
 ## The wire cases
 
@@ -62,9 +67,23 @@ path or query, nor a default header's value.
 `scripts/generate_openai_chat_cases.py`, which runs RoomKit's Python
 `OpenAIAIProvider` against a fake of the endpoint, with no network. A case
 holds the configuration, the request in the contract's JSON form, each HTTP
-request Python sent with the answer the fake gave, and what Python returned:
-a response, the events or the text of a stream, or the error it raised. The
-fixture's `notes` say how each part is written.
+request Python sent, with the URL it went to, and the answer the fake gave,
+and what Python returned: a response, the events or the text of a stream, or
+the error it raised. The fixture's `notes` say how each part is written.
+
+Three members say how a replay takes a case:
+
+- `compare`, on a case that fails: what a replay reproduces of the failure
+  as written (its attributes, the reason of a response schema's failure, and
+  what a stream gave first), and whose words its message holds, so whether
+  it is compared. A provider with no SDK under it cannot say what the openai
+  SDK, Python's JSON reader or Python's `repr` of a body says;
+- `sdk`: the openai SDK decided the behaviour, not RoomKit;
+- `questioned`: the case pins a behaviour of Python that is not settled, in
+  a sentence that starts with its kind: a possible defect, reported
+  upstream, or a difference to decide, where the Rust provider is planned
+  otherwise and no defect is claimed. A replay may set the case aside, or
+  expect otherwise once it is settled.
 
 The crate's tests read every case with `OpenAiConfig` and the contract's
 types, and require every kind of case: a regenerated fixture that loses one
