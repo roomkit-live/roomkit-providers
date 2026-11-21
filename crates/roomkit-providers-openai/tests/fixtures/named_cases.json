@@ -186,6 +186,44 @@
       }
     },
     {
+      "name": "stream_empty_finish_reason_without_an_end_mark",
+      "list": "questioned_otherwise",
+      "reason": "A finish reason that is an empty text says nothing: a stream that ends after one, with no end mark, was cut, as one that ends with no finish reason at all. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: [{\"type\":\"text_delta\",\"text\":\"Hello.\"}]",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a finish reason nor its end mark"
+        }
+      }
+    },
+    {
+      "name": "stream_tool_call_empty_finish_reason_without_an_end_mark",
+      "list": "questioned_otherwise",
+      "reason": "A finish reason that is an empty text says nothing: a stream that ends after one, with no end mark, was cut, as one that ends with no finish reason at all. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: [{\"type\":\"tool_call_delta\",\"id\":\"call_1\",\"name\":\"lookup_order\",\"index\":0,\"arguments_delta\":\"{\\\"number\\\": \\\"A-1\\\"}\"}]",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a finish reason nor its end mark"
+        }
+      }
+    },
+    {
       "name": "stream_answered_with_a_json_error_object",
       "list": "questioned_otherwise",
       "reason": "A JSON error object that answers a stream request with a 200 reads as the status it names, as generate reads the same body: the maintainer's decision. Python says the stream carried no event, a final failure that names no status.",

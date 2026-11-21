@@ -900,6 +900,14 @@ case(
     HELLO,
     answer(completion("", finish="content_filter")),
 )
+case(
+    "ending_empty_finish_reason",
+    "finish_empty",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer(completion(finish="", model="local-model")),
+)
 case("empty_answer", "empty_answer", GENERATE, OPENAI, HELLO, answer(completion("")))
 case("null_answer", "empty_answer", GENERATE, OPENAI, HELLO, answer(completion(None, finish=None)))
 case(
@@ -997,6 +1005,26 @@ case(
     HELLO,
     answer({"detail": OVERFLOW}, 400),
     note="No code says it: the error leaves context_overflow unsaid, and its message is read.",
+)
+# What a server that validates a request field by field answers one it refuses.
+UNVALIDATED = {
+    "detail": [
+        {
+            "type": "missing",
+            "loc": ["body", "messages"],
+            "msg": "Field required",
+            "input": {"model": "local-model"},
+        }
+    ]
+}
+case(
+    "status_422_whose_detail_is_a_list",
+    "detail_list status_422",
+    GENERATE,
+    LOCAL,
+    HELLO,
+    answer(UNVALIDATED, 422),
+    note="The detail is a list, an entry for each field refused, where another server's is a text.",
 )
 case(
     "status_413_for_a_request_too_large",
@@ -1297,6 +1325,28 @@ case(
     stream(sse(chunk({"role": "assistant", "content": "Hello."}, model="local-model"), done=False)),
     note="No finish reason and no end mark: the stream's end is the answer's.",
 )
+# A finish reason that is an empty text, as some servers send for the last chunk.
+ENDED_FOR_NO_REASON = sse(
+    chunk({"role": "assistant", "content": "Hello."}, model="local-model"),
+    chunk({}, finish="", model="local-model"),
+    done=False,
+)
+case(
+    "stream_empty_finish_reason_without_an_end_mark",
+    "stream finish_empty",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(ENDED_FOR_NO_REASON),
+)
+case(
+    "stream_empty_finish_reason_with_its_end_mark",
+    "stream finish_empty",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([*ENDED_FOR_NO_REASON, "data: [DONE]\n\n"]),
+)
 case(
     "stream_think_tags_across_chunks",
     "stream thinking_read",
@@ -1573,6 +1623,14 @@ case(
     note=PYTHON_WORDS,
 )
 case("stream_status_429", "stream status_429", STREAM, OPENAI, HELLO, answer(LIMITED, 429))
+case(
+    "stream_status_422_whose_detail_is_a_list",
+    "stream detail_list status_422",
+    STREAM,
+    LOCAL,
+    HELLO,
+    answer(UNVALIDATED, 422),
+)
 case(
     "stream_context_overflow",
     "stream context_overflow status_400",
@@ -1884,6 +1942,20 @@ case(
     LOCAL,
     TOOLS,
     stream(sse(fragment(0, "call_1", "lookup_order", '{"number": "A-1"}'), done=False)),
+)
+case(
+    "stream_tool_call_empty_finish_reason_without_an_end_mark",
+    "stream tool_call_streamed finish_empty",
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            fragment(0, "call_1", "lookup_order", '{"number": "A-1"}'),
+            chunk({}, finish=""),
+            done=False,
+        )
+    ),
 )
 
 # -- Think tags, held and not ----------------------------------------------------------
@@ -3229,6 +3301,14 @@ POSSIBLE_DEFECTS = {
     ),
     "stream_tool_call_that_ends_without_an_ending": (
         "A stream that ends with no finish reason and no end mark hands its call as whole."
+    ),
+    "stream_empty_finish_reason_without_an_end_mark": (
+        "A stream that ends after an empty finish reason, which says nothing, and with no "
+        "end mark reads as complete."
+    ),
+    "stream_tool_call_empty_finish_reason_without_an_end_mark": (
+        "A stream that ends after an empty finish reason, which says nothing, and with no "
+        "end mark hands its call as whole."
     ),
     "stream_answered_with_a_json_error_object": (
         "A JSON error object answering a stream request is final and names no status, "

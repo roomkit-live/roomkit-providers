@@ -79,7 +79,7 @@ async fn replayed_or_named_for(call: &str) -> (usize, usize) {
 /// what the provider does instead.
 #[tokio::test]
 async fn every_generate_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named_for("generate").await, (185, 24));
+    assert_eq!(replayed_or_named_for("generate").await, (187, 24));
 }
 
 /// Every `generate_structured_stream` case, the same way: the events in
@@ -88,8 +88,40 @@ async fn every_generate_case_replays_as_python_or_is_named() {
 async fn every_structured_stream_case_replays_as_python_or_is_named() {
     assert_eq!(
         replayed_or_named_for("generate_structured_stream").await,
-        (94, 17)
+        (96, 19)
     );
+}
+
+// A refusal whose `detail` is a list replays as Python by what its failure
+// carries. Its words are not compared: Python's are its `repr` of the body.
+// The provider's are the list's own, each entry's words after the place it
+// names, whole as streamed, and nothing else of the body.
+#[tokio::test]
+async fn a_refusal_worded_as_a_list_says_what_the_list_says() {
+    use roomkit_providers_llm::AiProvider as _;
+
+    let fixture = fixture();
+    let says = "the provider answered HTTP 422: body.messages: Field required";
+    for name in [
+        "status_422_whose_detail_is_a_list",
+        "stream_status_422_whose_detail_is_a_list",
+    ] {
+        let case = fixture.case(name);
+        let config: OpenAiConfig = serde_json::from_value(case.config.clone()).unwrap();
+        let fake = fake::Fake::serving(case.replies()).await;
+        let provider = crate::ported::support::pointed(config, &fake);
+        let request = case.asked();
+        let failure = if case.call == "generate" {
+            provider.generate(&request).await.unwrap_err()
+        } else {
+            let (events, failure) = drained(provider.generate_structured_stream(&request)).await;
+            assert!(events.is_empty(), "{name}: {events:?}");
+            failure.unwrap()
+        };
+        assert_eq!(failure.message, says, "{name}");
+        assert_eq!(failure.to_string(), format!("openai (422): {says}"));
+        assert_eq!((failure.status_code, failure.retryable), (Some(422), false));
+    }
 }
 
 /// Every `generate_stream` case: the text as it came.

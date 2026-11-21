@@ -24,11 +24,12 @@ const STREAM_ERROR: &str = "An error occurred during streaming";
 /// redirect: `the provider answered HTTP 401 (type, code): message`. Of
 /// the body it carries what an error object says of itself and nothing
 /// else: its message, its type and its code, read under `error` or at the
-/// top level, and, where it states no message, the text it words its
-/// refusal with under `detail`. A body that is no JSON is not echoed: the
-/// text is then the status's reason. Whether the request overflowed the
-/// model's context is read from the whole body, echoed or not: the code
-/// that says so, or the words.
+/// top level, and, where it states no message, what it words its refusal
+/// with under `detail`: a text, or a list of what each field lacks
+/// ([`listed`]). A body that is no JSON is not echoed: the text is then
+/// the status's reason. Whether the request overflowed the model's context
+/// is read from the whole body, echoed or not: the code that says so, or
+/// the words.
 pub(crate) fn status(status: u16, body: &[u8]) -> Failure {
     let parsed: Option<Value> = serde_json::from_slice(past_mark(body)).ok();
     let stated = |name: &str| {
@@ -44,13 +45,51 @@ pub(crate) fn status(status: u16, body: &[u8]) -> Failure {
     };
     let bare = || parsed.as_ref()?.get("error")?.as_str().map(str::to_owned);
     let message = stated("message").or_else(bare);
+    let detailed = || listed(parsed.as_ref()?.get("detail")?);
     let stated = Stated {
         kind,
         code,
-        message: message.or_else(|| worded("detail")),
+        message: message.or_else(|| worded("detail")).or_else(detailed),
         overflow,
     };
     Failure::refused(status, body, stated)
+}
+
+/// What a `detail` that is a list says, as a server that validates a
+/// request field by field writes one: of each entry its `msg`, after the
+/// place its `loc` names, `body.messages: Field required`, the entries
+/// apart by `; `. Nothing else of an entry is read: its `input` repeats
+/// what the request held. `None` when no entry words anything.
+fn listed(detail: &Value) -> Option<String> {
+    let mut said = String::new();
+    for entry in detail.as_array()? {
+        let words = entry.get("msg").and_then(Value::as_str);
+        let Some(words) = words.filter(|words| !one_line(words).is_empty()) else {
+            continue;
+        };
+        if !said.is_empty() {
+            said.push_str("; ");
+        }
+        if let Some(place) = place_of(entry.get("loc")) {
+            said.push_str(&place);
+            said.push_str(": ");
+        }
+        said.push_str(words);
+    }
+    Some(said).filter(|said| !said.is_empty())
+}
+
+/// The place an entry of a `detail` list names under `loc`: its steps,
+/// each a text or a number, joined by dots (`body.messages.0.content`).
+/// `None` when it names none, or holds anything else.
+fn place_of(loc: Option<&Value>) -> Option<String> {
+    let step = |step: &Value| match step {
+        Value::String(name) => Some(name.clone()),
+        Value::Number(at) => Some(at.to_string()),
+        Value::Null | Value::Bool(_) | Value::Array(_) | Value::Object(_) => None,
+    };
+    let steps: Option<Vec<String>> = loc?.as_array()?.iter().map(step).collect();
+    Some(steps?.join(".")).filter(|place| !one_line(place).is_empty())
 }
 
 /// The failure of an error a server wrote inside its stream, in place of
@@ -173,7 +212,8 @@ mod tests {
 
     // A server that words its refusal under `detail`, with a code or none:
     // its text is the message, bounded and cleaned as any other. A message
-    // the body states comes first, and a detail that is no text is not read.
+    // the body states comes first, and a detail that is neither a text nor
+    // a list is not read.
     #[test]
     fn a_detail_is_the_message_of_a_body_that_states_no_other() {
         let said = |status: u16, body: &str| refusal_of(status, body.as_bytes()).message;
@@ -198,7 +238,7 @@ mod tests {
             "the provider answered HTTP 503: The model is loading."
         );
         for unread in [
-            r#"{"detail": [{"msg": "field required"}]}"#,
+            r#"{"detail": {"msg": "Field required"}}"#,
             r#"{"detail": ""}"#,
         ] {
             assert_eq!(
@@ -206,6 +246,89 @@ mod tests {
                 "the provider answered HTTP 422: Unprocessable Entity"
             );
         }
+    }
+
+    // Not in Python, whose message is its `repr` of the body: a server that
+    // validates a request field by field words its refusal as a list, an
+    // entry for each field. The failure says each entry's `msg` after the
+    // place its `loc` names, and nothing of its `input`, which repeats the
+    // request.
+    #[test]
+    fn a_detail_that_is_a_list_says_what_each_entry_says() {
+        let said = |detail: Value| {
+            let body = json!({"detail": detail}).to_string();
+            refusal_of(422, body.as_bytes()).message
+        };
+        let own = "the provider answered HTTP 422: ";
+        let missing = json!({
+            "type": "missing",
+            "loc": ["body", "messages"],
+            "msg": "Field required",
+            "input": {"model": "local-model", "note": "what the request held"},
+        });
+        assert_eq!(
+            said(json!([missing.clone()])),
+            format!("{own}body.messages: Field required")
+        );
+        // Several entries, a step of a place that is a number, and the
+        // entries that word nothing left out.
+        let typed = json!({
+            "loc": ["body", "messages", 0, "content"],
+            "msg": " Input should be\n a valid string ",
+        });
+        let wordless = json!([{"loc": ["body"]}, {"msg": 7}, {"msg": " "}, "text", null]);
+        let mut entries = vec![missing, typed];
+        entries.extend(wordless.as_array().unwrap().iter().cloned());
+        assert_eq!(
+            said(entries.into()),
+            format!(
+                "{own}body.messages: Field required; body.messages.0.content: Input should be a \
+                 valid string"
+            )
+        );
+        // An entry that names no place, or one that is no list of texts
+        // and numbers, says its words alone.
+        for loc in [json!(null), json!([]), json!("body"), json!(["body", null])] {
+            let entry = json!({"loc": loc, "msg": "Field required"});
+            assert_eq!(said(json!([entry])), format!("{own}Field required"));
+        }
+        // A list that words nothing leaves the status's reason.
+        for wordless in [json!([]), wordless] {
+            assert_eq!(said(wordless), format!("{own}Unprocessable Entity"));
+        }
+    }
+
+    // What a list says is cleaned and bounded as any other text a server
+    // sent, and a message the body states comes first.
+    #[test]
+    fn a_detail_that_is_a_list_is_cleaned_bounded_and_comes_last() {
+        let said = |body: Value| refusal_of(422, body.to_string().as_bytes()).message;
+        let echoed = json!({"detail": [{
+            "loc": ["header", "placeholder-not-a-key"],
+            "msg": "Wrong key: placeholder-not-a-key",
+        }]});
+        assert_eq!(
+            said(echoed),
+            "the provider answered HTTP 422: header.[***]: Wrong key: [***]"
+        );
+        let entry = json!({"loc": ["body", "messages"], "msg": "x".repeat(MESSAGE_LIMIT)});
+        let long = said(json!({"detail": [entry.clone(), entry]}));
+        assert_eq!(long.chars().count(), MESSAGE_LIMIT);
+        let both = json!({
+            "error": {"message": "The request is not valid."},
+            "detail": [{"loc": ["body"], "msg": "Field required"}],
+        });
+        assert_eq!(
+            said(both),
+            "the provider answered HTTP 422: The request is not valid."
+        );
+        // The whole body is read for an overflow of the context, as ever.
+        let overflow = json!({"detail": [{
+            "loc": ["body", "messages"],
+            "msg": "This model's maximum context length is 8192 tokens.",
+        }]});
+        let overflow = refusal_of(400, overflow.to_string().as_bytes());
+        assert_eq!(overflow.context_overflow, Some(true));
     }
 
     // What a host sees of a refused request: the error object's own words,

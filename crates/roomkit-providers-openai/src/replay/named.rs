@@ -70,6 +70,9 @@ const CUT_SHORT: &str = "A stream that ends with neither a finish reason nor its
      The maintainer's decision. Python reads it as complete.";
 const CUT_SHORT_WORDS: &str =
     "the provider's stream ended with neither a finish reason nor its end mark";
+const EMPTY_REASON: &str = "A finish reason that is an empty text says nothing: a stream that \
+     ends after one, with no end mark, was cut, as one that ends with no finish reason at all. \
+     The maintainer's decision. Python reads it as complete.";
 const COUNT: &str =
     "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.";
 const LAST_EVENT: &str = "An event the answer ends on with no blank line after it is read: \
@@ -175,6 +178,26 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
     (
         "stream_tool_call_that_ends_without_an_ending",
         CUT_SHORT,
+        // The call as it was written, never the whole call, to run.
+        &[
+            r#"the events: [{"type":"tool_call_delta","id":"call_1","name":"lookup_order","index":0,"arguments_delta":"{\"number\": \"A-1\"}"}]"#,
+            "a failure where Python answers: ",
+        ],
+        fails(None, true, CUT_SHORT_WORDS),
+    ),
+    (
+        "stream_empty_finish_reason_without_an_end_mark",
+        EMPTY_REASON,
+        // The text that came, with no done event after it.
+        &[
+            r#"the events: [{"type":"text_delta","text":"Hello."}]"#,
+            "a failure where Python answers: ",
+        ],
+        fails(None, true, CUT_SHORT_WORDS),
+    ),
+    (
+        "stream_tool_call_empty_finish_reason_without_an_end_mark",
+        EMPTY_REASON,
         // The call as it was written, never the whole call, to run.
         &[
             r#"the events: [{"type":"tool_call_delta","id":"call_1","name":"lookup_order","index":0,"arguments_delta":"{\"number\": \"A-1\"}"}]"#,

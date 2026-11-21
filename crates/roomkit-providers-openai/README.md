@@ -84,7 +84,8 @@ the done event, with the usage and the model that answered.
 - **A stream is complete once it said why it stopped, or sent its end
   mark.** One that ends with neither was cut: what came is handed on, then
   it fails, a failure worth a retry, and a call it brought is never handed
-  whole, to run.
+  whole, to run. A finish reason that is an empty text
+  (`"finish_reason": ""`) says nothing: it is no reason, and no stop.
 
 ## The model listing
 
@@ -121,7 +122,9 @@ catalogue, with no request.
   bounded:
   - of a request the server refuses, what its error object says of itself:
     its message, its type and its code (a type or a code within 64
-    characters). A body that is no JSON (a gateway's page, a plain text) is
+    characters), or, where it states no message, what it words under
+    `detail`: a text, or of a list each entry's `msg` and the place its
+    `loc` names. A body that is no JSON (a gateway's page, a plain text) is
     never repeated;
   - of an answer that holds an error object in place of a completion, the
     object's message, or the object itself, written as JSON, when it has
@@ -227,13 +230,18 @@ A request the server refuses fails with its status, in these words:
 | --- | --- |
 | `401` with `{"error": {"message": "Incorrect API key provided.", "type": "invalid_request_error", "code": "invalid_api_key"}}` | `the provider answered HTTP 401 (invalid_request_error, invalid_api_key): Incorrect API key provided.` |
 | `404` with `{"detail": "Model m is not deployed here", "code": "model_not_found"}` | `the provider answered HTTP 404 (model_not_found): Model m is not deployed here` |
+| `422` with `{"detail": [{"type": "missing", "loc": ["body", "messages"], "msg": "Field required", "input": {"model": "m"}}]}` | `the provider answered HTTP 422: body.messages: Field required` |
 | `502` with an HTML page | `the provider answered HTTP 502: Bad Gateway` |
 | `500` with an empty body | `the provider answered HTTP 500: Internal Server Error` |
 
 The message, the type and the code are read in the body's `error` object,
 or at its top level. A body that states no message and words its refusal
-under `detail`, as a text, gives that text for one. `status_code` holds the
-status, and `retryable` whether
+under `detail`, as a text, gives that text for one. A `detail` that is a
+list, as a server that validates a request field by field writes it, gives
+each entry's `msg` after the place its `loc` names, the steps of the place
+joined by dots and the entries set apart by `; `. Nothing else of an entry
+is repeated: its `input` holds what the request sent. `status_code` holds
+the status, and `retryable` whether
 it is one a new request may get past (408, 409, 429, 500 and above).
 `context_overflow` is `true` when the server says the request is past the
 model's context: by the code `context_length_exceeded`, or by its words,
@@ -242,8 +250,8 @@ read in the whole body, repeated in the failure or not.
 ## Where the provider differs from Python's
 
 The provider does as `OpenAIAIProvider` of RoomKit's Python implementation on
-288 of the 334 captured cases: 185 of the 209 of a whole answer, 94 of the
-111 of a stream of events, the 4 of a stream of text, and 5 of the 10 of a
+292 of the 340 captured cases: 187 of the 211 of a whole answer, 96 of the
+115 of a stream of events, the 4 of a stream of text, and 5 of the 10 of a
 model listing. It differs on the others, each for a reason:
 
 - **Redirects** are refused, where Python's SDK follows them, a `301`, a
@@ -282,7 +290,9 @@ model listing. It differs on the others, each for a reason:
   fails on others, with an error of its own on a whole answer.
 - **A failure's message** for a status is the provider's own sentence, as
   the table above shows, where Python's carries the whole body the server
-  answered. A body that is no JSON is not repeated, where Python's message
+  answered: of a `detail` that is a list, each entry's words and its place,
+  where Python's holds the entries whole, with what the request sent under
+  `input`. A body that is no JSON is not repeated, where Python's message
   is that body. A request that got no answer fails in this crate's words,
   where Python has the SDK's.
 - **A context too long** is said by the failure itself, `context_overflow`,
@@ -306,8 +316,13 @@ model listing. It differs on the others, each for a reason:
   the same body. Python says the stream carried no event, a final failure
   that names no status.
 - **An empty finish reason** (`"finish_reason": ""`) is none, here as in
-  Python: with its end mark such a stream is complete and has no reason,
-  and with neither it was cut, as said above.
+  Python, and it is no stop. With its end mark such a stream is complete
+  and has no reason, here as in Python. With no end mark it was cut, as
+  said above: what came is handed on, then it fails, and a call it brought
+  is never handed whole, where Python reads it as complete. So a server
+  that writes an empty finish reason on every chunk keeps the detection of
+  a cut. A whole answer keeps the empty text as its finish reason, as
+  Python's does.
 - **A byte order mark that starts a stream** is ignored, as the format of a
   stream of events says, and the first event is read, where Python's SDK
   reads the line the mark starts as no data.

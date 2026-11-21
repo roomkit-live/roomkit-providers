@@ -31,10 +31,12 @@
   "base_url_with_a_trailing_slash_and_a_query",
   "answer_200_that_is_no_completion",
   "stream_that_ends_without_an_ending",
+  "stream_empty_finish_reason_without_an_end_mark",
   "stream_answered_with_a_json_error_object",
   "extra_body_replacing_the_request_s_own",
   "stream_status_400_whose_body_is_lost",
   "stream_tool_call_that_ends_without_an_ending",
+  "stream_tool_call_empty_finish_reason_without_an_end_mark",
   "usage_cache_write_written_as_text_in_the_details",
   "usage_counts_below_zero",
   "choices_that_are_no_list",
@@ -9395,6 +9397,111 @@
    }
   },
   {
+   "name": "ending_empty_finish_reason",
+   "kinds": [
+    "finish_empty"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "local-model",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": ""
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "local-model"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
    "name": "empty_answer",
    "kinds": [
     "empty_answer"
@@ -11260,6 +11367,114 @@
      "retryable": false,
      "status_code": 400,
      "raised_from": "BadRequestError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "status_422_whose_detail_is_a_list",
+   "kinds": [
+    "detail_list",
+    "status_422"
+   ],
+   "call": "generate",
+   "note": "The detail is a list, an entry for each field refused, where another server's is a text.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 422,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "detail": [
+        {
+         "type": "missing",
+         "loc": [
+          "body",
+          "messages"
+         ],
+         "msg": "Field required",
+         "input": {
+          "model": "local-model"
+         }
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "Error code: 422 - {'detail': [{'type': 'missing', 'loc': ['body', 'messages'], 'msg': 'Field required', 'input': {'model': 'local-model'}}]}",
+     "text": "openai (422): Error code: 422 - {'detail': [{'type': 'missing', 'loc': ['body', 'messages'], 'msg': 'Field required', 'input': {'model': 'local-model'}}]}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": 422,
+     "raised_from": "UnprocessableEntityError"
     }
    },
    "compare": {
@@ -15620,6 +15835,194 @@
    }
   },
   {
+   "name": "stream_empty_finish_reason_without_an_end_mark",
+   "kinds": [
+    "finish_empty",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "questioned": "A possible defect: A stream that ends after an empty finish reason, which says nothing, and with no end mark reads as complete.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"local-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"local-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"\"}]}\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello."
+     },
+     {
+      "type": "done",
+      "finish_reason": null,
+      "usage": {},
+      "metadata": {
+       "model": "local-model"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_empty_finish_reason_with_its_end_mark",
+   "kinds": [
+    "finish_empty",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"local-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"local-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"\"}]}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello."
+     },
+     {
+      "type": "done",
+      "finish_reason": null,
+      "usage": {},
+      "metadata": {
+       "model": "local-model"
+      }
+     }
+    ]
+   }
+  },
+  {
    "name": "stream_think_tags_across_chunks",
    "kinds": [
     "stream",
@@ -19143,6 +19546,120 @@
      "retryable": true,
      "status_code": 429,
      "raised_from": "RateLimitError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "events"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "stream_status_422_whose_detail_is_a_list",
+   "kinds": [
+    "detail_list",
+    "status_422",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 422,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "detail": [
+        {
+         "type": "missing",
+         "loc": [
+          "body",
+          "messages"
+         ],
+         "msg": "Field required",
+         "input": {
+          "model": "local-model"
+         }
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "events": [],
+    "error": {
+     "class": "ProviderError",
+     "message": "Error code: 422 - {'detail': [{'type': 'missing', 'loc': ['body', 'messages'], 'msg': 'Field required', 'input': {'model': 'local-model'}}]}",
+     "text": "openai (422): Error code: 422 - {'detail': [{'type': 'missing', 'loc': ['body', 'messages'], 'msg': 'Field required', 'input': {'model': 'local-model'}}]}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": 422,
+     "raised_from": "UnprocessableEntityError"
     }
    },
    "compare": {
@@ -23397,6 +23914,175 @@
       },
       "chunks": [
        "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"lookup_order\",\"arguments\":\"{\\\"number\\\": \\\"A-1\\\"}\"}}]},\"finish_reason\":null}]}\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "tool_call_delta",
+      "id": "call_1",
+      "name": "lookup_order",
+      "index": 0,
+      "arguments_delta": "{\"number\": \"A-1\"}"
+     },
+     {
+      "type": "tool_call",
+      "id": "call_1",
+      "name": "lookup_order",
+      "arguments": {
+       "number": "A-1"
+      },
+      "metadata": {},
+      "served": null,
+      "partial": false,
+      "garbled": false,
+      "intent": null
+     },
+     {
+      "type": "done",
+      "finish_reason": null,
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_tool_call_empty_finish_reason_without_an_end_mark",
+   "kinds": [
+    "finish_empty",
+    "stream",
+    "tool_call_streamed"
+   ],
+   "call": "generate_structured_stream",
+   "questioned": "A possible defect: A stream that ends after an empty finish reason, which says nothing, and with no end mark hands its call as whole.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "lookup_order",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        },
+        {
+         "type": "function",
+         "function": {
+          "name": "clock",
+          "description": "Tell the time",
+          "parameters": {
+           "type": "object",
+           "properties": {}
+          }
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"lookup_order\",\"arguments\":\"{\\\"number\\\": \\\"A-1\\\"}\"}}]},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"\"}]}\n\n"
       ],
       "then": "the stream ends"
      }
