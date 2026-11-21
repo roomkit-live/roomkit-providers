@@ -305,6 +305,33 @@ async fn a_stream_that_ends_with_a_finish_reason_or_with_its_end_mark_is_complet
     }
 }
 
+// Python keeps a finish reason only when it is not empty: an empty one says
+// nothing of how the answer ended. With its end mark such a stream is
+// complete and has no reason; without it, it was cut.
+#[tokio::test]
+async fn an_empty_finish_reason_is_none() {
+    let said = chunk(&json!({"content": "Hello."})).to_string();
+    let marked = vec![said.clone(), finish(""), "[DONE]".to_owned()];
+    let reply = stream_reply(vec![read_of(&marked)], Ending::Ends);
+    let (given, failure) = streamed(reply, &hello()).await;
+    assert!(failure.is_none(), "{failure:?}");
+    let Some(StreamEvent::Done(done)) = given.last() else {
+        panic!("no end in {given:?}");
+    };
+    assert_eq!(done.finish_reason, None);
+
+    let reply = stream_reply(vec![read_of(&[said, finish("")])], Ending::Ends);
+    let (given, failure) = streamed(reply, &hello()).await;
+    assert_eq!(
+        failure.unwrap().message,
+        "the provider's stream ended with neither a finish reason nor its end mark"
+    );
+    assert!(
+        matches!(given.last(), Some(StreamEvent::TextDelta(_))),
+        "{given:?}"
+    );
+}
+
 // Not in Python, which says such an answer carried no event: a JSON error
 // object that answers a stream request with a 200 reads as the status it
 // names, as `generate` reads the same body. No head of a stream came: the

@@ -10,6 +10,7 @@
 use std::fmt;
 use std::sync::Arc;
 
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use roomkit_providers_llm::{
     API_KEY_METADATA_KEY, AiProvider, AiRequest, DynAiProvider, ProviderError,
@@ -18,6 +19,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::errors::Failure;
+use super::fork::Kept;
 use super::runtime;
 use super::stream::PythonStream;
 
@@ -34,10 +36,15 @@ pub(crate) fn written<T: Serialize>(value: &T, what: &str) -> Result<String, Fai
 
 /// The request `json` writes, in the contract's form, with `api_key`, the
 /// credential of this one request, where a provider reads it. A request
-/// the contract refuses fails as a provider refuses one before sending it.
-pub(crate) fn request_of(json: &str, api_key: Option<String>) -> Result<AiRequest, Failure> {
+/// the contract refuses fails as the provider labelled `label` refuses one
+/// before sending it.
+pub(crate) fn request_of(
+    json: &str,
+    api_key: Option<String>,
+    label: &str,
+) -> Result<AiRequest, Failure> {
     let mut request: AiRequest =
-        serde_json::from_str(json).map_err(|error| Failure::refused(&error.to_string()))?;
+        serde_json::from_str(json).map_err(|error| Failure::refused(&error.to_string(), label))?;
     if let Some(key) = api_key {
         request
             .metadata
@@ -48,24 +55,31 @@ pub(crate) fn request_of(json: &str, api_key: Option<String>) -> Result<AiReques
 
 #[pyclass(name = "_Provider", frozen, module = "roomkit_providers._native")]
 pub(crate) struct PythonProvider {
-    provider: Held,
+    provider: Kept<Held>,
 }
 
 impl PythonProvider {
     /// `provider` as Python holds it.
     pub(crate) fn holding(provider: impl AiProvider) -> Self {
         Self {
-            provider: Arc::new(provider),
+            provider: Kept::new(Arc::new(provider)),
         }
+    }
+
+    /// The provider, which the object holds as long as it lives.
+    fn held(&self) -> PyResult<&Held> {
+        let held = self.provider.get();
+        held.ok_or_else(|| PyRuntimeError::new_err("the provider was released"))
     }
 }
 
 impl fmt::Debug for PythonProvider {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let provider = self.provider.get();
         formatter
             .debug_struct("PythonProvider")
-            .field("provider", &self.provider.dyn_type_name())
-            .field("model", &self.provider.dyn_model_name())
+            .field("provider", &provider.map(|held| held.dyn_type_name()))
+            .field("model", &provider.map(|held| held.dyn_model_name()))
             .finish()
     }
 }
@@ -73,64 +87,70 @@ impl fmt::Debug for PythonProvider {
 #[pymethods]
 impl PythonProvider {
     #[getter]
-    fn name(&self) -> &str {
-        self.provider.dyn_name()
+    fn name(&self) -> PyResult<&str> {
+        Ok(self.held()?.dyn_name())
+    }
+
+    /// The label the provider's failures carry.
+    #[getter]
+    fn label(&self) -> PyResult<&str> {
+        Ok(self.held()?.dyn_label())
     }
 
     #[getter]
-    fn model_name(&self) -> &str {
-        self.provider.dyn_model_name()
+    fn model_name(&self) -> PyResult<&str> {
+        Ok(self.held()?.dyn_model_name())
     }
 
     #[getter]
-    fn supports_vision(&self) -> bool {
-        self.provider.dyn_supports_vision()
+    fn supports_vision(&self) -> PyResult<bool> {
+        Ok(self.held()?.dyn_supports_vision())
     }
 
     #[getter]
-    fn supports_streaming(&self) -> bool {
-        self.provider.dyn_supports_streaming()
+    fn supports_streaming(&self) -> PyResult<bool> {
+        Ok(self.held()?.dyn_supports_streaming())
     }
 
     #[getter]
-    fn supports_structured_streaming(&self) -> bool {
-        self.provider.dyn_supports_structured_streaming()
+    fn supports_structured_streaming(&self) -> PyResult<bool> {
+        Ok(self.held()?.dyn_supports_structured_streaming())
     }
 
     #[getter]
-    fn supports_response_schema(&self) -> bool {
-        self.provider.dyn_supports_response_schema()
+    fn supports_response_schema(&self) -> PyResult<bool> {
+        Ok(self.held()?.dyn_supports_response_schema())
     }
 
     #[getter]
-    fn supports_response_schema_with_tools(&self) -> bool {
-        self.provider.dyn_supports_response_schema_with_tools()
+    fn supports_response_schema_with_tools(&self) -> PyResult<bool> {
+        Ok(self.held()?.dyn_supports_response_schema_with_tools())
     }
 
     #[getter]
-    fn supports_deferred_tools(&self) -> bool {
-        self.provider.dyn_supports_deferred_tools()
+    fn supports_deferred_tools(&self) -> PyResult<bool> {
+        Ok(self.held()?.dyn_supports_deferred_tools())
     }
 
     #[getter]
-    fn context_window(&self) -> Option<u64> {
-        self.provider.dyn_context_window()
+    fn context_window(&self) -> PyResult<Option<u64>> {
+        Ok(self.held()?.dyn_context_window())
     }
 
     /// The catalogue's entry for the configured model as JSON, or None.
-    fn catalog_entry_json(&self) -> PyResult<Option<String>> {
-        let entry = self.provider.dyn_catalog_entry();
+    fn catalog_entry_json(&self, py: Python<'_>) -> PyResult<Option<String>> {
+        let entry = self.held()?.dyn_catalog_entry();
         let entry = entry.map(|entry| written(&entry, "the catalogue's entry"));
-        entry.transpose().map_err(Failure::raised)
+        entry.transpose().map_err(|failure| failure.raised(py))
     }
 
     /// The models the provider lists, as a JSON list.
     fn list_models<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let provider = Arc::clone(&self.provider);
-        runtime::call(py, async move {
-            let listed = provider.dyn_list_models().await.map_err(Failure::from);
-            let listed = listed.and_then(|models| written(&models, "the model listing"));
-            listed.map_err(Failure::raised)
+        let provider = Arc::clone(self.held()?);
+        let label = provider.dyn_label().to_owned();
+        runtime::call(py, &label, async move {
+            let listed = provider.dyn_list_models().await?;
+            written(&listed, "the model listing")
         })
     }
 
@@ -144,14 +164,12 @@ impl PythonProvider {
         request_json: String,
         api_key: Option<String>,
     ) -> PyResult<Bound<'py, PyAny>> {
-        let provider = Arc::clone(&self.provider);
-        runtime::call(py, async move {
-            let answered = async {
-                let request = request_of(&request_json, api_key)?;
-                let response = provider.dyn_generate(&request).await?;
-                written(&response, "the response")
-            };
-            answered.await.map_err(Failure::raised)
+        let provider = Arc::clone(self.held()?);
+        let label = provider.dyn_label().to_owned();
+        runtime::call(py, &label, async move {
+            let request = request_of(&request_json, api_key, provider.dyn_label())?;
+            let response = provider.dyn_generate(&request).await?;
+            written(&response, "the response")
         })
     }
 
@@ -160,13 +178,14 @@ impl PythonProvider {
     /// Nothing is read or sent before the stream's first `next()`.
     #[pyo3(signature = (request_json, api_key))]
     fn stream(&self, request_json: String, api_key: Option<String>) -> PyResult<PythonStream> {
-        PythonStream::of(Arc::clone(&self.provider), request_json, api_key)
+        PythonStream::of(Arc::clone(self.held()?), request_json, api_key)
     }
 
     /// Releases what the provider holds, as Rust's `close()`.
     fn close<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let provider = Arc::clone(&self.provider);
-        runtime::call(py, async move {
+        let provider = Arc::clone(self.held()?);
+        let label = provider.dyn_label().to_owned();
+        runtime::call(py, &label, async move {
             provider.dyn_close().await;
             Ok(())
         })

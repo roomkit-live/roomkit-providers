@@ -13,11 +13,12 @@ from __future__ import annotations
 import json
 from collections.abc import Iterator
 from typing import Any
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, SecretStr
 from roomkit.providers.openai import OpenAIConfig as RoomKitOpenAIConfig
 
-from .. import _native
+from .. import _native, _process
 from ._provider import Provider, failing_as_roomkit
 
 __all__ = ["OpenAI", "OpenAIConfig"]
@@ -29,20 +30,66 @@ _PROFILED = {"use_max_completion_tokens", "supports_custom_temperature"}
 
 def _profile(model: str, base_url: str | None) -> dict[str, bool]:
     """What `model` behind `base_url` decides of the profiled switches."""
+    _process.enter()
     asked = {"api_key": "", "model": model, "base_url": base_url}
     decided = json.loads(_native.openai_config_form(json.dumps(asked)))
     return {name: decided[name] for name in _PROFILED}
 
 
-def _without_credentials(url: str) -> str:
-    """`url` as it is shown: what stands before its last ``@`` may be
-    credentials, whichever way a client reads the URL, and only a scheme is
-    shown of it."""
-    if "@" not in url:
-        return url
-    before, _, after = url.rpartition("@")
-    scheme, separator, _ = before.partition("://")
-    return f"{scheme}{separator}{_MASK}@{after}" if separator else f"{_MASK}@{after}"
+def _shown_url(url: str) -> str:
+    """`url` as it is shown: its scheme, its host and its port. A user and a
+    password, a path and a query may each hold a credential, and a URL that
+    does not read is not shown at all."""
+    try:
+        read = urlsplit(url)
+        host, port = read.hostname, read.port
+    except ValueError:
+        return _MASK
+    if not read.scheme or host is None:
+        return _MASK
+    host = f"[{host}]" if ":" in host else host
+    return f"{read.scheme}://{host}" + ("" if port is None else f":{port}")
+
+
+class _Veiled:
+    """A configuration held so that no frame shows it: what a traceback
+    writes of a frame's locals is each one's ``repr``, and a configuration's
+    may show a header's value or a URL's password.
+
+    Nothing here binds a secret to a name where something can still raise:
+    the key leaves as the object that masks it, which the native module
+    opens, and the JSON form is handed on as it is written.
+    """
+
+    __slots__ = ("_held",)
+
+    def __init__(self, held: Any) -> None:
+        self._held = held
+
+    def __repr__(self) -> str:
+        return "<a configuration>"
+
+    def kind(self) -> type:
+        return type(self._held)
+
+    def held(self) -> Any:
+        return self._held
+
+    def own(self) -> OpenAIConfig:
+        """The configuration as this module's, whose ``repr`` shows no
+        secret: RoomKit's own is copied member by member, unchecked, since
+        RoomKit checked it."""
+        if type(self._held) is OpenAIConfig:
+            return self._held
+        return OpenAIConfig.model_construct(
+            _fields_set=set(OpenAIConfig.model_fields),
+            **{name: getattr(self._held, name) for name in OpenAIConfig.model_fields},
+        )
+
+    def native(self) -> _native._Provider:
+        """The native provider of the configuration."""
+        own = self.own()
+        return _native.openai(own.model_dump_json(), own.api_key)
 
 
 class OpenAIConfig(BaseModel):
@@ -86,8 +133,9 @@ class OpenAIConfig(BaseModel):
         thinking_field: The assistant message member this server reads a
             model's earlier reasoning from; ``None`` sends none back.
 
-    ``repr`` never shows the key, the value of a default header, or what a
-    base URL holds before its last ``@``.
+    ``repr`` never shows the key, the value of a default header or of a
+    member of ``extra_body``, nor more of a base URL than its scheme, its
+    host and its port.
     """
 
     api_key: SecretStr
@@ -121,10 +169,10 @@ class OpenAIConfig(BaseModel):
 
     def __repr_args__(self) -> Iterator[tuple[str | None, Any]]:
         for name, value in super().__repr_args__():
-            if name == "default_headers" and value is not None:
+            if name in ("default_headers", "extra_body") and value is not None:
                 value = dict.fromkeys(value, _MASK)
             elif name == "base_url" and isinstance(value, str):
-                value = _without_credentials(value)
+                value = _shown_url(value)
             yield name, value
 
 
@@ -144,13 +192,15 @@ class OpenAI(Provider):
     _catalogue = staticmethod(_native.openai_available_models_json)
 
     def __init__(self, config: OpenAIConfig | RoomKitOpenAIConfig) -> None:
-        if type(config) not in (OpenAIConfig, RoomKitOpenAIConfig):
+        # From here on no frame holds the configuration as it shows itself.
+        config = _Veiled(config)
+        if config.kind() not in (OpenAIConfig, RoomKitOpenAIConfig):
             raise TypeError(
                 "config must be an OpenAIConfig: the configuration of a provider derived "
                 "from OpenAI's belongs to that provider"
             )
-        self._config = config
-        key = config.api_key.get_secret_value()
+        _process.enter()
         with failing_as_roomkit():
-            native = _native.openai(config.model_dump_json(), key)
+            native = config.native()
+        self._config = config.held()
         super().__init__(native)

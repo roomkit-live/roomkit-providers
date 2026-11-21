@@ -24,6 +24,9 @@ pub trait DynAiProvider: Send + Sync + 'static {
     /// [`AiProvider::name`].
     fn dyn_name(&self) -> &str;
 
+    /// [`AiProvider::label`].
+    fn dyn_label(&self) -> &str;
+
     /// [`AiProvider::model_name`].
     fn dyn_model_name(&self) -> &str;
 
@@ -78,6 +81,10 @@ pub trait DynAiProvider: Send + Sync + 'static {
 impl<P: AiProvider> DynAiProvider for P {
     fn dyn_name(&self) -> &str {
         self.name()
+    }
+
+    fn dyn_label(&self) -> &str {
+        self.label()
     }
 
     fn dyn_model_name(&self) -> &str {

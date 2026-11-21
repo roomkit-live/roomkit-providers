@@ -41,6 +41,14 @@ const CHAT_COMPLETIONS: &str = "/chat/completions";
 /// The path of the model listing under a base URL.
 const MODELS: &str = "/models";
 
+/// How long a connection no request uses is kept: the 5 seconds the client
+/// of Python's provider keeps one (httpx's `keepalive_expiry`).
+const IDLE_FOR: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// How many idle connections are kept for a host: the 100 the client of
+/// Python's provider keeps (the `openai` SDK's `max_keepalive_connections`).
+const IDLE_AT_MOST: usize = 100;
+
 /// What a request asks for, and what the body of a completion's is.
 pub(crate) const JSON: &str = "application/json";
 
@@ -153,6 +161,10 @@ impl OpenAi {
             .no_proxy()
             .read_timeout(timeouts.read)
             .connect_timeout(timeouts.connect)
+            // A connection no request uses is kept as long, and as many of
+            // them, as the client of Python's provider keeps.
+            .pool_idle_timeout(IDLE_FOR)
+            .pool_max_idle_per_host(IDLE_AT_MOST)
             .redirect(reqwest::redirect::Policy::none())
             .build()
             .map_err(|_| refused("the HTTP client could not be built"))?;
@@ -291,6 +303,10 @@ pub(crate) fn unwritten() -> Failure {
 impl AiProvider for OpenAi {
     fn name(&self) -> &'static str {
         CLASS_NAME
+    }
+
+    fn label(&self) -> &'static str {
+        NAME
     }
 
     fn model_name(&self) -> &str {

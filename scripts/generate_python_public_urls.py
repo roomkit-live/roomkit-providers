@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import platform
 import socket
+import subprocess
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -490,6 +491,26 @@ def address_cases() -> list[tuple[str, str, dict[str, Any]]]:
     return cases
 
 
+def git(package: Path, *arguments: str) -> str | None:
+    """What ``git`` answers in ``package``, ``None`` when it fails."""
+    command = ["git", "-C", str(package), *arguments]
+    found = subprocess.run(command, capture_output=True, text=True, check=False)
+    return found.stdout if found.returncode == 0 else None
+
+
+def roomkit_source() -> tuple[str | None, bool | None]:
+    """The commit ``roomkit`` was imported at, and whether its files had
+    changes not committed: both ``None`` unless the package's own files are
+    tracked by the repository that holds them."""
+    package = Path(roomkit.__file__).resolve().parent
+    if git(package, "ls-files", "--error-unmatch", "__init__.py") is None:
+        return None, None
+    commit, changes = git(package, "rev-parse", "HEAD"), git(package, "status", "--porcelain", ".")
+    if commit is None or changes is None:
+        return None, None
+    return commit.strip(), bool(changes.strip())
+
+
 def decided(name: str, url: str, options: dict[str, Any]) -> dict[str, Any]:
     """What Python decides of ``url`` under ``options``."""
     LOOKUPS.clear()
@@ -515,9 +536,14 @@ def decided(name: str, url: str, options: dict[str, Any]) -> dict[str, Any]:
 def main() -> None:
     socket.getaddrinfo = answers
     cases = [decided(*case) for case in [*URLS, *address_cases()]]
+    commit, dirty = roomkit_source()
     fixture = {
         "generator": "scripts/generate_python_public_urls.py",
         "roomkit_version": roomkit.__version__,
+        # The commit roomkit was imported at, and whether its files had
+        # changes not committed then: null where roomkit is not a checkout.
+        "roomkit_commit": commit,
+        "roomkit_dirty": dirty,
         "python_version": platform.python_version(),
         "unicode_version": unicodedata.unidata_version,
         "delimiter_lookalikes": delimiter_lookalikes(),

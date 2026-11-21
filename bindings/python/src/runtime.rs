@@ -1,32 +1,57 @@
-//! Drain Python-facing async work before interpreter finalization.
+//! The bridge between Python's event loops and the threads the calls run on.
 //!
-//! The upstream Tokio runtime is process-wide and intentionally stays alive.
-//! Its Python completion callbacks must not outlive the interpreter. Tracking
-//! the generic bridge's nested tasks (including blocking callbacks), rather
-//! than only provider futures, gives a shutdown boundary for those callbacks.
-//! Each call's tasks also carry its event loop, so a completion that arrives
-//! after the host closed that loop is dropped instead of reported as an error.
+//! A call returns an asyncio future of the loop that made it. Its work runs
+//! on the bridge's own runtime, and what it gives is handed back by one
+//! thread, the only one of the bridge that ever takes the interpreter's
+//! lock: it settles the future on its loop and lets go of every Python
+//! reference the call held, while it holds the lock. No worker thread holds
+//! a Python reference it could drop without the lock, so nothing here makes
+//! the interpreter keep a list of references to release later, which is
+//! guarded by a lock a forked child could find taken.
 //!
-//! A call is stopped by dropping its future, which drops its request and
-//! closes its connection: when the Python future it completes is cancelled
-//! (the bridge does that), and when the interpreter exits (every call runs
-//! under the bridge's token, which the exit hook cancels before it waits).
+//! A call is stopped by dropping its work, which drops its request and
+//! closes its connection: when the Python future it completes is cancelled,
+//! and when the interpreter exits (every call runs under the bridge's
+//! token, which the exit hook cancels before it waits). A call whose loop
+//! was closed is not stopped: it runs to its end, and what it gives is
+//! dropped.
+//!
+//! The runtime is small and fixed: the work of a call is waiting on a
+//! socket and reading what comes, which a few threads do for hundreds of
+//! calls. Its blocking threads serve the lookups of names, and nothing
+//! else.
 
-use std::cell::RefCell;
 use std::future::Future;
+use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
-use std::sync::{Arc, Condvar, LazyLock, Mutex, MutexGuard, PoisonError};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{Condvar, LazyLock, Mutex, MutexGuard, OnceLock, PoisonError};
 use std::task::{Context, Poll};
 
+use pyo3::IntoPyObjectExt;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::intern;
 use pyo3::prelude::*;
-use pyo3_async_runtimes::TaskLocals;
-use pyo3_async_runtimes::generic::{self, ContextExt, Runtime};
-use tokio::task::JoinHandle;
+use pyo3::sync::PyOnceLock;
+use pyo3::types::PyCFunction;
+use tokio::runtime::{Builder, Runtime};
 use tokio_util::sync::CancellationToken;
 
-use super::fork;
+use super::errors::Failure;
+use super::fork::{self, Kept};
+
+/// The threads that run the calls: each waits on sockets, reads what comes
+/// and writes it as JSON. Four serve two hundred streams at once faster
+/// than a thread a core did with a pool of blocking threads beside, and
+/// two serve them a third slower.
+const WORKERS: usize = 4;
+
+/// The most threads that look names up at once: a lookup blocks its thread,
+/// and the ones past these wait their turn.
+const LOOKUPS: usize = 4;
+
+/// The most completions handed to Python under one hold of its lock.
+const HANDED_AT_ONCE: usize = 256;
 
 #[derive(Debug, Default)]
 struct Activity {
@@ -55,16 +80,31 @@ fn shutting_down() -> PyErr {
     PyRuntimeError::new_err("the provider bridge is shutting down")
 }
 
+/// What a call is refused with when the bridge has no thread to run it on.
+fn no_threads() -> PyErr {
+    PyRuntimeError::new_err("the provider bridge could not start its threads")
+}
+
+/// The runtime the calls run on, built at the first call.
+fn runtime() -> PyResult<&'static Runtime> {
+    static RUNTIME: OnceLock<Option<Runtime>> = OnceLock::new();
+    let built = RUNTIME.get_or_init(|| {
+        Builder::new_multi_thread()
+            .worker_threads(WORKERS)
+            .max_blocking_threads(LOOKUPS)
+            .thread_name("roomkit-providers")
+            .enable_all()
+            .build()
+            .ok()
+    });
+    built.as_ref().ok_or_else(no_threads)
+}
+
+/// One piece of work under way: the exit hook waits until none is left.
 #[derive(Debug)]
 struct Ticket;
 
 impl Ticket {
-    fn nested() -> Self {
-        let mut state = activity();
-        state.count = state.count.saturating_add(1);
-        Self
-    }
-
     fn enter() -> PyResult<Self> {
         fork::ensure_unforked()?;
         let mut state = activity();
@@ -89,157 +129,199 @@ impl Drop for Ticket {
     }
 }
 
-// Fields drop in declaration order: release the entire future (including its
-// Python references) before reporting that its activity has finished.
-#[derive(Debug)]
-struct Tracked<F> {
-    future: Pin<Box<F>>,
-    _ticket: Ticket,
-}
+/// A piece of work whose panic is caught where it is polled: it ends as
+/// work that failed, and the thread that ran it goes on.
+struct Caught<F>(Pin<Box<F>>);
 
-impl<F: Future> Future for Tracked<F> {
-    type Output = F::Output;
+impl<F: Future> Future for Caught<F> {
+    type Output = Option<F::Output>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.get_mut().future.as_mut().poll(cx)
-    }
-}
-
-struct BridgeRuntime;
-
-/// The asyncio loop that receives one bridge call's completion.
-type CompletionLoop = Option<Arc<Py<PyAny>>>;
-
-tokio::task_local! {
-    static LOCALS: TaskLocals;
-    static COMPLETION_LOOP: CompletionLoop;
-}
-
-thread_local! {
-    // Set on the Python thread while the bridge spawns a call's first task.
-    static SPAWNING_LOOP: RefCell<CompletionLoop> = const { RefCell::new(None) };
-}
-
-/// The loop of the call being spawned: inherited by its nested tasks.
-fn completion_loop() -> CompletionLoop {
-    COMPLETION_LOOP
-        .try_with(Clone::clone)
-        .unwrap_or_else(|_| SPAWNING_LOOP.with(|spawning| spawning.borrow().clone()))
-}
-
-/// Publish a call's loop to the tasks spawned while this guard lives.
-struct Spawning {
-    previous: CompletionLoop,
-}
-
-impl Spawning {
-    fn enter(event_loop: Arc<Py<PyAny>>) -> Self {
-        let previous = SPAWNING_LOOP.with(|spawning| spawning.replace(Some(event_loop)));
-        Self { previous }
-    }
-}
-
-impl Drop for Spawning {
-    fn drop(&mut self) {
-        let previous = self.previous.take();
-        drop(SPAWNING_LOOP.with(|spawning| spawning.replace(previous)));
-    }
-}
-
-/// Run an upstream completion callback unless its loop is already closed.
-///
-/// A host can abandon a call, close its loop and keep running; scheduling the
-/// result there would raise and print "Event loop is closed". The check and
-/// the callback share one GIL hold. A loop closed by another thread while the
-/// callback runs Python code can still make upstream report that error.
-fn complete(event_loop: CompletionLoop, callback: impl FnOnce()) {
-    let Some(event_loop) = event_loop else {
-        callback();
-        return;
-    };
-    Python::attach(move |py| {
-        let closed = event_loop
-            .bind(py)
-            .call_method0(intern!(py, "is_closed"))
-            .and_then(|closed| closed.is_truthy())
-            .unwrap_or(false);
-        if closed {
-            drop(callback);
-        } else {
-            callback();
+        let work = &mut self.get_mut().0;
+        // The work is not polled again once it panicked.
+        match std::panic::catch_unwind(AssertUnwindSafe(|| work.as_mut().poll(cx))) {
+            Ok(Poll::Ready(given)) => Poll::Ready(Some(given)),
+            Ok(Poll::Pending) => Poll::Pending,
+            Err(_) => Poll::Ready(None),
         }
-    });
+    }
 }
 
-impl Runtime for BridgeRuntime {
-    type JoinError = tokio::task::JoinError;
-    type JoinHandle = JoinHandle<()>;
+/// `work`, its panic caught: `None` once it panicked.
+pub(super) fn caught<F: Future>(work: F) -> impl Future<Output = Option<F::Output>> {
+    Caught(Box::pin(work))
+}
 
-    fn spawn<F>(future: F) -> Self::JoinHandle
-    where
-        F: Future<Output = ()> + Send + 'static,
-    {
-        let future = COMPLETION_LOOP.scope(completion_loop(), future);
-        pyo3_async_runtimes::tokio::get_runtime().spawn(Tracked {
-            future: Box::pin(future),
-            _ticket: Ticket::nested(),
-        })
-    }
+/// What a call gave, made the Python value or the exception it is under
+/// the interpreter's lock.
+type Outcome = Box<dyn FnOnce(Python<'_>) -> PyResult<Py<PyAny>> + Send>;
 
-    fn spawn_blocking<F>(callback: F) -> Self::JoinHandle
-    where
-        F: FnOnce() + Send + 'static,
-    {
-        let event_loop = completion_loop();
-        let ticket = Ticket::nested();
-        pyo3_async_runtimes::tokio::get_runtime().spawn_blocking(move || {
-            // Once exit begins, there is no awaiting Python loop to notify.
-            // Already-running callbacks may still finish: shutdown releases
-            // the GIL and waits for their tickets before returning to Python.
-            if activity().closing {
-                drop(callback);
-            } else {
-                complete(event_loop, callback);
+/// The end of one call, on its way to Python: the future to settle, on its
+/// loop, with what the call gave. `None` for a call that was stopped, which
+/// has nothing to give: its references are let go of, and nothing more.
+struct Completion {
+    event_loop: Py<PyAny>,
+    future: Py<PyAny>,
+    outcome: Option<Outcome>,
+    /// Released last, once Python holds what the call gave.
+    ticket: Ticket,
+}
+
+impl Completion {
+    /// Settles the call's future on its loop, under the interpreter's lock,
+    /// and lets go of the call's references there.
+    fn hand(self, py: Python<'_>) {
+        let Self {
+            event_loop,
+            future,
+            outcome,
+            ticket,
+        } = self;
+        if let Some(outcome) = outcome {
+            let (value, error) = match outcome(py) {
+                Ok(value) => (value, py.None()),
+                Err(error) => (py.None(), error.into_value(py).into_any()),
+            };
+            if let Some(settle) = SETTLE.get(py) {
+                let settling = (settle, &future, value, error);
+                // A loop that was closed takes nothing: what the call gave
+                // is dropped.
+                drop(
+                    event_loop
+                        .bind(py)
+                        .call_method1(intern!(py, "call_soon_threadsafe"), settling),
+                );
             }
-            drop(ticket);
-        })
+        }
+        drop((event_loop, future));
+        drop(ticket);
     }
 }
 
-impl ContextExt for BridgeRuntime {
-    fn scope<F, R>(locals: TaskLocals, future: F) -> Pin<Box<dyn Future<Output = R> + Send>>
-    where
-        F: Future<Output = R> + Send + 'static,
-    {
-        Box::pin(LOCALS.scope(locals, future))
-    }
-
-    fn get_task_locals() -> Option<TaskLocals> {
-        LOCALS.try_with(Clone::clone).ok()
+/// The one thread that hands completions to Python.
+fn hand_over(completions: &Receiver<Completion>) {
+    while let Ok(first) = completions.recv() {
+        Python::attach(|py| {
+            first.hand(py);
+            // What ended meanwhile, under the same hold of the lock.
+            for _ in 1..HANDED_AT_ONCE {
+                match completions.try_recv() {
+                    Ok(next) => next.hand(py),
+                    Err(_) => break,
+                }
+            }
+        });
     }
 }
 
-/// The awaitable of one call: `work` on the tracked bridge, stopped when
+/// Where a worker leaves the end of a call, for the thread that hands it
+/// to Python.
+fn completions() -> PyResult<&'static Sender<Completion>> {
+    static COMPLETIONS: OnceLock<Option<Sender<Completion>>> = OnceLock::new();
+    let started = COMPLETIONS.get_or_init(|| {
+        let (sender, receiver) = mpsc::channel();
+        let handing = std::thread::Builder::new().name("roomkit-providers-python".to_owned());
+        handing
+            .spawn(move || hand_over(&receiver))
+            .ok()
+            .map(|_| sender)
+    });
+    started.as_ref().ok_or_else(no_threads)
+}
+
+/// The function that settles a call's future on its loop.
+static SETTLE: PyOnceLock<Py<PyCFunction>> = PyOnceLock::new();
+
+/// Settles `future` with `value`, or with `error` when there is one, unless
+/// it is already done: a future that was cancelled takes nothing.
+#[pyfunction]
+fn _settle(future: &Bound<'_, PyAny>, value: Py<PyAny>, error: Py<PyAny>) -> PyResult<()> {
+    let py = future.py();
+    if future.call_method0(intern!(py, "done"))?.is_truthy()? {
+        return Ok(());
+    }
+    if error.is_none(py) {
+        future.call_method1(intern!(py, "set_result"), (value,))?;
+    } else {
+        future.call_method1(intern!(py, "set_exception"), (error,))?;
+    }
+    Ok(())
+}
+
+/// Stops a call when the future it completes is cancelled.
+#[pyclass(name = "_Stops", frozen, module = "roomkit_providers._native")]
+struct Stops {
+    stopped: Kept<CancellationToken>,
+}
+
+#[pymethods]
+impl Stops {
+    fn __call__(&self, future: &Bound<'_, PyAny>) -> PyResult<()> {
+        let cancelled = future.call_method0(intern!(future.py(), "cancelled"))?;
+        if cancelled.is_truthy()?
+            && let Some(stopped) = self.stopped.get()
+        {
+            stopped.cancel();
+        }
+        Ok(())
+    }
+}
+
+/// The awaitable of one call: `work` on the bridge's runtime, stopped when
 /// the awaitable is cancelled and when the interpreter exits. Stopping it
-/// drops `work`, and with it the request it holds.
-pub(super) fn call<'py, F, T>(py: Python<'py>, work: F) -> PyResult<Bound<'py, PyAny>>
+/// drops `work`, and with it the request it holds. Work that panics fails
+/// as a provider's failure.
+pub(super) fn call<'py, F, T>(py: Python<'py>, label: &str, work: F) -> PyResult<Bound<'py, PyAny>>
 where
-    F: Future<Output = PyResult<T>> + Send + 'static,
+    F: Future<Output = Result<T, Failure>> + Send + 'static,
     T: for<'a> IntoPyObject<'a> + Send + 'static,
 {
-    let _entry = Ticket::enter()?;
+    let ticket = Ticket::enter()?;
+    let (runtime, completions) = (runtime()?, completions()?);
+    let asyncio = py.import(intern!(py, "asyncio"))?;
+    let event_loop = asyncio.call_method0(intern!(py, "get_running_loop"))?;
+    let future = event_loop.call_method0(intern!(py, "create_future"))?;
+    let stopped = CancellationToken::new();
+    let stops = Stops {
+        stopped: Kept::new(stopped.clone()),
+    };
+    future.call_method1(intern!(py, "add_done_callback"), (stops,))?;
     let exiting = BRIDGE.cancellation.child_token();
-    let locals = generic::get_current_locals::<BridgeRuntime>(py)?;
-    let _spawning = Spawning::enter(Arc::new(locals.event_loop(py).unbind()));
-    generic::future_into_py_with_locals::<BridgeRuntime, _, _>(py, locals, async move {
-        match exiting.run_until_cancelled(work).await {
-            Some(result) => result,
-            None => Err(shutting_down()),
-        }
-    })
+    let (event_loop, held) = (event_loop.unbind(), future.clone().unbind());
+    let label = label.to_owned();
+    drop(runtime.spawn(async move {
+        let ended = stopped
+            .run_until_cancelled(exiting.run_until_cancelled(caught(work)))
+            .await;
+        let outcome: Option<Outcome> = match ended {
+            // The awaitable was cancelled: nothing awaits what came.
+            None => None,
+            // The exit stops what the work waits on, and the work may fail
+            // of that before it is seen stopped: it failed of the exit.
+            Some(None) => Some(Box::new(|_| Err(shutting_down()))),
+            Some(Some(Some(Err(_)))) if exiting.is_cancelled() => {
+                Some(Box::new(|_| Err(shutting_down())))
+            }
+            Some(Some(None)) => Some(Box::new(
+                move |py| Err(Failure::panicked(&label).raised(py)),
+            )),
+            Some(Some(Some(Err(failure)))) => Some(Box::new(|py| Err(failure.raised(py)))),
+            Some(Some(Some(Ok(given)))) => Some(Box::new(|py| given.into_py_any(py))),
+        };
+        let completion = Completion {
+            event_loop,
+            future: held,
+            outcome,
+            ticket,
+        };
+        // The thread that hands completions over lives as long as the
+        // process: a completion is never left with this worker.
+        drop(completions.send(completion));
+    }));
+    Ok(future)
 }
 
-/// Runs `work` on the tracked bridge with no awaitable to complete: the
+/// Runs `work` on the bridge's runtime with no awaitable to complete: the
 /// reading of a stream between two crossings. It runs until it ends or the
 /// interpreter exits, which drops it.
 pub(super) fn spawn<F>(work: F) -> PyResult<()>
@@ -248,18 +330,15 @@ where
 {
     let ticket = Ticket::enter()?;
     let exiting = BRIDGE.cancellation.child_token();
-    let future = Box::pin(async move {
+    drop(runtime()?.spawn(async move {
         // Stopped or ended, the work is over either way.
         let _: Option<()> = exiting.run_until_cancelled(work).await;
-    });
-    drop(pyo3_async_runtimes::tokio::get_runtime().spawn(Tracked {
-        future,
-        _ticket: ticket,
+        drop(ticket);
     }));
     Ok(())
 }
 
-/// Private diagnostic: bridge tasks and completion callbacks still running.
+/// Private diagnostic: the calls and the readings of streams under way.
 ///
 /// A forked child runs none: the count it copied belongs to its parent.
 #[pyfunction]
@@ -270,7 +349,16 @@ fn _activity() -> usize {
     activity().count
 }
 
-/// Private atexit hook. Returns the initial activity count for diagnostics.
+/// Private diagnostic: the threads the bridge runs its calls on, and the
+/// most it starts to look names up.
+#[pyfunction]
+fn _threads() -> (usize, usize) {
+    (WORKERS, LOOKUPS)
+}
+
+/// The exit hook: stops every call, then waits until each has ended, the
+/// interpreter's lock released meanwhile, since handing a call's end to
+/// Python takes it. Returns the count of what was under way.
 ///
 /// A forked child returns at once: no thread there would ever finish the
 /// parent's calls, and its copied locks may be held by threads it lacks.
@@ -298,11 +386,12 @@ fn _shutdown(py: Python<'_>) -> usize {
 }
 
 pub(super) fn install(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    let py = module.py();
     module.add_function(wrap_pyfunction!(_activity, module)?)?;
+    module.add_function(wrap_pyfunction!(_threads, module)?)?;
     module.add_function(wrap_pyfunction!(_shutdown, module)?)?;
-    module
-        .py()
-        .import("atexit")?
-        .call_method1("register", (module.getattr("_shutdown")?,))?;
+    module.add_class::<Stops>()?;
+    let settle = wrap_pyfunction!(_settle, module)?;
+    drop(SETTLE.set(py, settle.unbind()));
     Ok(())
 }

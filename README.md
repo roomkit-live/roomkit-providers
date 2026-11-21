@@ -99,8 +99,10 @@ provider.
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
 | `examples/roomkit_agent.py` | A RoomKit agent over the provider: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |
 | `benchmarks/crossing.py` | What a turn costs through the package's provider, and through RoomKit's own Python provider where its SDK is installed |
+| `benchmarks/footprint.py`, `benchmarks/fork_children.py` | The threads and the connections a busy provider holds, and how often a child forked under load hangs |
 | `guide/python.md` | The Python guide |
 | `scripts/check-python.py` | Builds a wheel and a source distribution, installs each beside RoomKit and runs the Python tests and the examples on it (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshot, `scripts/roomkit_env.py` names the RoomKit of the environment) |
+| `scripts/no-network.sh` | Runs a command where no network is reachable but loopback: the tests, the examples and the benches go through it |
 | `scripts/generate_openai_catalogue.py` | Writes OpenAI's model catalogue of RoomKit's Python, which the provider reads its models' rules from |
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
@@ -132,6 +134,9 @@ its `LICENSE-UNICODE`
 ([llm](crates/roomkit-providers-llm/LICENSE-UNICODE),
 [http](crates/roomkit-providers-http/LICENSE-UNICODE)).
 
-The Python package links both, so it is `MIT AND Unicode-3.0` too, and ships
-the notices of the crates its extension is built from
+The Python package's own code is MIT. Its wheel links both crates and the
+crates they depend on, a few of which are under no license it could take
+them under in place of their own: the wheel is
+`MIT AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND CDLA-Permissive-2.0 AND ISC AND Zlib`,
+and ships the notices of every crate its extension is built from
 (`roomkit_providers/licenses/native_dependencies.txt`).

@@ -33,15 +33,14 @@ roomkit-providers-llm = { version = "0.1.0-alpha.1", path = "../../crates/roomki
 roomkit-providers-openai = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-openai", features = ["replay"] }
 # The trait of the stream a provider's events come as.
 futures-core = { version = "0.3", default-features = false }
-# Stable CPython ABI, with a separate Tokio/asyncio bridge for awaitable I/O.
+# Stable CPython ABI.
 pyo3 = { version = "0.30", features = ["abi3-py312"] }
-pyo3-async-runtimes = { version = "0.30", features = ["tokio-runtime"] }
 # The contract's values are written as JSON text.
 serde = "1"
 serde_json = "1"
-# One shared runtime for every call, independent of Python event-loop
+# One small runtime for every call, independent of Python event-loop
 # lifetimes, and the token that stops its calls when the interpreter exits.
-tokio = { version = "1", default-features = false, features = ["rt", "sync"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "sync"] }
 tokio-util = { version = "0.7", default-features = false, features = ["rt"] }
 
 [lints.rust]

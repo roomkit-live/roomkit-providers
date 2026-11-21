@@ -12,6 +12,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+import os
+import threading
 import unittest
 from typing import Any
 
@@ -406,6 +408,78 @@ class FailureTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(held.keys(), [])
 
 
+class RefusalTests(unittest.IsolatedAsyncioTestCase):
+    async def refusals(self, context: AIContext) -> list[ProviderError]:
+        provider, held = scripted()
+        with self.assertRaises(ProviderError) as whole:
+            await provider.generate(context)
+        with self.assertRaises(ProviderError) as streamed:
+            await anext(provider.generate_structured_stream(context))
+        self.assertEqual(held.keys(), [])
+        return [whole.exception, streamed.exception]
+
+    async def test_a_refusal_s_words_are_bounded(self) -> None:
+        # The reader quotes what it refuses, however long.
+        role = "developer " * 500_000
+        context = AIContext(messages=[AIMessage(role=role, content="Be brief.")])
+        for error in await self.refusals(context):
+            self.assertLessEqual(len(error.args[0]), 500)
+            self.assertTrue(error.args[0].startswith("the request is refused: "))
+            self.assertTrue(error.before_request)
+
+    async def test_a_context_with_no_json_form_is_refused_before_the_request(self) -> None:
+        handle = object()
+        in_a_message = AIMessage(role="user", content="Hello", metadata={"handle": handle})
+        in_a_call = AIMessage(
+            role="assistant",
+            content=[AIToolCallPart(id="call_1", name="lookup", arguments={"handle": handle})],
+        )
+        for message in (in_a_message, in_a_call):
+            for error in await self.refusals(AIContext(messages=[message])):
+                self.assertIs(type(error), ProviderError)
+                self.assertEqual(
+                    (error.before_request, error.retryable, error.status_code), (True, False, None)
+                )
+                self.assertTrue(error.args[0].startswith("the request is refused: "))
+
+
+class DefectTests(unittest.IsolatedAsyncioTestCase):
+    """A provider that panics fails as a provider: the failure an AI channel
+    catches, never an exception outside ``Exception``, never an answer."""
+
+    async def test_a_panic_in_a_call_is_a_provider_error(self) -> None:
+        provider, _ = scripted(panics=True)
+        calls = (
+            provider.generate(HELLO),
+            provider.list_models(),
+            anext(provider.generate_structured_stream(HELLO)),
+        )
+        for call in calls:
+            with self.assertRaises(ProviderError) as failed:
+                await call
+            self.assertIs(type(failed.exception), ProviderError)
+            self.assertFalse(failed.exception.retryable)
+        # The thread that ran the call goes on.
+        sound, _ = scripted()
+        self.assertEqual((await sound.generate(HELLO)).content, "Hello from AI")
+
+    async def test_a_panic_while_a_stream_is_read_fails_the_stream(self) -> None:
+        options = {"streaming": True, "tool_call_delta_chunks": 3}
+        sound, _ = scripted(WHOLE, **options)
+        whole = [event async for event in sound.generate_structured_stream(HELLO)]
+        self.assertGreaterEqual(len(whole), 10)
+        provider, _ = scripted(WHOLE, panics_after=3, **options)
+        given = []
+        with self.assertRaises(ProviderError) as failed:
+            async for event in provider.generate_structured_stream(HELLO):
+                given.append(event)
+        self.assertEqual(given, whole[:3])
+        self.assertFalse(failed.exception.retryable)
+        # The text of a stream that was cut is no answer.
+        with self.assertRaises(ProviderError):
+            [piece async for piece in provider.generate_stream(HELLO)]
+
+
 class LifetimeTests(unittest.IsolatedAsyncioTestCase):
     async def test_cancelling_a_call_drops_it_in_the_provider(self) -> None:
         provider, held = scripted(silent=True)
@@ -429,6 +503,40 @@ class LifetimeTests(unittest.IsolatedAsyncioTestCase):
         await held.dropped(1)
         with self.assertRaises(asyncio.CancelledError):
             await reading
+
+    async def test_closing_a_stream_while_it_is_read_ends_the_read(self) -> None:
+        # The read and the reading both see the stream closed, in either
+        # order: the read ends with nothing, never as a stream that failed.
+        provider, held = scripted(silent=True)
+        request = HELLO.model_dump_json(include={"messages"})
+        for turn in range(1, 301):
+            stream = provider._native.stream(request, None)
+            reading = asyncio.ensure_future(stream.next())
+            await held.begun(turn)
+            stream.close()
+            self.assertIsNone(await reading, turn)
+            self.assertIsNone(await stream.next(), turn)
+
+    @unittest.skipUnless(os.path.isdir("/proc/self/task"), "the threads of a process, in /proc")
+    async def test_the_calls_run_on_a_few_threads_whatever_their_number(self) -> None:
+        workers, lookups = _native._threads()
+        self.assertLessEqual(workers + lookups, 8)
+        provider, _ = scripted(WHOLE, streaming=True, tool_call_delta_chunks=3)
+
+        async def reads() -> int:
+            return len([event async for event in provider.generate_structured_stream(HELLO)])
+
+        def own_threads() -> int:
+            return len(os.listdir("/proc/self/task")) - threading.active_count()
+
+        await reads()
+        counts = []
+        for _ in range(5):
+            await asyncio.gather(*(reads() for _ in range(200)))
+            counts.append(own_threads())
+        # The workers, and the one thread that hands what they read to
+        # Python: no call brings a thread of its own.
+        self.assertEqual(counts, [workers + 1] * 5)
 
     async def test_the_first_token_is_recorded_under_the_provider_s_own_name(self) -> None:
         telemetry = MockTelemetryProvider()

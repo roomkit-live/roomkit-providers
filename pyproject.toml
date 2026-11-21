@@ -11,7 +11,10 @@ requires-python = ">=3.12"
 # A provider is a RoomKit provider: RoomKit's interface, models and
 # exceptions. The range is the one the package is tested against.
 dependencies = ["roomkit>=0.117.0.dev0,<0.118"]
-license = "MIT AND Unicode-3.0"
+# What is true of the wheel: the licenses of every crate its extension
+# links, each taken under MIT where it offers it
+# (`scripts/native-notices.py check` holds the expression to them).
+license = "MIT AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND CDLA-Permissive-2.0 AND ISC AND Zlib"
 # The MIT license, the notice of the Unicode data two of the crates the
 # extension links derive a table from, and the notices of its dependencies.
 license-files = [
@@ -48,7 +51,7 @@ exclude = ["docs/**", "AGENTS.md"]
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-include = ["python/**/*.py", "tests/python/**/*.py", "examples/*.py", "benchmarks/*.py", "scripts/check-python.py", "scripts/native-notices.py", "scripts/artifact_files.py", "scripts/api-snapshot.py", "scripts/roomkit_env.py"]
+include = ["python/**/*.py", "tests/python/**/*.py", "examples/*.py", "benchmarks/*.py", "scripts/check-python.py", "scripts/native-notices.py", "scripts/artifact_files.py", "scripts/api-snapshot.py", "scripts/roomkit_env.py", "scripts/wheel_paths.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]

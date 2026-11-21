@@ -166,6 +166,10 @@ impl AiProvider for Held {
         "held-provider"
     }
 
+    fn label(&self) -> &'static str {
+        "held"
+    }
+
     fn model_name(&self) -> &'static str {
         "held-model"
     }
@@ -221,6 +225,7 @@ fn a_provider_held_as_an_object_answers_as_itself() {
     assert_eq!(
         (
             held.dyn_name(),
+            held.dyn_label(),
             held.dyn_type_name(),
             held.dyn_model_name(),
             held.dyn_supports_vision(),
@@ -230,6 +235,7 @@ fn a_provider_held_as_an_object_answers_as_itself() {
         ),
         (
             "held-provider",
+            "held",
             "Held",
             "held-model",
             true,

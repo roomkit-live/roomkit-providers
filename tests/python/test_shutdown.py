@@ -165,6 +165,56 @@ class InterpreterShutdownTests(ChildProcess):
         """)
         self.assertIn("drained and permanently closed", result.stdout)
 
+    def test_the_exit_hook_releases_the_interpreter_while_it_waits(self) -> None:
+        result = self.run_child("""
+            from roomkit_providers import _native
+
+            fake = ThreadedFake()
+            provider = provider_at(fake)
+            fake.answer(*(Silent() for _ in range(4)))
+
+            async def main():
+                pending = [provider._native.generate(HELLO_JSON, None) for _ in range(4)]
+                for _ in pending:
+                    fake.received()
+                # The hook returns once each stopped call's end was handed
+                # to Python, by a thread that takes the interpreter to do
+                # it: it could not, had the hook kept the interpreter.
+                stopped = _native._shutdown()
+                assert stopped >= 4, stopped
+                assert _native._activity() == 0
+                # What was handed over: each call failed of the exit.
+                for call in pending:
+                    try:
+                        await call
+                    except RuntimeError as error:
+                        assert "shutting down" in str(error), error
+                    else:
+                        raise AssertionError("a call was answered")
+                print("the hook waited without the interpreter")
+
+            asyncio.run(main())
+        """)
+        self.assertIn("the hook waited without the interpreter", result.stdout)
+
+    def test_closing_a_provider_once_the_bridge_is_down_does_nothing(self) -> None:
+        result = self.run_child("""
+            import atexit
+
+            def closes_late():
+                # Registered before the package is imported: it runs after
+                # the package's own exit hook.
+                assert asyncio.run(provider.close()) is None
+                print("closed after the exit hook")
+
+            atexit.register(closes_late)
+            fake = ThreadedFake()
+            provider = provider_at(fake)
+            answers(fake)
+            assert asyncio.run(ask(provider)) == "Yes."
+        """)
+        self.assertIn("closed after the exit hook", result.stdout)
+
     def test_a_completion_after_its_loop_closed_is_silent(self) -> None:
         # A host abandons a call, closes its loop and keeps running: the
         # answer that comes afterwards is dropped, and nothing is printed.
@@ -283,11 +333,80 @@ class ForkTests(ChildProcess):
             assert asyncio.run(ask(provider)) == "Yes."
             print("the parent still answers")
         """)
-        self.assertIn(
-            "RuntimeError: a provider cannot be called in a process forked", result.stdout
-        )
+        self.assertIn("RuntimeError: a provider cannot be used in a process forked", result.stdout)
         self.assertIn("spawn", result.stdout)
         self.assertIn("the parent still answers", result.stdout)
+
+    def test_a_forked_child_is_refused_without_entering_the_native_module(self) -> None:
+        result = self.run_child("""
+            import multiprocessing
+            import warnings
+
+            import roomkit_providers._process
+            import roomkit_providers.llm._provider
+            import roomkit_providers.llm.openai
+            from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
+
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            fake = ThreadedFake()
+            provider = provider_at(fake)
+
+            class Entered:
+                # The native module, to a child that must not enter it.
+                def __getattr__(self, name):
+                    raise AssertionError(f"the child entered the native module: {name}")
+
+            async def reads(stream):
+                return [event async for event in stream]
+
+            def child(queue):
+                for module in (
+                    roomkit_providers._process,
+                    roomkit_providers.llm._provider,
+                    roomkit_providers.llm.openai,
+                ):
+                    module._native = Entered()
+                provider._native = Entered()
+                refused = []
+                for attempt in (
+                    lambda: asyncio.run(ask(provider)),
+                    lambda: asyncio.run(provider.list_models()),
+                    lambda: asyncio.run(reads(provider.generate_structured_stream(HELLO))),
+                    lambda: asyncio.run(reads(provider.generate_stream(HELLO))),
+                    lambda: OpenAI.available_models(),
+                    lambda: OpenAI(OpenAIConfig(**local_config(fake.port))),
+                    lambda: OpenAIConfig(api_key="placeholder-not-a-key", model="gpt-5.1"),
+                ):
+                    try:
+                        attempt()
+                    except RuntimeError as error:
+                        refused.append("forked" in str(error))
+                    except BaseException as error:
+                        refused.append(repr(error))
+                    else:
+                        refused.append("not refused")
+                # What a provider says of itself was read when it was built,
+                # and closing it does nothing, without failing.
+                said = (provider.name, provider.model_name, provider.supports_vision)
+                closed = asyncio.run(provider.close())
+                queue.put((refused, said, closed))
+
+            answers(fake)
+            assert asyncio.run(ask(provider)) == "Yes."
+            context = multiprocessing.get_context("fork")
+            queue = context.Queue()
+            process = context.Process(target=child, args=(queue,))
+            process.start()
+            refused, said, closed = queue.get(timeout=30)
+            process.join(30)
+            assert refused == [True] * 7, refused
+            assert said == ("OpenAIAIProvider", "local-model", provider.supports_vision), said
+            assert closed is None
+            # Its exit entered nothing either.
+            assert process.exitcode == 0, process.exitcode
+            print("refused in Python")
+        """)
+        self.assertIn("refused in Python", result.stdout)
 
     def test_a_child_forked_during_a_call_exits_without_waiting_for_it(self) -> None:
         result = self.run_child("""

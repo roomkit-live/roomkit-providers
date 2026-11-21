@@ -15,8 +15,13 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use roomkit_providers_llm::{ProviderError, ProviderErrorOptions, ResponseSchemaError};
 
-/// Why a call gave nothing, before it is a Python exception: a failure is
-/// built off the interpreter's lock and raised under it.
+/// The most characters of a reader's words a failure repeats: a reader
+/// quotes what it refuses, however long.
+const SAID_LIMIT: usize = 500;
+
+/// Why a call gave nothing, before it is a Python exception. It holds no
+/// Python reference: it is built on any thread, and made an exception
+/// under the interpreter's lock.
 #[derive(Debug)]
 pub(crate) struct Failure(ProviderError);
 
@@ -26,29 +31,57 @@ impl From<ProviderError> for Failure {
     }
 }
 
+/// `said` on one line, bounded: each control character and each run of
+/// white space one space, cut at [`SAID_LIMIT`] characters.
+fn bounded(said: &str) -> String {
+    let spaced: String = said
+        .chars()
+        .map(|c| if c.is_control() { ' ' } else { c })
+        .collect();
+    let line = spaced.split_whitespace().collect::<Vec<_>>().join(" ");
+    line.chars().take(SAID_LIMIT).collect()
+}
+
 impl Failure {
-    /// The failure of a request the contract refuses, in its reader's words
-    /// `said`: nothing was sent, and sending it again changes nothing.
-    pub(crate) fn refused(said: &str) -> Self {
+    /// A final failure of the provider labelled `label`, which no new
+    /// request gets past.
+    fn last(said: String, label: &str, before_request: bool) -> Self {
         let options = ProviderErrorOptions {
-            before_request: true,
+            provider: label.to_owned(),
+            before_request,
             ..ProviderErrorOptions::default()
         };
-        Self(ProviderError::new(
-            format!("the request is refused: {said}"),
-            options,
-        ))
+        Self(ProviderError::new(said, options))
+    }
+
+    /// The failure of a request the contract refuses, in its reader's words
+    /// `said`, bounded, for the provider labelled `label`: nothing was
+    /// sent, and sending it again changes nothing.
+    pub(crate) fn refused(said: &str, label: &str) -> Self {
+        let said = bounded(&format!("the request is refused: {said}"));
+        Self::last(said, label, true)
+    }
+
+    /// The failure of a call whose work panicked: what it did is unknown,
+    /// and it is not asked again.
+    pub(crate) fn panicked(label: &str) -> Self {
+        let said = "the provider stopped on an internal error".to_owned();
+        Self::last(said, label, false)
+    }
+
+    /// The failure of a stream whose reading stopped without saying how
+    /// the stream ended: what came is no whole answer.
+    pub(crate) fn unended(label: &str) -> Self {
+        let said = "the provider's stream closed without its end".to_owned();
+        Self::last(said, label, false)
     }
 
     /// The exception Python raises for it.
-    pub(crate) fn raised(self) -> PyErr {
+    pub(crate) fn raised(self, py: Python<'_>) -> PyErr {
         let Self(error) = self;
-        Python::attach(|py| {
-            // A package whose error class cannot be reached still says
-            // what failed.
-            provider_error(py, &error)
-                .unwrap_or_else(|_| PyRuntimeError::new_err(error.to_string()))
-        })
+        // A package whose error class cannot be reached still says what
+        // failed.
+        provider_error(py, &error).unwrap_or_else(|_| PyRuntimeError::new_err(error.to_string()))
     }
 }
 

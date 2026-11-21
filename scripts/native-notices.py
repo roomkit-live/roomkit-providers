@@ -15,6 +15,7 @@ import fnmatch
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,8 @@ NOTICE_PREFIXES = ("license", "copying", "copyright", "notice")
 
 MANIFEST = "bindings/python/Cargo.toml"
 OUTPUT = "python/roomkit_providers/licenses/native_dependencies.txt"
+# The licenses of the repository's own code, written first in the wheel's.
+OWN_LICENSES = ("MIT", "Unicode-3.0")
 TITLE = (
     "Third-party notices for the roomkit-providers native extension.\n\n"
     "License texts from locked dependency sources.\n"
@@ -73,8 +76,10 @@ def key(package: dict[str, Any]) -> str:
     return f"{package['name']}-{package['version']}"
 
 
-def normal_dependencies(metadata: dict[str, Any]) -> list[str]:
-    """Locked non-path packages reachable from the root by normal dependencies."""
+def linked(metadata: dict[str, Any]) -> list[dict[str, Any]]:
+    """The packages the extension links: those reachable from the root by
+    normal dependencies, the root and the repository's own crates among
+    them."""
     packages = {package["id"]: package for package in metadata["packages"]}
     nodes = {node["id"]: node for node in metadata["resolve"]["nodes"]}
     reached: set[str] = set()
@@ -89,11 +94,32 @@ def normal_dependencies(metadata: dict[str, Any]) -> list[str]:
             for dependency in nodes[current]["deps"]
             if any(kind["kind"] is None for kind in dependency["dep_kinds"])
         )
-    return sorted(
-        key(packages[package_id])
-        for package_id in reached
-        if packages[package_id]["source"] is not None
-    )
+    return [packages[package_id] for package_id in sorted(reached)]
+
+
+def normal_dependencies(metadata: dict[str, Any]) -> list[str]:
+    """Locked non-path packages reachable from the root by normal dependencies."""
+    return sorted(key(package) for package in linked(metadata) if package["source"] is not None)
+
+
+def taken_under(expression: str) -> set[str]:
+    """The licenses a crate of this `expression` is taken under: of each
+    choice it offers, MIT where it is one, else the first."""
+    taken: set[str] = set()
+    for term in expression.replace("/", " OR ").split(" AND "):
+        choices = [choice.strip("() ") for choice in term.split(" OR ")]
+        taken.add("MIT" if "MIT" in choices else choices[0])
+    return taken
+
+
+def wheel_license(metadata: dict[str, Any]) -> str:
+    """The license expression that is true of the wheel: every license a
+    linked crate is taken under, the project's own first."""
+    taken: set[str] = set()
+    for package in linked(metadata):
+        taken |= taken_under(package["license"])
+    own = [name for name in OWN_LICENSES if name in taken]
+    return " AND ".join(own + sorted(taken - set(own)))
 
 
 def configured(files: dict[str, tuple[str, ...]], package: dict[str, Any]) -> tuple[str, ...]:
@@ -164,6 +190,11 @@ def main() -> None:
     if missing:
         sys.exit(f"{notices}: no notice for {', '.join(missing)}")
     print(f"{notices}: notices cover every locked normal dependency")
+    stated = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["license"]
+    true = wheel_license(cargo_metadata())
+    if stated != true:
+        sys.exit(f"pyproject.toml: the wheel's license is {true!r}, not {stated!r}")
+    print(f"pyproject.toml: the license is that of what the wheel links: {true}")
 
 
 if __name__ == "__main__":

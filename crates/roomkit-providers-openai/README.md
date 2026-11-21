@@ -162,7 +162,18 @@ catalogue, with no request.
   user information once decoded, which must be UTF-8: a base URL whose user
   information is not is refused, as said above.
 - **The environment.** Nothing is read from it: no key, no base URL, no
-  proxy.
+  organization, no project, no proxy. Python's client reads
+  `OPENAI_BASE_URL`, `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`, and goes
+  through `HTTP_PROXY` and `HTTPS_PROXY`. A host that relied on
+  `OPENAI_BASE_URL` to reach another server, and names none in its
+  configuration, reaches OpenAI's own endpoint here, and sends it its key.
+  One behind a proxy reaches nothing.
+- **Certificates.** A server's certificate is checked against the public
+  roots compiled into the crate, and no other: an endpoint whose
+  certificate is signed by a private authority cannot be reached, whatever
+  the system's store or `SSL_CERT_FILE` hold, which Python's client reads.
+- **Idle connections** are kept 5 seconds, 100 of them for a host at most,
+  as Python's client keeps them.
 - **No compressed answer.** The client sends no `accept-encoding`, whatever
   compression a host's build turns on in the HTTP client, so a server has no
   reason to compress. An answer compressed all the same is not decompressed:
@@ -237,7 +248,8 @@ model listing. It differs on the others, each for a reason:
 - **A 200 whose body is JSON and no completion** (`{"status": "ok"}`, `{}`,
   `{"choices": null}`) fails as no chat completion, final, where Python
   reads it as an answer that says nothing. A completion holds its choices as
-  a list, an empty one included.
+  a list, an empty one included. Where such a body words why, under
+  `message` or else under `detail`, the failure carries those words.
 - **A stream that ends with neither a finish reason nor its end mark** fails
   after what came, as a stream whose connection is lost does, and hands no
   whole call, where Python reads it as complete and hands its call to run.
@@ -246,6 +258,9 @@ model listing. It differs on the others, each for a reason:
   the status it names, retried or not by that status, as `generate` reads
   the same body. Python says the stream carried no event, a final failure
   that names no status.
+- **An empty finish reason** (`"finish_reason": ""`) is none, here as in
+  Python: with its end mark such a stream is complete and has no reason,
+  and with neither it was cut, as said above.
 - **A byte order mark that starts a stream** is ignored, as the format of a
   stream of events says, and the first event is read, where Python's SDK
   reads the line the mark starts as no data.
@@ -337,6 +352,15 @@ neither Python nor RoomKit.
 - A member written twice in the JSON text is refused, where Python keeps the
   last, and an integer of `extra_body` outside 64 bits is read as a float:
   both come from the JSON parser.
+- The same parser reads a request written as JSON, which is how one reaches
+  the provider from Python. An integer outside 64 bits, in a tool's schema
+  or in the arguments of a call a message replays, is read as a float and
+  sent as one (`1180591620717411303424` goes as `1.1805916207174113e21`),
+  where Python keeps its digits: a schema typed `integer` then no longer
+  describes the value. A `temperature` that is no number, a `max_tokens`
+  below zero or from 2**32 on, and a text that holds a lone surrogate are
+  refused before the request, where Python sends what it can. A NaN among
+  a call's arguments goes as `null`, where Python writes `NaN`.
 - A base URL that Python's URL reader refuses (a bracket that holds no IPv6
   address, a character that normalizes to a delimiter) makes Python refuse
   the configuration. Here the configuration is a plain value: it is not

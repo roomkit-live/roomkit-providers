@@ -28,6 +28,7 @@ from pathlib import Path
 
 import artifact_files
 import roomkit_env
+import wheel_paths
 
 PACKAGE = "roomkit_providers"
 NOTICES = f"{PACKAGE}/licenses/native_dependencies.txt"
@@ -36,6 +37,9 @@ NOTICES = f"{PACKAGE}/licenses/native_dependencies.txt"
 MATURIN = tuple(
     shlex.split(os.environ.get("MATURIN", "uv tool run --from 'maturin>=1.15,<2' maturin"))
 )
+# What runs the tests and the examples with no network but loopback: one
+# that lost its way to its local fake fails there, and reaches no service.
+NO_NETWORK = "scripts/no-network.sh"
 # The examples an installation runs, each checking what it shows.
 EXAMPLES = [("local_server.py",), ("roomkit_agent.py",)]
 # What builds the scripted provider into a wheel, beside the features
@@ -56,20 +60,27 @@ def check_notices(wheel: zipfile.ZipFile, root: Path, work: Path) -> None:
 
 
 def build_wheel(root: Path, work: Path) -> Path:
-    """The wheel the tests install, the scripted provider in it."""
+    """The wheel the tests install, the scripted provider in it, built as
+    one that is distributed: the paths of this machine written as names."""
     wheels = work / "wheels"
-    run(
-        *MATURIN,
-        "build",
-        "--locked",
-        "--features",
-        TESTING,
-        "--interpreter",
-        sys.executable,
-        "--out",
-        str(wheels),
-        cwd=root,
-    )
+    # A later mapping wins: the registry's and the checkout's do under the
+    # home directory. The C a crate compiles is told the same as the Rust.
+    named = {Path.home(): "/home", Path.home() / ".cargo": "/cargo", root: "/roomkit-providers"}
+    flags = {"RUSTFLAGS": "--remap-path-prefix", "CFLAGS": "-ffile-prefix-map"}
+    mapped = {
+        variable: " ".join(
+            [
+                os.environ.get(variable, ""),
+                *(f"{flag}={path}={name}" for path, name in named.items()),
+            ]
+        ).strip()
+        for variable, flag in flags.items()
+    }
+    command = [*MATURIN, "build", "--locked", "--features", TESTING]
+    command += ["--interpreter", sys.executable, "--out", str(wheels)]
+    subprocess.run(command, cwd=root, check=True, env=os.environ | mapped)
+    for built in wheels.glob("*.whl"):
+        wheel_paths.neutral(built, root)
     (wheel,) = wheels.glob("*.whl")
     return wheel
 
@@ -120,9 +131,21 @@ def check_metadata(metadata: bytes, names: list[str], root: Path) -> None:
     ), f"the wheel depends on what the project does not declare: {dependencies}"
 
 
+def check_paths(archive: zipfile.ZipFile, root: Path) -> None:
+    """The wheel names no place of the machine that built it: neither a
+    home directory's registry of crates, nor this machine's home or
+    checkout."""
+    told = [b"/.cargo/registry/", str(Path.home()).encode(), str(root).encode()]
+    for name in archive.namelist():
+        held = archive.read(name)
+        for path in told:
+            assert path not in held, f"{name} holds a path of its builder: {path.decode()}"
+
+
 def check_wheel(wheel: Path, root: Path, work: Path) -> None:
     """The wheel holds the extension, typing marker, notices and metadata, nothing else."""
     with zipfile.ZipFile(wheel) as archive:
+        check_paths(archive, root)
         names = archive.namelist()
         assert any(name.endswith((".so", ".pyd")) for name in names), names
         assert f"{PACKAGE}/py.typed" in names, names
@@ -137,6 +160,7 @@ def check_wheel(wheel: Path, root: Path, work: Path) -> None:
 def run_tests(python: Path, root: Path, work: Path) -> None:
     subprocess.run(
         [
+            str(root / NO_NETWORK),
             str(python),
             "-X",
             "faulthandler",
@@ -155,7 +179,8 @@ def run_tests(python: Path, root: Path, work: Path) -> None:
 
 def run_examples(python: Path, root: Path, work: Path) -> None:
     for script, *arguments in EXAMPLES:
-        run(str(python), "-I", str(root / "examples" / script), *arguments, cwd=work)
+        example = (str(python), "-I", str(root / "examples" / script), *arguments)
+        run(str(root / NO_NETWORK), *example, cwd=work)
 
 
 def check_scripted(python: Path, work: Path, expected: bool) -> None:

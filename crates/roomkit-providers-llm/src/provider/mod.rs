@@ -87,6 +87,19 @@ pub trait AiProvider: Send + Sync + 'static {
         short_type_name::<Self>()
     }
 
+    /// The label the provider's failures carry as their
+    /// [`provider`](ProviderError::provider): `openai` for `OpenAI`'s. What
+    /// refuses a request on a provider's behalf, before the provider sees
+    /// it, reads it here. Empty by default: a failure then names no
+    /// provider.
+    #[expect(
+        clippy::unnecessary_literal_bound,
+        reason = "a provider may answer with what it holds"
+    )]
+    fn label(&self) -> &str {
+        ""
+    }
+
     /// The model the provider reaches, as configured: Python's
     /// `model_name`.
     fn model_name(&self) -> &str;

@@ -20,8 +20,8 @@ use serde_json::Value;
 
 use crate::answer::truthy;
 use crate::exchange::{ANSWER_LIMIT, Call, is_json};
-use crate::failure::Failure;
 use crate::failure::exit::{Exit, carried};
+use crate::failure::{Failure, past_mark};
 use crate::folding::{Folding, push_end};
 use crate::provider::{OpenAi, unwritten};
 
@@ -102,7 +102,7 @@ impl Unstreamed {
     fn failure(self) -> Failure {
         let answer = self
             .0
-            .and_then(|body| serde_json::from_slice::<Value>(&body).ok());
+            .and_then(|body| serde_json::from_slice::<Value>(past_mark(&body)).ok());
         let error = answer.as_ref().and_then(|answer| answer.get("error"));
         match error.filter(|error| truthy(error)) {
             Some(error) => Failure::error_object(error),

@@ -38,6 +38,9 @@ jobs:
           manylinux: "2_34"
           container: quay.io/pypa/manylinux_2_34_x86_64@sha256:834a2a31de5eabacd4411417b3bbc9fcb6ff9f959972711ab3b73355e7b0928d
           args: --locked --release --strip --auditwheel check --interpreter python3.12 --out dist
+        env:
+          # The paths of the container that builds stay out of the wheel.
+          RUSTFLAGS: --remap-path-prefix=/root/.cargo=/cargo --remap-path-prefix=/io=/roomkit-providers
       - name: Build the source distribution
         run: uv tool run --from 'maturin==1.16.0' maturin sdist --out dist
       - name: Check package metadata and description rendering

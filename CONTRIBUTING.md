@@ -239,7 +239,20 @@ its own: what a provider sends and reads stays in the provider crates.
   Rust, where a provider reads it.
 - **Every call that waits returns an awaitable.** It is stopped by dropping
   its future: when its task is cancelled, when its stream is closed, and
-  when the interpreter exits.
+  when the interpreter exits. A panic of its work is a failure of the call.
+- **One thread takes the interpreter's lock** (`src/runtime.rs`): the one
+  that hands the end of each call to Python. The four workers that run the
+  calls hold no Python reference they could drop without the lock, and what
+  a call fails with is made an exception under it. PyO3 otherwise keeps the
+  references to release behind a lock of its own, which every entry into
+  the module takes, and which a forked child could find held for good. Keep
+  it so: no `Py<...>` in what a worker owns, no `PyErr` built off the lock.
+- **A forked child never enters the native module.** The package refuses it
+  in Python (`python/roomkit_providers/_process.py`), which every path into
+  the native module goes through first. What an object the child inherited
+  holds of the bridge is left as it is, not released (`Kept`, in
+  `src/fork.rs`). `benchmarks/fork_children.py` forks children under load
+  and counts those that hang.
 - **The tests** (`tests/python`, `unittest`) run against the installed
   package. `scripts/check-python.py` builds a wheel and a source
   distribution, checks what each contains, installs each in a new
@@ -286,8 +299,17 @@ its own: what a provider sends and reads stays in the provider crates.
 - **What a distribution contains** is the repository's files and what the
   build generates: a file git ignores must not reach a wheel or a source
   distribution (`scripts/artifact_files.py`).
+- **No network.** The Rust tests, the Python tests, the examples and the
+  benches run where no network is reachable but loopback
+  (`scripts/no-network.sh`, which `make test`, `make examples` and
+  `scripts/check-python.py` go through): a test that lost its way to its
+  local fake fails there instead of reaching a service. The script says so
+  where the machine lets a user make no such namespace, and then runs the
+  command as it is.
 - `benchmarks/crossing.py` measures a turn through the package's provider
-  and through RoomKit's own. It is no test and no gate.
+  and through RoomKit's own, `benchmarks/footprint.py` the threads and the
+  connections a busy provider holds, `benchmarks/fork_children.py` the
+  children forked under load that hang. None is a test or a gate.
 
 CI runs `make python-check` on CPython 3.12 and 3.14, and the binding's
 MSRV check; the `Python distributions` workflow builds the Linux x86_64

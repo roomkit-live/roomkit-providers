@@ -33,6 +33,7 @@ import argparse
 import asyncio
 import base64
 import json
+import os
 import statistics
 import subprocess
 import sys
@@ -264,7 +265,18 @@ def show(results: dict[str, Any]) -> None:
     print("\n" + json.dumps(results))
 
 
+def without_network() -> None:
+    """Runs this program again where no network is reachable but loopback
+    (scripts/no-network.sh), unless it runs there already: a bench that
+    lost its way to its local fake then reaches no service."""
+    if os.environ.get("ROOMKIT_PROVIDERS_NO_NETWORK"):
+        return
+    wrapper = str(ROOT / "scripts/no-network.sh")
+    os.execv(wrapper, [wrapper, sys.executable, *sys.argv])
+
+
 def main() -> None:
+    without_network()
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--serve", action="store_true", help="run the fake of the wire")
     if parser.parse_args().serve:

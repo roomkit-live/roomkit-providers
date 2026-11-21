@@ -18,7 +18,6 @@ use roomkit_providers_llm::{
 use serde::Deserialize;
 use tokio::sync::watch;
 
-use super::errors::Failure;
 use super::provider::{PythonProvider, written};
 use super::runtime;
 
@@ -39,6 +38,10 @@ struct Script {
     failure: Option<Refusal>,
     /// Whether a generation never answers.
     silent: bool,
+    /// Whether a whole answer and a listing panic.
+    panics: bool,
+    /// After how many events a stream panics.
+    panics_after: Option<usize>,
 }
 
 /// A provider's failure, attribute by attribute.
@@ -90,6 +93,8 @@ struct Scripted {
     deferred_tools: bool,
     failure: Option<ProviderError>,
     silent: bool,
+    panics: bool,
+    panics_after: Option<usize>,
     seen: Arc<watch::Sender<Seen>>,
 }
 
@@ -109,6 +114,8 @@ impl Scripted {
             deferred_tools: script.deferred_tools,
             failure: script.failure.map(ProviderError::from),
             silent: script.silent,
+            panics: script.panics,
+            panics_after: script.panics_after,
             seen: Arc::new(watch::Sender::new(Seen::default())),
         }
     }
@@ -116,6 +123,9 @@ impl Scripted {
     /// What stands before an answer: the scripted failure, or, for a
     /// provider that never answers, a wait that does not end.
     async fn before_answering(&self) -> Result<(), ProviderError> {
+        if self.panics {
+            stops("before it answered");
+        }
         if let Some(failure) = &self.failure {
             return Err(failure.clone());
         }
@@ -127,6 +137,12 @@ impl Scripted {
         }
         Ok(())
     }
+}
+
+/// What a provider with a defect does: it panics, `at` saying where.
+#[expect(clippy::panic, reason = "the defect the tests of the crossing script")]
+fn stops(at: &str) -> ! {
+    panic!("the scripted provider panics {at}")
 }
 
 impl AiProvider for Scripted {
@@ -196,8 +212,13 @@ impl AiProvider for Scripted {
                 return out.give(Err(failure)).await;
             }
             let mut events = self.mock.generate_structured_stream(request);
+            let mut given = 0_usize;
             while let Some(event) = next(&mut events).await {
+                if self.panics_after == Some(given) {
+                    stops("while its stream is read");
+                }
                 out.give(event).await;
+                given = given.saturating_add(1);
             }
         }))
     }
@@ -217,7 +238,7 @@ impl PythonScripted {
         reached: impl Fn(&Seen) -> bool + Send + 'static,
     ) -> PyResult<Bound<'py, PyAny>> {
         let mut seen = self.scripted.seen.subscribe();
-        runtime::call(py, async move {
+        runtime::call(py, "", async move {
             // The provider holds the sender: it outlives this wait.
             drop(seen.wait_for(reached).await);
             Ok(())
@@ -234,8 +255,9 @@ impl PythonScripted {
 
     /// The requests the provider was asked, in order, as a JSON list: each
     /// as the contract writes it, its credential masked.
-    fn asked_json(&self) -> PyResult<String> {
-        written(&self.scripted.mock.calls(), "the requests").map_err(Failure::raised)
+    fn asked_json(&self, py: Python<'_>) -> PyResult<String> {
+        let asked = written(&self.scripted.mock.calls(), "the requests");
+        asked.map_err(|failure| failure.raised(py))
     }
 
     /// The credential each request reached the provider with, in order, as

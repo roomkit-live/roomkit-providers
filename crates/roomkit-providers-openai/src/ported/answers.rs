@@ -144,6 +144,61 @@ async fn a_json_body_that_is_no_completion_is_a_failure_not_an_empty_answer() {
     );
 }
 
+// A body that is no completion and words why, as a message or a detail:
+// the failure carries those words, bounded and cleaned as any other.
+#[tokio::test]
+async fn a_body_that_is_no_completion_says_what_the_body_says() {
+    let said = "The provider answered with a body it could not read: not a chat completion";
+    let long = "x".repeat(4 * crate::failure::MESSAGE_LIMIT);
+    let cases = [
+        (
+            json!({"message": "The model\n is loading."}),
+            format!("{said}: The model is loading."),
+        ),
+        (
+            json!({"detail": "Not found", "status": 404}),
+            format!("{said}: Not found"),
+        ),
+        (
+            json!({"detail": format!("key {KEY}")}),
+            format!("{said}: key [***]"),
+        ),
+        (
+            json!({"message": "Loading.", "detail": "Wait."}),
+            format!("{said}: Loading."),
+        ),
+        (json!({"detail": [{"msg": "required"}]}), said.to_owned()),
+        (json!({"message": ""}), said.to_owned()),
+    ];
+    for (body, expected) in cases {
+        let error = asked(super::support::json_reply(200, body.to_string()), &hello()).await;
+        assert_eq!(error.unwrap_err().message, expected, "{body}");
+    }
+    let wordy = super::support::json_reply(200, json!({"detail": long}).to_string());
+    let wordy = asked(wordy, &hello()).await.unwrap_err().message;
+    assert_eq!(wordy.chars().count(), crate::failure::MESSAGE_LIMIT);
+}
+
+// Python's JSON reader takes a body that starts with a byte order mark: a
+// whole answer and the body of a refusal are read past it.
+#[tokio::test]
+async fn a_byte_order_mark_before_a_whole_body_is_read_past() {
+    let marked = |body: Value| format!("\u{feff}{body}");
+    let answered = completion_body(&json!({"role": "assistant", "content": "Yes."}), &json!({}));
+    let response = asked(super::support::json_reply(200, marked(answered)), &hello()).await;
+    assert_eq!(response.unwrap().content, "Yes.");
+    let refusal =
+        json!({"error": {"message": "Incorrect API key", "type": "invalid_request_error"}});
+    let error = asked(super::support::json_reply(401, marked(refusal)), &hello()).await;
+    assert_eq!(
+        error.unwrap_err().message,
+        "the provider answered HTTP 401 (invalid_request_error): Incorrect API key"
+    );
+    let object = json!({"error": {"message": "Overloaded", "code": 503}});
+    let error = asked(super::support::json_reply(200, marked(object)), &hello()).await;
+    assert_eq!(error.unwrap_err().status_code, Some(503));
+}
+
 /// What `generate` reads of a completion whose message is `message`: its
 /// reasoning, its text.
 async fn generated(message: &Value) -> (Option<String>, String) {

@@ -47,7 +47,7 @@ pub(crate) fn entry(model: &str) -> Option<&'static ModelInfo> {
 /// id alone, as Python's `list_models` reads it; `None` for a body that is
 /// no such page, which is no listing rather than an empty one.
 pub(crate) fn listed(page: &[u8]) -> Option<Vec<ModelInfo>> {
-    let page: Value = serde_json::from_slice(page).ok()?;
+    let page: Value = serde_json::from_slice(crate::failure::past_mark(page)).ok()?;
     let listed = page.get("data")?.as_array()?.iter();
     let ids = listed.map(|model| model.get("id")?.as_str());
     ids.map(|id| id.map(ModelInfo::new)).collect()

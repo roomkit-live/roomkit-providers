@@ -8,6 +8,15 @@ updates:
     groups:
       deps:
         update-types: [minor, patch]
+  # The Python binding is a workspace of its own, with its own lock file.
+  - package-ecosystem: cargo
+    directory: /bindings/python
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      deps:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:

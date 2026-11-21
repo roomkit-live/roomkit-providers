@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import time
 from collections.abc import AsyncIterator, Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Annotated, ClassVar
 
 from pydantic import Field, SecretStr, TypeAdapter
+from pydantic_core import PydanticSerializationError
 from roomkit.providers.ai import (
     API_KEY_METADATA_KEY,
     AIContext,
@@ -32,8 +33,11 @@ from roomkit.providers.ai import (
     StreamUsage,
 )
 
-from .. import _native
+from .. import _native, _process
 from ._failure import ProviderFailure
+
+# The most characters of a refusal's words a failure repeats.
+_SAID_LIMIT = 500
 
 # What crosses of a context: the members of the contract's request, but its
 # metadata. No provider reads anything of a context's metadata but the
@@ -106,11 +110,11 @@ class Provider(AIProvider):
     """A RoomKit provider over a provider the native module holds.
 
     Every answer RoomKit reads on a provider comes from the native provider:
-    its name, its model, what it supports, its catalogue's entry. A
-    generation crosses as the contract's JSON and comes back as RoomKit's
-    models; a failure is RoomKit's ``ProviderError`` or
-    ``ResponseSchemaError``; the time to the first token is recorded as
-    RoomKit's providers record it.
+    its name, its model, what it supports, its catalogue's entry. They are
+    read once, when the provider is built. A generation crosses as the
+    contract's JSON and comes back as RoomKit's models; a failure is
+    RoomKit's ``ProviderError`` or ``ResponseSchemaError``; the time to the
+    first token is recorded as RoomKit's providers record it.
 
     A provider's class gives its native provider to ``__init__`` and, where
     it has a catalogue, names what writes it in ``_catalogue``.
@@ -121,61 +125,90 @@ class Provider(AIProvider):
 
     def __init__(self, native: _native._Provider) -> None:
         self._native = native
+        self._name = native.name
+        # What the provider's failures carry as their ``provider``.
+        self._label = native.label
+        self._model_name = native.model_name
+        self._supports_vision = native.supports_vision
+        self._supports_streaming = native.supports_streaming
+        self._supports_structured_streaming = native.supports_structured_streaming
+        self._supports_response_schema = native.supports_response_schema
+        self._supports_deferred_tools = native.supports_deferred_tools
+        self._supports_response_schema_with_tools = native.supports_response_schema_with_tools
+        self._context_window = native.context_window
+        entry = native.catalog_entry_json()
+        self._catalog_entry = None if entry is None else ModelInfo.model_validate_json(entry)
 
     @property
     def name(self) -> str:
-        return self._native.name
+        return self._name
 
     @property
     def model_name(self) -> str:
-        return self._native.model_name
+        return self._model_name
 
     @property
     def supports_vision(self) -> bool:
-        return self._native.supports_vision
+        return self._supports_vision
 
     @property
     def supports_streaming(self) -> bool:
-        return self._native.supports_streaming
+        return self._supports_streaming
 
     @property
     def supports_structured_streaming(self) -> bool:
-        return self._native.supports_structured_streaming
+        return self._supports_structured_streaming
 
     @property
     def supports_response_schema(self) -> bool:
-        return self._native.supports_response_schema
+        return self._supports_response_schema
 
     @property
     def supports_deferred_tools(self) -> bool:
-        return self._native.supports_deferred_tools
+        return self._supports_deferred_tools
 
     @property
     def supports_response_schema_with_tools(self) -> bool:
-        return self._native.supports_response_schema_with_tools
+        return self._supports_response_schema_with_tools
 
     @classmethod
     def available_models(cls) -> list[ModelInfo]:
         """The provider's curated catalogue, with no request."""
         catalogue = cls._catalogue
-        return [] if catalogue is None else _MODELS.validate_json(catalogue())
+        if catalogue is None:
+            return []
+        _process.enter()
+        return _MODELS.validate_json(catalogue())
 
     async def list_models(self) -> list[ModelInfo]:
         """Every model the provider lists, filled from its catalogue where
         it knows the model."""
+        _process.start()
         with failing_as_roomkit():
             return _MODELS.validate_json(await self._native.list_models())
 
     def catalog_entry(self) -> ModelInfo | None:
-        entry = self._native.catalog_entry_json()
-        return None if entry is None else ModelInfo.model_validate_json(entry)
+        return self._catalog_entry
 
     @property
     def context_window(self) -> int | None:
-        return self._native.context_window
+        return self._context_window
+
+    def _request(self, context: AIContext) -> str:
+        """`context` as the contract's request, in JSON. One that has no
+        JSON form is refused as a provider refuses a request before it
+        sends it."""
+        try:
+            return context.model_dump_json(include=_REQUEST)
+        except PydanticSerializationError as refused:
+            said = f"the request is refused: {refused}"[:_SAID_LIMIT]
+            raise ProviderError(
+                said, retryable=False, provider=self._label, before_request=True
+            ) from None
 
     async def generate(self, context: AIContext) -> AIResponse:
-        request = context.model_dump_json(include=_REQUEST)
+        request = self._request(context)
+        _process.start()
         started = time.monotonic()
         with failing_as_roomkit():
             answered = await self._native.generate(request, request_key(context))
@@ -193,14 +226,19 @@ class Provider(AIProvider):
         """Yield the events of one generation as they come: reasoning and
         text, each call as it is written, then the whole calls and the done
         event. A response schema is checked before the done event."""
-        request = context.model_dump_json(include=_REQUEST)
+        request = self._request(context)
+        _process.start()
         stream = self._native.stream(request, request_key(context))
         # The time to the first token is recorded once, at the first text
         # or reasoning, never at a call's fragment.
         started: float | None = time.monotonic()
         try:
             with failing_as_roomkit():
-                while (crossed := await stream.next()) is not None:
+                while True:
+                    _process.enter()
+                    crossed = await stream.next()
+                    if crossed is None:
+                        break
                     for event in _EVENTS.validate_json(crossed):
                         if started is not None and isinstance(
                             event, StreamTextDelta | StreamThinkingDelta
@@ -209,8 +247,16 @@ class Provider(AIProvider):
                             started = None
                         yield event
         finally:
-            stream.close()
+            # A forked child leaves its parent's stream as it is.
+            if not _process.forked():
+                stream.close()
 
     async def close(self) -> None:
-        """Release what the provider holds."""
-        await self._native.close()
+        """Release what the provider holds. It never raises: where nothing
+        can be released any more, in a forked child or once the interpreter
+        is exiting, it does nothing."""
+        if _process.forked():
+            return
+        _process.start()
+        with suppress(RuntimeError):
+            await self._native.close()

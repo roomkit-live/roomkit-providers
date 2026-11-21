@@ -154,7 +154,7 @@ impl Failure {
                 format!("the endpoint answered with a redirect ({status}), which is not followed");
             return Self::said(vec![own(said)], false, Some(status));
         }
-        let parsed: Option<Value> = serde_json::from_slice(body).ok();
+        let parsed: Option<Value> = serde_json::from_slice(past_mark(body)).ok();
         let stated = |name: &str| {
             let stated = said_of(parsed.as_ref()?, name)?;
             Some(stated).filter(|stated| !exit::one_line(stated).is_empty())
@@ -269,6 +269,22 @@ impl Failure {
         Self::said(vec![own(said), own(what)], false, None)
     }
 
+    /// The failure of an answer of status 200 that is no chat completion:
+    /// final. Where its `body` is JSON and words why, under `message` or
+    /// else under `detail`, as a text, the failure carries those words.
+    pub(crate) fn no_completion(body: Option<&Value>) -> Self {
+        let worded = |name: &str| {
+            let worded = body?.get(name)?.as_str()?;
+            Some(worded.to_owned()).filter(|worded| !exit::one_line(worded).is_empty())
+        };
+        let said = "The provider answered with a body it could not read: not a chat completion";
+        let mut said = vec![own(said)];
+        if let Some(words) = worded("message").or_else(|| worded("detail")) {
+            said.extend([own(": "), Said::Told(words, MESSAGE_LIMIT)]);
+        }
+        Self::said(said, false, None)
+    }
+
     /// As [`unreadable`](Self::unreadable), naming the `value` the server
     /// wrote that does not read.
     pub(crate) fn unreadable_value(what: &'static str, value: String) -> Self {
@@ -291,6 +307,12 @@ impl Failure {
         let said = Said::Told(message, MESSAGE_LIMIT);
         Self::said(vec![said], status.is_some_and(retryable_status), status)
     }
+}
+
+/// `body` past the byte order mark it may start with, which Python's JSON
+/// reader takes before a document.
+pub(crate) fn past_mark(body: &[u8]) -> &[u8] {
+    body.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(body)
 }
 
 /// What the error object of `body` says under `name`: read in its `error`

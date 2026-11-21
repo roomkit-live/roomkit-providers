@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import socket
+import time
 import tomllib
 import unittest
 from pathlib import Path
@@ -130,18 +132,27 @@ class ConfigTests(unittest.TestCase):
         config = OpenAIConfig(
             api_key=KEY,
             model="gpt-4o",
-            base_url="https://team:placeholder-password@llm.example/v1",
+            base_url="https://team:placeholder-password@llm.example:8443/placeholder-path?t=placeholder-query",
             default_headers={"Authorization": "Basic placeholder-header"},
+            extra_body={"session": "placeholder-body", "top_k": 4},
         )
         for shown in (repr(config), str(config)):
             self.assertNotIn(KEY, shown)
             self.assertNotIn("placeholder-password", shown)
             self.assertNotIn("team", shown)
             self.assertNotIn("placeholder-header", shown)
-            self.assertIn("llm.example/v1", shown)
+            # A gateway's token rides the path or the query of its URL.
+            self.assertNotIn("placeholder-path", shown)
+            self.assertNotIn("placeholder-query", shown)
+            self.assertNotIn("placeholder-body", shown)
+            self.assertIn("https://llm.example:8443", shown)
             self.assertIn("Authorization", shown)
+            self.assertIn("session", shown)
         plain = repr(OpenAIConfig(api_key=KEY, model="m", base_url="http://localhost:1/v1"))
-        self.assertIn("base_url='http://localhost:1/v1'", plain)
+        self.assertIn("base_url='http://localhost:1'", plain)
+        self.assertIn("base_url=None", repr(OpenAIConfig(api_key=KEY, model="m")))
+        unread = repr(OpenAIConfig(api_key=KEY, model="m", base_url="placeholder-path is no URL"))
+        self.assertNotIn("placeholder-path", unread)
         # What crosses to the provider is not what is shown.
         self.assertIn("placeholder-header", config.model_dump_json())
 
@@ -362,14 +373,49 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
         for refused in (whole.exception, streamed.exception):
             self.assertTrue(refused.before_request)
             self.assertFalse(refused.retryable)
+            # The provider's own label, as on any of its failures.
+            self.assertEqual(refused.provider, "openai")
+            self.assertTrue(str(refused).startswith("openai: the request is refused: "))
         self.assertEqual(self.fake.seen, [])
+
+    async def test_neither_key_is_in_the_json_that_crosses(self) -> None:
+        config = OpenAIConfig(**local_config(self.fake.port))
+        self.assertNotIn(KEY, config.model_dump_json())
+        context = AIContext(
+            messages=HELLO.messages, metadata={"api_key": "placeholder-of-one-request"}
+        )
+        self.assertNotIn("placeholder-of-one-request", OpenAI(config)._request(context))
+
+    async def test_the_time_a_connection_may_take_reaches_the_client(self) -> None:
+        # A socket that listens and accepts nothing, its queue full: a
+        # connection to it never opens. With an answer's time out of reach,
+        # the connection's is what ends the call.
+        with socket.socket() as full:
+            full.bind(("127.0.0.1", 0))
+            full.listen(0)
+            waiting = [socket.socket() for _ in range(3)]
+            for held in waiting:
+                held.setblocking(False)
+                held.connect_ex(full.getsockname())
+            settings = local_config(full.getsockname()[1])
+            provider = OpenAI(OpenAIConfig(**{**settings, "connect_timeout": 0.05}))
+            with self.assertRaises(ProviderError) as failed:
+                await provider.generate(HELLO)
+            self.assertTrue(failed.exception.retryable)
+            self.assertIsNone(failed.exception.status_code)
+            for held in waiting:
+                held.close()
 
     async def test_the_first_token_of_a_whole_answer_is_recorded_once(self) -> None:
         self.fake.answer(Whole(200, JSON, completion("Yes.")), Whole(401, JSON, b"{}"))
         provider = self.provider()
+        asked = time.monotonic()
         await provider.generate(HELLO)
         (metric,) = self.first_tokens()
         self.assertEqual(metric["unit"], "ms")
+        # Its value: the milliseconds the answer took to come.
+        self.assertIsInstance(metric["value"], float)
+        self.assertTrue(0 < metric["value"] <= (time.monotonic() - asked) * 1000, metric)
         self.assertEqual(
             metric["attributes"], {"provider": "OpenAIAIProvider", "model": "local-model"}
         )

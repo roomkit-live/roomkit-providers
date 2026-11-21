@@ -24,8 +24,9 @@ nothing has been released yet.
 - `roomkit-providers-llm`: the readings of an image part a provider needs,
   `image_part_payload`, `image_part_base64` and `image_part_uri`.
 - `roomkit-providers-llm`: what a provider implements, the `AiProvider`
-  trait, with `DynAiProvider`, which holds any provider as an object and
-  answers all a provider does, the `ProviderStream` and `TextStream` of a
+  trait, with the `label` its failures carry and `DynAiProvider`, which
+  holds any provider as an object and answers all a provider does, the
+  `ProviderStream` and `TextStream` of a
   generation, and where a host leaves the credential of one request
   (`API_KEY_METADATA_KEY`).
 - `roomkit-providers-llm`: the response schema, `check_portable_schema`,
@@ -74,7 +75,10 @@ nothing has been released yet.
   Python implementation does on the cases captured from it; its README lists
   where it differs and why. A redirect is refused, the key appears in no
   failure, an answer past 4 MiB fails, a 200 whose body is JSON and no
-  completion fails, and nothing is read from the environment.
+  completion fails, carrying what the body says of it, and nothing is read
+  from the environment: no base URL, no organization, no proxy. Only the
+  public certificate roots compiled in are trusted. An idle connection is
+  kept 5 seconds, and 100 of them for a host at most.
 - `roomkit-providers-openai`: the provider's streams,
   `generate_structured_stream` and `generate_stream`. A stream is pulled,
   and dropping it stops the request and closes its connection. It fails at
@@ -118,8 +122,14 @@ nothing has been released yet.
   and `ResponseSchemaError`, and records the time to the first token as
   RoomKit's provider does, under the same name. A context's metadata does
   not cross to the provider, and the credential of one request crosses
-  apart. A context the contract refuses fails before it is sent, with
-  RoomKit's `ProviderError`. Cancelling a call's task, or closing a stream, closes its
+  apart. A context the contract refuses, or one with no JSON form, fails
+  before it is sent, with RoomKit's `ProviderError` under the provider's
+  label; so does a defect of the native code, and a stream that closes
+  without its end. A refused configuration leaves no secret in a
+  traceback's frames. The calls run on four threads of the package's own,
+  whatever their number. A child forked after its parent's first call is
+  refused in Python, before it enters the native code. Cancelling a call's
+  task, or closing a stream, closes its
   connection. There is no `transport` parameter. The guide
   (`guide/python.md`) says how to switch and what differs.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with

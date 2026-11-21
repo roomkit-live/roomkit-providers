@@ -8,13 +8,15 @@ DENY_FLAGS ?=
 # package is built for and tested on: CPython 3.12 or newer.
 PYTHON ?= python3
 PYTHON_MANIFEST := bindings/python/Cargo.toml
+# Runs a command with no network but loopback, where this machine allows it.
+NO_NETWORK := scripts/no-network.sh
 # The Python tools, each run at a version within its range: name a local
 # installation in place of one (MATURIN=.venv/bin/maturin).
 MATURIN ?= uv tool run --from 'maturin>=1.15,<2' maturin
 RUFF ?= uv tool run --from 'ruff>=0.14,<1' ruff
 PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.py \
 	scripts/native-notices.py scripts/artifact_files.py scripts/api-snapshot.py \
-	scripts/roomkit_env.py
+	scripts/roomkit_env.py scripts/wheel_paths.py
 
 .PHONY: all fmt fmt-check clippy test examples doc deny check-contract-deps msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-openai-config python-openai-chat-cases \
@@ -33,8 +35,12 @@ fmt-check:
 clippy:
 	$(CARGO) clippy --workspace --all-targets --all-features --locked -- -D warnings
 
+# The tests are built, then run where no network is reachable but loopback
+# (scripts/no-network.sh): each answers from a local fake, and one that lost
+# its way to it fails there instead of reaching a service.
 test:
-	$(CARGO) test --workspace --all-features --locked
+	$(CARGO) test --workspace --all-features --locked --no-run
+	$(NO_NETWORK) $(CARGO) test --workspace --all-features --locked --offline
 
 # Runs each example, which checks what it shows and fails otherwise. An
 # example talks to a local server it starts itself: nothing leaves the
@@ -52,7 +58,7 @@ examples:
 	HTTP_PROXY=$(NO_SUCH_PROXY) HTTPS_PROXY=$(NO_SUCH_PROXY) ALL_PROXY=$(NO_SUCH_PROXY) \
 	http_proxy=$(NO_SUCH_PROXY) https_proxy=$(NO_SUCH_PROXY) all_proxy=$(NO_SUCH_PROXY) \
 	NO_PROXY= no_proxy= \
-		$(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
+		$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
 
 doc:
 	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --workspace --no-deps --all-features --locked
@@ -79,15 +85,25 @@ hooks:
 # The Rust gates above stay free of any interpreter; these targets need
 # CPython 3.12 or newer and uv.
 
-# Builds the wheel of the Python package into dist/, optimized.
+# Builds the wheel of the Python package into dist/, optimized. The paths of
+# the machine that builds it stay out of it: the compiler writes the home
+# directory, the registry of crates and the checkout as the names below (a
+# later mapping wins, so the checkout's does under the home directory), and
+# the bill of materials the build adds is rewritten the same way.
+# The C a crate compiles is told the same as the Rust.
+NAMED := $(HOME)=/home $(HOME)/.cargo=/cargo $(CURDIR)=/roomkit-providers
 python-wheel:
-	$(MATURIN) build --locked --release --interpreter $(PYTHON) --out dist
+	RUSTFLAGS="$(RUSTFLAGS) $(addprefix --remap-path-prefix=,$(NAMED))" \
+	CFLAGS="$(CFLAGS) $(addprefix -ffile-prefix-map=,$(NAMED))" \
+		$(MATURIN) build --locked --release --interpreter $(PYTHON) --out dist
+	$(PYTHON) scripts/wheel_paths.py dist/roomkit_providers-*.whl
 
 # The binding's own lint, documentation and dependency policy, the Python
 # lint, then scripts/check-python.py: a wheel and a source distribution are
 # built, each installed in a new environment beside the RoomKit PYTHON's
 # environment has, and the Python tests and the examples run on each. The
-# tests answer from a local fake: nothing is asked of a network.
+# tests answer from a local fake, and they and the examples run where no
+# network is reachable but loopback (scripts/no-network.sh).
 python-check:
 	$(CARGO) fmt --manifest-path $(PYTHON_MANIFEST) --all -- --check
 	$(CARGO) clippy --manifest-path $(PYTHON_MANIFEST) --all-targets --all-features --locked -- -D warnings

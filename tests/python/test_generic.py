@@ -35,7 +35,7 @@ def binding_vendors() -> set[str]:
 
 def shared() -> list[Path]:
     """Every file of what all providers share."""
-    package = [PACKAGE / "__init__.py"]
+    package = sorted(PACKAGE.glob("_*.py"))
     for kind in kinds():
         package += [kind / "__init__.py", *sorted(kind.glob("_*.py"))]
     return [*package, *sorted(BINDING.glob("*.rs")), Path(__file__).with_name("test_provider.py")]

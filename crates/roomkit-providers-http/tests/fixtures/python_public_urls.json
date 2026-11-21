@@ -1,6 +1,8 @@
 {
     "generator": "scripts/generate_python_public_urls.py",
     "roomkit_version": "0.117.0.dev0",
+    "roomkit_commit": "d0439efebdf28059f3a1bfb71b05564ae434eb20",
+    "roomkit_dirty": false,
     "python_version": "3.13.3",
     "unicode_version": "15.1.0",
     "delimiter_lookalikes": [

@@ -11,9 +11,12 @@ repository, for Linux x86_64.
 
 ## Installation
 
-Build a wheel, then install it in your environment:
+The package asks for `roomkit>=0.117.0.dev0,<0.118`, which no index holds
+yet: install RoomKit from its repository first, then build a wheel and
+install it:
 
 ```sh
+pip install "roomkit @ git+https://github.com/roomkit-live/roomkit"
 make python-wheel          # writes dist/roomkit_providers-*.whl
 pip install dist/roomkit_providers-*.whl
 ```
@@ -22,10 +25,8 @@ The build needs the Rust toolchain of `rust-toolchain.toml` and
 [uv](https://docs.astral.sh/uv/), which runs maturin. The wheel is built for
 the stable ABI: one wheel serves CPython 3.12 and every later version.
 
-The package asks for `roomkit>=0.117.0.dev0,<0.118`. It is tested against
-RoomKit 0.117.0.dev0, the development version of RoomKit's repository, and
-against no other. While no 0.117 is released, install RoomKit from its
-repository first: the requirement accepts it.
+The package is tested against RoomKit 0.117.0.dev0, the development version
+of RoomKit's repository, and against no other.
 
 ## In a RoomKit agent
 
@@ -62,7 +63,20 @@ behind a base URL.
 
 ## Switching from RoomKit's own provider
 
-Change the import and the class's name:
+Change the import and the class's name, then check three things the
+provider takes from nowhere but its configuration:
+
+- **`OPENAI_BASE_URL`, `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` are not
+  read.** RoomKit's provider reads them through the `openai` SDK. A host
+  that relied on `OPENAI_BASE_URL` to reach another server, and gives no
+  `base_url`, now reaches OpenAI's own endpoint and sends it its key: write
+  the server in `base_url`.
+- **No proxy is read from the environment.** RoomKit's provider goes through
+  `HTTP_PROXY` and `HTTPS_PROXY`; this one connects straight to its
+  endpoint, and behind a proxy it reaches nothing.
+- **Only the public certificate roots compiled into the package are
+  trusted.** An endpoint whose certificate is signed by a private authority
+  cannot be reached, whatever the system's store or `SSL_CERT_FILE` hold.
 
 ```python
 # from roomkit.providers.openai import OpenAIAIProvider, OpenAIConfig
@@ -125,8 +139,10 @@ pydantic's `ValidationError`. The two switches a modern model decides on
 OpenAI's own endpoint are decided when the configuration is built, unless
 they were stated.
 
-`repr` never shows the key, the value of a default header, or what a base
-URL holds before its last `@`. RoomKit's own shows the last two.
+`repr` never shows the key, the value of a default header or of a member of
+`extra_body`, nor more of a base URL than its scheme, its host and its
+port: a path and a query may hold a gateway's token. RoomKit's own shows
+all but the key.
 
 The provider reads its configuration once, when it is built. A value the
 provider cannot work with is refused then: a time below zero is a
@@ -187,6 +203,9 @@ between Rust and Python, not one each.
   with `break`, or no longer holding it closes its connection too.
 - **The event loop is never held.** Every call that waits returns an
   awaitable; other coroutines run meanwhile.
+- **A loop that is closed without cancelling its calls** does not stop
+  them: each runs to its end or to its timeout, and what it gives is
+  dropped. Cancel a call to stop it.
 - **Event loops and threads.** One provider serves several event loops, one
   after the other or on several threads at once. Each call completes on the
   loop that made it. An answer that comes after its loop was closed is
@@ -194,19 +213,23 @@ between Rust and Python, not one each.
 - **The interpreter's exit** stops the calls still under way, which closes
   their connections, and waits for them to end. No call is made afterwards.
 - **A forked process.** A child forked after its parent's first call cannot
-  make one: the threads that carry the calls are not copied. It is refused
-  at once with a `RuntimeError`. Make the first call after forking, or use
-  the `spawn` or `forkserver` start method.
+  use a provider: the threads that carry the calls are not copied. The
+  package refuses it in Python, with a `RuntimeError`, before it enters the
+  native code: a call, a stream, a listing, the catalogue, a new provider or
+  a new configuration. What a provider it inherited says of itself still
+  answers, `close()` does nothing, and the child's exit waits for nothing.
+  Make the first call after forking, or use the `spawn` or `forkserver`
+  start method.
 
 ## Errors
 
 | Exception | When |
 | --- | --- |
-| RoomKit's `ProviderError` | A call failed, a context was refused before it was sent, or a provider could not be built. Its attributes: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
-| RoomKit's `ResponseSchemaError` | A `ProviderError`: a response schema was set and no answer satisfying it can be returned. `reason` is `unsupported`, `refusal`, `truncated` or `invalid_json` |
+| RoomKit's `ProviderError` (`roomkit.providers.ai.ProviderError`) | A call failed, a context was refused before it was sent, or a provider could not be built. Its attributes: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
+| RoomKit's `ResponseSchemaError` (`roomkit.providers.ai.ResponseSchemaError`) | A `ProviderError`: a response schema was set and no answer satisfying it can be returned. `reason` is `unsupported`, `refusal`, `truncated` or `invalid_json` |
 | `ValueError` | A configuration's value the provider cannot work with. A configuration pydantic refuses is its `ValidationError`, a `ValueError` too |
 | `TypeError` | A configuration that is not the provider's own: that of another provider, one derived from it |
-| `RuntimeError` | A call in a forked child, or once the interpreter is exiting |
+| `RuntimeError` | A provider used in a forked child, or a call once the interpreter is exiting. `close()` raises neither |
 
 ## What a RoomKit user sees differently
 
@@ -230,9 +253,20 @@ server says under `detail`, not its whole body. Beside the wire:
   RoomKit's is derived through, and no `openai` client: what it sends is
   decided in Rust. `provider._client` does not exist.
 - **A context the contract refuses fails before it is sent**, with RoomKit's
-  `ProviderError`, `before_request` set, which an AI channel catches: a
-  message whose role is not `system`, `user`, `assistant` or `tool`, which
-  RoomKit's provider sends as it is.
+  `ProviderError`, `before_request` set, which an AI channel catches. Each
+  is one RoomKit's provider sends as it can: a message whose role is not
+  `system`, `user`, `assistant` or `tool`; a `temperature` that is no
+  number; a `max_tokens` below zero or from 2**32 on; a text that holds a
+  lone surrogate; an object with no JSON form in a message's metadata or
+  in a call's arguments.
+- **Numbers past what JSON carries.** An integer outside 64 bits, in a
+  tool's schema or in the arguments of a call a message replays, is read as
+  a float and sent as one, where RoomKit keeps its digits: with a schema
+  typed `integer`, the channel then refuses the call the model writes. A
+  NaN among a call's arguments is sent as `null`.
+- **A defect of the provider is a failure of the call.** A panic in the
+  native code is RoomKit's `ProviderError`, final, never an answer cut
+  short: a stream that closes without its end fails.
 - **A response's `tasks` and `observations` stay empty**: the provider fills
   neither, as RoomKit's does not.
 - **The time to the first token of `generate`** is recorded when the call
@@ -245,6 +279,10 @@ server says under `detail`, not its whole body. Beside the wire:
   provider is no longer held. RoomKit's closes its HTTP client.
 - **A forked process and the interpreter's exit** are refused with a
   `RuntimeError`, as [above](#cancellation-and-lifetime).
+- **Its own threads.** The provider runs its calls on four threads, looks
+  names up on four more at most, and hands what the calls give to Python on
+  one, whatever the number of calls. It keeps an idle connection 5 seconds,
+  and 100 of them for a host at most, as RoomKit's client does.
 - **The `openai` SDK is not needed.** The provider runs without RoomKit's
   `openai` extra.
 

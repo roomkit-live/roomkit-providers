@@ -4,7 +4,9 @@
 use std::net::{IpAddr, SocketAddr};
 
 use pyo3::exceptions::PyValueError;
+use pyo3::intern;
 use pyo3::prelude::*;
+use pyo3::types::PyString;
 use roomkit_providers_llm::AiProvider;
 use roomkit_providers_openai::{OpenAi, OpenAiConfig, ReplayWaits};
 
@@ -16,18 +18,31 @@ fn config_of(json: &str) -> PyResult<OpenAiConfig> {
     serde_json::from_str(json).map_err(|error| PyValueError::new_err(error.to_string()))
 }
 
-/// The provider of the configuration `config_json` writes, with `api_key`
-/// as its key: the key crosses apart, never inside the JSON text.
-fn built(config_json: &str, api_key: &str) -> PyResult<OpenAi> {
-    let mut config = config_of(config_json)?;
-    api_key.clone_into(&mut config.api_key);
-    OpenAi::new(config).map_err(|error| Failure::from(error).raised())
+/// The key `secret` holds: a text, or what holds one and gives it when
+/// asked (pydantic's `SecretStr`). It is unwrapped here, so that no frame
+/// of Python holds it in clear when the provider is refused.
+fn key_of(secret: &Bound<'_, PyAny>) -> PyResult<String> {
+    if secret.is_instance_of::<PyString>() {
+        return secret.extract();
+    }
+    secret
+        .call_method0(intern!(secret.py(), "get_secret_value"))?
+        .extract()
 }
 
-/// The provider of the configuration `config_json` writes, with `api_key`
-/// as its key.
+/// The provider of the configuration `config_json` writes, with the key
+/// `api_key` holds as its key: the key crosses apart, never inside the JSON
+/// text.
+fn built(config_json: &str, api_key: &Bound<'_, PyAny>) -> PyResult<OpenAi> {
+    let mut config = config_of(config_json)?;
+    config.api_key = key_of(api_key)?;
+    OpenAi::new(config).map_err(|error| Failure::from(error).raised(api_key.py()))
+}
+
+/// The provider of the configuration `config_json` writes, with the key
+/// `api_key` holds as its key.
 #[pyfunction]
-fn openai(config_json: &str, api_key: &str) -> PyResult<PythonProvider> {
+fn openai(config_json: &str, api_key: &Bound<'_, PyAny>) -> PyResult<PythonProvider> {
     built(config_json, api_key).map(PythonProvider::holding)
 }
 
@@ -36,16 +51,16 @@ fn openai(config_json: &str, api_key: &str) -> PyResult<PythonProvider> {
 /// out takes its default, and the two switches a modern model decides on
 /// `OpenAI`'s own endpoint are written decided. The key is written masked.
 #[pyfunction]
-fn openai_config_form(config_json: &str) -> PyResult<String> {
+fn openai_config_form(py: Python<'_>, config_json: &str) -> PyResult<String> {
     let config = config_of(config_json)?;
-    written(&config, "the configuration").map_err(Failure::raised)
+    written(&config, "the configuration").map_err(|failure| failure.raised(py))
 }
 
 /// The curated catalogue as a JSON list, with no request.
 #[pyfunction]
-fn openai_available_models_json() -> PyResult<String> {
+fn openai_available_models_json(py: Python<'_>) -> PyResult<String> {
     let models = OpenAi::available_models();
-    written(&models, "the catalogue").map_err(Failure::raised)
+    written(&models, "the catalogue").map_err(|failure| failure.raised(py))
 }
 
 /// The waits of a provider a replay drives, which takes none.
@@ -74,7 +89,7 @@ impl PythonReplayWaits {
 #[pyfunction]
 fn _openai_replaying(
     config_json: &str,
-    api_key: &str,
+    api_key: &Bound<'_, PyAny>,
     host: &str,
     port: u16,
     clock: f64,
@@ -83,7 +98,7 @@ fn _openai_replaying(
         .parse()
         .map_err(|_| PyValueError::new_err("a replay's fake is named by its IP address"))?;
     let replaying = built(config_json, api_key)?.replaying(SocketAddr::new(host, port), clock);
-    let (provider, waits) = replaying.map_err(|error| Failure::from(error).raised())?;
+    let (provider, waits) = replaying.map_err(|error| Failure::from(error).raised(api_key.py()))?;
     Ok((
         PythonProvider::holding(provider),
         PythonReplayWaits { waits },
