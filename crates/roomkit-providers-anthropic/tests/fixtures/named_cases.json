@@ -1,0 +1,1165 @@
+{
+  "notes": "The cases of python_messages_cases.json the provider answers otherwise than Python, as src/replay/named.rs states them, for a replay outside the crate. 'differs' lists the differences from Python a replay finds, each by the words it starts with; 'requests' is how many requests the provider sends; 'does' is what the call gives. A test of the crate keeps this file equal to the source: run that test with NAMED_CASES_OUT naming the file to rewrite it.",
+  "cases": [
+    {
+      "name": "base_url_with_a_query",
+      "list": "questioned_otherwise",
+      "reason": "A base URL with a query is refused when the provider is built: the maintainer's decision. Python sends to a path written after the query.",
+      "differs": [
+        "the provider is not built: "
+      ],
+      "requests": 0,
+      "does": {
+        "kind": "unbuilt",
+        "says": "the provider cannot be built: its base URL has a query or a fragment, which the path of the API cannot follow"
+      }
+    },
+    {
+      "name": "base_url_that_is_empty",
+      "list": "questioned_otherwise",
+      "reason": "An empty base URL is no URL, and is refused when the provider is built. Python's SDK reads it as none and asks Anthropic's own endpoint, without the profile of its model and without the check of its tool names.",
+      "differs": [
+        "the provider is not built: "
+      ],
+      "requests": 0,
+      "does": {
+        "kind": "unbuilt",
+        "says": "the provider cannot be built: its base URL is not an http or https URL"
+      }
+    },
+    {
+      "name": "usage_counts_written_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "usage_output_written_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "usage_counts_below_zero",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {}
+      }
+    },
+    {
+      "name": "usage_counts_that_are_true",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "usage_a_cache_counter_written_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the response: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_usage_counts_written_as_text",
+      "list": "questioned_otherwise",
+      "reason": "A count that is no JSON whole number stays unknown: it is neither converted nor fatal.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "answer_200_that_is_an_error_object",
+      "list": "questioned_otherwise",
+      "reason": "A JSON error object that answers a request with a 200 reads as the status its type names, as the same error told as an event of a stream does: the maintainer's decision. Python says the stream carried no event, a final failure that names no status.",
+      "differs": [
+        "the failure's status_code differs: ",
+        "the failure's retryable differs: ",
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 529,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "Overloaded"
+        }
+      }
+    },
+    {
+      "name": "stream_answer_200_that_is_an_error_object",
+      "list": "questioned_otherwise",
+      "reason": "A JSON error object that answers a request with a 200 reads as the status its type names, as the same error told as an event of a stream does: the maintainer's decision. Python says the stream carried no event, a final failure that names no status.",
+      "differs": [
+        "the failure's status_code differs: ",
+        "the failure's retryable differs: ",
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 429,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "This request would exceed the rate limit."
+        }
+      }
+    },
+    {
+      "name": "stream_that_ends_before_its_stop_reason",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a stop reason nor the event that ends its message was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: ",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a stop reason nor the end of its message"
+        }
+      }
+    },
+    {
+      "name": "stream_that_ends_inside_a_text",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a stop reason nor the event that ends its message was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: ",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a stop reason nor the end of its message"
+        }
+      }
+    },
+    {
+      "name": "answer_that_ends_inside_a_text",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a stop reason nor the event that ends its message was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a stop reason nor the end of its message"
+        }
+      }
+    },
+    {
+      "name": "stream_of_a_message_start_alone",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a stop reason nor the event that ends its message was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: ",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a stop reason nor the end of its message"
+        }
+      }
+    },
+    {
+      "name": "stream_tool_call_that_ends_without_an_ending",
+      "list": "questioned_otherwise",
+      "reason": "A stream that ends with neither a stop reason nor the event that ends its message was cut: what came is handed on, then it fails, and a call it brought is never handed whole. The maintainer's decision. Python reads it as complete.",
+      "differs": [
+        "the events: [{\"type\":\"usage\",\"usage\":{\"input_tokens\":12}},{\"type\":\"tool_call_delta\",\"id\":\"toolu_1\",\"name\":\"lookup_order\",\"index\":0,\"arguments_delta\":\"\"},{\"type\":\"tool_call_delta\",\"id\":\"toolu_1\",\"name\":\"lookup_order\",\"index\":0,\"arguments_delta\":\"{\\\"number\\\": \\\"A-1\\\"}\"}]",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider's stream ended with neither a stop reason nor the end of its message"
+        }
+      }
+    },
+    {
+      "name": "stream_last_event_without_its_blank_line",
+      "list": "questioned_otherwise",
+      "reason": "An event the answer ends on with no blank line after it is read: the maintainer's decision. Python's SDK drops it, with the stop reason and the usage it holds.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_tool_call_whose_arguments_are_blank",
+      "list": "questioned_otherwise",
+      "reason": "A call whose arguments are no JSON object is handed as the contract reads it, blank arguments as none and unreadable ones as a call that does not run. Python's SDK fails the whole stream on them.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "",
+        "finish_reason": "tool_use",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_tool_call_whose_arguments_are_no_json",
+      "list": "questioned_otherwise",
+      "reason": "A call whose arguments are no JSON object is handed as the contract reads it, blank arguments as none and unreadable ones as a call that does not run. Python's SDK fails the whole stream on them.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "",
+        "finish_reason": "tool_use",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "tool_call_whose_arguments_are_no_json",
+      "list": "questioned_otherwise",
+      "reason": "A call whose arguments are no JSON object is handed as the contract reads it, blank arguments as none and unreadable ones as a call that does not run. Python's SDK fails the whole stream on them.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "",
+        "finish_reason": "tool_use",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_tool_calls_that_share_an_id_and_are_left_open",
+      "list": "questioned_otherwise",
+      "reason": "A call left open is handed once its message is over, under the id its composition told, whatever id an earlier call carried: here as a call the response cut. Python tells its composition and never hands it.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "",
+        "finish_reason": "max_tokens",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_tool_call_without_an_id",
+      "list": "questioned_otherwise",
+      "reason": "A call is handed once, when its block closes, under the one id the provider gave it. Python hands a call whose block names no id twice, under two ids, and it would run twice.",
+      "differs": [
+        "the events: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "",
+        "finish_reason": "tool_use",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "redirect_301",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 301,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (301), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_302",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 302,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (302), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_303",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 303,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (303), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_307",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 307,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (307), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_308",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 308,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (308), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_307_to_another_host",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 307,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (307), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_302_to_another_host",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 302,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (302), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_from_anthropic_s_endpoint_to_another_host",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "the events: []",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 308,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (308), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirect_to_a_relative_location",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 307,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (307), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "redirects_past_the_hop_limit",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 21",
+        "the failure's status_code differs: ",
+        "the failure's retryable differs: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 307,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (307), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "list_models_redirect_to_another_host",
+      "list": "questioned_otherwise",
+      "reason": "A redirect is not followed: the maintainer's decision. Python's SDK follows it, a 301, a 302 or a 303 as a GET without the request's body, and sends the key to the host it names.",
+      "differs": [
+        "1 requests sent, where Python sent 2",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 302,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (302), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "stream_that_starts_with_a_byte_order_mark",
+      "list": "questioned_otherwise",
+      "reason": "A byte order mark that starts a stream is ignored, as the format of a stream of events says, and the first event is read: the maintainer's decision. Python's SDK reads the line the mark starts as no event, and fails on the event after it.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "answer_that_starts_with_a_byte_order_mark",
+      "list": "questioned_otherwise",
+      "reason": "A byte order mark that starts a stream is ignored, as the format of a stream of events says, and the first event is read: the maintainer's decision. Python's SDK reads the line the mark starts as no event, and fails on the event after it.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "status_400_whose_body_starts_with_a_byte_order_mark",
+      "list": "questioned_otherwise",
+      "reason": "A byte order mark before an error body is no part of it: the body is read as the JSON it is, and the failure says what its error object says. Python's message is the body's text, its mark included.",
+      "differs": [
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 400,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 400 (invalid_request_error): messages: at least one message is required"
+        }
+      }
+    },
+    {
+      "name": "list_models_status_401",
+      "list": "only_python",
+      "reason": "Python's list_models wraps no error: the anthropic SDK's is raised as it is. The provider fails as it does for a message.",
+      "differs": [
+        "a AuthenticationError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 401,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 401 (authentication_error): invalid x-api-key"
+        }
+      }
+    },
+    {
+      "name": "list_models_connection_refused",
+      "list": "only_python",
+      "reason": "Python's list_models wraps no error: the anthropic SDK's is raised as it is. The provider fails as it does for a message.",
+      "differs": [
+        "a APIConnectionError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the connection to the provider failed"
+        }
+      }
+    },
+    {
+      "name": "list_models_page_without_its_models",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError. A body that is no page of models with their ids is no listing.",
+      "differs": [
+        "a TypeError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "list_models_page_whose_models_are_null",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError. A body that is no page of models with their ids is no listing.",
+      "differs": [
+        "a TypeError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "list_models_entry_without_an_id",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError. A body that is no page of models with their ids is no listing.",
+      "differs": [
+        "a ValidationError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "list_models_entry_whose_id_is_a_number",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError. A body that is no page of models with their ids is no listing.",
+      "differs": [
+        "a ValidationError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "list_models_answered_with_a_page",
+      "list": "only_python",
+      "reason": "Python raises a raw exception, no ProviderError. A body that is no page of models with their ids is no listing.",
+      "differs": [
+        "a AttributeError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: the model listing is no page of models with their ids"
+        }
+      }
+    },
+    {
+      "name": "list_models_answered_with_an_error_object",
+      "list": "only_python",
+      "reason": "Python raises a raw TypeError. An error object in place of the listing fails as the status its type names.",
+      "differs": [
+        "a TypeError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 529,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "Overloaded"
+        }
+      }
+    },
+    {
+      "name": "status_502_with_a_page",
+      "list": "by_its_own_rule",
+      "reason": "A body that is no JSON is not echoed into the failure: the message is the status's reason. Python's message is the body.",
+      "differs": [
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 502,
+        "retryable": true,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 502: Bad Gateway"
+        }
+      }
+    },
+    {
+      "name": "status_400_with_a_plain_text",
+      "list": "by_its_own_rule",
+      "reason": "A body that is no JSON is not echoed into the failure: the message is the status's reason. Python's message is the body.",
+      "differs": [
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 400,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 400: Bad Request"
+        }
+      }
+    },
+    {
+      "name": "context_overflow_by_its_words",
+      "list": "by_its_own_rule",
+      "reason": "The failure says the context overflowed: the whole body is read for it, whatever part of it the failure's text repeats. Python leaves the question open, for a reader of its message, which holds the body.",
+      "differs": [
+        "the failure's context_overflow differs: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 400,
+        "retryable": false,
+        "context_overflow": true,
+        "says": {
+          "exactly": "the provider answered HTTP 400 (invalid_request_error): prompt is too long: 210000 tokens > 200000 maximum"
+        }
+      }
+    },
+    {
+      "name": "stream_context_overflow",
+      "list": "by_its_own_rule",
+      "reason": "The failure says the context overflowed: the whole body is read for it, whatever part of it the failure's text repeats. Python leaves the question open, for a reader of its message, which holds the body.",
+      "differs": [
+        "the failure's context_overflow differs: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 400,
+        "retryable": false,
+        "context_overflow": true,
+        "says": {
+          "exactly": "the provider answered HTTP 400 (invalid_request_error): prompt is too long: 210000 tokens > 200000 maximum"
+        }
+      }
+    },
+    {
+      "name": "status_400_with_a_body_of_another_shape",
+      "list": "by_its_own_rule",
+      "reason": "The failure says the context overflowed: the whole body is read for it, here a body of another shape than Anthropic's, of which the failure's text repeats nothing. Python leaves the question open.",
+      "differs": [
+        "the failure's context_overflow differs: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 400,
+        "retryable": false,
+        "context_overflow": true,
+        "says": {
+          "exactly": "the provider answered HTTP 400: Bad Request"
+        }
+      }
+    },
+    {
+      "name": "usage_counts_that_are_words",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "usage_output_that_is_a_word",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "usage_counts_with_a_fraction",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "usage_output_with_a_fraction",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "usage_no_output_at_the_end",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "usage_no_usage_at_the_start",
+      "list": "by_its_own_rule",
+      "reason": "Python's SDK fails on a message whose start or end tells no usage. The counts stay unknown, and the answer is given.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "usage_no_usage_at_the_end",
+      "list": "by_its_own_rule",
+      "reason": "Python's SDK fails on a message whose start or end tells no usage. The counts stay unknown, and the answer is given.",
+      "differs": [
+        "the response where Python gives none: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "stream_usage_counts_that_are_words",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_usage_output_that_is_a_word",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12
+        }
+      }
+    },
+    {
+      "name": "stream_usage_counts_with_a_fraction",
+      "list": "by_its_own_rule",
+      "reason": "Python fails on a count that is no whole number, or that the end of the message leaves out. The count stays unknown, and the answer is given.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_usage_no_usage_at_the_start",
+      "list": "by_its_own_rule",
+      "reason": "Python's SDK fails on a message whose start or end tells no usage. The counts stay unknown, and the answer is given.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_events_named_by_their_event_line_alone",
+      "list": "by_its_own_rule",
+      "reason": "An event is read by the type its data names: the reader of a stream's events gives the data of each, not the line that names it. Python's SDK reads an event by its event line.",
+      "differs": [
+        "the events: [{\"type\":\"usage\",\"usage\":{\"input_tokens\":12}}]",
+        "a failure where Python answers: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "The provider answered with a body it could not read: an event of the stream names no type"
+        }
+      }
+    },
+    {
+      "name": "stream_events_without_their_event_line",
+      "list": "by_its_own_rule",
+      "reason": "An event is read by the type its data names: the reader of a stream's events gives the data of each, not the line that names it. Python's SDK reads an event by its event line.",
+      "differs": [
+        "the events: ",
+        "an answer where Python fails: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello.",
+        "finish_reason": "end_turn",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "name": "stream_error_event_that_is_no_json",
+      "list": "by_its_own_rule",
+      "reason": "An event whose data is no JSON fails the stream in the reader's words, which repeat nothing of it: the reader of a stream's events gives no event line, so that an error event is known by its data alone. Python's message is the event's text.",
+      "differs": [
+        "the failure says "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": null,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "holding": "expected value at line 1"
+        }
+      }
+    },
+    {
+      "name": "redirect_without_a_location",
+      "list": "by_its_own_rule",
+      "reason": "A redirect is not followed, and its failure carries its status. Python's SDK raises one that names no location as a status that is no success, and its failure carries none.",
+      "differs": [
+        "the failure's status_code differs: "
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 307,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the endpoint answered with a redirect (307), which is not followed"
+        }
+      }
+    },
+    {
+      "name": "turn_whose_role_the_provider_does_not_know",
+      "list": "by_its_own_rule",
+      "reason": "The contract reads the roles system, user, assistant and tool, and refuses a request that holds another before any provider sees it. Python sends the role as it is written.",
+      "differs": [
+        "the request is not read: "
+      ],
+      "requests": 0,
+      "does": {
+        "kind": "unread",
+        "says": {
+          "holding": "expected one of the roles"
+        }
+      }
+    }
+  ]
+}

@@ -12,7 +12,33 @@ include = ["/LICENSE", "/README.md", "/catalog", "/examples", "/src", "/tests"]
 keywords = ["llm", "ai", "provider", "anthropic", "messages"]
 categories = ["api-bindings"]
 
+[features]
+# For a replay of recorded cases outside this crate's tests, a binding's:
+# a provider's requests are sent to a local fake of its endpoint, its clock
+# is set and its waits are kept instead of taken. Not for a host: nothing
+# of it shows in the documentation.
+replay = ["roomkit-providers-client/replay"]
+
 [dependencies]
+# The contract: the request a provider is given and what it answers.
+roomkit-providers-llm = { workspace = true }
+# The HTTP client the provider is built on: its requests and their tries,
+# the bounds of an answer, and the one exit of its failures.
+roomkit-providers-client = { workspace = true }
+# The URLs and the headers of a request, as the client takes them.
+# `rustls-no-provider` makes the HTTP client take the configuration given
+# it.
+reqwest = { workspace = true, features = ["rustls-no-provider"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+# The replay of the recorded cases, and the local fake of the endpoint it
+# and the other tests send to.
+roomkit-providers-client = { workspace = true, features = ["harness"] }
+# The fake of the wire the provider is replayed against, and the example's
+# stand-in server: local servers.
+tokio = { workspace = true, features = ["macros", "rt", "net", "io-util", "sync", "test-util"] }
 
 [lints]
 workspace = true

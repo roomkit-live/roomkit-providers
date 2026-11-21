@@ -255,6 +255,39 @@ fails when the catalogue of the crate says otherwise.
   provider does instead. Both are asserted: a named case that differs
   otherwise than its entry states fails as one that does otherwise.
 
+`roomkit-providers-anthropic` has the same three, written the same way,
+the second with RoomKit's `anthropic` extra:
+
+```sh
+make python-anthropic-config
+make python-anthropic-messages-cases
+make python-anthropic-catalogue
+```
+
+What is said above of the OpenAI fixtures holds for them:
+`python_config_forms.json`, `python_messages_cases.json` with its cases in
+`scripts/anthropic_messages_cases.py`, and `catalog/models.json`. What the
+two capture scripts share is written once, in `scripts/wire_capture.py`:
+what a case is, how the fake answers, how an exchange, an outcome and a
+failure are written, and how the fixture is put together. A script adds what
+its provider and its SDK decide:
+
+- **where the fake sits**, chosen to change the least of what the provider
+  does. Python's OpenAI provider is given a transport. Its Anthropic
+  provider takes none, and builds a client of its SDK for each key: there
+  the fake replaces, for the time of a call, the one method the HTTP
+  library sends a request with, so the provider and the SDK build every
+  client as against the real endpoint;
+- **what would change from a run to the next**, stopped, counted or
+  recorded off the path of a request: the SDK's clock, its waits, the ids
+  Python mints;
+- **the headers of the SDK and of the platform**, which are left out, and
+  whose words a failure's message holds.
+
+A case may carry `before`, the calls made on the same provider before its
+own, for a behaviour that depends on them: the key of one request, which
+must not be left to the next.
+
 ## The Python package
 
 `python/roomkit_providers` is RoomKit's: a provider there is a RoomKit
@@ -369,16 +402,48 @@ one module of the package. The names follow its vendor: the Rust type
 `OpenAi`, the Python class `OpenAI` with `OpenAIConfig`, no `Provider`
 suffix.
 
-In Rust:
+In Rust, in this order:
 
+- **The wire cases first**, captured on RoomKit's Python provider before
+  any Rust is written: `scripts/<vendor>_<api>_cases.py`, the table of
+  cases, and `scripts/generate_<vendor>_<api>_cases.py`, which runs them
+  on `scripts/wire_capture.py` and writes the crate's fixture
+  ([JSON forms](#json-forms)). With them, the scripts of its configuration's
+  forms and of its catalogue, and a `make` target for each. A case that pins
+  a behaviour of Python that is not settled is marked `questioned`, and
+  every one of them is decided before the provider is reviewed: followed, or
+  named in the replay with its reason.
 - `crates/roomkit-providers-<vendor>`: the provider, which implements the
-  contract's `AiProvider`, its configuration, its tests against a local fake
-  of its wire, and a line in the workspace's `Cargo.toml`. It holds its wire
-  and nothing else: the HTTP client, the tries of a request, the bounds of
-  an answer, the exit of its failures and the replay of its recorded cases
-  are `roomkit-providers-client`'s, whose README says how a provider is
-  written on it. What a second provider would copy from another belongs
-  there.
+  contract's `AiProvider`, and its configuration, the JSON form of Python's.
+  It holds its wire and nothing else: how a request is written, how an
+  answer and its events are read, how an error body is read, its
+  catalogue. The HTTP client, the proxies and the certificate authorities
+  it reads from the environment, the tries of a request, the bounds of an
+  answer, the base URLs refused when a provider is built and the exit of
+  its failures are `roomkit-providers-client`'s, whose README says how a
+  provider is written on it. The provider reads the key of one request
+  through the contract's `request_api_key`, and nothing from the
+  environment.
+- **Its tests**, on the harness of `roomkit-providers-client` (its `harness`
+  feature, a dev-dependency): the replay of every case of the fixture
+  through `Replays` (`src/replay/`), the cases it answers otherwise named
+  with their reason (`src/replay/named.rs`), the replay's self-test with
+  the wrongs of its own wire, and the fixture held to its shape
+  (`tests/python_<api>_cases.rs`, on `harness::shape`). Both counts of the
+  replay are asserted. Then what no recorded case shows: a stream dropped
+  or a call cancelled under way, a stream that stalls, the bounds, the key
+  of one request.
+- **Its `replay` feature**, which forwards to the client's, for the replay
+  the Python tests run through the binding; a line of `make named-cases`
+  for its `tests/fixtures/named_cases.json`.
+- **An example** against a local server it starts itself, named for what it
+  shows and for no other crate's example (two examples of one name collide
+  when the workspace is built), with its line in `make examples`.
+- What the provider needs that another has or would need is not copied: it
+  moves to `roomkit-providers-client`, or to the contract when it is a
+  rule of RoomKit's and no wire (`fence` and `identifier`, for a text from
+  outside a wire has no place for). Such a move is a change to what every
+  provider shares, made and reviewed apart from the provider.
 - `bindings/python/src/vendors/<vendor>.rs`: the functions the package
   calls, each registered in the module's `register`: one that builds the
   provider from its configuration's JSON form and its key, apart, and gives

@@ -136,6 +136,27 @@ nothing has been released yet.
   is built, the one exit of failures and, for a provider's tests, the replay
   of its recorded wire cases and a fake of an endpoint or of a proxy, over
   plain HTTP or over TLS. A provider crate holds its wire and nothing else.
+- `roomkit-providers-anthropic`: `AnthropicConfig`, what a provider for
+  Anthropic's Messages API is configured with: the names, the defaults and
+  the JSON form of `AnthropicConfig` in RoomKit's Python implementation, the
+  key written masked. Its `Debug` form prints neither the key, nor an extra
+  header's value, nor what a base URL holds beside its scheme, host and
+  port. The crate's README lists where it differs from Python's.
+- `roomkit-providers-anthropic`: `Anthropic`, a provider for Anthropic's
+  Messages API and the servers that speak it behind a base URL: whole
+  answers (`generate`), streams (`generate_structured_stream`,
+  `generate_stream`) and the model listing (`list_models`). It does as
+  `AnthropicAIProvider` of RoomKit's Python implementation on 300 of the 364
+  cases captured from it; its README names the 64 others, each with its
+  reason. It is written on `roomkit-providers-client`, as the OpenAI
+  provider is, with the same guarantees: a redirect is refused, no secret
+  appears in a failure, every size a server controls is bounded, a stream
+  that ends with neither a stop reason nor the event that ends its message
+  fails after what came, a JSON error object in place of a stream fails as
+  the status its type names, and no key, base URL or header is read from
+  the environment. The key of one request goes in that request's header
+  alone. `make all` runs its example, `local_messages`, against a stand-in
+  server on a local port.
 - `roomkit-providers`, the Python package (CPython 3.12 or newer, Linux
   x86_64, built from the repository), for RoomKit, which it depends on
   (0.117): `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`,

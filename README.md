@@ -12,10 +12,11 @@ implementation per service, written once in Rust, behind a provider-neutral
 contract.
 
 > **Early development.** The contract crate is written: what a provider
-> implements, what it is asked and what it answers. So is the HTTP support
-> the providers share, and the OpenAI provider: whole answers, streams and
-> the model listing. A Python package holds that provider behind a native
-> extension, as a RoomKit provider. Nothing is released. The
+> implements, what it is asked and what it answers. So is the HTTP client
+> the providers are built on, and two providers, OpenAI's and Anthropic's:
+> whole answers, streams and the model listing. A Python package holds the
+> OpenAI provider behind a native extension, as a RoomKit provider; the
+> Anthropic provider is in Rust alone so far. Nothing is released. The
 > [changelog](CHANGELOG.md) says what exists; the rest of this page says
 > where the project is going.
 
@@ -52,12 +53,18 @@ In this order:
    extension, `roomkit-providers`: written, not released, for Linux x86_64.
    A provider is a RoomKit `AIProvider`, and what translates between RoomKit
    and the contract is written once for every provider ([Python](#python));
-4. the other providers of language models, then the other kinds of
+4. a provider for Anthropic's Messages API,
+   `roomkit-providers-anthropic`: written in Rust, not released, and not in
+   the Python package yet. It replays the cases captured on RoomKit's Python
+   provider, and is written on the HTTP client the OpenAI provider is
+   written on, `roomkit-providers-client`: a provider crate holds its wire
+   and nothing else;
+5. the other providers of language models, then the other kinds of
    provider;
-5. RoomKit's implementations, in Python and in Rust, depending on the
+6. RoomKit's implementations, in Python and in Rust, depending on the
    contract and on no vendor.
 
-Items 4 and 5 are not started.
+Items 5 and 6 are not started.
 
 ## Python
 
@@ -94,6 +101,7 @@ provider.
 | `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients, which trusts the certificate authorities the environment or the system names |
 | `crates/roomkit-providers-client` | The HTTP client a provider is built on, written once for every provider: a request and its tries, the proxies it reads from the environment, the bounds of an answer and of a stream, the base URLs refused when a provider is built, the one exit of failures, and, for a provider's tests, the replay of its recorded wire cases against a local fake |
 | `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy |
+| `crates/roomkit-providers-anthropic` | The Anthropic provider (`Anthropic`): whole answers, streams and the model listing on the Messages API, its configuration (`AnthropicConfig`), the wire cases it replays, and an example against a local server |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract; `src/vendors` holds each provider's own part |
 | `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract, and `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig` |
 | `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the replay of the recorded wire cases through `OpenAI`; a RoomKit agent over it; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
@@ -110,6 +118,10 @@ provider.
 | `scripts/generate_python_proxy_cases.py` | Writes which proxy the client of RoomKit's Python providers takes for a table of environments, which the client crate's tests replay |
 | `scripts/generate_openai_config_forms.py` | Writes the JSON forms of RoomKit's Python `OpenAIConfig`, which the OpenAI crate's tests compare with |
 | `scripts/generate_openai_chat_cases.py` | Runs RoomKit's Python OpenAI provider against a fake endpoint and writes what it sends and reads, case by case (`scripts/openai_chat_cases.py` holds the cases) |
+| `scripts/generate_anthropic_catalogue.py` | Writes Anthropic's model catalogue of RoomKit's Python, which the provider reads its models' rules from |
+| `scripts/generate_anthropic_config_forms.py` | Writes the JSON forms of RoomKit's Python `AnthropicConfig`, which the Anthropic crate's tests compare with |
+| `scripts/generate_anthropic_messages_cases.py` | Runs RoomKit's Python Anthropic provider against a fake endpoint and writes what it sends and reads, case by case (`scripts/anthropic_messages_cases.py` holds the cases) |
+| `scripts/wire_capture.py` | What the two scripts that capture a provider's wire cases share: what a case is, how the fake answers, how an exchange, an outcome and a failure are written |
 | `scripts/generate_printable_ranges.py` | Writes the table of the characters Python's `repr` writes as they are |
 | `scripts/generate_outside_text_tables.py` | Writes the tables the contract reads a text from outside with: what each character reads as in a tag, the classes of characters, and canonical composition |
 | `scripts/generate_python_outside_text.py` | Writes what RoomKit's Python `fence` and `identifier` make of a table of texts and names, which the contract's tests compare with |

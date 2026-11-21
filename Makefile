@@ -60,9 +60,10 @@ test:
 # variable of its own process: a child is given its environment instead.
 # The examples are built first, outside the namespace that runs them.
 examples:
-	$(CARGO) build --locked -p roomkit-providers-openai --examples
+	$(CARGO) build --locked -p roomkit-providers-openai -p roomkit-providers-anthropic --examples
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example behind_a_proxy
+	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-anthropic --example local_messages
 
 doc:
 	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --workspace --no-deps --all-features --locked
@@ -175,12 +176,14 @@ python-anthropic-catalogue:
 python-anthropic-messages-cases:
 	$(PYTHON) scripts/generate_anthropic_messages_cases.py
 
-# Rewrites the data file of the cases the OpenAI provider answers otherwise
-# than Python, from the replay's own list: a replay outside the crate reads
-# it, and a test of the crate fails while the two differ.
+# Rewrites, for each provider, the data file of the cases it answers
+# otherwise than Python, from the replay's own list: a replay outside the
+# crate reads it, and a test of the crate fails while the two differ.
 named-cases:
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-openai/tests/fixtures/named_cases.json) \
-		$(CARGO) test --locked -p roomkit-providers-openai --lib the_named_cases_file
+		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-openai --lib the_named_cases_file
+	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-anthropic/tests/fixtures/named_cases.json) \
+		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-anthropic --lib the_named_cases_file
 
 # Rewrites the table of the characters Python's `repr` writes as they are,
 # from the Unicode data of PYTHON, the Python version RoomKit is tested with,

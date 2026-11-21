@@ -895,6 +895,14 @@ dependencies = [
 [[package]]
 name = "roomkit-providers-anthropic"
 version = "0.1.0-alpha.1"
+dependencies = [
+ "reqwest",
+ "roomkit-providers-client",
+ "roomkit-providers-llm",
+ "serde",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "roomkit-providers-client"
