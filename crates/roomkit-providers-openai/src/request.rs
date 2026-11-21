@@ -34,16 +34,20 @@ pub(crate) struct Asked<'p> {
 }
 
 impl Asked<'_> {
-    /// The body of the request, a member of the configuration's extra body
-    /// replacing the provider's own of the same name, as Python's client
-    /// merges it last.
+    /// The body of the request, asking for a stream when `streamed`; a
+    /// member of the configuration's extra body replaces the provider's own
+    /// of the same name, as Python's client merges it last.
     ///
     /// # Errors
     ///
     /// What is refused before any request, in Python's order: a model the
     /// endpoint does not serve, an image that cannot be sent, a response
     /// schema the server does not take, a tool name the vendor refuses.
-    pub(crate) fn body(&self, request: &AiRequest) -> Result<Map<String, Value>, ProviderError> {
+    pub(crate) fn body(
+        &self,
+        request: &AiRequest,
+        streamed: bool,
+    ) -> Result<Map<String, Value>, ProviderError> {
         self.check_model_serves(request)?;
         let field = self.config.thinking_field.as_deref();
         let prompt = request.system_prompt.as_deref();
@@ -59,6 +63,9 @@ impl Asked<'_> {
 
         let mut body = Map::new();
         body.insert("model".to_owned(), self.config.model.as_str().into());
+        if streamed {
+            body.insert("stream".to_owned(), true.into());
+        }
         body.insert("messages".to_owned(), messages.into());
         // A bound of zero is read as none, as Python reads it.
         let bound = request.max_tokens.filter(|bound| *bound != 0);
@@ -76,6 +83,12 @@ impl Asked<'_> {
         }
         if let Some(schema) = schema {
             body.insert("response_format".to_owned(), json_schema_format(schema));
+        }
+        // A streamed answer reports its usage unless the configuration
+        // says the server refuses the option.
+        if streamed && self.config.include_stream_usage {
+            let options = Map::from_iter([("include_usage".to_owned(), true.into())]);
+            body.insert("stream_options".to_owned(), options.into());
         }
         if self.config.takes_temperature() {
             body.insert("temperature".to_owned(), request.temperature.into());

@@ -3,11 +3,15 @@
 //! crate as a provider reaches them.
 
 use std::error::Error;
+use std::future::Future;
+use std::pin::pin;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::task::{Context, Poll, Waker};
 
 use roomkit_providers_core::{
     AiRequest, AiResponse, AiToolCall, DataUriError, MockAiProvider, ModelInfo, ObjectOnly,
-    ProviderError, ResponseSchemaError, ResponseSchemaFailure, StreamDone, StreamEvent,
-    check_schema_answer, checked_stream, dumps, listing, parse_data_uri, read_name,
+    ProviderError, ResponseSchemaError, ResponseSchemaFailure, StreamDone, StreamEvent, Yielder,
+    check_schema_answer, checked_stream, dumps, items, listing, next, parse_data_uri, read_name,
     read_tool_calls, request_api_key, schema_for_generate,
 };
 use serde::{Deserialize, Deserializer};
@@ -206,4 +210,34 @@ fn a_configuration_is_read_from_an_object_and_a_name_from_a_string() {
     ] {
         assert_eq!(read(refused.clone()), None, "{refused}");
     }
+}
+
+// A provider writes its stream as a producer that hands its items over, and
+// reads another stream item by item: the producer runs only while its
+// stream is polled, and never ahead of its reader.
+#[test]
+fn a_stream_is_written_as_a_producer_and_read_item_by_item() {
+    let produced = AtomicU32::new(0);
+    let last = &produced;
+    let mut stream = pin!(items(|out: Yielder<u32>| async move {
+        for item in 1..=3 {
+            last.store(item, Ordering::SeqCst);
+            out.give(item).await;
+        }
+    }));
+    let mut context = Context::from_waker(Waker::noop());
+    let mut read = Vec::new();
+    loop {
+        let item = pin!(next(&mut stream)).poll(&mut context);
+        let Poll::Ready(item) = item else {
+            panic!("a producer that waits for nothing is never pending");
+        };
+        let Some(item) = item else {
+            break;
+        };
+        // The producer stopped at the item it handed over.
+        assert_eq!(produced.load(Ordering::SeqCst), item);
+        read.push(item);
+    }
+    assert_eq!(read, [1, 2, 3]);
 }

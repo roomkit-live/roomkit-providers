@@ -13,14 +13,14 @@ use futures_core::Stream;
 
 /// Where a producer hands the items of its stream.
 #[derive(Debug)]
-pub(crate) struct Yielder<T> {
+pub struct Yielder<T> {
     slot: Arc<Mutex<Option<T>>>,
 }
 
 impl<T: Unpin> Yielder<T> {
     /// Hands `item` to the stream's reader, and returns once the reader
     /// asks for the next one.
-    pub(crate) fn give(&self, item: T) -> impl Future<Output = ()> + '_ {
+    pub fn give(&self, item: T) -> impl Future<Output = ()> + '_ {
         Give {
             slot: &self.slot,
             item: Some(item),
@@ -52,7 +52,7 @@ impl<T: Unpin> Future for Give<'_, T> {
 }
 
 /// A stream of the items a producer hands over (see [`items`]).
-pub(crate) struct Items<'a, T> {
+pub struct Items<'a, T> {
     producer: Option<Pin<Box<dyn Future<Output = ()> + Send + 'a>>>,
     slot: Arc<Mutex<Option<T>>>,
 }
@@ -68,7 +68,7 @@ impl<T> std::fmt::Debug for Items<'_, T> {
 
 /// The stream of the items `produce` hands to its [`Yielder`], in order,
 /// ending when `produce` returns.
-pub(crate) fn items<'a, T, F, Fut>(produce: F) -> Items<'a, T>
+pub fn items<'a, T, F, Fut>(produce: F) -> Items<'a, T>
 where
     T: Send + Unpin + 'a,
     F: FnOnce(Yielder<T>) -> Fut,
@@ -115,7 +115,7 @@ impl<T> Stream for Items<'_, T> {
 }
 
 /// The next item of `stream`, `None` once it ended.
-pub(crate) async fn next<S: Stream + Unpin + ?Sized>(stream: &mut S) -> Option<S::Item> {
+pub async fn next<S: Stream + Unpin + ?Sized>(stream: &mut S) -> Option<S::Item> {
     poll_fn(|context| Pin::new(&mut *stream).poll_next(context)).await
 }
 

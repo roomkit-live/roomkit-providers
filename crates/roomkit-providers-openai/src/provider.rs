@@ -2,24 +2,25 @@
 //! it behind a base URL.
 
 use std::fmt;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
+use reqwest::header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderName, HeaderValue};
 use roomkit_providers_core::{
     AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderErrorOptions,
+    ProviderStream, StreamDone, TextStream, checked_stream, listing,
 };
+
+use roomkit_providers_http::sse::STREAM_LIMIT;
 
 use crate::answer;
 use crate::config::OpenAiConfig;
 use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint};
+use crate::exchange::{Call, Pace};
 use crate::failure::Failing;
 use crate::models;
 use crate::request::Asked;
-use crate::retry;
+use crate::stream;
 
 /// The provider's name in its failures: Python's `_provider_name`.
 const NAME: &str = "openai";
@@ -31,35 +32,11 @@ const CLASS_NAME: &str = "OpenAIAIProvider";
 /// The path of Chat Completions under a base URL.
 const CHAT_COMPLETIONS: &str = "/chat/completions";
 
-/// The most bytes of an answer the provider reads: a server that sends
-/// more fails the request.
-pub(crate) const ANSWER_LIMIT: usize = 4 * 1024 * 1024;
+/// The path of the model listing under a base URL.
+const MODELS: &str = "/models";
 
-/// A wait the provider takes between two tries.
-type Wait = Pin<Box<dyn Future<Output = ()> + Send>>;
-
-/// The clock a `retry-after` date is read against, and the wait between
-/// two tries: the system's, which a test replaces.
-#[derive(Clone)]
-pub(crate) struct Pace {
-    /// The seconds since 1970.
-    pub(crate) now: Arc<dyn Fn() -> f64 + Send + Sync>,
-    /// Waits before the next try.
-    pub(crate) wait: Arc<dyn Fn(Duration) -> Wait + Send + Sync>,
-}
-
-impl Default for Pace {
-    fn default() -> Self {
-        let now = || {
-            let since = SystemTime::now().duration_since(UNIX_EPOCH);
-            since.map_or(0.0, |since| since.as_secs_f64())
-        };
-        Self {
-            now: Arc::new(now),
-            wait: Arc::new(|wait| Box::pin(tokio::time::sleep(wait))),
-        }
-    }
-}
+/// What a request asks for, and what the body of a completion's is.
+pub(crate) const JSON: &str = "application/json";
 
 /// Compiles only while the URL the client dials is the `url` crate's, the
 /// one `roomkit-providers-http` validates a destination with: a URL that
@@ -71,30 +48,54 @@ const fn the_client_s_url(url: reqwest::Url) -> url::Url {
 /// An AI provider for `OpenAI`'s Chat Completions, and for the servers that
 /// speak it behind a base URL: Python's `OpenAIAIProvider`.
 ///
-/// It answers a request whole ([`generate`](AiProvider::generate)); its
-/// streams are not written yet. A request is sent to the base URL of the
-/// [configuration](OpenAiConfig), `OpenAI`'s own when it names none, with
-/// the configuration's key as its bearer token.
+/// It answers a request whole ([`generate`](AiProvider::generate)) or as a
+/// stream, of events
+/// ([`generate_structured_stream`](AiProvider::generate_structured_stream))
+/// or of text ([`generate_stream`](AiProvider::generate_stream)), and lists
+/// the models its endpoint serves ([`list_models`](AiProvider::list_models)).
+/// A request is sent to the base URL of the [configuration](OpenAiConfig),
+/// `OpenAI`'s own when it names none, with the configuration's key as its
+/// bearer token.
 ///
-/// What it guarantees:
+/// # Streams
+///
+/// A stream is pulled: nothing is sent before it is first polled, and the
+/// answer is read only as its events are taken. Dropping the stream stops
+/// the request: its connection is closed, whatever was left of the answer.
+/// A failure is the stream's last item; what was read before it was handed
+/// on first. A request is tried again, as the configuration allows, until
+/// the head of its answer came, never after: a stream that fails under way
+/// fails, and the failure says whether a new request may succeed.
+///
+/// # What it guarantees
 ///
 /// - the key appears in no failure, log, `Debug` form or result: a failure
 ///   that echoes a server's answer has the key removed from it;
-/// - what a failure echoes of a server's answer is within 500 characters,
-///   on one line, and an answer past 4 MiB fails the request;
+/// - a failure echoes of a server's answer only what an error object says
+///   of itself (its message, its type, its code), within 500 characters, on
+///   one line; a body that is no JSON is never echoed;
+/// - every size a server controls is bounded: an answer read whole past
+///   4 MiB fails the request; a stream fails at a line or an event past
+///   1 MiB, and past 256 MiB in all;
 /// - a redirect is not followed, and no proxy, key or URL is read from the
 ///   environment;
 /// - the timeouts are the configuration's: `connect_timeout` to connect,
-///   `timeout` between two reads.
+///   `timeout` between two reads, which also ends a stream that stalls.
 #[derive(Clone)]
 pub struct OpenAiAiProvider {
-    config: Arc<OpenAiConfig>,
-    endpoint: reqwest::Url,
-    headers: HeaderMap,
-    client: reqwest::Client,
+    pub(crate) config: Arc<OpenAiConfig>,
+    /// Where a completion is asked.
+    pub(crate) chat: reqwest::Url,
+    /// Where the models are listed.
+    pub(crate) models: reqwest::Url,
+    pub(crate) headers: HeaderMap,
+    pub(crate) client: reqwest::Client,
     own_endpoint: bool,
     left_out_warned: Arc<AtomicBool>,
     pub(crate) pace: Pace,
+    /// The most bytes read of a streamed answer: the reader's bound, which
+    /// a test lowers.
+    pub(crate) stream_limit: usize,
 }
 
 impl OpenAiAiProvider {
@@ -107,7 +108,9 @@ impl OpenAiAiProvider {
     /// the API cannot follow; a default header that is no HTTP header; or a
     /// client that could not be built.
     pub fn new(config: OpenAiConfig) -> Result<Self, ProviderError> {
-        let endpoint = joined(config.base_url.as_deref().unwrap_or(OPENAI_BASE_URL))?;
+        let base_url = config.base_url.as_deref().unwrap_or(OPENAI_BASE_URL);
+        let chat = joined(base_url, CHAT_COMPLETIONS)?;
+        let models = joined(base_url, MODELS)?;
         let headers = headers_of(&config)?;
         let tls = roomkit_providers_http::tls_config().map_err(|_| refused("TLS is not set"))?;
         let client = reqwest::Client::builder()
@@ -121,35 +124,40 @@ impl OpenAiAiProvider {
             .build()
             .map_err(|_| refused("the HTTP client could not be built"))?;
         Ok(Self {
-            own_endpoint: own_endpoint(&config, &endpoint),
+            own_endpoint: own_endpoint(&config, &chat),
             config: Arc::new(config),
-            endpoint,
+            chat,
+            models,
             headers,
             client,
             left_out_warned: Arc::new(AtomicBool::new(false)),
             pace: Pace::default(),
+            stream_limit: STREAM_LIMIT,
         })
     }
 
-    /// The URL the provider sends its requests to.
+    /// The URL the provider asks its completions at.
     #[cfg(test)]
     pub(crate) fn endpoint(&self) -> &reqwest::Url {
-        &self.endpoint
+        &self.chat
     }
 
-    /// Sends the requests to `url` instead: a test's fake of the endpoint.
-    /// What the provider knows of its endpoint stays what its
-    /// configuration says.
+    /// Sends the requests to `address` instead, over plain HTTP, each to
+    /// the path it had: a test's fake of the endpoint. What the provider
+    /// knows of its endpoint stays what its configuration says.
     #[cfg(test)]
-    pub(crate) fn point_at(&mut self, url: &str) {
-        if let Ok(url) = reqwest::Url::parse(url) {
-            self.endpoint = url;
+    pub(crate) fn point_at(&mut self, address: std::net::SocketAddr) {
+        for url in [&mut self.chat, &mut self.models] {
+            let target = &url[url::Position::BeforePath..];
+            if let Ok(pointed) = reqwest::Url::parse(&format!("http://{address}{target}")) {
+                *url = pointed;
+            }
         }
     }
 
     /// What the provider's failures carry: its name, and the key to keep
     /// out of them.
-    fn failing(&self) -> Failing<'_> {
+    pub(crate) fn failing(&self) -> Failing<'_> {
         Failing {
             provider: NAME,
             secret: &self.config.api_key,
@@ -157,7 +165,7 @@ impl OpenAiAiProvider {
     }
 
     /// What a request is written for.
-    fn asked(&self) -> Asked<'_> {
+    pub(crate) fn asked(&self) -> Asked<'_> {
         Asked {
             config: &self.config,
             provider: NAME,
@@ -170,106 +178,45 @@ impl OpenAiAiProvider {
     /// One whole answer: the request, tried again as the configuration
     /// allows, and the response read from the answer.
     async fn answer(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
-        let body = self.asked().body(request)?;
-        let body = serde_json::to_vec(&body)
-            .map_err(|_| refused("the request could not be written as JSON"))?;
-        let (answer, json) = self.send(&body).await?;
+        let body = self.asked().body(request, false)?;
+        let body = serde_json::to_vec(&body).map_err(|_| unwritten())?;
+        let (answer, json) = self.send(Call::Chat(&body)).await?;
         answer::read(&answer, json, request, &self.config.model, self.failing())
     }
 
-    /// Sends `body` until an answer comes or no try is left: the answer's
-    /// body, and whether the server said it is JSON.
-    async fn send(&self, body: &[u8]) -> Result<(Vec<u8>, bool), ProviderError> {
-        let mut retries_taken = 0;
-        loop {
-            let left = retries_taken < self.config.max_retries;
-            match self.attempt(body, retries_taken, left).await {
-                Ok(answered) => return Ok(answered),
-                Err(Failed::Final(error)) => return Err(error),
-                Err(Failed::Again(wait)) => {
-                    tracing::info!(
-                        target: "roomkit::providers::openai",
-                        retries_taken,
-                        ?wait,
-                        "a request is tried again"
-                    );
-                    (self.pace.wait)(wait).await;
-                    retries_taken += 1;
-                }
-            }
-        }
-    }
-
-    /// One try: the answer, the failure that ends the request, or the wait
-    /// before another try when one is `left`.
-    async fn attempt(
-        &self,
-        body: &[u8],
-        retries_taken: u32,
-        left: bool,
-    ) -> Result<(Vec<u8>, bool), Failed> {
-        let now = (self.pace.now)();
-        let failing = self.failing();
-        let again =
-            |headers: Option<&HeaderMap>| Failed::Again(retry::delay(retries_taken, headers, now));
-        let lost = |error: &reqwest::Error| {
-            if left {
-                again(None)
-            } else {
-                Failed::Final(failing.transport(error))
-            }
+    /// The models the endpoint lists, each by its id alone, as Python's
+    /// `list_models` reads the page.
+    async fn live_models(&self) -> Result<Vec<ModelInfo>, ProviderError> {
+        let (page, json) = self.send(Call::Models).await?;
+        let no_page = || {
+            let what = "the model listing is no page of models with their ids";
+            self.failing().unreadable(what)
         };
-        let call = self.client.post(self.endpoint.clone());
-        let call = call.headers(self.headers.clone()).body(body.to_vec());
-        let response = match call.send().await {
-            Ok(response) => response,
-            // A request that could not be built never left: it fails the
-            // same however many times it is tried.
-            Err(error) if error.is_builder() => {
-                return Err(Failed::Final(failing.transport(&error)));
-            }
-            Err(error) => return Err(lost(&error)),
-        };
-        let status = response.status();
-        if !status.is_success() {
-            if left && retry::should_retry(status, response.headers(), now) {
-                return Err(again(Some(response.headers())));
-            }
-            // An error body past what a request reads still keeps its
-            // status, as Python's client reads the status whatever the body.
-            let body = match read_body(response).await {
-                Ok(body) => body,
-                Err(Unread::TooLong) => Vec::new(),
-                Err(Unread::Lost(error)) => return Err(lost(&error)),
-            };
-            return Err(Failed::Final(failing.status(status.as_u16(), &body)));
-        }
-        let json = is_json(&response);
-        match read_body(response).await {
-            Ok(body) => Ok((body, json)),
-            Err(Unread::Lost(error)) => Err(lost(&error)),
-            Err(Unread::TooLong) => {
-                let message = format!("the provider's answer is longer than {ANSWER_LIMIT} bytes");
-                Err(Failed::Final(failing.unreadable(&message)))
-            }
-        }
+        let listed = json.then(|| models::listed(&page)).flatten();
+        listed.ok_or_else(no_page)
     }
 }
 
-/// How a try ended without an answer.
-enum Failed {
-    /// The request failed for good.
-    Final(ProviderError),
-    /// Another try comes after this wait.
-    Again(Duration),
+/// Why a constrained answer was withheld: the refusal its deltas carried,
+/// or a content filter's stop (Python's `_streamed_refusal`).
+fn refusal(done: &StreamDone) -> Option<String> {
+    let refused = done.metadata.get("refusal");
+    let refused = refused.and_then(serde_json::Value::as_str);
+    if let Some(refused) = refused.filter(|refused| !refused.is_empty()) {
+        return Some(refused.to_owned());
+    }
+    (done.finish_reason.as_deref() == Some("content_filter")).then(|| "content_filter".to_owned())
 }
 
-/// Why an answer's body was not read.
-enum Unread {
-    /// It is past [`ANSWER_LIMIT`].
-    TooLong,
-    /// The connection failed while it was read.
-    Lost(reqwest::Error),
+/// The failure of a request that could not be written: final, and nothing
+/// was sent.
+pub(crate) fn unwritten() -> ProviderError {
+    let options = ProviderErrorOptions {
+        provider: NAME.to_owned(),
+        before_request: true,
+        ..ProviderErrorOptions::default()
+    };
+    ProviderError::new("the request could not be written as JSON", options)
 }
 
 /// A failure before any request, final.
@@ -282,9 +229,9 @@ fn refused(reason: &str) -> ProviderError {
     ProviderError::new(format!("the provider cannot be built: {reason}"), options)
 }
 
-/// The URL of Chat Completions under `base_url`, which the failure of a
-/// refused one does not repeat: it may carry credentials.
-fn joined(base_url: &str) -> Result<reqwest::Url, ProviderError> {
+/// The URL of `path` under `base_url`, which the failure of a refused one
+/// does not repeat: it may carry credentials.
+fn joined(base_url: &str, path: &str) -> Result<reqwest::Url, ProviderError> {
     let not_http = || refused("its base URL is not an http or https URL");
     let base = reqwest::Url::parse(base_url).map_err(|_| not_http())?;
     if base.query().is_some() || base.fragment().is_some() {
@@ -292,7 +239,7 @@ fn joined(base_url: &str) -> Result<reqwest::Url, ProviderError> {
             "its base URL has a query or a fragment, which the path of the API cannot follow",
         ));
     }
-    let joined = format!("{}{CHAT_COMPLETIONS}", base_url.trim_end_matches('/'));
+    let joined = format!("{}{path}", base_url.trim_end_matches('/'));
     let url = reqwest::Url::parse(&joined).map_err(|_| not_http())?;
     match url.scheme() {
         "http" | "https" => Ok(url),
@@ -316,12 +263,11 @@ fn own_endpoint(config: &OpenAiConfig, dialed: &reqwest::Url) -> bool {
 
 /// The headers every request carries: what the provider writes, then the
 /// configuration's, one of which replaces the provider's of the same name
-/// as Python's client lets it. An empty key sends no `Authorization`.
+/// as Python's client lets it. An empty key sends no `Authorization`. A
+/// request with a body says beside them what the body is.
 fn headers_of(config: &OpenAiConfig) -> Result<HeaderMap, ProviderError> {
-    let json = HeaderValue::from_static("application/json");
     let mut headers = HeaderMap::new();
-    headers.insert(ACCEPT, json.clone());
-    headers.insert(CONTENT_TYPE, json);
+    headers.insert(ACCEPT, HeaderValue::from_static(JSON));
     if !config.api_key.is_empty() {
         let bearer = HeaderValue::from_str(&format!("Bearer {}", config.api_key));
         let mut bearer = bearer.map_err(|_| refused("its key cannot go in a header"))?;
@@ -336,29 +282,6 @@ fn headers_of(config: &OpenAiConfig) -> Result<HeaderMap, ProviderError> {
         headers.insert(name, value);
     }
     Ok(headers)
-}
-
-/// Whether the server says its answer is JSON.
-fn is_json(response: &reqwest::Response) -> bool {
-    let kind = response.headers().get(CONTENT_TYPE);
-    let kind = kind.and_then(|value| value.to_str().ok());
-    kind.is_some_and(|value| value.trim_start().starts_with("application/json"))
-}
-
-/// The body of an answer, within [`ANSWER_LIMIT`].
-async fn read_body(mut response: reqwest::Response) -> Result<Vec<u8>, Unread> {
-    let declared = response.content_length().unwrap_or_default();
-    if usize::try_from(declared).map_or(true, |declared| declared > ANSWER_LIMIT) {
-        return Err(Unread::TooLong);
-    }
-    let mut body = Vec::new();
-    while let Some(chunk) = response.chunk().await.map_err(Unread::Lost)? {
-        if body.len().saturating_add(chunk.len()) > ANSWER_LIMIT {
-            return Err(Unread::TooLong);
-        }
-        body.extend_from_slice(&chunk);
-    }
-    Ok(body)
 }
 
 impl AiProvider for OpenAiAiProvider {
@@ -388,8 +311,43 @@ impl AiProvider for OpenAiAiProvider {
         self.asked().supports_response_schema_with_tools()
     }
 
+    /// Every model the endpoint lists, `GET /models`, as Python's
+    /// `list_models`: the page carries ids alone, so what the catalogue
+    /// knows of a model is filled from it, and the models it does not know
+    /// (embeddings, audio, a local server's own) pass through, the speech
+    /// models tagged.
+    async fn list_models(&self) -> Result<Vec<ModelInfo>, ProviderError> {
+        let live = self.live_models().await?;
+        Ok(listing(live, models::models()))
+    }
+
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    fn supports_structured_streaming(&self) -> bool {
+        true
+    }
+
     async fn generate(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
         self.answer(request).await
+    }
+
+    /// The text of [`generate_structured_stream`], as it comes: its
+    /// reasoning, its calls and its end are left out.
+    ///
+    /// [`generate_structured_stream`]: AiProvider::generate_structured_stream
+    fn generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a> {
+        stream::text(self.generate_structured_stream(request))
+    }
+
+    /// The events of one generation, as they come: the text and the
+    /// reasoning (a `<think>` block that opens the answer, or a reasoning
+    /// field), the composition of each call, then the whole calls and the
+    /// done event. An answer constrained by a response schema is checked
+    /// before its done event, which its failure replaces.
+    fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
+        checked_stream(stream::events(self, request), request, NAME, refusal)
     }
 }
 

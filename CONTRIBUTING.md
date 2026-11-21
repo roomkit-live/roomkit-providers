@@ -21,7 +21,7 @@ make hooks
 | Command | Scope |
 | --- | --- |
 | `make fmt` | Format the workspace |
-| `make all` | Formatting, Clippy, tests, rustdoc, dependency policy and the core dependency allow list |
+| `make all` | Formatting, Clippy, tests, the examples, rustdoc, dependency policy and the core dependency allow list |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
 
 Run relevant checks during development, then `make all`. Run the MSRV check
@@ -39,6 +39,9 @@ especially boundaries, failures, cancellation and cleanup.
 
 - No test reaches a vendor's service. A provider is tested against a local
   fake of the wire it speaks.
+- An example runs with no service and no key: it starts the server it talks
+  to on a local port, checks what it shows and fails otherwise. `make all`
+  runs each example (`make examples`).
 - No key belongs in a fixture, a test or a command. Default checks require no
   external service and no credentials.
 - No test asks a name of the network. A test of `validate_public_url` gives
@@ -133,7 +136,8 @@ fails when the catalogue of the crate says otherwise.
   table of base URLs is OpenAI's own endpoint.
 - `python_chat_cases.json` holds the wire cases: for each, a configuration,
   a request, the HTTP requests Python's `OpenAIAIProvider` sent to a fake of
-  the endpoint with what the fake answered, and what Python returned. The
+  the endpoint with what the fake answered, and what Python returned, of a
+  completion asked whole or streamed, or of the model listing. The
   cases are listed in `scripts/openai_chat_cases.py`, each with the kinds of
   behaviour it shows; the `python_chat_cases` test requires every kind, so a
   case is added there with its kind, and a kind is never dropped. Nothing
@@ -164,6 +168,11 @@ fails when the catalogue of the crate says otherwise.
   decision.
 - A stream's body is a list of reads, each any bytes: a read that is UTF-8
   is written as its text, any other in hexadecimal.
+- The provider replays every case (`src/replay`). A case it answers
+  otherwise than Python is never skipped: it is named there, in the list its
+  case belongs to (questioned in the fixture, a failure no provider
+  reproduces, or a rule of the provider's own), with the reason and with
+  what the provider does instead, which is asserted.
 
 ## Implementation boundaries
 

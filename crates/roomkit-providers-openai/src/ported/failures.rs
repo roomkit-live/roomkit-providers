@@ -7,7 +7,7 @@ use roomkit_providers_core::{AiProvider, ProviderError};
 use tokio::net::TcpSocket;
 
 use super::support::{KEY, asked, elsewhere, hello, json_reply, pointed, saying};
-use crate::provider::ANSWER_LIMIT;
+use crate::exchange::ANSWER_LIMIT;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
 use crate::{OpenAiAiProvider, OpenAiConfig};
 
@@ -78,12 +78,19 @@ async fn the_api_key_an_error_answer_echoes_reaches_no_failure() {
         r#"{{"error": {{"message": "Bearer {KEY} is refused", "type": "invalid_request_error", "code": "invalid_api_key"}}}}"#
     );
     let text = format!("Authorization: Bearer {KEY}\r\nrefused");
-    for body in [object, text] {
+    // The error object's own words, the key removed; of a body that is no
+    // JSON, nothing.
+    let said = [
+        "the provider answered HTTP 401 (invalid_request_error, invalid_api_key): \
+         Bearer [removed] is refused",
+        "the provider answered HTTP 401: Unauthorized",
+    ];
+    for (body, said) in [object, text].into_iter().zip(said) {
         let error = asked(json_reply(401, body), &hello()).await.unwrap_err();
         assert_eq!(read(&error), (false, Some(401)));
         let printed = format!("{error} {error:?}");
         assert!(!printed.contains(KEY), "{printed}");
-        assert!(printed.contains("refused"), "{printed}");
+        assert_eq!(error.message, said);
     }
 }
 

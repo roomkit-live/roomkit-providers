@@ -2,17 +2,22 @@
 //!
 //! - [`OpenAiAiProvider`]: a provider for `OpenAI`'s Chat Completions and
 //!   for the servers that speak it behind a base URL, Python's
-//!   `OpenAIAIProvider`. It answers a request whole; its streams are not
-//!   written yet.
+//!   `OpenAIAIProvider`. It answers a request whole or as a stream, of
+//!   events or of text, and lists the models its endpoint serves.
 //! - [`OpenAiConfig`]: what the provider is configured with, the
 //!   `OpenAIConfig` of `RoomKit`'s Python implementation: the same names,
 //!   the same defaults and the same JSON form.
 //!
+//! A stream is pulled: nothing is sent before it is polled, and dropping it
+//! stops the request and closes its connection. Every size a server
+//! controls is bounded, and a stream that stalls ends at the
+//! configuration's timeout: [`OpenAiAiProvider`] says how.
+//!
 //! The provider is held to a table of cases captured on `RoomKit`'s Python
 //! provider (`tests/fixtures/python_chat_cases.json`), each with the
 //! request, the HTTP exchanges and what Python returned: the crate's tests
-//! replay every case of a whole answer through a local fake of the
-//! endpoint, and name the few the provider answers otherwise, with the
+//! replay every case through a local fake of the endpoint, a stream read
+//! by read, and name the few the provider answers otherwise, with the
 //! reason. The crate's README lists them.
 //!
 //! It depends on neither Python nor `RoomKit`.
@@ -20,9 +25,12 @@
 #![forbid(unsafe_code)]
 
 mod answer;
+mod call_slots;
 mod config;
 mod endpoint;
+mod exchange;
 mod failure;
+mod folding;
 mod messages;
 mod models;
 mod names;
@@ -33,6 +41,8 @@ mod provider;
 mod replay;
 mod request;
 mod retry;
+mod stream;
+mod think_tags;
 
 pub use config::OpenAiConfig;
 pub use provider::OpenAiAiProvider;

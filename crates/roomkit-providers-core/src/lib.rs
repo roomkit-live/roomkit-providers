@@ -158,6 +158,10 @@ pub use self::schema::{
 };
 #[doc(hidden)]
 pub use self::schema::{check_schema_answer, checked_stream, schema_for_generate};
+// For a provider crate: the stream a provider's events come as, written as
+// a producer that hands its items over, and the next item of a stream.
+#[doc(hidden)]
+pub use self::stream::{Items, Yielder, items, next};
 #[doc(hidden)]
 pub use self::strict::{ObjectOnly, read_name};
 pub use self::tools::{

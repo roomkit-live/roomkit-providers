@@ -1,6 +1,6 @@
-//! Tests ported from the crate this provider was written from: what a whole
-//! answer's request carries, what the provider reads of its answer, and how
-//! its failures read.
+//! Tests ported from the crate this provider was written from: what a
+//! request carries, what the provider reads of its answer, whole or
+//! streamed, and how its failures read.
 //!
 //! Each test names the source test it comes from. A behaviour the replay of
 //! the Python cases already holds (`crate::replay`) is not repeated here.
@@ -10,10 +10,13 @@
 
 mod answers;
 mod catalogue;
+mod composition;
 mod endpoints;
 mod failures;
 mod reasoning;
 mod requests;
 mod retries;
-mod support;
+mod streams;
+pub(crate) mod support;
+mod tries;
 mod warnings;

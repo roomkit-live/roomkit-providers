@@ -17,7 +17,7 @@
   "exchanges.request": "What Python sent: the method, the whole URL (scheme, host, a port that is written, path and query), the body as JSON, and the headers RoomKit decides: authorization, with the key replaced by which key it was (<config key> or <request key>), content-type, accept, and each configured default header. The headers of the SDK and of the platform are left out. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool.",
   "exchanges.response": "What the fake answered: status and headers with a body under json, under text for a body that is no JSON, or under chunks for a body read in several reads. Each chunk is the bytes of one read, in order: a text where the bytes are UTF-8, written as that text, else an object whose hex member holds the bytes in hexadecimal, as a read that ends inside a character is. then says how the reads end after them: the stream ends, the connection is lost, or the read times out. A failure in place of a response is under failure: no answer came.",
   "exchanges.wait": "The wait the openai SDK took before its next try, in seconds, and where it came from: the answer's headers, or the SDK's backoff, which is up to a quarter less than what is written. An HTTP date is read against clock.",
-  "expected": "What Python returned: response for generate (AIResponse without tasks and observations), text for generate_stream (the deltas), events for generate_structured_stream (each event dumped). A failure is under error, after whatever a stream gave first: its class, its message (the first argument), its text (str), the attributes of a ProviderError, and raised_from, the class of the SDK or transport error it was raised from, if any.",
+  "expected": "What Python returned: response for generate (AIResponse without tasks and observations), text for generate_stream (the deltas), events for generate_structured_stream (each event dumped), models for list_models (each ModelInfo dumped). A failure is under error, after whatever a stream gave first: its class, its message (the first argument), its text (str), the attributes of a ProviderError, and raised_from, the class of the SDK or transport error it was raised from, if any.",
   "compare": "On a case that fails, how a replay compares the failure. exactly lists what it reproduces as written: attributes of the error, reason among them where the error is a response schema's, and events or text, what the stream gave before it failed. An empty list is a failure no provider reproduces: the SDK's own, or a raw Python exception. message says whose words the message holds, and so whether it is compared: roomkit (RoomKit's own words: compared), server (the text the server sent, handed on as it came: compared), sdk (the openai SDK's words: not compared), python_json (what Python's JSON reader says of a text: not compared), python_repr (Python's repr of the body the server sent, after 'Error code: <status> - ': not compared), transport (the HTTP client's words for a body it could not read to its end: not compared), python (the words of a Python exception raised while the answer was read: not compared). A python_json message leaves RoomKit's own words before it uncompared too ('the answer is not a JSON document (...)'). A compared roomkit message may hold Python's repr of a name or of a list (tool 'orders.lookup', missing ['city']), which a replay writes the same way.",
   "minted_call_ids": "The ids in expected that Python minted for a call its server gave none: call_<name>_<12 hexadecimal digits>, random. A replay compares their shape, and that the events of one call share one id, not their value.",
   "sdk": "Where a case says sdk, the openai SDK decided the behaviour, not RoomKit: its retries (which answers, how many times, after what wait), how it joins a URL, merges a body or follows a redirect, how it reads a body, and the words of a failure that has no answer. A provider without that SDK decides these itself.",
@@ -39658,6 +39658,1029 @@
    }
   },
   {
+   "name": "stream_end_mark_with_more_on_its_line",
+   "kinds": [
+    "stream",
+    "stream_shapes"
+   ],
+   "call": "generate_structured_stream",
+   "note": "A line that starts with the end mark ends the stream, whatever follows the mark.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: [DONE] and more\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello."
+     },
+     {
+      "type": "done",
+      "finish_reason": null,
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_lost_after_the_end_mark",
+   "kinds": [
+    "stream",
+    "stream_shapes"
+   ],
+   "call": "generate_structured_stream",
+   "note": "Nothing that happens to the connection after the end mark fails the answer.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":5,\"total_tokens\":17}}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the connection is lost"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {
+       "input_tokens": 12,
+       "output_tokens": 5
+      },
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_event_with_no_data",
+   "kinds": [
+    "stream",
+    "stream_shapes"
+   ],
+   "call": "generate_structured_stream",
+   "sdk": "The openai SDK's reader hands on an event that holds no data, which is read as JSON.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "event: ping\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":5,\"total_tokens\":17}}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [],
+    "error": {
+     "class": "ProviderError",
+     "message": "Expecting value: line 1 column 1 (char 0)",
+     "text": "openai: Expecting value: line 1 column 1 (char 0)",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "JSONDecodeError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "events"
+    ],
+    "message": "python_json"
+   }
+  },
+  {
+   "name": "stream_comment_lines",
+   "kinds": [
+    "stream",
+    "stream_shapes"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       ": keep-alive\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":5,\"total_tokens\":17}}\n\n",
+       "data: [DONE]\n\n",
+       ": bye\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {
+       "input_tokens": 12,
+       "output_tokens": 5
+      },
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_second_choice_first",
+   "kinds": [
+    "odd_shapes",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "note": "The first choice of the list is read, whatever index it names.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"choices\":[{\"index\":1,\"delta\":{\"content\":\"one\"},\"finish_reason\":null},{\"index\":0,\"delta\":{\"content\":\"zero\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "one"
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_delta_that_is_a_text",
+   "kinds": [
+    "odd_shapes",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"choices\":[{\"index\":0,\"delta\":\"Hel\",\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"lo.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "lo."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "stream_finish_reason_that_is_no_text",
+   "kinds": [
+    "odd_shapes",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":3}]}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello."
+     }
+    ],
+    "error": {
+     "class": "ProviderError",
+     "message": "1 validation error for StreamDone\nfinish_reason\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+     "text": "openai: 1 validation error for StreamDone\nfinish_reason\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ValidationError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "events"
+    ],
+    "message": "python"
+   }
+  },
+  {
+   "name": "stream_call_arguments_that_are_a_number",
+   "kinds": [
+    "odd_shapes",
+    "stream",
+    "tool_call_streamed"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "lookup_order",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        },
+        {
+         "type": "function",
+         "function": {
+          "name": "clock",
+          "description": "Tell the time",
+          "parameters": {
+           "type": "object",
+           "properties": {}
+          }
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"clock\",\"arguments\":7}}]},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [],
+    "error": {
+     "class": "ProviderError",
+     "message": "can only concatenate str (not \"int\") to str",
+     "text": "openai: can only concatenate str (not \"int\") to str",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "TypeError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "events"
+    ],
+    "message": "python"
+   }
+  },
+  {
+   "name": "stream_call_index_that_is_a_text",
+   "kinds": [
+    "odd_shapes",
+    "stream",
+    "tool_call_streamed"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "local-model",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "lookup_order",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        },
+        {
+         "type": "function",
+         "function": {
+          "name": "clock",
+          "description": "Tell the time",
+          "parameters": {
+           "type": "object",
+           "properties": {}
+          }
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":\"0\",\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"clock\",\"arguments\":\"{}\"}}]},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "tool_call_delta",
+      "id": "call_1",
+      "name": "clock",
+      "index": 0,
+      "arguments_delta": "{}"
+     },
+     {
+      "type": "tool_call",
+      "id": "call_1",
+      "name": "clock",
+      "arguments": {},
+      "metadata": {},
+      "served": null,
+      "partial": false,
+      "garbled": false,
+      "intent": null
+     },
+     {
+      "type": "done",
+      "finish_reason": "tool_calls",
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
    "name": "stream_that_sends_a_bare_error_text",
    "kinds": [
     "stream",
@@ -40577,6 +41600,849 @@
      "before_request"
     ],
     "message": "roomkit"
+   }
+  },
+  {
+   "name": "list_models",
+   "kinds": [
+    "listing"
+   ],
+   "call": "list_models",
+   "note": "The page carries ids alone. What the catalogue knows of a model is filled from it, a speech model is tagged, and a model the catalogue does not know passes through with its id.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list",
+       "data": [
+        {
+         "id": "gpt-4o",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        },
+        {
+         "id": "gpt-5.1",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        },
+        {
+         "id": "text-embedding-3-small",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        },
+        {
+         "id": "whisper-1",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        },
+        {
+         "id": "tts-1",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        },
+        {
+         "id": "ft:gpt-4o:example::A1",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": [
+     {
+      "id": "gpt-4o",
+      "display_name": "GPT-4o",
+      "context_window": 128000,
+      "supports_vision": true,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": {
+       "input_per_million": 2.5,
+       "output_per_million": 10.0,
+       "cache_read_per_million": 1.25,
+       "cache_write_per_million": null,
+       "image_input_per_million": null,
+       "image_output_per_million": null,
+       "long_context_threshold_tokens": null,
+       "long_context_input_multiplier": 1.0,
+       "long_context_output_multiplier": 1.0,
+       "currency": "USD",
+       "verified": "2026-08-05"
+      }
+     },
+     {
+      "id": "gpt-5.1",
+      "display_name": "GPT-5.1",
+      "context_window": 400000,
+      "supports_vision": true,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": {
+       "input_per_million": 1.25,
+       "output_per_million": 10.0,
+       "cache_read_per_million": 0.125,
+       "cache_write_per_million": null,
+       "image_input_per_million": null,
+       "image_output_per_million": null,
+       "long_context_threshold_tokens": null,
+       "long_context_input_multiplier": 1.0,
+       "long_context_output_multiplier": 1.0,
+       "currency": "USD",
+       "verified": "2026-08-05"
+      }
+     },
+     {
+      "id": "text-embedding-3-small",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": null
+     },
+     {
+      "id": "whisper-1",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [
+       "transcription"
+      ],
+      "pricing": null
+     },
+     {
+      "id": "tts-1",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [
+       "speech"
+      ],
+      "pricing": null
+     },
+     {
+      "id": "ft:gpt-4o:example::A1",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "list_models_that_lists_none",
+   "kinds": [
+    "listing"
+   ],
+   "call": "list_models",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list",
+       "data": []
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": []
+   }
+  },
+  {
+   "name": "list_models_behind_a_base_url",
+   "kinds": [
+    "listing"
+   ],
+   "call": "list_models",
+   "note": "The catalogue fills what it knows of a model whatever the endpoint that lists it.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1",
+    "default_headers": {
+     "x-tenant": "blue"
+    }
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://llm.example/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json",
+       "x-tenant": "blue"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list",
+       "data": [
+        {
+         "id": "local-model",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        },
+        {
+         "id": "gpt-4o",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": [
+     {
+      "id": "local-model",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": null
+     },
+     {
+      "id": "gpt-4o",
+      "display_name": "GPT-4o",
+      "context_window": 128000,
+      "supports_vision": true,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": {
+       "input_per_million": 2.5,
+       "output_per_million": 10.0,
+       "cache_read_per_million": 1.25,
+       "cache_write_per_million": null,
+       "image_input_per_million": null,
+       "image_output_per_million": null,
+       "long_context_threshold_tokens": null,
+       "long_context_input_multiplier": 1.0,
+       "long_context_output_multiplier": 1.0,
+       "currency": "USD",
+       "verified": "2026-08-05"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "list_models_status_401",
+   "kinds": [
+    "listing",
+    "status_401"
+   ],
+   "call": "list_models",
+   "sdk": "list_models wraps no error: the openai SDK's is raised as it is.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 401,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "message": "Incorrect API key provided.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": "invalid_api_key"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "AuthenticationError",
+     "message": "Error code: 401 - Incorrect API key provided.",
+     "text": "Error code: 401 - Incorrect API key provided.",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "list_models_retry_that_succeeds",
+   "kinds": [
+    "listing",
+    "retry_succeeds",
+    "status_503"
+   ],
+   "call": "list_models",
+   "sdk": "The openai SDK decides which answers it tries again, how many times and after what wait.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o",
+    "max_retries": 2
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 503,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "message": "The engine is currently overloaded.",
+        "type": "service_unavailable",
+        "param": null,
+        "code": null
+       }
+      }
+     },
+     "wait": {
+      "seconds": 0.5,
+      "from": "the SDK's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list",
+       "data": [
+        {
+         "id": "gpt-4o",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": [
+     {
+      "id": "gpt-4o",
+      "display_name": "GPT-4o",
+      "context_window": 128000,
+      "supports_vision": true,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": {
+       "input_per_million": 2.5,
+       "output_per_million": 10.0,
+       "cache_read_per_million": 1.25,
+       "cache_write_per_million": null,
+       "image_input_per_million": null,
+       "image_output_per_million": null,
+       "long_context_threshold_tokens": null,
+       "long_context_input_multiplier": 1.0,
+       "long_context_output_multiplier": 1.0,
+       "currency": "USD",
+       "verified": "2026-08-05"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "list_models_connection_refused",
+   "kinds": [
+    "connection_refused",
+    "listing"
+   ],
+   "call": "list_models",
+   "sdk": "list_models wraps no error: the openai SDK's is raised as it is.",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "APIConnectionError",
+     "message": "Connection error.",
+     "text": "Connection error.",
+     "raised_from": "ConnectError"
+    }
+   },
+   "compare": {
+    "exactly": [],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "list_models_page_without_its_models",
+   "kinds": [
+    "listing",
+    "odd_shapes"
+   ],
+   "call": "list_models",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list"
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "TypeError",
+     "message": "'NoneType' object is not iterable",
+     "text": "'NoneType' object is not iterable",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [],
+    "message": "python"
+   }
+  },
+  {
+   "name": "list_models_entry_without_an_id",
+   "kinds": [
+    "listing",
+    "odd_shapes"
+   ],
+   "call": "list_models",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-4o"
+   },
+   "catalogue": {
+    "model": "gpt-4o",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.openai.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list",
+       "data": [
+        {
+         "id": "gpt-4o",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        },
+        {
+         "object": "model",
+         "owned_by": "system"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ValidationError",
+     "message": "",
+     "text": "1 validation error for ModelInfo\nid\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [],
+    "message": "python"
+   }
+  },
+  {
+   "name": "list_models_answered_with_a_page",
+   "kinds": [
+    "listing",
+    "not_json"
+   ],
+   "call": "list_models",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "local-model",
+    "base_url": "https://llm.example/v1"
+   },
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://llm.example/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/html"
+      },
+      "text": "<html><body>Not here</body></html>"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "AttributeError",
+     "message": "'str' object has no attribute '_set_private_attributes'",
+     "text": "'str' object has no attribute '_set_private_attributes'",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [],
+    "message": "python"
    }
   }
  ]

@@ -59,6 +59,7 @@ CASES: list[Case] = []
 GENERATE = "generate"
 TEXT = "generate_stream"
 STREAM = "generate_structured_stream"
+LISTING = "list_models"
 
 
 def case(
@@ -2874,6 +2875,119 @@ case(
     HELLO,
     stream([*said("Hello."), *sse(chunk({"content": " More."}), done=False)]),
 )
+case(
+    "stream_end_mark_with_more_on_its_line",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([*sse(chunk({"content": "Hello."}), done=False), "data: [DONE] and more\n\n"]),
+    note="A line that starts with the end mark ends the stream, whatever follows the mark.",
+)
+case(
+    "stream_lost_after_the_end_mark",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(said("Hello."), cut=LOST),
+    note="Nothing that happens to the connection after the end mark fails the answer.",
+)
+case(
+    "stream_event_with_no_data",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(["event: ping\n\n", *said("Hello.")]),
+)
+case(
+    "stream_comment_lines",
+    "stream stream_shapes",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream([": keep-alive\n\n", *said("Hello."), ": bye\n\n"]),
+)
+case(
+    "stream_second_choice_first",
+    f"stream {ODD}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(
+        sse(
+            {
+                "choices": [
+                    {"index": 1, "delta": {"content": "one"}, "finish_reason": None},
+                    {"index": 0, "delta": {"content": "zero"}, "finish_reason": None},
+                ]
+            },
+            chunk({}, finish="stop"),
+        )
+    ),
+    note="The first choice of the list is read, whatever index it names.",
+)
+case(
+    "stream_delta_that_is_a_text",
+    f"stream {ODD}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(
+        sse(
+            {"choices": [{"index": 0, "delta": "Hel", "finish_reason": None}]},
+            chunk({"content": "lo."}),
+            chunk({}, finish="stop"),
+        )
+    ),
+)
+case(
+    "stream_finish_reason_that_is_no_text",
+    f"stream {ODD}",
+    STREAM,
+    LOCAL,
+    HELLO,
+    stream(
+        sse(
+            chunk({"content": "Hello."}),
+            {"choices": [{"index": 0, "delta": {}, "finish_reason": 3}]},
+        )
+    ),
+)
+case(
+    "stream_call_arguments_that_are_a_number",
+    f"stream tool_call_streamed {ODD}",
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(
+                index=0, id="call_1", type="function", function={"name": "clock", "arguments": 7}
+            ),
+            chunk({}, finish="tool_calls"),
+        )
+    ),
+)
+case(
+    "stream_call_index_that_is_a_text",
+    f"stream tool_call_streamed {ODD}",
+    STREAM,
+    LOCAL,
+    TOOLS,
+    stream(
+        sse(
+            raw_call(
+                index="0",
+                id="call_1",
+                type="function",
+                function={"name": "clock", "arguments": "{}"},
+            ),
+            chunk({}, finish="tool_calls"),
+        )
+    ),
+)
 
 # -- More error bodies ---------------------------------------------------------------------
 
@@ -2944,6 +3058,107 @@ case(
 )
 case("answer_200_that_is_a_list", ODD, GENERATE, LOCAL, HELLO, answer([]))
 
+# -- The model listing ----------------------------------------------------------------------
+
+
+def listed(*models: Any) -> dict[str, Any]:
+    """The page ``GET /models`` answers: each model by its id, with what the
+    endpoint says beside it."""
+    entries = [
+        {"id": model, "object": "model", "created": 1700000000, "owned_by": "system"}
+        if isinstance(model, str)
+        else model
+        for model in models
+    ]
+    return {"object": "list", "data": entries}
+
+
+# A listing reads no request: its case carries an empty one.
+NOTHING: dict[str, Any] = {}
+RAISED_AS_IT_IS = "list_models wraps no error: the openai SDK's is raised as it is."
+case(
+    "list_models",
+    "listing",
+    LISTING,
+    OPENAI,
+    NOTHING,
+    answer(
+        listed(
+            "gpt-4o",
+            "gpt-5.1",
+            "text-embedding-3-small",
+            "whisper-1",
+            "tts-1",
+            "ft:gpt-4o:example::A1",
+        )
+    ),
+    note=(
+        "The page carries ids alone. What the catalogue knows of a model is filled from "
+        "it, a speech model is tagged, and a model the catalogue does not know passes "
+        "through with its id."
+    ),
+)
+case("list_models_that_lists_none", "listing", LISTING, OPENAI, NOTHING, answer(listed()))
+case(
+    "list_models_behind_a_base_url",
+    "listing",
+    LISTING,
+    {**LOCAL, "default_headers": {"x-tenant": "blue"}},
+    NOTHING,
+    answer(listed("local-model", "gpt-4o")),
+    note="The catalogue fills what it knows of a model whatever the endpoint that lists it.",
+)
+case(
+    "list_models_status_401",
+    "listing status_401",
+    LISTING,
+    OPENAI,
+    NOTHING,
+    answer(failed("Incorrect API key provided.", "invalid_request_error", "invalid_api_key"), 401),
+)
+case(
+    "list_models_retry_that_succeeds",
+    "listing retry_succeeds status_503",
+    LISTING,
+    RETRIED,
+    NOTHING,
+    answer(OVERLOADED, 503),
+    answer(listed("gpt-4o")),
+    sdk=SDK_RETRIES,
+)
+case(
+    "list_models_connection_refused",
+    "listing connection_refused",
+    LISTING,
+    OPENAI,
+    NOTHING,
+    REFUSED,
+)
+case(
+    "list_models_page_without_its_models",
+    "listing odd_shapes",
+    LISTING,
+    OPENAI,
+    NOTHING,
+    answer({"object": "list"}),
+)
+case(
+    "list_models_entry_without_an_id",
+    "listing odd_shapes",
+    LISTING,
+    OPENAI,
+    NOTHING,
+    answer(listed("gpt-4o", {"object": "model", "owned_by": "system"})),
+)
+case(
+    "list_models_answered_with_a_page",
+    "listing not_json",
+    LISTING,
+    LOCAL,
+    NOTHING,
+    page("<html><body>Not here</body></html>", 200),
+)
+
 # -- What the openai SDK decides, beside its retries --------------------------------------
 
 BODY_READ_BY_THE_SDK = "The openai SDK decides how a body that is no JSON is handed on."
@@ -2984,6 +3199,11 @@ ALSO_DECIDED_BY_THE_SDK = {
     "stream_that_starts_with_a_byte_order_mark": (
         "The openai SDK's reader drops no byte order mark: the line it starts is no data."
     ),
+    "stream_event_with_no_data": (
+        "The openai SDK's reader hands on an event that holds no data, which is read as JSON."
+    ),
+    "list_models_status_401": RAISED_AS_IT_IS,
+    "list_models_connection_refused": RAISED_AS_IT_IS,
 }
 
 

@@ -72,7 +72,20 @@ nothing has been released yet.
   Python implementation does on the cases captured from it; its README lists
   where it differs and why. A redirect is refused, the key appears in no
   failure, an answer past 4 MiB fails, and nothing is read from the
-  environment. Its streams are not written yet.
+  environment.
+- `roomkit-providers-openai`: the provider's streams,
+  `generate_structured_stream` and `generate_stream`. A stream is pulled,
+  and dropping it stops the request and closes its connection. It fails at
+  a line or an event past 1 MiB and past 256 MiB in all, and one that stalls
+  ends at the configuration's timeout.
+- `roomkit-providers-openai`: `list_models`, the models the endpoint lists,
+  each filled from the crate's catalogue where it knows the model.
+- `roomkit-providers-openai`: a request the server refuses fails as
+  `the provider answered HTTP <status> (<type>, <code>): <message>`, from
+  the body's error object alone. A body that is no JSON is not echoed.
+- `roomkit-providers-openai`: an example, `local_server`, that asks a
+  stand-in server on a local port once whole and once streamed. `make all`
+  runs it.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of

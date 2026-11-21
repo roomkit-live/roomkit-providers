@@ -4,8 +4,8 @@
 //! `scripts/generate_openai_chat_cases.py` (`make python-openai-chat-cases`).
 //!
 //! Each case holds a configuration, a request, the HTTP exchanges Python had
-//! with a fake of the endpoint, and what Python returned. The provider that
-//! replays them is not written yet: this test holds the table to its shape,
+//! with a fake of the endpoint, and what Python returned. The provider
+//! replays them in its own tests; this test holds the table to its shape,
 //! reads every part of it, and requires every kind of case.
 //!
 //! A body read in several reads is a list of chunks, each the bytes of one
@@ -20,7 +20,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use roomkit_providers_core::{
-    AiRequest, AiResponse, ProviderError, ProviderErrorOptions, ResponseSchemaError,
+    AiRequest, AiResponse, ModelInfo, ProviderError, ProviderErrorOptions, ResponseSchemaError,
     ResponseSchemaErrorOptions, ResponseSchemaFailure, StreamEvent,
 };
 use roomkit_providers_openai::OpenAiConfig;
@@ -153,6 +153,7 @@ struct Expected {
     response: Option<Value>,
     text: Option<Vec<String>>,
     events: Option<Vec<Value>>,
+    models: Option<Vec<Value>>,
     error: Option<Failure>,
 }
 
@@ -211,6 +212,22 @@ const SDK_WORDS: [&str; 3] = [
     "Connection error.",
     "Request timed out.",
     "An error occurred during streaming",
+];
+
+/// The classes of the openai SDK a call may raise as they are.
+const SDK_ERRORS: [&str; 12] = [
+    "OpenAIError",
+    "APIConnectionError",
+    "APITimeoutError",
+    "APIStatusError",
+    "BadRequestError",
+    "AuthenticationError",
+    "PermissionDeniedError",
+    "NotFoundError",
+    "ConflictError",
+    "UnprocessableEntityError",
+    "RateLimitError",
+    "InternalServerError",
 ];
 
 /// The classes the HTTP client raises for a body it could not read to its
@@ -290,7 +307,7 @@ const MANGLED: (&str, &str) = (
 
 /// What a fixture must show of the provider: each kind, in at least one
 /// case. A regenerated fixture that loses one fails here.
-const KINDS: [&str; 78] = [
+const KINDS: [&str; 79] = [
     // A request and its answer.
     "plain",
     "system_prompt",
@@ -378,6 +395,8 @@ const KINDS: [&str; 78] = [
     "retry_succeeds",
     "retries_exhausted",
     "retry_wait",
+    // The model listing.
+    "listing",
 ];
 
 #[expect(
@@ -634,18 +653,25 @@ fn each_result_reads_as_the_contract_s_types_and_writes_back_unchanged() {
             expected.response.is_some(),
             expected.text.is_some(),
             expected.events.is_some(),
+            expected.models.is_some(),
         ];
         let failed = expected.error.is_some();
         match case.call.as_str() {
-            "generate" => assert_eq!(given, [!failed, false, false], "{name}"),
-            "generate_stream" => assert!(given == [false, true, false] || failed, "{name}"),
-            "generate_structured_stream" => {
-                assert!(given == [false, false, true] || failed, "{name}");
+            "generate" => assert_eq!(given, [!failed, false, false, false], "{name}"),
+            "generate_stream" => {
+                assert!(given == [false, true, false, false] || failed, "{name}");
             }
+            "generate_structured_stream" => {
+                assert!(given == [false, false, true, false] || failed, "{name}");
+            }
+            "list_models" => assert_eq!(given, [false, false, false, !failed], "{name}"),
             other => panic!("{name}: an unknown call {other}"),
         }
         if let Some(response) = &expected.response {
             read_back::<AiResponse>(response, name);
+        }
+        for model in expected.models.iter().flatten() {
+            read_back::<ModelInfo>(model, name);
         }
         for event in expected.events.iter().flatten() {
             read_back::<StreamEvent>(event, name);
@@ -711,7 +737,7 @@ fn answered_texts(exchanges: &[Exchange]) -> Vec<String> {
 fn words_of(failure: &Failure, sent: &[String]) -> &'static str {
     let message = failure.message.as_str();
     let cause = failure.raised_from.as_deref();
-    if failure.class == "OpenAIError" || SDK_WORDS.contains(&message) {
+    if SDK_ERRORS.contains(&failure.class.as_str()) || SDK_WORDS.contains(&message) {
         return "sdk";
     }
     if failure.provider.is_none() {
@@ -778,7 +804,7 @@ fn each_failure_says_what_a_replay_reproduces_of_it() {
             assert_eq!(words, "roomkit", "{name}");
         }
     }
-    assert!(failures >= 112, "{failures} failures");
+    assert!(failures >= 120, "{failures} failures");
     assert!(compared >= 45, "{compared} messages compared");
     assert!(reasons >= 15, "{reasons} failures of a response schema");
 }
@@ -813,14 +839,20 @@ fn the_questioned_cases_are_the_ones_listed() {
 }
 
 /// Each request went where its configuration says: the base URL, `OpenAI`'s
-/// own when none is given, then the path of Chat Completions; or where the
-/// answer before it redirected it.
+/// own when none is given, then the path of Chat Completions, or of the
+/// model listing; or where the answer before it redirected it.
 #[test]
 fn each_request_was_sent_to_the_url_its_case_expects() {
     for case in fixture().cases {
         let name = &case.name;
         let base = case.config["base_url"].as_str().unwrap_or(OPENAI);
-        let mut expected = format!("{}/chat/completions", base.trim_end_matches('/'));
+        let listing = case.call == "list_models";
+        let path = if listing {
+            "models"
+        } else {
+            "chat/completions"
+        };
+        let mut expected = format!("{}/{path}", base.trim_end_matches('/'));
         if *name == MANGLED.0 {
             assert!(case.questioned.is_some(), "{name}");
             MANGLED.1.clone_into(&mut expected);
@@ -854,8 +886,13 @@ fn each_exchange_holds_a_request_python_sent_and_one_answer() {
         let name = &case.name;
         for exchange in &case.exchanges {
             let sent = &exchange.request;
-            // A redirect the SDK follows as a GET carries no body.
+            // A listing, and a redirect the SDK follows as a GET, carry no
+            // body; a listing says of none what it is.
             assert_eq!(sent.method == "POST", sent.body.is_some(), "{name}");
+            if case.call == "list_models" {
+                assert_eq!(sent.method, "GET", "{name}");
+                assert_eq!(sent.headers.get("content-type"), Some(&None), "{name}");
+            }
             assert!(["POST", "GET"].contains(&sent.method.as_str()), "{name}");
             for value in sent.headers.values().flatten() {
                 assert!(!value.contains(KEY), "{name}: a key in a header");
@@ -998,9 +1035,10 @@ fn the_fixture_covers_every_kind_of_case() {
         calls("generate_stream")
     );
     assert!(
-        calls("generate_structured_stream") >= 101,
+        calls("generate_structured_stream") >= 110,
         "{}",
         calls("generate_structured_stream")
     );
-    assert!(fixture.cases.len() >= 308, "the fixture lost cases");
+    assert!(calls("list_models") >= 9, "{}", calls("list_models"));
+    assert!(fixture.cases.len() >= 326, "the fixture lost cases");
 }

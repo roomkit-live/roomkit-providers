@@ -6,12 +6,12 @@ DENY_FLAGS ?=
 # targets, the Python version RoomKit is tested with for printable-table.
 PYTHON ?= python3
 
-.PHONY: all fmt fmt-check clippy test doc deny check-core-deps msrv msrv-toolchain hooks \
+.PHONY: all fmt fmt-check clippy test examples doc deny check-core-deps msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-openai-config python-openai-chat-cases \
 	python-openai-catalogue \
 	printable-table
 
-all: fmt-check clippy test doc deny check-core-deps
+all: fmt-check clippy test examples doc deny check-core-deps
 
 fmt:
 	$(CARGO) fmt --all
@@ -24,6 +24,12 @@ clippy:
 
 test:
 	$(CARGO) test --workspace --all-features --locked
+
+# Runs each example, which checks what it shows and fails otherwise. An
+# example talks to a local server it starts itself: nothing leaves the
+# machine.
+examples:
+	$(CARGO) run --locked -p roomkit-providers-openai --example local_server
 
 doc:
 	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --workspace --no-deps --all-features --locked

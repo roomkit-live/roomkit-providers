@@ -3,10 +3,23 @@
 //! cleaned of the key.
 
 use roomkit_providers_core::{ProviderError, ProviderErrorOptions};
+use roomkit_providers_http::SseError;
 use serde_json::Value;
+
+use self::words::names_transient;
+
+mod words;
 
 /// The most characters of a server's answer a failure's message carries.
 pub(crate) const MESSAGE_LIMIT: usize = 500;
+
+/// The most characters of an error's type or code a failure's message
+/// carries.
+const NAME_LIMIT: usize = 64;
+
+/// What Python's client says of an error inside a stream that brings no
+/// message of its own.
+const STREAM_ERROR: &str = "An error occurred during streaming";
 
 /// The status an error object's type names, where a server wrote the
 /// failure into its body rather than its status line (Python's
@@ -42,6 +55,15 @@ pub(crate) struct Failing<'p> {
     pub(crate) secret: &'p str,
 }
 
+impl std::fmt::Debug for Failing<'_> {
+    /// The provider's name: never the key.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Failing")
+            .field("provider", &self.provider)
+            .finish_non_exhaustive()
+    }
+}
+
 impl Failing<'_> {
     fn error(self, message: &str, retryable: bool, status: Option<u16>) -> ProviderError {
         let options = ProviderErrorOptions {
@@ -53,34 +75,76 @@ impl Failing<'_> {
         ProviderError::new(cleaned(message, self.secret, MESSAGE_LIMIT), options)
     }
 
-    /// The failure of an answer whose status is no success: retried when
-    /// the status is transient, with the body the server answered, as
-    /// Python's `status_error_text` keeps it. A redirect is one: it is not
-    /// followed.
+    /// The failure of an answer whose status is no success, retried when
+    /// the status is transient: `the provider answered HTTP 401 (type,
+    /// code): message`. Of the body it carries what an error object says
+    /// of itself and nothing else: its message, its type and its code,
+    /// read under `error` or at the top level, each on one line, bounded
+    /// and without the key. A body that is no JSON is not echoed: the
+    /// message is then the status's reason. A redirect is a failure: it
+    /// is not followed.
     pub(crate) fn status(self, status: u16, body: &[u8]) -> ProviderError {
         if (300..400).contains(&status) {
             let message =
                 format!("the endpoint answered with a redirect ({status}), which is not followed");
             return self.error(&message, false, Some(status));
         }
-        let text = String::from_utf8_lossy(body);
-        let text = text.trim();
-        let parsed = serde_json::from_str::<Value>(text).ok();
-        let message = match &parsed {
-            _ if text.is_empty() => format!("Error code: {status}"),
-            Some(body) => format!("Error code: {status} - {body}"),
-            None => text.to_owned(),
+        let parsed: Option<Value> = serde_json::from_slice(body).ok();
+        let said = |name: &str| said_of(parsed.as_ref()?, name);
+        let named = |name: &str| {
+            let name = cleaned(&said(name)?, self.secret, NAME_LIMIT);
+            Some(name).filter(|name| !name.is_empty())
         };
+        let (kind, code) = (named("type"), named("code"));
+        let detail = match (&kind, &code) {
+            (Some(kind), Some(code)) => format!(" ({kind}, {code})"),
+            (Some(named), None) | (None, Some(named)) => format!(" ({named})"),
+            (None, None) => String::new(),
+        };
+        let bare = || parsed.as_ref()?.get("error")?.as_str().map(str::to_owned);
+        let reason = || {
+            reqwest::StatusCode::from_u16(status)
+                .ok()?
+                .canonical_reason()
+        };
+        let message = said("message")
+            .or_else(bare)
+            .unwrap_or_else(|| reason().unwrap_or("no message").to_owned());
+        let message = format!("the provider answered HTTP {status}{detail}: {message}");
         let mut error = self.error(&message, retryable_status(status), Some(status));
         // The error object's code is a first-hand fact, unlike its wording.
-        let described = parsed
-            .as_ref()
-            .map(|body| body.get("error").unwrap_or(body));
-        let code = described.and_then(|error| error.get("code"));
-        if code.and_then(Value::as_str) == Some("context_length_exceeded") {
+        if code.as_deref() == Some("context_length_exceeded") {
             error.context_overflow = Some(true);
         }
         error
+    }
+
+    /// The failure of an error a server wrote inside its stream, in place
+    /// of an event: the status the error names decides whether it is
+    /// retried, else its words (Python's `provider_error`). Its message is
+    /// the error's own, or the words of Python's client for an error that
+    /// brings none.
+    pub(crate) fn stream_error(self, error: &Value) -> ProviderError {
+        let message = error.get("message").and_then(Value::as_str);
+        let message = message.filter(|message| !message.is_empty());
+        let message = message.unwrap_or(STREAM_ERROR);
+        let status = described_status(error);
+        let retryable = status.map_or_else(|| names_transient(message), retryable_status);
+        self.error(message, retryable, status)
+    }
+
+    /// The failure of a streamed answer that ended without one event (a
+    /// page, a whole JSON body, the end mark alone): final (Python's
+    /// `nonempty_stream`).
+    pub(crate) fn no_event(self) -> ProviderError {
+        let message = "The provider's stream carried no event: its body could not be read";
+        self.error(message, false, None)
+    }
+
+    /// The failure of a streamed answer past what the provider reads of
+    /// one, or that is no stream of events: final.
+    pub(crate) fn stream_unread(self, error: &SseError) -> ProviderError {
+        self.error(&error.to_string(), false, None)
     }
 
     /// The failure of a request that got no answer, or whose answer was
@@ -117,6 +181,18 @@ impl Failing<'_> {
             .find_map(|object| object.get("message").and_then(Value::as_str))
             .map_or_else(|| text_of(body), str::to_owned);
         self.error(&message, status.is_some_and(retryable_status), status)
+    }
+}
+
+/// What the error object of `body` says under `name`: read in its `error`
+/// object, then at the top level, a text or a number.
+fn said_of(body: &Value, name: &str) -> Option<String> {
+    let error = body.get("error").filter(|error| error.is_object());
+    let found = error.and_then(|error| error.get(name));
+    match found.or_else(|| body.get(name))? {
+        Value::String(text) => Some(text.clone()),
+        Value::Number(number) => Some(number.to_string()),
+        Value::Null | Value::Bool(_) | Value::Array(_) | Value::Object(_) => None,
     }
 }
 
@@ -211,17 +287,103 @@ mod tests {
 
     #[test]
     fn a_message_never_carries_the_key_and_is_bounded() {
-        let echoed = json!({"error": {"message": "Incorrect key: placeholder-not-a-key."}});
+        let echoed = json!({"error": {
+            "message": "Incorrect key: placeholder-not-a-key.",
+            "type": "placeholder-not-a-key",
+            "code": "placeholder-not-a-key",
+        }});
         let error = FAILING.status(401, echoed.to_string().as_bytes());
-        assert!(!error.message.contains("placeholder"), "{}", error.message);
-        assert!(error.message.contains("[removed]"));
-        let long = "x".repeat(4 * MESSAGE_LIMIT);
         assert_eq!(
-            FAILING.status(400, long.as_bytes()).message.chars().count(),
-            MESSAGE_LIMIT
+            error.message,
+            "the provider answered HTTP 401 ([removed], [removed]): Incorrect key: [removed]."
         );
-        let lines = FAILING.status(400, b" model\n not  loaded \n");
-        assert_eq!(lines.message, "model not loaded");
+        let long = json!({"error": {
+            "message": "x".repeat(4 * MESSAGE_LIMIT),
+            "type": "t".repeat(4 * NAME_LIMIT),
+        }});
+        let long = FAILING.status(400, long.to_string().as_bytes());
+        assert_eq!(long.message.chars().count(), MESSAGE_LIMIT);
+        let named = format!(
+            "the provider answered HTTP 400 ({}): xxx",
+            "t".repeat(NAME_LIMIT)
+        );
+        assert!(long.message.starts_with(&named), "{}", long.message);
+        let lines = json!({"error": {"message": " model\n not  loaded \n"}});
+        assert_eq!(
+            FAILING.status(400, lines.to_string().as_bytes()).message,
+            "the provider answered HTTP 400: model not loaded"
+        );
+    }
+
+    // Source: src/wire.rs::tests::an_error_answer_gives_the_provider_s_type_code_and_message
+    // and ::an_error_answer_that_is_no_json_gives_the_status_s_reason_only
+    #[test]
+    fn an_error_answer_gives_its_type_code_and_message_or_the_status_s_reason() {
+        let said = |status: u16, body: &str| FAILING.status(status, body.as_bytes()).message;
+        let own = r#"{"error": {"message": "Incorrect API key", "type": "invalid_request_error", "code": "invalid_api_key"}}"#;
+        let flat = r#"{"object": "error", "message": "The model does not exist.", "type": "NotFoundError", "code": 404}"#;
+        assert_eq!(
+            said(401, own),
+            "the provider answered HTTP 401 (invalid_request_error, invalid_api_key): \
+             Incorrect API key"
+        );
+        assert_eq!(
+            said(404, flat),
+            "the provider answered HTTP 404 (NotFoundError, 404): The model does not exist."
+        );
+        assert_eq!(
+            said(502, "<html>echo: placeholder-not-a-key</html>"),
+            "the provider answered HTTP 502: Bad Gateway"
+        );
+    }
+
+    // What a host sees of a refused request: the error object's own words,
+    // and nothing of a body that is no JSON.
+    #[test]
+    fn a_status_failure_says_what_the_error_object_says_and_echoes_no_other_body() {
+        let said = |status: u16, body: &str| FAILING.status(status, body.as_bytes()).message;
+        let object = json!({"error": {
+            "message": "Incorrect API key provided.",
+            "type": "invalid_request_error",
+            "param": null,
+            "code": "invalid_api_key",
+        }});
+        assert_eq!(
+            said(401, &object.to_string()),
+            "the provider answered HTTP 401 (invalid_request_error, invalid_api_key): \
+             Incorrect API key provided."
+        );
+        // A server that writes its error at the top level, and a code that
+        // is a number.
+        let flat = json!({"message": "The model is not loaded.", "code": 404});
+        assert_eq!(
+            said(404, &flat.to_string()),
+            "the provider answered HTTP 404 (404): The model is not loaded."
+        );
+        let bare = json!({"error": "model not found"});
+        assert_eq!(
+            said(404, &bare.to_string()),
+            "the provider answered HTTP 404: model not found"
+        );
+        let page = "<html><body><h1>502 Bad Gateway</h1>nginx at 10.0.0.7</body></html>";
+        assert_eq!(
+            said(502, page),
+            "the provider answered HTTP 502: Bad Gateway"
+        );
+        assert_eq!(
+            said(400, "the model is not loaded"),
+            "the provider answered HTTP 400: Bad Request"
+        );
+        assert_eq!(
+            said(500, ""),
+            "the provider answered HTTP 500: Internal Server Error"
+        );
+        assert_eq!(said(529, ""), "the provider answered HTTP 529: no message");
+        // An object that says nothing of an error.
+        assert_eq!(
+            said(503, r#"{"detail": "busy"}"#),
+            "the provider answered HTTP 503: Service Unavailable"
+        );
     }
 
     #[test]
@@ -234,7 +396,6 @@ mod tests {
             );
         }
         assert!(FAILING.status(529, b"").retryable);
-        assert_eq!(FAILING.status(500, b"").message, "Error code: 500");
         let redirect = FAILING.status(307, b"");
         assert_eq!(
             (redirect.retryable, redirect.status_code),
@@ -246,6 +407,43 @@ mod tests {
             Some(true)
         );
         assert_eq!(FAILING.status(400, b"{}").context_overflow, None);
+    }
+
+    // Python: provider_error on the error a stream carried: the status it
+    // names decides, else its words.
+    #[test]
+    fn an_error_inside_a_stream_reads_as_its_status_or_its_words() {
+        let read = |error: Value| {
+            let error = FAILING.stream_error(&error);
+            (error.status_code, error.retryable, error.message)
+        };
+        let named = |status: Option<u16>, retryable: bool, message: &str| {
+            (status, retryable, message.to_owned())
+        };
+        assert_eq!(
+            read(json!({"message": "The server had an error.", "type": "server_error"})),
+            named(Some(500), true, "The server had an error.")
+        );
+        assert_eq!(
+            read(json!({"message": "No such model.", "code": 404})),
+            named(Some(404), false, "No such model.")
+        );
+        assert_eq!(
+            read(json!({"message": "Rate limit reached"})),
+            named(None, true, "Rate limit reached")
+        );
+        assert_eq!(
+            read(json!({"message": "The token limit was reached."})),
+            named(None, false, "The token limit was reached.")
+        );
+        assert_eq!(
+            read(json!("rate limit")),
+            named(None, false, "An error occurred during streaming")
+        );
+        assert_eq!(
+            read(json!({"message": "key placeholder-not-a-key"})),
+            named(None, false, "key [removed]")
+        );
     }
 
     #[test]

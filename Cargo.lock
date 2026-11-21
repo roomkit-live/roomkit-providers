@@ -673,6 +673,7 @@ dependencies = [
 name = "roomkit-providers-openai"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "futures-core",
  "jiff",
  "reqwest",
  "roomkit-providers-core",

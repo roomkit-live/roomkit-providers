@@ -6,6 +6,7 @@ use std::sync::LazyLock;
 
 use roomkit_providers_core::ModelInfo;
 use serde::Deserialize;
+use serde_json::Value;
 
 const CATALOGUE: &str = include_str!("../catalog/models.json");
 
@@ -40,6 +41,16 @@ pub(crate) fn models() -> &'static [ModelInfo] {
 /// The catalogue's entry for `model`.
 pub(crate) fn entry(model: &str) -> Option<&'static ModelInfo> {
     models().iter().find(|entry| entry.id == model)
+}
+
+/// The models the `page` a `GET /models` answered lists, each read by its
+/// id alone, as Python's `list_models` reads it; `None` for a body that is
+/// no such page, which is no listing rather than an empty one.
+pub(crate) fn listed(page: &[u8]) -> Option<Vec<ModelInfo>> {
+    let page: Value = serde_json::from_slice(page).ok()?;
+    let listed = page.get("data")?.as_array()?.iter();
+    let ids = listed.map(|model| model.get("id")?.as_str());
+    ids.map(|id| id.map(ModelInfo::new)).collect()
 }
 
 /// Whether `entry` carries `tag`; no entry carries none.

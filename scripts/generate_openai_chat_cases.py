@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Write what RoomKit's Python OpenAI provider sends and reads, case by case.
 
-Each case runs ``OpenAIAIProvider`` once, on Chat Completions, against a fake
-of the wire (``httpx2.MockTransport``: nothing leaves this script), and
-records:
+Each case runs ``OpenAIAIProvider`` once, on Chat Completions or on the model
+listing, against a fake of the wire (``httpx2.MockTransport``: nothing leaves
+this script), and records:
 
 - ``config``: the keyword arguments of its ``OpenAIConfig``;
 - ``request``: the contract's JSON form of the request (the ten fields of
@@ -94,6 +94,9 @@ STATUS_ERRORS = {
     "InternalServerError",
 }
 
+# The classes of the openai SDK a call may raise as they are.
+SDK_ERRORS = {"OpenAIError", "APIConnectionError", "APITimeoutError", *STATUS_ERRORS}
+
 # The classes the HTTP client raises for a body it could not read to its end.
 TRANSPORT_ERRORS = {"RemoteProtocolError", "ReadTimeout", "ReadError", "ConnectError"}
 
@@ -148,7 +151,8 @@ NOTES = {
     "expected": (
         "What Python returned: response for generate (AIResponse without tasks and "
         "observations), text for generate_stream (the deltas), events for "
-        "generate_structured_stream (each event dumped). A failure is under error, after "
+        "generate_structured_stream (each event dumped), models for list_models (each "
+        "ModelInfo dumped). A failure is under error, after "
         "whatever a stream gave first: its class, its message (the first argument), its text "
         "(str), the attributes of a ProviderError, and raised_from, the class of the SDK or "
         "transport error it was raised from, if any."
@@ -382,7 +386,7 @@ def words_of(error: dict[str, Any], sent: list[str]) -> str:
     """Whose words the message of ``error`` holds (``NOTES["compare"]``);
     ``sent`` is every text the fake answered with."""
     cause, message = error["raised_from"], error["message"]
-    if error["class"] == "OpenAIError":
+    if error["class"] in SDK_ERRORS:
         return "sdk"
     if "provider" not in error:
         return "python"
@@ -426,6 +430,9 @@ async def outcome(provider: OpenAIAIProvider, call: str, context: AIContext) -> 
         if call == "generate":
             response = await provider.generate(context)
             return {"response": response.model_dump(mode="json", exclude=HOST_RESPONSE_FIELDS)}
+        if call == "list_models":
+            models = await provider.list_models()
+            return {"models": [model.model_dump(mode="json") for model in models]}
         if call == "generate_stream":
             async for text in provider.generate_stream(context):
                 given.append(text)
@@ -434,7 +441,7 @@ async def outcome(provider: OpenAIAIProvider, call: str, context: AIContext) -> 
             given.append(event.model_dump(mode="json"))
         return {"events": given}
     except Exception as failed:
-        if call == "generate":
+        if call in ("generate", "list_models"):
             return {"error": error_form(failed)}
         key = "text" if call == "generate_stream" else "events"
         return {key: given, "error": error_form(failed)}

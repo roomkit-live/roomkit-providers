@@ -5,11 +5,12 @@ use std::error::Error as _;
 
 use roomkit_providers_core::{
     AiMessage, AiProvider, AiRequest, AiResponse, AiRole, AiTool, ProviderError,
-    ResponseSchemaError, ResponseSchemaFailure,
+    ResponseSchemaError, ResponseSchemaFailure, StreamEvent,
 };
 use serde_json::{Value, json};
 
-use crate::replay::fake::{Body, Fake, Reply};
+use crate::replay::drained;
+use crate::replay::fake::{Body, Ending, Fake, Reply};
 use crate::{OpenAiAiProvider, OpenAiConfig};
 
 /// The key every test configures: a placeholder.
@@ -83,9 +84,7 @@ pub(crate) fn saying(text: &str) -> Reply {
 /// its endpoint stays what `config` says.
 pub(crate) fn pointed(config: OpenAiConfig, fake: &Fake) -> OpenAiAiProvider {
     let mut provider = OpenAiAiProvider::new(config).unwrap();
-    let dialed = provider.endpoint().clone();
-    let target = &dialed[url::Position::BeforePath..];
-    provider.point_at(&format!("http://{}{target}", fake.address));
+    provider.point_at(fake.address);
     provider
 }
 
@@ -117,6 +116,67 @@ pub(crate) async fn asked(reply: Reply, request: &AiRequest) -> Result<AiRespons
     pointed(elsewhere("local-model"), &fake)
         .generate(request)
         .await
+}
+
+/// A streamed answer of HTTP 200: `reads`, each sent as one read, and how
+/// they end.
+pub(crate) fn stream_reply(reads: Vec<Vec<u8>>, ending: Ending) -> Reply {
+    Reply::Answer {
+        status: 200,
+        headers: vec![("content-type".to_owned(), "text/event-stream".to_owned())],
+        body: Body::Reads(reads, ending),
+    }
+}
+
+/// The text of a stream of events: one event for each of `chunks`, then
+/// the end mark.
+pub(crate) fn sse_of(chunks: &[Value]) -> String {
+    let events = chunks.iter().map(|chunk| format!("data: {chunk}\n\n"));
+    events.chain(["data: [DONE]\n\n".to_owned()]).collect()
+}
+
+/// A streamed completion: one event for each of `chunks`, then the end
+/// mark, sent in one read.
+pub(crate) fn events(chunks: &[Value]) -> Reply {
+    stream_reply(vec![sse_of(chunks).into_bytes()], Ending::Ends)
+}
+
+/// One chunk of a streamed completion, its first choice's `delta`.
+pub(crate) fn chunk(delta: &Value) -> Value {
+    json!({"object": "chat.completion.chunk", "choices": [{"index": 0, "delta": delta}]})
+}
+
+/// The last chunks of a streamed completion: its end, then its usage.
+pub(crate) fn ending(finish_reason: &str, prompt: u64, completion: u64) -> [Value; 2] {
+    [
+        json!({"choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason}]}),
+        json!({"choices": [], "usage": {"prompt_tokens": prompt, "completion_tokens": completion}}),
+    ]
+}
+
+/// What `generate_structured_stream` gives of `request` where a server
+/// behind a base URL answers with `reply`: its events, then the failure
+/// that ended them.
+pub(crate) async fn streamed(
+    reply: Reply,
+    request: &AiRequest,
+) -> (Vec<StreamEvent>, Option<ProviderError>) {
+    let fake = Fake::serving(vec![reply]).await;
+    let provider = pointed(elsewhere("local-model"), &fake);
+    drained(provider.generate_structured_stream(request)).await
+}
+
+/// The text the deltas of `events` wrote.
+pub(crate) fn text_of(events: &[StreamEvent]) -> String {
+    let said = events.iter().filter_map(|event| match event {
+        StreamEvent::TextDelta(delta) => Some(delta.text.as_str()),
+        StreamEvent::ToolCall(_)
+        | StreamEvent::ToolCallDelta(_)
+        | StreamEvent::Done(_)
+        | StreamEvent::ThinkingDelta(_)
+        | StreamEvent::Usage(_) => None,
+    });
+    said.collect()
 }
 
 /// Why `error` says a response schema failed, when it is one's failure.

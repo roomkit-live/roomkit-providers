@@ -1,17 +1,18 @@
 //! The events of a streamed answer, read from the bytes as they arrive
 //! (server-sent events), without a dependency for it.
 //!
-//! A line ends at `\n`, a `\r` before it dropped; a blank line ends an
-//! event, whose `data` lines join with `\n`; a comment (`:`) and the other
-//! fields are skipped. Three bounds keep a broken or hostile server from
-//! growing the memory: a line, an event's data and the whole stream, each
-//! failing the turn once passed, so that a line that never ends, or events
-//! that never stop, are cut.
+//! A line ends at `\r\n`, at `\n` or at `\r`, as the format defines it,
+//! wherever the reads cut: a `\r` that ends one read and a `\n` that starts
+//! the next are one ending. A blank line ends an event, whose `data` lines
+//! join with `\n`; a comment (`:`) and the other fields are skipped. An
+//! event the answer's end cuts, with no blank line after it, is read.
+//! Three bounds keep a broken or hostile server from growing the memory: a
+//! line, an event's data and the whole stream, each failing the turn once
+//! passed, so that a line that never ends, or events that never stop, are
+//! cut.
 //!
-//! The reader is narrower than the format on three points:
+//! The reader is narrower than the format on two points:
 //!
-//! - a `\r` ends a line only before a `\n`, or as the answer's last byte:
-//!   elsewhere it stays in its line;
 //! - a byte order mark at the start of the answer is not dropped: the line
 //!   it starts is read as a field other than `data`, and skipped;
 //! - a `data` line without a colon, which the format reads as an empty line
@@ -39,6 +40,9 @@ pub struct Events {
     line: Vec<u8>,
     /// The data of the event being read, its lines joined.
     data: Option<String>,
+    /// Whether the last byte read was a `\r` that ended a line: a `\n`
+    /// right after it belongs to the same ending.
+    after_carriage_return: bool,
     /// How many bytes the answer sent so far.
     read: usize,
     /// The most bytes the answer may send.
@@ -51,6 +55,7 @@ impl Events {
         Self {
             line: Vec::new(),
             data: None,
+            after_carriage_return: false,
             read: 0,
             limit,
         }
@@ -73,10 +78,22 @@ impl Events {
         }
         let mut ended = Vec::new();
         let mut rest = chunk;
-        while let Some(at) = rest.iter().position(|byte| *byte == b'\n') {
+        if self.after_carriage_return && !rest.is_empty() {
+            self.after_carriage_return = false;
+            rest = rest.strip_prefix(b"\n").unwrap_or(rest);
+        }
+        while let Some(at) = rest.iter().position(|byte| matches!(byte, b'\r' | b'\n')) {
             let (head, tail) = rest.split_at(at);
             self.grow_line(head)?;
+            let carriage_return = tail.first() == Some(&b'\r');
             rest = tail.get(1..).unwrap_or_default();
+            if carriage_return {
+                match rest.strip_prefix(b"\n") {
+                    Some(after) => rest = after,
+                    // The line feed of this ending may start the next read.
+                    None => self.after_carriage_return = rest.is_empty(),
+                }
+            }
             let line = std::mem::take(&mut self.line);
             if let Some(event) = self.take_line(&line)? {
                 ended.push(event);
@@ -87,7 +104,7 @@ impl Events {
     }
 
     /// The data of the event the answer's end cut, if any: an answer that
-    /// ends without its blank line, or on a `\r` whose `\n` never came.
+    /// ends without its blank line.
     ///
     /// # Errors
     ///
@@ -97,8 +114,8 @@ impl Events {
         if line.is_empty() {
             return Ok(self.data.take());
         }
-        // The last line ends the event (a lone `\r`), or is the last of the
-        // event the answer's end cuts.
+        // The last line, which no ending followed, is the last of the event
+        // the answer's end cuts.
         let ended = self.take_line(&line)?;
         Ok(ended.or_else(|| self.data.take()))
     }
@@ -113,7 +130,6 @@ impl Events {
 
     /// Takes one whole line: the event it ends, at a blank line.
     fn take_line(&mut self, line: &[u8]) -> Result<Option<String>, SseError> {
-        let line = line.strip_suffix(b"\r").unwrap_or(line);
         if line.is_empty() {
             return Ok(self.data.take());
         }
@@ -244,6 +260,64 @@ mod tests {
                 Ok(vec!["caf\u{e9} \u{20ac}".to_owned()]),
                 "cut at {at}"
             );
+        }
+    }
+
+    /// The three endings of the format read alike, wherever one read ends
+    /// and the next starts: a `\r` and the `\n` after it are one ending
+    /// even in two reads.
+    #[test]
+    fn a_line_ends_at_a_carriage_return_a_line_feed_or_both_at_every_cut() {
+        let events = "data: one\n\ndata: two\ndata: lines\n\n: comment\n\ndata: three\n\n";
+        let expected = Ok(vec![
+            "one".to_owned(),
+            "two\nlines".to_owned(),
+            "three".to_owned(),
+        ]);
+        for ending in ["\n", "\r", "\r\n"] {
+            let answer = events.replace('\n', ending);
+            for at in 0..=answer.len() {
+                assert_eq!(
+                    read_in_two(answer.as_bytes(), at),
+                    expected,
+                    "{ending:?} cut at {at}"
+                );
+            }
+        }
+        // Each ending may differ from the one before it.
+        let mixed = b"data: one\r\rdata: two\n\r\ndata: three\r\n\n";
+        for at in 0..=mixed.len() {
+            assert_eq!(
+                read_in_two(mixed, at),
+                Ok(vec!["one".to_owned(), "two".to_owned(), "three".to_owned()]),
+                "cut at {at}"
+            );
+        }
+        // One byte per read.
+        let mut reader = Events::new(1024);
+        let mut read = Vec::new();
+        for byte in b"data: a\r\n\r\ndata: b\r\r" {
+            read.extend(reader.feed(&[*byte]).unwrap());
+        }
+        assert_eq!(read, ["a", "b"]);
+        assert_eq!(reader.finish(), Ok(None));
+    }
+
+    /// An event the answer's end cuts, with no blank line after it, is
+    /// read, whichever ending its last line has or lacks.
+    #[test]
+    fn an_event_with_no_blank_line_after_it_is_read_at_the_answer_s_end() {
+        for answer in [
+            &b"data: one\n\ndata: last"[..],
+            b"data: one\n\ndata: last\n",
+        ] {
+            for at in 0..=answer.len() {
+                assert_eq!(
+                    read_in_two(answer, at),
+                    Ok(vec!["one".to_owned(), "last".to_owned()]),
+                    "cut at {at}"
+                );
+            }
         }
     }
 

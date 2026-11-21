@@ -1,0 +1,162 @@
+//! Asks a server that speaks Chat Completions once whole and once streamed,
+//! and checks what it read.
+//!
+//! The server is a stand-in this example starts on a local port: nothing
+//! leaves the machine, and the key is a placeholder. Against a real server,
+//! only the configuration changes: its base URL, its key and its model.
+//!
+//! ```text
+//! cargo run -p roomkit-providers-openai --example local_server
+//! ```
+
+use std::error::Error;
+use std::fmt::Write as _;
+use std::future::poll_fn;
+use std::io::Write as _;
+
+use roomkit_providers_core::{AiMessage, AiProvider, AiRequest, AiRole, StreamEvent};
+use roomkit_providers_openai::{OpenAiAiProvider, OpenAiConfig};
+use serde_json::{Value, json};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+
+/// What the stand-in server says, in the pieces it streams it in.
+const PIECES: [&str; 3] = ["We ", "open ", "at nine."];
+
+/// The usage the stand-in server reports.
+fn usage() -> Value {
+    json!({"prompt_tokens": 12, "completion_tokens": 5, "total_tokens": 17})
+}
+
+/// A whole completion, as an HTTP answer.
+fn whole() -> String {
+    let message = json!({"role": "assistant", "content": PIECES.concat()});
+    let body = json!({
+        "id": "chatcmpl-1",
+        "object": "chat.completion",
+        "model": "local-model",
+        "choices": [{"index": 0, "message": message, "finish_reason": "stop"}],
+        "usage": usage(),
+    })
+    .to_string();
+    let length = body.len();
+    format!(
+        "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {length}\r\n\
+         connection: close\r\n\r\n{body}"
+    )
+}
+
+/// The same completion as a stream of events, as an HTTP answer that ends
+/// with its connection.
+fn streamed() -> String {
+    let said = PIECES.map(|text| json!({"choices": [{"index": 0, "delta": {"content": text}}]}));
+    let end = json!({"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]});
+    let used = json!({"choices": [], "usage": usage()});
+    let mut answer = String::from(
+        "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\nconnection: close\r\n\r\n",
+    );
+    for chunk in said.iter().chain([&end, &used]) {
+        // Writing to a `String` does not fail.
+        write!(answer, "data: {chunk}\n\n").ok();
+    }
+    answer.push_str("data: [DONE]\n\n");
+    answer
+}
+
+/// The body of the request `socket` sends: what follows its head, as long
+/// as its `content-length` says.
+async fn body_of(socket: &mut TcpStream) -> Option<Vec<u8>> {
+    let mut received = Vec::new();
+    let mut buffer = [0_u8; 4096];
+    loop {
+        let read = socket.read(&mut buffer).await.ok()?;
+        if read == 0 {
+            return None;
+        }
+        received.extend_from_slice(buffer.get(..read)?);
+        let ends_the_head = |window: &[u8]| window == b"\r\n\r\n";
+        let Some(head_end) = received.windows(4).position(ends_the_head) else {
+            continue;
+        };
+        let (head, body) = received.split_at_checked(head_end.checked_add(4)?)?;
+        let head = String::from_utf8_lossy(head).to_ascii_lowercase();
+        let declared = head
+            .lines()
+            .find_map(|line| line.strip_prefix("content-length:"));
+        let length: usize = declared.and_then(|length| length.trim().parse().ok())?;
+        if body.len() >= length {
+            return Some(body.to_vec());
+        }
+    }
+}
+
+/// Answers one request: a stream when it asks for one, else a whole
+/// completion.
+async fn answer(mut socket: TcpStream) {
+    let Some(body) = body_of(&mut socket).await else {
+        return;
+    };
+    let asked: Value = serde_json::from_slice(&body).unwrap_or_default();
+    let stream = asked.get("stream").and_then(Value::as_bool) == Some(true);
+    let reply = if stream { streamed() } else { whole() };
+    // A client that left before its answer is no failure of the server.
+    socket.write_all(reply.as_bytes()).await.ok();
+    socket.shutdown().await.ok();
+}
+
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let address = listener.local_addr()?;
+    let server = tokio::spawn(async move {
+        while let Ok((socket, _)) = listener.accept().await {
+            tokio::spawn(answer(socket));
+        }
+    });
+
+    let config = OpenAiConfig {
+        base_url: Some(format!("http://{address}/v1")),
+        ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
+    };
+    let provider = OpenAiAiProvider::new(config)?;
+    let request = AiRequest {
+        system_prompt: Some("You answer in one sentence.".to_owned()),
+        messages: vec![AiMessage::new(AiRole::User, "When do you open?")],
+        ..AiRequest::default()
+    };
+    let mut shown = std::io::stdout().lock();
+
+    // Once whole.
+    let response = provider.generate(&request).await?;
+    writeln!(shown, "whole:    {}", response.content)?;
+    writeln!(shown, "usage:    {}", Value::Object(response.usage.clone()))?;
+
+    // Once streamed: the text as it comes, then how the answer ended.
+    // Dropping the stream before its end would stop the request.
+    let mut pieces = Vec::new();
+    let mut finish_reason = None;
+    let mut events = provider.generate_structured_stream(&request);
+    while let Some(event) = poll_fn(|context| events.as_mut().poll_next(context)).await {
+        match event? {
+            StreamEvent::TextDelta(delta) => pieces.push(delta.text),
+            StreamEvent::Done(done) => finish_reason = done.finish_reason,
+            StreamEvent::ThinkingDelta(_)
+            | StreamEvent::ToolCallDelta(_)
+            | StreamEvent::ToolCall(_)
+            | StreamEvent::Usage(_) => {}
+        }
+    }
+    drop(events);
+    writeln!(shown, "streamed: {}", pieces.join("|"))?;
+    server.abort();
+
+    let said = PIECES.concat();
+    let counted = json!({"input_tokens": 12, "output_tokens": 5});
+    if response.content != said || Value::Object(response.usage) != counted {
+        return Err("the whole answer is not what the server said".into());
+    }
+    if pieces != PIECES || finish_reason.as_deref() != Some("stop") {
+        return Err("the streamed answer is not what the server said".into());
+    }
+    Ok(())
+}

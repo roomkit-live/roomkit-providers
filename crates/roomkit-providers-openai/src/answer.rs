@@ -8,15 +8,7 @@ use roomkit_providers_core::{
 use serde_json::{Map, Value};
 
 use crate::failure::Failing;
-
-/// The tag that opens a model's reasoning at the start of its text, and
-/// the one that closes it.
-const THINK_OPEN: &str = "<think>";
-const THINK_CLOSE: &str = "</think>";
-
-/// What may stand before the block that opens a generation: spaces, tabs
-/// and line breaks, which stay the answer's (RFC §6.7).
-const LEADING_SPACE: [char; 4] = [' ', '\t', '\r', '\n'];
+use crate::think_tags::{extract_think_tags, field_reasoning, merge_thinking};
 
 /// The response of a 2xx answer: `body` as it came, `json` whether the
 /// server said it is JSON, for `request` asked of the model `asked`.
@@ -75,14 +67,7 @@ pub(crate) fn read(
     };
     let calls = tool_calls(member("tool_calls"), finish_reason);
     let (thinking, content) = extract_think_tags(text("content").unwrap_or_default());
-    // The first of the two fields that holds anything, when it is a text.
-    let held = ["reasoning_content", "reasoning"]
-        .into_iter()
-        .filter_map(&member);
-    let field = held
-        .clone()
-        .find(|held| truthy(held))
-        .and_then(Value::as_str);
+    let field = field_reasoning(member("reasoning_content"), member("reasoning"));
     let refusal = text("refusal");
     if let Some(schema) = schema.filter(|_| calls.is_empty()) {
         let filtered = (finish_reason == Some("content_filter")).then_some("content_filter");
@@ -103,7 +88,7 @@ pub(crate) fn read(
 
 /// Whether Python reads `value` as true: an error member that is null,
 /// false, zero or empty is none.
-fn truthy(value: &Value) -> bool {
+pub(crate) fn truthy(value: &Value) -> bool {
     match value {
         Value::Null => false,
         Value::Bool(held) => *held,
@@ -175,32 +160,6 @@ fn arguments_of(raw: &Value) -> Metadata {
     }
 }
 
-/// The text of a whole response split into the `<think>` block that opens
-/// it and its answer (RFC §6.4, §6.7; Python's `extract_think_tags`): only
-/// a block that opens the text, after nothing but spaces, tabs and line
-/// breaks, is reasoning; a block the response stopped before closing is
-/// reasoning too, and a tag the answer writes later is answer.
-fn extract_think_tags(text: &str) -> (Option<String>, String) {
-    let body = text.trim_start_matches(LEADING_SPACE);
-    let Some(block) = body.strip_prefix(THINK_OPEN) else {
-        return (None, text.to_owned());
-    };
-    let leading = text.strip_suffix(body).unwrap_or_default();
-    let (thinking, answer) = block.split_once(THINK_CLOSE).unwrap_or((block, ""));
-    let thinking = Some(thinking).filter(|thinking| !thinking.is_empty());
-    (thinking.map(str::to_owned), format!("{leading}{answer}"))
-}
-
-/// The two reasoning conventions as one trace: the block that opens the
-/// text, then the field beside it.
-fn merge_thinking(inline: Option<String>, field: Option<&str>) -> Option<String> {
-    match (inline, field) {
-        (inline, None) => inline,
-        (None, Some(field)) => Some(field.to_owned()),
-        (Some(inline), Some(field)) => Some(format!("{inline}{field}")),
-    }
-}
-
 /// A count of tokens a server wrote as a whole number, a float with no
 /// fraction included; `None` for anything else, which stays unknown.
 fn count(value: Option<&Value>) -> Option<u64> {
@@ -216,7 +175,7 @@ fn count(value: Option<&Value>) -> Option<u64> {
 /// A server's usage as the contract's counters (Python's `_usage_from`):
 /// the prompt's tokens without its cache reads and its cache writes, which
 /// are counted apart; a counter the server leaves out stays unknown.
-fn usage_of(raw: &Value) -> Metadata {
+pub(crate) fn usage_of(raw: &Value) -> Metadata {
     let prompt = count(raw.get("prompt_tokens"));
     let completion = count(raw.get("completion_tokens"));
     let details = raw.get("prompt_tokens_details");
@@ -252,43 +211,6 @@ fn usage_of(raw: &Value) -> Metadata {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // Python: tests/test_providers/test_openai.py::TestExtractThinkTags and
-    // ::test_where_a_think_tag_stands
-    #[test]
-    fn only_the_block_that_opens_a_text_is_reasoning() {
-        let split = |text: &str| {
-            let (thinking, answer) = extract_think_tags(text);
-            (thinking.unwrap_or_default(), answer)
-        };
-        let read = |thinking: &str, answer: &str| (thinking.to_owned(), answer.to_owned());
-        assert_eq!(split("Hello."), read("", "Hello."));
-        assert_eq!(
-            split("<think>A plan.</think>Hello."),
-            read("A plan.", "Hello.")
-        );
-        assert_eq!(
-            split("<think>line\nline</think>\nHello."),
-            read("line\nline", "\nHello.")
-        );
-        assert_eq!(split("<think></think>Hello."), read("", "Hello."));
-        assert_eq!(split(" \t\r\n<think>A</think>B"), read("A", " \t\r\nB"));
-        assert_eq!(split("<think>never closed"), read("never closed", ""));
-        assert_eq!(split("<think>held</thi"), read("held</thi", ""));
-        assert_eq!(
-            split("<think>one</think>B<think>two</think>"),
-            read("one", "B<think>two</think>")
-        );
-        for text in [
-            "Hello. <think>is text</think>",
-            "<thinking>A plan.</thinking>Hello.",
-            "\u{feff}<think>A</think>B",
-            "\u{a0}<think>A</think>B",
-            "<thi",
-        ] {
-            assert_eq!(split(text), read("", text), "{text}");
-        }
-    }
 
     #[test]
     fn a_count_is_a_whole_number_and_nothing_else() {

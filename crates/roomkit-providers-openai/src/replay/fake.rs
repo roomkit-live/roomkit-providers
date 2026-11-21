@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 
 /// What the fake does with one request.
@@ -30,9 +31,13 @@ pub(crate) enum Reply {
 pub(crate) enum Body {
     /// Sent whole, its length declared.
     Whole(Vec<u8>),
-    /// Sent read by read; then the stream ends, the connection is lost, or
-    /// nothing more comes.
+    /// Sent read by read, each read one chunk of the transfer, written and
+    /// flushed before the next; then the stream ends, the connection is
+    /// lost, or nothing more comes.
     Reads(Vec<Vec<u8>>, Ending),
+    /// Sent read by read as [`Body::Reads`], after this pause before each
+    /// read; then the stream ends.
+    Paced(Vec<Vec<u8>>, Duration),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -56,7 +61,16 @@ pub(crate) struct Seen {
 pub(crate) struct Fake {
     pub(crate) address: SocketAddr,
     seen: Arc<Mutex<Vec<Seen>>>,
+    /// Told what the connections live: a request received, a connection
+    /// its client closed.
+    told: Arc<Told>,
     server: JoinHandle<()>,
+}
+
+#[derive(Default)]
+struct Told {
+    received: Notify,
+    closed: Notify,
 }
 
 impl Fake {
@@ -67,6 +81,8 @@ impl Fake {
         let address = listener.local_addr().unwrap();
         let seen = Arc::new(Mutex::new(Vec::new()));
         let kept = Arc::clone(&seen);
+        let told = Arc::new(Told::default());
+        let telling = Arc::clone(&told);
         let server = tokio::spawn(async move {
             let mut replies = replies.into_iter();
             while let Ok((socket, _)) = listener.accept().await {
@@ -76,14 +92,29 @@ impl Fake {
                     body: Body::Whole(Vec::new()),
                 };
                 let reply = replies.next().unwrap_or(extra);
-                tokio::spawn(answer(socket, reply, Arc::clone(&kept)));
+                // Each read goes out as it is written.
+                socket.set_nodelay(true).ok();
+                let telling = Arc::clone(&telling);
+                tokio::spawn(answer(socket, reply, Arc::clone(&kept), telling));
             }
         });
         Self {
             address,
             seen,
+            told,
             server,
         }
+    }
+
+    /// Returns once a request was received.
+    pub(crate) async fn received(&self) {
+        self.told.received.notified().await;
+    }
+
+    /// Returns once the client closed a connection the fake kept open and
+    /// silent.
+    pub(crate) async fn closed(&self) {
+        self.told.closed.notified().await;
     }
 
     /// The requests received so far, in order.
@@ -99,14 +130,16 @@ impl Drop for Fake {
 }
 
 /// Reads one request from `socket`, keeps it, and answers as `reply` says.
-async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>) {
+async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>, told: Arc<Told>) {
     let Some(request) = read_request(&mut socket).await else {
         return;
     };
     seen.lock().unwrap().push(request);
+    told.received.notify_one();
+    let closed = &told.closed;
     let (status, headers, body) = match reply {
         Reply::Refused => return,
-        Reply::Silent => return hold(socket).await,
+        Reply::Silent => return hold(socket, closed).await,
         Reply::Answer {
             status,
             headers,
@@ -130,33 +163,55 @@ async fn answer(mut socket: TcpStream, reply: Reply, seen: Arc<Mutex<Vec<Seen>>>
             socket.shutdown().await.ok();
         }
         Body::Reads(reads, ending) => {
-            head.push("transfer-encoding: chunked\r\n\r\n".to_owned());
-            socket.write_all(head.join("\r\n").as_bytes()).await.ok();
-            for read in reads.iter().filter(|read| !read.is_empty()) {
-                socket
-                    .write_all(format!("{:x}\r\n", read.len()).as_bytes())
-                    .await
-                    .ok();
-                socket.write_all(read).await.ok();
-                socket.write_all(b"\r\n").await.ok();
-                socket.flush().await.ok();
-            }
+            send_reads(&mut socket, head, &reads, None).await;
             match ending {
-                Ending::Ends => {
-                    socket.write_all(b"0\r\n\r\n").await.ok();
-                    socket.shutdown().await.ok();
-                }
+                Ending::Ends => end_reads(socket).await,
                 Ending::Lost => {}
-                Ending::Silent => hold(socket).await,
+                Ending::Silent => hold(socket, closed).await,
             }
+        }
+        Body::Paced(reads, pause) => {
+            send_reads(&mut socket, head, &reads, Some(pause)).await;
+            end_reads(socket).await;
         }
     }
 }
 
-/// Keeps a connection open and silent, far past any timeout of a test.
-async fn hold(socket: TcpStream) {
-    tokio::time::sleep(Duration::from_secs(600)).await;
-    drop(socket);
+/// Sends the head of a chunked answer, then each of `reads` as one chunk of
+/// the transfer, flushed before the next, after `pause` when one is given.
+async fn send_reads(
+    socket: &mut TcpStream,
+    mut head: Vec<String>,
+    reads: &[Vec<u8>],
+    pause: Option<Duration>,
+) {
+    head.push("transfer-encoding: chunked\r\n\r\n".to_owned());
+    socket.write_all(head.join("\r\n").as_bytes()).await.ok();
+    for read in reads.iter().filter(|read| !read.is_empty()) {
+        if let Some(pause) = pause {
+            socket.flush().await.ok();
+            tokio::time::sleep(pause).await;
+        }
+        let mut chunk = format!("{:x}\r\n", read.len()).into_bytes();
+        chunk.extend_from_slice(read);
+        chunk.extend_from_slice(b"\r\n");
+        socket.write_all(&chunk).await.ok();
+        socket.flush().await.ok();
+    }
+}
+
+/// Ends a chunked answer.
+async fn end_reads(mut socket: TcpStream) {
+    socket.write_all(b"0\r\n\r\n").await.ok();
+    socket.shutdown().await.ok();
+}
+
+/// Keeps a connection open and silent until its client closes it, and
+/// tells so.
+async fn hold(mut socket: TcpStream, closed: &Notify) {
+    let mut sent = [0_u8; 64];
+    while matches!(socket.read(&mut sent).await, Ok(1..)) {}
+    closed.notify_one();
 }
 
 /// One request: its head, then the body its `content-length` declares.
