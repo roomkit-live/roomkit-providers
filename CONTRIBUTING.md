@@ -113,6 +113,30 @@ the crate lists: the same command writes the notice of that data as
 `crates/roomkit-providers-http/LICENSE-UNICODE`, and the crate is
 `MIT AND Unicode-3.0` too.
 
+`roomkit-providers-openai` has two fixtures, written with the same `PYTHON`,
+which needs RoomKit's `openai` extra for the second:
+
+```sh
+make python-openai-config
+make python-openai-chat-cases
+```
+
+- `python_config_forms.json` holds the JSON forms of Python's `OpenAIConfig`:
+  what it dumps of a table of keyword arguments, the inputs it refuses, the
+  inputs it converts, which `OpenAiConfig` refuses, and whether each of a
+  table of base URLs is OpenAI's own endpoint.
+- `python_chat_cases.json` holds the wire cases: for each, a configuration,
+  a request, the HTTP requests Python's `OpenAIAIProvider` sent to a fake of
+  the endpoint with what the fake answered, and what Python returned. The
+  cases are listed in `scripts/openai_chat_cases.py`, each with the kinds of
+  behaviour it shows; the `python_chat_cases` test requires every kind, so a
+  case is added there with its kind, and a kind is never dropped. Nothing
+  that changes from a run to the next is recorded: the script stops the
+  SDK's clock, counts the ids Python mints instead of drawing them, and
+  leaves out the headers of the SDK. It must write the same bytes twice.
+  Where the openai SDK decides a behaviour, not RoomKit, the case says so
+  under `sdk`: the Rust provider has no SDK under it.
+
 ## Implementation boundaries
 
 - Keep `roomkit-providers-core` free of I/O, async runtimes, Python and

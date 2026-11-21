@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+"""Write the JSON forms of RoomKit's Python ``OpenAIConfig``, for the OpenAI crate's tests.
+
+The fixture holds, each decided by Python:
+
+- ``examples``: the keyword arguments a configuration is built from, and what
+  it dumps (``model_dump(mode="json")``);
+- ``rejected``: the inputs ``OpenAIConfig`` refuses;
+- ``converted``: the inputs it takes by converting or without a bound, which
+  the Rust type refuses, with what Python dumps of each;
+- ``endpoints``: base URLs, and whether each is OpenAI's own endpoint, which
+  decides the defaults of a modern model. A base URL that Python's URL reader
+  refuses, the configuration with it, is ``refused``.
+
+The Rust test ``python_config_forms`` reads and writes each with
+``OpenAiConfig`` and requires the same.
+
+Run it with a Python interpreter that has ``roomkit`` installed
+(``make python-openai-config``).
+"""
+
+from __future__ import annotations
+
+import json
+import platform
+from pathlib import Path
+from typing import Any
+
+import roomkit
+from pydantic import ValidationError
+from roomkit.providers.openai import OpenAIConfig
+from roomkit.providers.vendor_endpoint import OPENAI_BASE_URL, is_vendor_endpoint
+
+REPOSITORY = Path(__file__).resolve().parent.parent
+FIXTURE = REPOSITORY / "crates/roomkit-providers-openai/tests/fixtures/python_config_forms.json"
+
+KEY = "placeholder-not-a-key"
+LOCAL = "http://localhost:11434/v1"
+OLD = {"api_key": KEY, "model": "gpt-4o"}
+MODERN = {"api_key": KEY, "model": "gpt-5.1"}
+
+# Each example: its name, and the keyword arguments of the configuration.
+EXAMPLES: list[tuple[str, dict[str, Any]]] = [
+    ("required_alone", OLD),
+    (
+        "every_member",
+        {
+            "api_key": KEY,
+            "base_url": "https://llm.example/v1",
+            "model": "local-model",
+            "max_tokens": 4096,
+            "timeout": 120.0,
+            "connect_timeout": 2.5,
+            "max_retries": 3,
+            "include_stream_usage": False,
+            "use_max_completion_tokens": True,
+            "supports_custom_temperature": False,
+            "reasoning_effort": "high",
+            "default_headers": {"X-Route": "blue", "X-Tenant": "acme"},
+            "extra_body": {"top_k": 40, "guided_choice": ["yes", "no"], "min_p": 0.05},
+            "supports_response_schema": True,
+            "supports_response_schema_with_tools": False,
+            "supports_reasoning_effort_with_tools": True,
+            "thinking_field": "reasoning_content",
+        },
+    ),
+    # The defaults of a modern model on OpenAI's own endpoint.
+    ("modern_model", MODERN),
+    ("modern_model_that_takes_a_temperature", {**OLD, "model": "gpt-4.1-mini"}),
+    ("reasoning_model", {**OLD, "model": "o3"}),
+    ("modern_model_on_the_endpoint_written_out", {**MODERN, "base_url": OPENAI_BASE_URL}),
+    ("modern_model_behind_a_base_url", {**MODERN, "base_url": LOCAL}),
+    (
+        "modern_model_with_its_switches_stated",
+        {**MODERN, "use_max_completion_tokens": False, "supports_custom_temperature": True},
+    ),
+    ("modern_model_with_one_switch_stated", {**MODERN, "supports_custom_temperature": True}),
+    (
+        "old_model_with_its_switches_stated",
+        {**OLD, "use_max_completion_tokens": True, "supports_custom_temperature": False},
+    ),
+    # Members one by one.
+    ("no_token_bound", {**OLD, "max_tokens": None}),
+    ("empty_key", {**OLD, "api_key": ""}),
+    ("empty_model", {**OLD, "model": ""}),
+    ("timeouts_as_integers", {**OLD, "timeout": 120, "connect_timeout": 2}),
+    ("timeouts_with_fractions", {**OLD, "timeout": 0.25, "connect_timeout": 1.5}),
+    ("timeout_of_zero", {**OLD, "timeout": 0}),
+    ("retries", {**OLD, "max_retries": 2}),
+    ("no_stream_usage", {**OLD, "include_stream_usage": False}),
+    ("reasoning_effort", {**MODERN, "reasoning_effort": "low"}),
+    ("headers", {**OLD, "default_headers": {"Authorization": "Basic placeholder", "X-A": "1"}}),
+    ("no_header", {**OLD, "default_headers": {}}),
+    ("extra_body", {**OLD, "extra_body": {"repetition_penalty": 1.1, "nested": {"b": 1, "a": 2}}}),
+    ("empty_extra_body", {**OLD, "extra_body": {}}),
+    ("response_schema_switches", {**OLD, "supports_response_schema": False}),
+    ("thinking_field", {**OLD, "base_url": LOCAL, "thinking_field": "reasoning"}),
+    ("members_python_does_not_have", {**OLD, "vision": True, "organization": "acme"}),
+]
+
+# The inputs the configuration refuses.
+REJECTED: list[tuple[str, Any]] = [
+    ("no_key", {"model": "gpt-4o"}),
+    ("no_model", {"api_key": KEY}),
+    ("key_null", {**OLD, "api_key": None}),
+    ("key_a_number", {**OLD, "api_key": 42}),
+    ("model_null", {**OLD, "model": None}),
+    ("model_a_number", {**OLD, "model": 4}),
+    ("base_url_a_number", {**OLD, "base_url": 8080}),
+    ("timeout_null", {**OLD, "timeout": None}),
+    ("timeout_a_word", {**OLD, "timeout": "soon"}),
+    ("connect_timeout_a_list", {**OLD, "connect_timeout": [5]}),
+    ("max_tokens_a_word", {**OLD, "max_tokens": "many"}),
+    ("max_tokens_with_a_fraction", {**OLD, "max_tokens": 10.5}),
+    ("max_retries_null", {**OLD, "max_retries": None}),
+    ("stream_usage_null", {**OLD, "include_stream_usage": None}),
+    ("switch_null", {**OLD, "use_max_completion_tokens": None}),
+    ("other_switch_null", {**OLD, "supports_custom_temperature": None}),
+    ("switch_a_word", {**OLD, "supports_response_schema": "perhaps"}),
+    ("effort_a_number", {**OLD, "reasoning_effort": 3}),
+    ("header_a_number", {**OLD, "default_headers": {"X-A": 1}}),
+    ("headers_a_list", {**OLD, "default_headers": [["X-A", "1"]]}),
+    ("extra_body_a_list", {**OLD, "extra_body": [1]}),
+    ("thinking_field_a_number", {**OLD, "thinking_field": 1}),
+    ("a_list", [KEY, None, "gpt-4o"]),
+    ("a_text", "gpt-4o"),
+    ("null", None),
+]
+
+# The inputs the configuration takes and the Rust type refuses.
+CONVERTED: list[tuple[str, dict[str, Any]]] = [
+    ("timeout_a_text", {**OLD, "timeout": "30"}),
+    ("timeout_below_zero", {**OLD, "timeout": -1.0}),
+    ("max_tokens_a_text", {**OLD, "max_tokens": "2048"}),
+    ("max_tokens_a_float", {**OLD, "max_tokens": 2048.0}),
+    ("max_tokens_below_zero", {**OLD, "max_tokens": -5}),
+    ("max_tokens_past_32_bits", {**OLD, "max_tokens": 4294967296}),
+    ("max_retries_below_zero", {**OLD, "max_retries": -1}),
+    ("max_retries_a_text", {**OLD, "max_retries": "2"}),
+    ("stream_usage_a_number", {**OLD, "include_stream_usage": 0}),
+    ("switch_a_text", {**OLD, "use_max_completion_tokens": "true"}),
+    ("switch_a_number", {**OLD, "supports_response_schema": 1}),
+]
+
+OPENAI = "https://api.openai.com"
+
+# Base URLs, each read as the endpoint of a modern model.
+ENDPOINTS: list[str] = [
+    f"{OPENAI}/v1",
+    f"{OPENAI}/v1/",
+    f"{OPENAI}/v1//",
+    "HTTPS://API.OpenAI.com/v1",
+    f"{OPENAI}:443/v1",
+    f"{OPENAI}:0443/v1",
+    f"{OPENAI}:00000000000000000000443/v1",
+    f"{OPENAI}:/v1",
+    f"{OPENAI}:444/v1",
+    f"{OPENAI}:80/v1",
+    f"{OPENAI}:99999/v1",
+    f"{OPENAI}:99999999999999999999/v1",
+    f"{OPENAI}:x/v1",
+    f"{OPENAI}:443:80/v1",
+    f"{OPENAI}:+443/v1",
+    "http://api.openai.com/v1",
+    "http://api.openai.com:443/v1",
+    OPENAI,
+    f"{OPENAI}/",
+    f"{OPENAI}/v1/chat",
+    f"{OPENAI}/V1",
+    f"{OPENAI}/v1/../v1",
+    f"{OPENAI}/%76%31",
+    f"{OPENAI}/v1?route=1",
+    f"{OPENAI}/v1/?route=1#top",
+    f"{OPENAI}/v1#top",
+    f"{OPENAI}?route=1",
+    f"{OPENAI}./v1",
+    "https://api.openai.com.example/v1",
+    "https://example.api.openai.com/v1",
+    "https://user@api.openai.com/v1",
+    "https://user:word@api.openai.com/v1",
+    "https://:word@api.openai.com/v1",
+    "https://@api.openai.com/v1",
+    "https://:@api.openai.com/v1",
+    "https://::@api.openai.com/v1",
+    "https://a@b@api.openai.com/v1",
+    f" {OPENAI}/v1 ",
+    f"\t{OPENAI}/v1\r\n",
+    "https://api.open\tai.com/v1",
+    "https://api.openai.com/\nv1",
+    f"\x1f{OPENAI}/v1\x1c",
+    f"\x00 {OPENAI}/v1",
+    f"{OPENAI}/v1\x00",
+    f"\u00a0{OPENAI}/v1\u3000",
+    f"\x00\u00a0{OPENAI}/v1",
+    f"{OPENAI}%25x/v1",
+    "https://[api.openai.com]/v1",
+    "https://[::1]/v1",
+    "https://[::1/v1",
+    "https://api.openai.com]/v1",
+    "//api.openai.com/v1",
+    "api.openai.com/v1",
+    "https:/api.openai.com/v1",
+    "https:api.openai.com/v1",
+    "1https://api.openai.com/v1",
+    "ht+tp-s.x://api.openai.com/v1",
+    "",
+    "https://",
+    "https://\u212api.openai.com/v1",
+    "https://api.openai.com\uff0fv1",
+    "https://caf\u00e9@api.openai.com/v1",
+    "https://llm.example/v1",
+    "http://localhost:11434/v1",
+    "http://127.0.0.1:8000/v1",
+]
+
+
+def form(given: Any) -> Any:
+    """What the configuration built from ``given`` dumps."""
+    return OpenAIConfig.model_validate(given).model_dump(mode="json")
+
+
+def refuses(given: Any) -> bool:
+    try:
+        OpenAIConfig.model_validate(given)
+    except ValidationError:
+        return True
+    return False
+
+
+def endpoint(base_url: str) -> dict[str, Any]:
+    """Whether ``base_url`` is OpenAI's own endpoint, or refused by Python's
+    URL reader, and with it the configuration that names it."""
+    try:
+        own: bool | str = is_vendor_endpoint(base_url, OPENAI_BASE_URL)
+    except ValueError:
+        own = "refused"
+    try:
+        dumped = form({**MODERN, "base_url": base_url})
+    except ValueError:
+        if own != "refused":
+            raise AssertionError(f"the configuration alone refuses {base_url!r}") from None
+    else:
+        profiled = dumped["use_max_completion_tokens"], not dumped["supports_custom_temperature"]
+        if profiled != (own, own):
+            raise AssertionError(f"{base_url!r}: the endpoint and the profile disagree")
+    return {"base_url": base_url, "openai": own}
+
+
+def main() -> None:
+    for name, given in REJECTED:
+        if not refuses(given):
+            raise AssertionError(f"Python takes the input {name}")
+    fixture = {
+        "generator": "scripts/generate_openai_config_forms.py",
+        "roomkit_version": roomkit.__version__,
+        "python_version": platform.python_version(),
+        "model": "OpenAIConfig",
+        "examples": [
+            {"name": name, "given": given, "form": form(given)} for name, given in EXAMPLES
+        ],
+        "rejected": [{"name": name, "given": given} for name, given in REJECTED],
+        "converted": [
+            {"name": name, "given": given, "form": form(given)} for name, given in CONVERTED
+        ],
+        "endpoints": [endpoint(base_url) for base_url in ENDPOINTS],
+    }
+    FIXTURE.parent.mkdir(parents=True, exist_ok=True)
+    # Escaped, so that a no-break space or a control character shows.
+    FIXTURE.write_text(json.dumps(fixture, indent=4) + "\n", encoding="utf-8")
+    own = sum(found["openai"] is True for found in fixture["endpoints"])
+    print(
+        f"Wrote {FIXTURE.relative_to(REPOSITORY)}: {len(EXAMPLES)} examples, "
+        f"{len(REJECTED)} rejected, {len(CONVERTED)} converted, {len(ENDPOINTS)} base URLs "
+        f"({own} OpenAI's), from roomkit {roomkit.__version__}"
+    )
+
+
+if __name__ == "__main__":
+    main()

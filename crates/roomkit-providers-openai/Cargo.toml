@@ -1,0 +1,23 @@
+[package]
+name = "roomkit-providers-openai"
+description = "The OpenAI model provider: its configuration, and the wire cases its Chat Completions client is held to"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+readme = "README.md"
+include = ["/LICENSE", "/README.md", "/src", "/tests"]
+keywords = ["llm", "ai", "provider", "openai", "chat"]
+categories = ["api-bindings"]
+
+[dependencies]
+# The contract: the request a provider is given, what it answers, and the
+# JSON object a configuration's extra body is.
+roomkit-providers-core = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

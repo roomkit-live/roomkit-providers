@@ -2,12 +2,13 @@ CARGO ?= cargo
 MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' Cargo.toml).0
 DENY_FLAGS ?=
 # The interpreter of the generated files: one with RoomKit's Python package
-# installed for python-forms and python-public-urls, the Python version
-# RoomKit is tested with for printable-table.
+# installed for python-forms, python-public-urls and the python-openai
+# targets, the Python version RoomKit is tested with for printable-table.
 PYTHON ?= python3
 
 .PHONY: all fmt fmt-check clippy test doc deny check-core-deps msrv msrv-toolchain hooks \
-	python-forms python-public-urls printable-table
+	python-forms python-public-urls python-openai-config python-openai-chat-cases \
+	printable-table
 
 all: fmt-check clippy test doc deny check-core-deps
 
@@ -56,6 +57,16 @@ python-forms:
 # network.
 python-public-urls:
 	$(PYTHON) scripts/generate_python_public_urls.py
+
+# Rewrites the fixture of the JSON forms of RoomKit's Python `OpenAIConfig`.
+python-openai-config:
+	$(PYTHON) scripts/generate_openai_config_forms.py
+
+# Rewrites the fixture of what RoomKit's Python OpenAI provider sends and
+# reads on Chat Completions, case by case. PYTHON needs roomkit's `openai`
+# extra. The script answers its own requests: nothing is sent to a network.
+python-openai-chat-cases:
+	$(PYTHON) scripts/generate_openai_chat_cases.py
 
 # Rewrites the table of the characters Python's `repr` writes as they are,
 # from the Unicode data of PYTHON, the Python version RoomKit is tested with,

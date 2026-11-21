@@ -13,8 +13,9 @@ contract.
 
 > **Early development.** The contract crate is written: what a provider
 > implements, what it is asked and what it answers. So is the HTTP support
-> the providers will share. No provider implements the contract yet beside a
-> scripted one for tests, and nothing is released. The
+> the providers will share, and the configuration of the OpenAI provider. No
+> provider implements the contract yet beside a scripted one for tests, and
+> nothing is released. The
 > [changelog](CHANGELOG.md) says what exists; the rest of this page says
 > where the project is going.
 
@@ -39,9 +40,11 @@ Section numbers in the code and its documentation (`RFC §6.7`) refer to the
 In this order:
 
 1. the contract crate, `roomkit-providers-core`: written, not released;
-2. a provider for OpenAI-compatible Chat Completions endpoints. The HTTP
-   support it builds on, `roomkit-providers-http`, is written; the provider
-   is not started;
+2. a provider for OpenAI-compatible Chat Completions endpoints,
+   `roomkit-providers-openai`. The HTTP support it builds on,
+   `roomkit-providers-http`, is written, with the provider's configuration
+   and the cases it will replay, captured on RoomKit's Python provider; the
+   provider itself is not written;
 3. a Python package calling the same implementation through a native
    extension;
 4. adapters for RoomKit, in Rust and in Python.
@@ -54,8 +57,11 @@ Items 3 and 4 are not started.
 | --- | --- |
 | `crates/roomkit-providers-core` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests |
 | `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients |
+| `crates/roomkit-providers-openai` | The OpenAI provider: its configuration (`OpenAiConfig`) today, and the wire cases its Chat Completions client will replay |
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
+| `scripts/generate_openai_config_forms.py` | Writes the JSON forms of RoomKit's Python `OpenAIConfig`, which the OpenAI crate's tests compare with |
+| `scripts/generate_openai_chat_cases.py` | Runs RoomKit's Python OpenAI provider against a fake endpoint and writes what it sends and reads, case by case (`scripts/openai_chat_cases.py` holds the cases) |
 | `scripts/generate_printable_ranges.py` | Writes the table of the characters Python's `repr` writes as they are |
 | `scripts/unicode_notice.py` | The notice of the Unicode License V3, which the two scripts that read Python's Unicode data write as their crate's `LICENSE-UNICODE` |
 

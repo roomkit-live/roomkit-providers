@@ -60,6 +60,12 @@ nothing has been released yet.
   where it differs and what it does not guard: a name the client resolves
   again, a client behind a proxy, redirects, and a name when resolution is
   turned off.
+- `roomkit-providers-openai`: `OpenAiConfig`, what a provider for OpenAI's
+  Chat Completions is configured with: the names, the defaults and the JSON
+  form of `OpenAIConfig` in RoomKit's Python implementation, the key written
+  masked. Its `Debug` form prints neither the key nor what a base URL holds
+  beside its scheme, host and port. The crate's README lists where it
+  differs from Python's. The provider itself is not written yet.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of
