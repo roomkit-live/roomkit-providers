@@ -15,9 +15,9 @@ contract.
 > implements, what it is asked and what it answers. So is the HTTP support
 > the providers share, and the OpenAI provider: whole answers, streams and
 > the model listing. A Python package calls that provider through a native
-> extension, without RoomKit. Nothing is released. The
-> [changelog](CHANGELOG.md) says what exists; the rest of this page says
-> where the project is going.
+> extension, on its own or as a RoomKit provider through its adapter.
+> Nothing is released. The [changelog](CHANGELOG.md) says what exists; the
+> rest of this page says where the project is going.
 
 ## Goals
 
@@ -48,10 +48,9 @@ In this order:
    captured on RoomKit's Python provider;
 3. a Python package calling the same implementation through a native
    extension, `roomkit-providers`: written, not released, for Linux x86_64
-   and without RoomKit ([Python](#python));
-4. adapters for RoomKit, in Rust and in Python.
-
-Item 4 is not started.
+   ([Python](#python));
+4. adapters for RoomKit, in Rust and in Python. The Python one is written,
+   not released: `roomkit_providers.roomkit`. The Rust one is not started.
 
 ## Python
 
@@ -76,10 +75,24 @@ async def ask() -> str:
     return (await provider.generate(request))["content"]
 ```
 
+In a RoomKit agent, the adapter takes the place of RoomKit's own OpenAI
+provider: it is an `AIProvider`, takes RoomKit's `OpenAIConfig` and an
+`AIContext`, gives RoomKit's models and raises RoomKit's `ProviderError`.
+It needs RoomKit, which the `roomkit` extra asks for:
+
+```python
+from roomkit import AIChannel
+from roomkit.providers.openai import OpenAIConfig
+from roomkit_providers.roomkit import OpenAIAIProvider
+
+assistant = AIChannel("assistant", provider=OpenAIAIProvider(OpenAIConfig(...)))
+```
+
 Nothing is published: `make python-wheel` builds the wheel from this
 repository. The [Python guide](guide/python.md) says how to install it, what
-the package holds, how a call is cancelled and how it fails, and where it
-differs from RoomKit's Python provider.
+the package holds, how a call is cancelled and how it fails, how to switch
+a RoomKit agent to the adapter, and where each differs from RoomKit's
+Python provider.
 
 ## Layout
 
@@ -90,11 +103,14 @@ differs from RoomKit's Python provider.
 | `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAiAiProvider`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and an example against a local server |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter |
 | `python/roomkit_providers` | The Python package: `roomkit_providers.openai` (`OpenAIAIProvider`, `OpenAIConfig`), its errors and the typed dicts of the contract's JSON forms |
+| `python/roomkit_providers/roomkit` | The RoomKit adapter: `OpenAIAIProvider` as a RoomKit `AIProvider`, importable where RoomKit is installed |
 | `tests/python` | The Python tests: the replay of the recorded wire cases through the package, cancellation, event loops and threads, the interpreter's exit, and the snapshot of the public API |
+| `tests/python/roomkit` | The adapter's tests, skipped where RoomKit is not installed: the replay through the adapter, a RoomKit agent over it, the first-token metric, and the adapter's API snapshot |
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
-| `benchmarks/crossing.py` | What a turn costs through the Python package, and through RoomKit's Python provider when it is installed |
+| `examples/roomkit_agent.py` | A RoomKit agent over the adapter: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |
+| `benchmarks/crossing.py` | What a turn costs through the Python package and through its adapter, and through RoomKit's Python provider when it is installed |
 | `guide/python.md` | The Python guide |
-| `scripts/check-python.py` | Builds a wheel and a source distribution, installs each alone and runs the Python tests and the example on it (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshot) |
+| `scripts/check-python.py` | Builds a wheel and a source distribution, installs each alone and runs the Python tests and the example on it; with `--roomkit`, installs the wheel with its `roomkit` extra and runs the adapter's tests and example (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshots, `scripts/roomkit_env.py` names the RoomKit of the environment) |
 | `scripts/generate_openai_catalogue.py` | Writes OpenAI's model catalogue of RoomKit's Python, which the provider reads its models' rules from |
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
@@ -108,7 +124,8 @@ differs from RoomKit's Python provider.
 ```sh
 make all            # formatting, lints, tests, examples, docs and dependency policy
 make msrv           # the minimum supported Rust version
-make python-check   # the Python package: lints, a wheel and a source distribution, tests
+make python-check   # the Python package: lints, a wheel and a source distribution, tests,
+                    # and the RoomKit adapter where RoomKit is installed
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the environment, the checks and

@@ -10,6 +10,7 @@ crate writes of them, ``named_cases.json``.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -72,6 +73,32 @@ def reply_of(answered: dict[str, Any]) -> Reply:
     return Whole(status, headers, json.dumps(answered.get("json")).encode())
 
 
+@dataclass(frozen=True)
+class Through:
+    """What a case is asked through: the package's own provider, which takes
+    and gives plain dicts, or an adapter over it, which takes and gives the
+    models of the host it adapts to."""
+
+    # The provider of a case's configuration, its keyword arguments.
+    provider: Callable[[dict[str, Any]], Any]
+    # The request of a case, as the provider takes it.
+    request: Callable[[dict[str, Any]], Any]
+    # What a call gave, in the JSON form the fixture writes it in.
+    written: Callable[[str, Any], Any]
+    # The exception a failure is raised as, and a response schema's.
+    failure: type[Exception]
+    schema_failure: type[Exception]
+
+
+PACKAGE = Through(
+    provider=lambda config: OpenAIAIProvider(OpenAIConfig(**config)),
+    request=lambda request: request,
+    written=lambda _call, given: given,
+    failure=ProviderError,
+    schema_failure=ResponseSchemaError,
+)
+
+
 @dataclass
 class Replayed:
     """What replaying a case gave."""
@@ -79,10 +106,12 @@ class Replayed:
     # The key of the case's configuration.
     key: str = ""
     # Why the provider was not built, when it was not.
-    unbuilt: ProviderError | None = None
-    # What the call returned, then the failure that ended it.
+    unbuilt: Exception | None = None
+    # What the call returned, in the fixture's JSON form, then the failure
+    # that ended it, and whether that failure is a response schema's.
     given: Any = None
-    error: ProviderError | None = None
+    error: Exception | None = None
+    schema: bool = False
     asked: bool = False
     seen: list[Seen] = field(default_factory=list)
     waits: list[float] = field(default_factory=list)
@@ -90,11 +119,16 @@ class Replayed:
 
 
 async def replay(
-    case: dict[str, Any], fake: Fake, *, read_timeout: float | None = None
+    case: dict[str, Any],
+    fake: Fake,
+    *,
+    read_timeout: float | None = None,
+    through: Through = PACKAGE,
 ) -> Replayed:
-    """Replays `case`: its provider built from its configuration, its
-    requests sent to `fake`, which answers with the case's exchanges, its
-    clock set to the fixture's and its waits kept instead of taken.
+    """Replays `case` through `through`: its provider built from its
+    configuration, its requests sent to `fake`, which answers with the
+    case's exchanges, its clock set to the fixture's and its waits kept
+    instead of taken.
 
     `read_timeout` replaces the configuration's timeout, for a case whose
     fake never answers: nothing else ends it."""
@@ -103,31 +137,36 @@ async def replay(
         config["timeout"] = read_timeout
     replayed = Replayed(key=config["api_key"])
     try:
-        provider = OpenAIAIProvider(OpenAIConfig(**config))
-    except ProviderError as error:
+        provider = through.provider(config)
+    except through.failure as error:
         replayed.unbuilt = error
         return replayed
     replayed.vision = provider.supports_vision
     fake.answer(*(reply_of(exchange["response"]) for exchange in case["exchanges"]))
     provider._native = provider._native._replaying("127.0.0.1", fake.port, CLOCK)
-    request, call = case["request"], case["call"]
+    request, call = through.request(case["request"]), case["call"]
     replayed.asked = True
+    # What a stream gave before it failed is kept too.
+    items: list[Any] | None = None
     try:
         if call == "generate":
-            replayed.given = await provider.generate(request)
+            replayed.given = through.written(call, await provider.generate(request))
         elif call == "list_models":
-            replayed.given = await provider.list_models()
+            replayed.given = through.written(call, await provider.list_models())
         else:
             stream = (
                 provider.generate_stream(request)
                 if call == "generate_stream"
                 else provider.generate_structured_stream(request)
             )
-            replayed.given = []
+            items = []
             async for item in stream:
-                replayed.given.append(item)
-    except ProviderError as error:
+                items.append(item)
+    except through.failure as error:
         replayed.error = error
+        replayed.schema = isinstance(error, through.schema_failure)
+    if items is not None:
+        replayed.given = through.written(call, items)
     replayed.waits = provider._native._waits()
     # The provider gone, every connection is closed, and the fake ends
     # serving each: what it saw then says how it wrote each answer.
@@ -135,6 +174,12 @@ async def replay(
     await fake.served()
     replayed.seen = list(fake.seen)
     return replayed
+
+
+def said(error: Exception) -> str:
+    """What a failure says: its first argument, without the provider and
+    the status `str()` leads it with."""
+    return error.args[0]
 
 
 def _text(value: Any) -> str:
@@ -236,8 +281,9 @@ def _result_differs(
 
 
 def _failure_differs(
-    case: dict[str, Any], failure: dict[str, Any], error: ProviderError, found: list[str]
+    case: dict[str, Any], failure: dict[str, Any], replayed: Replayed, found: list[str]
 ) -> None:
+    error: Any = replayed.error
     compare = case.get("compare")
     if compare is None:
         found.append("a failure with no rule to compare it")
@@ -245,9 +291,8 @@ def _failure_differs(
     if not compare["exactly"]:
         found.append(f"a {failure['class']} no provider reproduces")
         return
-    schema = isinstance(error, ResponseSchemaError)
     same = {
-        "class": (failure["class"] == "ResponseSchemaError") == schema,
+        "class": (failure["class"] == "ResponseSchemaError") == replayed.schema,
         "status_code": failure.get("status_code") == error.status_code,
         "retryable": failure.get("retryable") == error.retryable,
         "provider": failure.get("provider") == error.provider,
@@ -261,14 +306,14 @@ def _failure_differs(
     for attribute in compare["exactly"]:
         if not same[attribute]:
             found.append(f"the failure's {attribute} differs: {error!r}")
-    if compare["message"] in ("roomkit", "server") and error.message != failure["message"]:
-        found.append(f"the failure says {error.message!r}")
+    if compare["message"] in ("roomkit", "server") and said(error) != failure["message"]:
+        found.append(f"the failure says {said(error)!r}")
 
 
-def _end_differs(case: dict[str, Any], error: ProviderError | None, found: list[str]) -> None:
-    failure = case["expected"].get("error")
+def _end_differs(case: dict[str, Any], replayed: Replayed, found: list[str]) -> None:
+    failure, error = case["expected"].get("error"), replayed.error
     if error is not None and failure is not None:
-        _failure_differs(case, failure, error, found)
+        _failure_differs(case, failure, replayed, found)
     elif error is not None:
         found.append(f"a failure where Python answers: {error!r}")
     elif failure is not None:
@@ -279,7 +324,7 @@ def differences(case: dict[str, Any], replayed: Replayed) -> list[str]:
     """Every way `replayed` differs from what Python did of `case`; none
     when the provider replays the case as Python."""
     if replayed.unbuilt is not None:
-        return [f"the provider is not built: {replayed.unbuilt.message}"]
+        return [f"the provider is not built: {said(replayed.unbuilt)}"]
     found: list[str] = []
     _requests_differ(case, replayed, found)
     _waits_differ(case, replayed, found)
@@ -299,19 +344,18 @@ def differences(case: dict[str, Any], replayed: Replayed) -> list[str]:
     # that failed gave nothing.
     if replayed.given is not None:
         _result_differs(case, what, expected.get(member), replayed.given, found)
-    _end_differs(case, replayed.error, found)
+    _end_differs(case, replayed, found)
     return found
 
 
-def _fails(error: ProviderError | None, does: dict[str, Any]) -> bool:
+def _fails(error: Any, does: dict[str, Any]) -> bool:
     if error is None:
         return False
     says = does["says"]
-    said = (
-        error.message == says["exactly"] if "exactly" in says else says["holding"] in error.message
-    )
+    words = said(error)
+    as_stated = words == says["exactly"] if "exactly" in says else says["holding"] in words
     return (
-        said
+        as_stated
         and error.status_code == does["status_code"]
         and error.retryable == does["retryable"]
         and error.context_overflow == does["context_overflow"]
@@ -331,7 +375,7 @@ def _is_done(stated: dict[str, Any], case: dict[str, Any], replayed: Replayed) -
             error is not None
             and error.before_request
             and not error.retryable
-            and error.message == does["says"]
+            and said(error) == does["says"]
         )
     if replayed.unbuilt is not None:
         return False

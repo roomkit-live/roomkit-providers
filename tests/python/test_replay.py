@@ -160,7 +160,7 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
             replayed.error.status_code = 500
 
         def other_words(replayed):
-            replayed.error.message += "!"
+            replayed.error.args = (replayed.error.args[0] + "!",)
 
         def two_ids_for_one_call(replayed):
             for event in replayed.given:
@@ -191,7 +191,7 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
             replayed.seen.append(replayed.seen[0])
 
         def other_words(replayed):
-            replayed.unbuilt.message += "!"
+            replayed.unbuilt.args = (replayed.unbuilt.args[0] + "!",)
 
         await self.refuses("usage_counts_below_zero", "not {", another_text)
         await self.refuses("usage_counts_below_zero", otherwise, a_header_more)

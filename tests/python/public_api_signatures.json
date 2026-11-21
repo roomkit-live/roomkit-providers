@@ -180,6 +180,6 @@
     "supports_vision": ["property"]
   },
   "roomkit_providers.openai.OpenAIConfig": {
-    "__init__": ["def", "*", "api_key", "base_url=None", "model", "max_tokens=1024", "timeout=30.0", "connect_timeout=5.0", "max_retries=0", "include_stream_usage=True", "use_max_completion_tokens=None", "supports_custom_temperature=None", "reasoning_effort=None", "default_headers=None", "extra_body=None", "supports_response_schema=None", "supports_response_schema_with_tools=None", "supports_reasoning_effort_with_tools=None", "thinking_field=None"]
+    "__init__": ["def", "*", "api_key", "base_url=None", "model", "max_tokens=1024", "timeout=30.0", "connect_timeout=5.0", "max_retries=0", "include_stream_usage=True", "use_max_completion_tokens=None", "supports_custom_temperature=None", "reasoning_effort=None", "default_headers=None", "extra_body=None", "supports_response_schema=None", "supports_response_schema_with_tools=None", "supports_reasoning_effort_with_tools=None", "thinking_field=None", "**unknown"]
   }
 }

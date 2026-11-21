@@ -306,6 +306,22 @@ def events(*pieces: str, model: str = "local-model") -> list[bytes]:
     return [*reads, event({}, "stop"), b"data: [DONE]\n\n"]
 
 
+def call_events(name: str, arguments: str, model: str = "local-model") -> list[bytes]:
+    """The reads of a streamed answer that calls the tool `name` with
+    `arguments`, its JSON text, then its end."""
+    function = {"name": name, "arguments": arguments}
+    call = {"index": 0, "id": "call_1", "type": "function", "function": function}
+    chunks = [
+        {"index": 0, "delta": {"tool_calls": [call]}, "finish_reason": None},
+        {"index": 0, "delta": {}, "finish_reason": "tool_calls"},
+    ]
+    reads = [
+        f"data: {json.dumps({'id': 'chatcmpl-1', 'model': model, 'choices': [chunk]})}\n\n"
+        for chunk in chunks
+    ]
+    return [*(read.encode() for read in reads), b"data: [DONE]\n\n"]
+
+
 JSON = {"content-type": "application/json"}
 EVENT_STREAM = {"content-type": "text/event-stream"}
 

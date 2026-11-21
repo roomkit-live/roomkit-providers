@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Build a wheel, inspect its contents and test an isolated installation."""
+"""Build a wheel, inspect its contents and test an isolated installation.
+
+With --roomkit, test the RoomKit adapter instead: the wheel installed with
+its `roomkit` extra beside the RoomKit of the interpreter that runs this.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +19,7 @@ from email.parser import BytesParser
 from pathlib import Path
 
 import artifact_files
+import roomkit_env
 
 PACKAGE = "roomkit_providers"
 NOTICES = f"{PACKAGE}/licenses/native_dependencies.txt"
@@ -23,8 +28,10 @@ NOTICES = f"{PACKAGE}/licenses/native_dependencies.txt"
 MATURIN = tuple(
     shlex.split(os.environ.get("MATURIN", "uv tool run --from 'maturin>=1.15,<2' maturin"))
 )
-# The examples a core installation runs, each checking what it shows.
+# The examples a core installation runs, each checking what it shows, and
+# those an installation with RoomKit runs.
 EXAMPLES = [("local_server.py",)]
+ROOMKIT_EXAMPLES = [("roomkit_agent.py",)]
 
 
 def run(*arguments: str, cwd: Path) -> None:
@@ -105,7 +112,7 @@ def check_wheel(wheel: Path, root: Path, work: Path) -> None:
     artifact_files.check_wheel(wheel, root, PACKAGE)
 
 
-def run_tests(python: Path, root: Path, work: Path) -> None:
+def run_tests(python: Path, root: Path, work: Path, tests: str = "tests/python") -> None:
     subprocess.run(
         [
             str(python),
@@ -116,7 +123,7 @@ def run_tests(python: Path, root: Path, work: Path) -> None:
             "unittest",
             "discover",
             "-s",
-            str(root / "tests/python"),
+            str(root / tests),
             "-v",
         ],
         cwd=work,
@@ -124,8 +131,8 @@ def run_tests(python: Path, root: Path, work: Path) -> None:
     )
 
 
-def run_examples(python: Path, root: Path, work: Path) -> None:
-    for script, *arguments in EXAMPLES:
+def run_examples(python: Path, root: Path, work: Path, examples: list[tuple[str, ...]]) -> None:
+    for script, *arguments in examples:
         run(str(python), "-I", str(root / "examples" / script), *arguments, cwd=work)
 
 
@@ -142,7 +149,22 @@ def install_and_test(label: str, package: Path, root: Path, work: Path) -> None:
     names = {line.partition("==")[0].lower() for line in installed.splitlines() if line}
     assert names == {"roomkit-providers"}, f"the environment holds more than the package: {names}"
     run_tests(python, root, work)
-    run_examples(python, root, work)
+    run_examples(python, root, work, EXAMPLES)
+
+
+def test_with_roomkit(wheel: Path, root: Path, work: Path) -> None:
+    """Install the wheel with its `roomkit` extra beside the RoomKit this
+    interpreter has, and test the adapter: its tests, then its example."""
+    requirement = roomkit_env.requirement()
+    if requirement is None:
+        sys.exit(f"RoomKit is not installed for {sys.executable}: the adapter is tested against it")
+    environment = work / "roomkit"
+    run("uv", "venv", "--python", sys.executable, str(environment), cwd=work)
+    python = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    extra = f"{wheel}[roomkit]"
+    run("uv", "pip", "install", "--python", str(python), extra, requirement, cwd=work)
+    run_tests(python, root, work, "tests/python/roomkit")
+    run_examples(python, root, work, ROOMKIT_EXAMPLES)
 
 
 def main() -> None:
@@ -155,12 +177,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel", type=Path, help="Validate this prebuilt wheel")
     parser.add_argument("--sdist", type=Path, help="Validate this source distribution")
+    parser.add_argument("--roomkit", action="store_true", help="Test the RoomKit adapter")
     options = parser.parse_args()
-    if bool(options.wheel) != bool(options.sdist):
+    if not options.roomkit and bool(options.wheel) != bool(options.sdist):
         parser.error("--wheel and --sdist must be supplied together")
     with tempfile.TemporaryDirectory(prefix="roomkit-providers-python-") as temporary:
         work = Path(temporary)
         wheel = options.wheel.resolve() if options.wheel else build_wheel(root, work)
+        if options.roomkit:
+            test_with_roomkit(wheel, root, work)
+            return
         check_wheel(wheel, root, work)
         source = options.sdist.resolve() if options.sdist else build_sdist(root, work)
         artifact_files.check_sdist(source, root)

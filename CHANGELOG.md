@@ -115,6 +115,14 @@ nothing has been released yet.
   `ProviderError` or `ResponseSchemaError`. Cancelling a call's task, or
   closing a stream, closes its connection. The guide (`guide/python.md`)
   lists where it differs from RoomKit's Python provider.
+- `roomkit-providers`: the RoomKit adapter, `roomkit_providers.roomkit`,
+  which the `roomkit` extra installs RoomKit for (0.117). Its
+  `OpenAIAIProvider` is a RoomKit `AIProvider` over the Rust provider, to
+  give an `AIChannel` in place of RoomKit's own: it takes RoomKit's
+  `OpenAIConfig` and an `AIContext`, gives RoomKit's models, raises
+  RoomKit's `ProviderError` and `ResponseSchemaError`, and records the time
+  to the first token as RoomKit's provider does. It has no `transport`
+  parameter. The guide says how to switch and what differs.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of

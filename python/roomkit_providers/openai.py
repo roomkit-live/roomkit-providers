@@ -25,14 +25,15 @@ def _dumps(value: Any) -> str:
     return json.dumps(value, allow_nan=False)
 
 
-@dataclass(frozen=True, kw_only=True, slots=True, repr=False)
+@dataclass(init=False, frozen=True, slots=True, repr=False)
 class OpenAIConfig:
     """What an OpenAI provider is configured with: the fields and the
     defaults of RoomKit's ``OpenAIConfig``.
 
     A configuration is checked when it is built, by the reader of its JSON
-    form: a value that does not fit is a ``ValueError``. It cannot be changed
-    once built.
+    form: a value that does not fit is a ``ValueError``. An argument it does
+    not know is ignored, as RoomKit's configuration ignores one. It cannot
+    be changed once built.
 
     Attributes:
         api_key: The key, sent as a bearer token. An empty key sends no
@@ -85,10 +86,36 @@ class OpenAIConfig:
     supports_reasoning_effort_with_tools: bool | None = None
     thinking_field: str | None = None
 
-    def __post_init__(self) -> None:
-        # The caller's dicts are copied: a configuration does not change.
-        for name in ("default_headers", "extra_body"):
-            object.__setattr__(self, name, copy.deepcopy(getattr(self, name)))
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        base_url: str | None = None,
+        model: str,
+        max_tokens: int | None = 1024,
+        timeout: float = 30.0,
+        connect_timeout: float = 5.0,
+        max_retries: int = 0,
+        include_stream_usage: bool = True,
+        use_max_completion_tokens: bool | None = None,
+        supports_custom_temperature: bool | None = None,
+        reasoning_effort: str | None = None,
+        default_headers: dict[str, str] | None = None,
+        extra_body: dict[str, Any] | None = None,
+        supports_response_schema: bool | None = None,
+        supports_response_schema_with_tools: bool | None = None,
+        supports_reasoning_effort_with_tools: bool | None = None,
+        thinking_field: str | None = None,
+        **unknown: Any,
+    ) -> None:
+        given = locals()
+        for field in fields(self):
+            value = given[field.name]
+            if field.name in ("default_headers", "extra_body"):
+                # The caller's dicts are copied: a configuration does not
+                # change.
+                value = copy.deepcopy(value)
+            object.__setattr__(self, field.name, value)
         written = json.loads(_native.openai_config_form(self._form()))
         for name in _DECIDED:
             object.__setattr__(self, name, written[name])

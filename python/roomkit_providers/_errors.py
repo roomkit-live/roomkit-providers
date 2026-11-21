@@ -11,9 +11,11 @@ ResponseSchemaFailure = Literal["unsupported", "refusal", "truncated", "invalid_
 class ProviderError(Exception):
     """A failure of a call to a model provider.
 
+    Its text is its first argument (``error.args[0]``), which ``str()`` leads
+    with the provider and the status. A secret of the configuration that a
+    server sent back is replaced in it by ``[***]``.
+
     Attributes:
-        message: What failed. A secret of the configuration that a server
-            sent back is replaced by ``[***]``.
         retryable: Whether a new request may succeed.
         provider: The name of the provider that failed.
         status_code: The HTTP status the provider answered, when it answered.
@@ -35,7 +37,6 @@ class ProviderError(Exception):
         before_request: bool = False,
     ) -> None:
         super().__init__(message)
-        self.message = message
         self.retryable = retryable
         self.provider = provider
         self.status_code = status_code

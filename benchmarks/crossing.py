@@ -12,9 +12,8 @@ reported, the binding's threads included.
 The variants:
 
   binding           this package: a request and its answer as plain dicts
-  binding, models   the same behind what a RoomKit adapter does: the request
-                    dumped from RoomKit's AIContext, the answer and each
-                    event validated into RoomKit's models (with RoomKit)
+  adapter           this package's RoomKit adapter: RoomKit's AIContext in,
+                    RoomKit's models out (with RoomKit)
   roomkit           RoomKit's OpenAIAIProvider, the openai SDK (with RoomKit)
 
 Not a test, and not part of any gate. Build the native module optimized
@@ -188,58 +187,29 @@ def binding_turns(base_url: str, request: dict[str, Any]) -> dict[str, Turn]:
 
 
 def roomkit_turns(base_url: str, request: dict[str, Any]) -> dict[str, dict[str, Turn]]:
-    """The turns of RoomKit's own provider, and of the binding behind what a
-    RoomKit adapter does."""
-    from roomkit.providers.ai.base import (
-        AIContext,
-        AIResponse,
-        StreamDone,
-        StreamTextDelta,
-        StreamThinkingDelta,
-        StreamToolCall,
-        StreamToolCallDelta,
-        StreamUsage,
-    )
+    """The turns of this package's RoomKit adapter and of RoomKit's own
+    provider: both take RoomKit's context and give RoomKit's models."""
+    from roomkit.providers.ai import AIContext, StreamTextDelta
     from roomkit.providers.openai import OpenAIAIProvider as RoomKitProvider
-    from roomkit.providers.openai import OpenAIConfig as RoomKitConfig
-    from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+    from roomkit.providers.openai import OpenAIConfig
+    from roomkit_providers.roomkit import OpenAIAIProvider as Adapter
 
-    events = {
-        "text_delta": StreamTextDelta,
-        "thinking_delta": StreamThinkingDelta,
-        "tool_call": StreamToolCall,
-        "tool_call_delta": StreamToolCallDelta,
-        "usage": StreamUsage,
-        "done": StreamDone,
-    }
     context = AIContext.model_validate(request)
-    key = "placeholder-not-a-key"
-    roomkit = RoomKitProvider(RoomKitConfig(api_key=key, model=MODEL, base_url=base_url))
-    binding = OpenAIAIProvider(OpenAIConfig(api_key=key, model=MODEL, base_url=base_url))
+    config = OpenAIConfig(api_key="placeholder-not-a-key", model=MODEL, base_url=base_url)
 
-    async def roomkit_stream() -> int:
-        deltas = 0
-        async for event in roomkit.generate_structured_stream(context):
-            deltas += isinstance(event, StreamTextDelta)
-        return deltas
+    def turns(provider: Any) -> dict[str, Turn]:
+        async def stream() -> int:
+            deltas = 0
+            async for event in provider.generate_structured_stream(context):
+                deltas += isinstance(event, StreamTextDelta)
+            return deltas
 
-    async def roomkit_whole() -> int:
-        return len((await roomkit.generate(context)).content)
+        async def whole() -> int:
+            return len((await provider.generate(context)).content)
 
-    async def models_stream() -> int:
-        deltas = 0
-        async for event in binding.generate_structured_stream(context.model_dump(mode="json")):
-            deltas += isinstance(events[event["type"]].model_validate(event), StreamTextDelta)
-        return deltas
+        return {"stream": stream, "whole": whole}
 
-    async def models_whole() -> int:
-        response = await binding.generate(context.model_dump(mode="json"))
-        return len(AIResponse.model_validate(response).content)
-
-    return {
-        "binding, models": {"stream": models_stream, "whole": models_whole},
-        "roomkit": {"stream": roomkit_stream, "whole": roomkit_whole},
-    }
+    return {"adapter": turns(Adapter(config)), "roomkit": turns(RoomKitProvider(config))}
 
 
 # -- The measure -----------------------------------------------------------------------

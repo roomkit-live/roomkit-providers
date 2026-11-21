@@ -18,11 +18,16 @@ Two files hold it, in the snapshot's directory:
   possibly ``async``), ``property``, ``key``, ``bases``, ``literal`` or
   ``union``.
 
+The package's snapshot leaves out its RoomKit adapter, ``roomkit_providers.roomkit``,
+which is importable only with RoomKit: the adapter has a snapshot of its own,
+in ``tests/python/roomkit``, checked where RoomKit is installed.
+
 ``test_public_api.py`` fails when the code and the files differ, a compatible
 addition included. The commit that changes the surface rewrites them with
 ``make api-snapshot``, which runs this module against a freshly built wheel:
 
     python api_signatures.py write roomkit_providers DIRECTORY
+    python api_signatures.py write roomkit_providers.roomkit DIRECTORY
 
 Annotations are left out, a typed dict's keys aside: whether a type widens or
 narrows is not read mechanically. What a call does is not here either.
@@ -53,22 +58,40 @@ _ADDRESS = re.compile(r" at 0x[0-9a-fA-F]+")
 Spec = list[str]
 
 
+# The packages beneath a package that have a snapshot of their own.
+APART = {"roomkit_providers": ("roomkit_providers.roomkit",)}
+
+
 @dataclass(frozen=True)
 class Package:
-    """An installed top-level package whose public modules are snapshotted."""
+    """An installed package whose public modules are snapshotted: itself and
+    what is beneath it, the packages snapshotted apart left out."""
 
     name: str
+
+    def _apart(self, module: str) -> bool:
+        apart = APART.get(self.name, ())
+        return any(module == name or module.startswith(f"{name}.") for name in apart)
 
     def modules(self) -> list[ModuleType]:
         """The package and each public module beneath it, imported."""
         root = importlib.import_module(self.name)
         found = [root]
         prefix = f"{self.name}."
-        for info in pkgutil.walk_packages(root.__path__, prefix):
-            if any(part.startswith("_") for part in info.name.split(".")):
-                continue
-            found.append(importlib.import_module(info.name))
+        for info in pkgutil.iter_modules(root.__path__, prefix):
+            found += self._beneath(info)
         return sorted(found, key=lambda module: module.__name__)
+
+    def _beneath(self, info: pkgutil.ModuleInfo) -> list[ModuleType]:
+        """The public module `info` names and those beneath it, imported."""
+        if info.name.rpartition(".")[2].startswith("_") or self._apart(info.name):
+            return []
+        module = importlib.import_module(info.name)
+        found = [module]
+        if info.ispkg:
+            for inner in pkgutil.iter_modules(module.__path__, f"{info.name}."):
+                found += self._beneath(inner)
+        return found
 
     def owns(self, obj: Any) -> bool:
         """Whether ``obj`` is a class or function the package defines."""
@@ -123,7 +146,8 @@ def describe(obj: Any, package: Package, paths: dict[int, str]) -> dict[str, Spe
             for name in obj.__annotations__
         }
     members: dict[str, Spec] = {}
-    bases = [paths[id(base)] for base in obj.__bases__ if id(base) in paths]
+    bases = [_base(base, paths) for base in obj.__bases__]
+    bases = [base for base in bases if base is not None]
     if bases:
         members["__bases__"] = ["bases", *bases]
     if _builds_itself(obj, package):
@@ -143,6 +167,18 @@ def describe(obj: Any, package: Package, paths: dict[int, str]) -> dict[str, Spe
             if spec is not None:
                 members[name] = spec
     return dict(sorted(members.items()))
+
+
+def _base(base: type, paths: dict[int, str]) -> str | None:
+    """A base class as the snapshot names it: the path the package exports it
+    under, or, for a class of another package, where that package defines
+    it. A class of the standard library is left out."""
+    if id(base) in paths:
+        return paths[id(base)]
+    top = base.__module__.partition(".")[0]
+    if top in sys.stdlib_module_names or top == "builtins":
+        return None
+    return f"{base.__module__}.{base.__qualname__}"
 
 
 def drift(directory: Path, package: Package) -> list[str]:

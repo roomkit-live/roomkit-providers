@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Rewrite the public Python API snapshot from a freshly built wheel.
+"""Rewrite the public Python API snapshots from a freshly built wheel.
 
 Builds the package, installs it alone in an isolated environment, and writes
-its snapshot with tests/python/api_signatures.py into tests/python/. The
-Python tests fail while the snapshot differs from the code.
+its snapshot with tests/python/api_signatures.py into tests/python/. Where
+the interpreter that runs this has RoomKit, that RoomKit is then installed
+beside the package, and the snapshot of the adapter, roomkit_providers.roomkit,
+is written into tests/python/roomkit/. The Python tests fail while a snapshot
+differs from the code.
 """
 
 from __future__ import annotations
@@ -15,6 +18,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+import roomkit_env
 
 MATURIN = tuple(
     shlex.split(os.environ.get("MATURIN", "uv tool run --from 'maturin>=1.15,<2' maturin"))
@@ -55,6 +60,13 @@ def main() -> None:
         writer = str(root / "tests/python/api_signatures.py")
         directory = str(root / "tests/python")
         run(str(python), "-I", writer, "write", "roomkit_providers", directory, cwd=work)
+        requirement = roomkit_env.requirement()
+        if requirement is None:
+            print("RoomKit is not installed: the adapter's snapshot is left as it is")
+            return
+        run("uv", "pip", "install", "--python", str(python), requirement, cwd=work)
+        adapter = str(root / "tests/python/roomkit")
+        run(str(python), "-I", writer, "write", "roomkit_providers.roomkit", adapter, cwd=work)
 
 
 if __name__ == "__main__":

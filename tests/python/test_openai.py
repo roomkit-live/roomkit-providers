@@ -81,11 +81,18 @@ class ConfigTests(unittest.TestCase):
             with self.subTest(members=members), self.assertRaises(ValueError):
                 OpenAIConfig(**{"api_key": KEY, "model": "gpt-4o", **members})
         with self.assertRaises(TypeError):
-            OpenAIConfig(api_key=KEY, model="gpt-4o", vision=True)
-        with self.assertRaises(TypeError):
             OpenAIConfig(api_key=KEY)
         with self.assertRaises(TypeError):
             OpenAIConfig(KEY, "gpt-4o")
+
+    def test_an_unknown_argument_is_ignored_as_roomkit_s_configuration_ignores_it(self) -> None:
+        config = OpenAIConfig(api_key=KEY, model="gpt-4o", vision=True, nope=1)
+        self.assertEqual(config, OpenAIConfig(api_key=KEY, model="gpt-4o"))
+        self.assertFalse(hasattr(config, "vision"))
+        self.assertNotIn("nope", repr(config))
+        # A copy made with a member replaced keeps the rest as it was read.
+        other = dataclasses.replace(config, model="gpt-4o-mini", max_retries=2)
+        self.assertEqual((other.model, other.max_retries, other.api_key), ("gpt-4o-mini", 2, KEY))
 
     def test_what_refuses_a_configuration_does_not_repeat_its_key(self) -> None:
         with self.assertRaises(ValueError) as refused:
@@ -194,7 +201,7 @@ class ProviderTests(unittest.TestCase):
         self.assertTrue(error.before_request)
         self.assertFalse(error.retryable)
         self.assertEqual(error.provider, "openai")
-        self.assertIn("its base URL has a query or a fragment", error.message)
+        self.assertIn("its base URL has a query or a fragment", error.args[0])
 
     def test_the_version_is_the_project_s(self) -> None:
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
@@ -293,8 +300,10 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
             "the provider answered HTTP 401 (invalid_request_error, invalid_api_key): "
             "Incorrect API key provided: [***]."
         )
-        self.assertEqual(error.message, said)
         self.assertEqual(error.args, (said,))
+        # The text is the first argument, as RoomKit's error holds it: no
+        # attribute of its own names it.
+        self.assertFalse(hasattr(error, "message"))
         self.assertEqual(str(error), f"openai (401): {said}")
         self.assertEqual(
             (error.retryable, error.provider, error.status_code, error.context_overflow),
@@ -348,8 +357,8 @@ class ErrorTests(unittest.TestCase):
         # A message that already names its provider is left as it is.
         self.assertEqual(str(ProviderError("ACME said no.", provider="acme")), "ACME said no.")
         self.assertEqual(
-            (named.message, named.retryable, named.context_overflow, named.before_request),
-            ("Payment required", False, None, False),
+            (named.args, named.retryable, named.context_overflow, named.before_request),
+            (("Payment required",), False, None, False),
         )
 
     def test_a_response_schema_s_error_derives_the_rest_from_its_reason(self) -> None:

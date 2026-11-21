@@ -114,6 +114,21 @@ class DescribeTests(unittest.TestCase):
             {"__bases__": ["bases", "pkg.Base"]},
         )
 
+    def test_a_base_of_another_package_is_written_where_it_is_defined(self):
+        class Foreign:
+            pass
+
+        class Child(Foreign, Exception):
+            pass
+
+        Foreign.__module__ = "another_package.models"
+        Foreign.__qualname__ = "Foreign"
+        Child.__module__ = __name__
+        self.assertEqual(
+            api_signatures.describe(Child, self.package, {}),
+            {"__bases__": ["bases", "another_package.models.Foreign"]},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -28,6 +28,14 @@ uv pip install --python .venv/bin/python 'maturin>=1.15,<2' 'ruff>=0.14,<1'
 make python-check PYTHON=.venv/bin/python MATURIN=$PWD/.venv/bin/maturin RUFF=$PWD/.venv/bin/ruff
 ```
 
+The RoomKit adapter is checked where `PYTHON`'s environment has RoomKit, in
+the version the `roomkit` extra of `pyproject.toml` names. Install it there
+from a checkout of RoomKit, not editable:
+
+```sh
+uv pip install --python .venv/bin/python ../roomkit
+```
+
 ## Validation gates
 
 | Command | Scope |
@@ -35,7 +43,8 @@ make python-check PYTHON=.venv/bin/python MATURIN=$PWD/.venv/bin/maturin RUFF=$P
 | `make fmt` | Format the workspace |
 | `make all` | Formatting, Clippy, tests, the examples, rustdoc, dependency policy and the core dependency allow list |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
-| `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed alone and tested |
+| `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed alone and tested; then `make python-roomkit-check` where `PYTHON`'s environment has RoomKit |
+| `make python-roomkit-check` | The RoomKit adapter: a wheel installed with its `roomkit` extra beside the RoomKit of `PYTHON`'s environment, the adapter's tests and its example |
 | `make python-msrv` | Check the binding on the minimum Rust toolchain |
 | `make python-wheel` | Build the optimized wheel into `dist/` |
 | `make api-snapshot` | Rewrite the snapshot of the Python public API from a freshly built wheel |
@@ -252,13 +261,31 @@ sends and reads stays in the provider crates.
 - **What a distribution contains** is the repository's files and what the
   build generates: a file git ignores must not reach a wheel or a source
   distribution (`scripts/artifact_files.py`).
-- `benchmarks/crossing.py` measures a turn through the package. It is no
-  test and no gate.
+- **The RoomKit adapter** (`python/roomkit_providers/roomkit`) is the only
+  part of the package that imports RoomKit, and it converts and nothing
+  else: a context to the contract's JSON, an answer to RoomKit's models, a
+  failure to RoomKit's exception. Its tests (`tests/python/roomkit`) are
+  skipped, saying why, where RoomKit is not installed: the replay of the
+  recorded cases through the adapter, an agent (a kit and an AI channel over
+  the adapter) that answers, calls a tool and streams, and the first-token
+  metric. `make python-roomkit-check` builds a wheel, installs it with its
+  `roomkit` extra beside the RoomKit of `PYTHON`'s environment
+  (`scripts/roomkit_env.py` names it: where it was installed from, else its
+  version) and runs those tests and `examples/roomkit_agent.py` there.
+  `make python-check` calls it when `PYTHON`'s environment has RoomKit, and
+  says that it did not when it has none. The adapter has its own API
+  snapshot, in `tests/python/roomkit`, which `make api-snapshot` rewrites
+  when RoomKit is installed. The extra's range is the RoomKit the adapter
+  was tested against: widen it with a run of `make python-roomkit-check` on
+  the version added.
+- `benchmarks/crossing.py` measures a turn through the package, through the
+  adapter and through RoomKit's own provider. It is no test and no gate.
 
 CI runs `make python-check` on CPython 3.12 and 3.14, and the binding's
 MSRV check; the `Python distributions` workflow builds the Linux x86_64
 wheel and the source distribution on demand and checks both. Nothing is
-published from either.
+published from either. Neither installs RoomKit: the adapter's check runs
+where a developer has it.
 
 ## Implementation boundaries
 

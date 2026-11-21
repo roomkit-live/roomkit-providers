@@ -34,10 +34,10 @@ Changelog = "https://github.com/roomkit-live/roomkit-providers/blob/main/CHANGEL
 Repository = "https://github.com/roomkit-live/roomkit-providers"
 Issues = "https://github.com/roomkit-live/roomkit-providers/issues"
 
-# The RoomKit adapter is not written yet: the extra names no requirement
-# until it is, and a core installation has no Python dependency.
+# The RoomKit adapter, `roomkit_providers.roomkit`, needs RoomKit: the range
+# it is tested against. A core installation has no Python dependency.
 [project.optional-dependencies]
-roomkit = []
+roomkit = ["roomkit>=0.117.0.dev0,<0.118"]
 
 [tool.maturin]
 manifest-path = "bindings/python/Cargo.toml"
@@ -49,7 +49,7 @@ exclude = ["docs/**", "AGENTS.md"]
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-include = ["python/**/*.py", "tests/python/**/*.py", "examples/*.py", "benchmarks/*.py", "scripts/check-python.py", "scripts/native-notices.py", "scripts/artifact_files.py", "scripts/api-snapshot.py"]
+include = ["python/**/*.py", "tests/python/**/*.py", "examples/*.py", "benchmarks/*.py", "scripts/check-python.py", "scripts/native-notices.py", "scripts/artifact_files.py", "scripts/api-snapshot.py", "scripts/roomkit_env.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]
