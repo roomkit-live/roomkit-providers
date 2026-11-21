@@ -5,6 +5,7 @@ fails here until ``make api-snapshot`` rewrites the snapshot in the same
 commit.
 """
 
+import inspect
 import json
 import shutil
 import tempfile
@@ -26,22 +27,17 @@ class SnapshotTests(unittest.TestCase):
     def test_a_snapshot_that_differs_from_the_code_is_drift(self):
         """A name, a parameter or a key the snapshot lacks, or holds and the
         code does not, is drift."""
-        provider = "roomkit_providers.openai.OpenAIAIProvider"
+        provider = "roomkit_providers.llm.openai.OpenAI"
+        config = "roomkit_providers.llm.openai.OpenAIConfig"
         changes = [
-            (api_signatures.NAMES, lambda names: names["roomkit_providers"].pop()),
+            (api_signatures.NAMES, lambda names: names["roomkit_providers.llm.openai"].pop()),
             (api_signatures.SIGNATURES, lambda specs: specs[provider]["generate"].append("x=1")),
             (api_signatures.SIGNATURES, lambda specs: specs[provider].pop("close")),
+            (api_signatures.SIGNATURES, lambda specs: specs[provider]["__bases__"].pop()),
+            (api_signatures.SIGNATURES, lambda specs: specs[config]["__init__"].remove("model")),
             (
                 api_signatures.SIGNATURES,
-                lambda specs: specs["roomkit_providers.AIRequest"].pop("tools"),
-            ),
-            (
-                api_signatures.SIGNATURES,
-                lambda specs: specs["roomkit_providers.AITool"].update(name=["key", "optional"]),
-            ),
-            (
-                api_signatures.SIGNATURES,
-                lambda specs: specs["roomkit_providers.ToolCallOutcome"]["__values__"].pop(),
+                lambda specs: specs[config]["__init__"].append("region=None"),
             ),
         ]
         for name, change in changes:
@@ -127,6 +123,39 @@ class DescribeTests(unittest.TestCase):
         self.assertEqual(
             api_signatures.describe(Child, self.package, {}),
             {"__bases__": ["bases", "another_package.models.Foreign"]},
+        )
+
+    def test_a_base_the_package_does_not_export_gives_way_to_its_own(self):
+        class Foreign:
+            pass
+
+        class Hidden(Foreign):
+            def close(self) -> None: ...
+
+        class Child(Hidden):
+            pass
+
+        Foreign.__module__ = "another_package.models"
+        Foreign.__qualname__ = "Foreign"
+        Hidden.__module__ = Child.__module__ = __name__
+        self.assertEqual(
+            api_signatures.describe(Child, self.package, {}),
+            {"__bases__": ["bases", "another_package.models.Foreign"], "close": ["def"]},
+        )
+
+    def test_a_model_built_from_its_fields_is_written_with_them(self):
+        class Config:
+            __signature__ = inspect.Signature(
+                [
+                    inspect.Parameter("model", inspect.Parameter.KEYWORD_ONLY),
+                    inspect.Parameter("timeout", inspect.Parameter.KEYWORD_ONLY, default=30.0),
+                ]
+            )
+
+        Config.__module__ = __name__
+        self.assertEqual(
+            api_signatures.describe(Config, self.package, {}),
+            {"__init__": ["def", "*", "model", "timeout=30.0"]},
         )
 
 

@@ -1,10 +1,9 @@
 """The RoomKit of the environment that runs a check, for an environment the
-check builds: the adapter is tested against the RoomKit the developer has."""
+check builds: the package is tested against the RoomKit the developer has."""
 
 from __future__ import annotations
 
 import json
-import sys
 from importlib import metadata
 
 
@@ -16,12 +15,13 @@ def requirement() -> str | None:
         roomkit = metadata.distribution("roomkit")
     except metadata.PackageNotFoundError:
         return None
-    origin = roomkit.read_text("direct_url.json")
-    if origin is not None:
-        return f"roomkit @ {json.loads(origin)['url']}"
-    return f"roomkit=={roomkit.version}"
-
-
-if __name__ == "__main__":
-    # For the Makefile: succeeds where this interpreter has RoomKit.
-    sys.exit(requirement() is None)
+    written = roomkit.read_text("direct_url.json")
+    if written is None:
+        return f"roomkit=={roomkit.version}"
+    origin = json.loads(written)
+    url = origin["url"]
+    source = origin.get("vcs_info")
+    if source is not None:
+        # A repository, at the commit that was installed.
+        url = f"{source['vcs']}+{url}@{source['commit_id']}"
+    return f"roomkit @ {url}"

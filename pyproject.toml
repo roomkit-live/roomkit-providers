@@ -5,9 +5,12 @@ build-backend = "maturin"
 [project]
 name = "roomkit-providers"
 version = "0.1.0a1"
-description = "Model providers implemented in Rust, for Python and RoomKit"
+description = "RoomKit's model providers, implemented in Rust"
 readme = "README.md"
 requires-python = ">=3.12"
+# A provider is a RoomKit provider: RoomKit's interface, models and
+# exceptions. The range is the one the package is tested against.
+dependencies = ["roomkit>=0.117.0.dev0,<0.118"]
 license = "MIT AND Unicode-3.0"
 # The MIT license, the notice of the Unicode data two of the crates the
 # extension links derive a table from, and the notices of its dependencies.
@@ -34,10 +37,6 @@ Changelog = "https://github.com/roomkit-live/roomkit-providers/blob/main/CHANGEL
 Repository = "https://github.com/roomkit-live/roomkit-providers"
 Issues = "https://github.com/roomkit-live/roomkit-providers/issues"
 
-# The RoomKit adapter, `roomkit_providers.roomkit`, needs RoomKit: the range
-# it is tested against. A core installation has no Python dependency.
-[project.optional-dependencies]
-roomkit = ["roomkit>=0.117.0.dev0,<0.118"]
 
 [tool.maturin]
 manifest-path = "bindings/python/Cargo.toml"

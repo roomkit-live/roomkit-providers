@@ -1,4 +1,7 @@
-"""Ask a model once whole and once streamed, without RoomKit.
+"""Ask a model once whole and once streamed, with the provider alone.
+
+The provider is a RoomKit provider, asked here as RoomKit asks one, with no
+room and no channel around it: a context in, RoomKit's models out.
 
 The example talks to a stand-in server it starts itself on a local port:
 nothing leaves the machine, and no key is needed. Point `base_url` at a real
@@ -13,8 +16,8 @@ from __future__ import annotations
 import asyncio
 import json
 
-from roomkit_providers import AIRequest, ProviderError
-from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit.providers.ai import AIContext, AIMessage, ProviderError, StreamDone, StreamTextDelta
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
 ANSWER = ["The order ", "left ", "this morning."]
 
@@ -71,22 +74,22 @@ async def main() -> None:
         model="local-model",
         base_url=f"http://127.0.0.1:{port}/v1",
     )
-    provider = OpenAIAIProvider(config)
-    request: AIRequest = {
-        "system_prompt": "You answer in one sentence.",
-        "messages": [{"role": "user", "content": "Where is my order?"}],
-    }
+    provider = OpenAI(config)
+    context = AIContext(
+        system_prompt="You answer in one sentence.",
+        messages=[AIMessage(role="user", content="Where is my order?")],
+    )
     try:
-        response = await provider.generate(request)
-        print("whole:   ", response["content"], response["usage"])
-        assert response["content"] == "".join(ANSWER), response
+        response = await provider.generate(context)
+        print("whole:   ", response.content, response.usage)
+        assert response.content == "".join(ANSWER), response
 
         pieces = []
-        async for event in provider.generate_structured_stream(request):
-            if event["type"] == "text_delta":
-                pieces.append(event["text"])
-            elif event["type"] == "done":
-                print("streamed:", "".join(pieces), "/", event["finish_reason"])
+        async for event in provider.generate_structured_stream(context):
+            if isinstance(event, StreamTextDelta):
+                pieces.append(event.text)
+            elif isinstance(event, StreamDone):
+                print("streamed:", "".join(pieces), "/", event.finish_reason)
         assert pieces == ANSWER, pieces
     except ProviderError as error:
         raise SystemExit(f"the provider failed: {error}") from error

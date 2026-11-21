@@ -1,5 +1,10 @@
-"""The replay of the recorded wire cases through the Python binding: what a
+"""The replay of the recorded wire cases through the Python package: what a
 case's provider sent and gave, and where that differs from what Python did.
+
+A case is asked as RoomKit asks it: its configuration is the package's
+``OpenAIConfig``, its request an ``AIContext``, and what the provider gives
+are RoomKit's models, written back in the JSON form the fixture holds; a
+failure is RoomKit's own exception.
 
 The comparison is the Rust replay's (``crates/roomkit-providers-openai``,
 ``src/replay``), in its words, so that the cases the provider answers
@@ -10,15 +15,15 @@ crate writes of them, ``named_cases.json``.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 from fake_endpoint import Fake, Reads, Refused, Reply, Seen, Silent, Whole
-from roomkit_providers import ProviderError, ResponseSchemaError
-from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit.providers.ai import AIContext, ProviderError, ResponseSchemaError
+from roomkit_providers import _native
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
 FIXTURES = Path(__file__).resolve().parents[2] / "crates/roomkit-providers-openai/tests/fixtures"
 
@@ -73,30 +78,25 @@ def reply_of(answered: dict[str, Any]) -> Reply:
     return Whole(status, headers, json.dumps(answered.get("json")).encode())
 
 
-@dataclass(frozen=True)
-class Through:
-    """What a case is asked through: the package's own provider, which takes
-    and gives plain dicts, or an adapter over it, which takes and gives the
-    models of the host it adapts to."""
-
-    # The provider of a case's configuration, its keyword arguments.
-    provider: Callable[[dict[str, Any]], Any]
-    # The request of a case, as the provider takes it.
-    request: Callable[[dict[str, Any]], Any]
-    # What a call gave, in the JSON form the fixture writes it in.
-    written: Callable[[str, Any], Any]
-    # The exception a failure is raised as, and a response schema's.
-    failure: type[Exception]
-    schema_failure: type[Exception]
+def written(call: str, given: Any) -> Any:
+    """What a call gave, RoomKit's models, in the fixture's JSON form: a
+    response without the tasks and observations RoomKit adds."""
+    if call == "generate":
+        return given.model_dump(mode="json", exclude={"tasks", "observations"})
+    if call == "generate_stream":
+        return given
+    return [item.model_dump(mode="json") for item in given]
 
 
-PACKAGE = Through(
-    provider=lambda config: OpenAIAIProvider(OpenAIConfig(**config)),
-    request=lambda request: request,
-    written=lambda _call, given: given,
-    failure=ProviderError,
-    schema_failure=ResponseSchemaError,
-)
+def replaying(provider: OpenAI, fake: Fake) -> Any:
+    """Sends `provider` to `fake`, through the seam the native module keeps
+    for this replay: its configuration as written, its clock set to the
+    fixture's, and its waits kept instead of taken. Gives those waits."""
+    config = provider._config
+    key = config.api_key.get_secret_value()
+    form = config.model_dump_json()
+    provider._native, waits = _native._openai_replaying(form, key, "127.0.0.1", fake.port, CLOCK)
+    return waits
 
 
 @dataclass
@@ -119,16 +119,11 @@ class Replayed:
 
 
 async def replay(
-    case: dict[str, Any],
-    fake: Fake,
-    *,
-    read_timeout: float | None = None,
-    through: Through = PACKAGE,
+    case: dict[str, Any], fake: Fake, *, read_timeout: float | None = None
 ) -> Replayed:
-    """Replays `case` through `through`: its provider built from its
-    configuration, its requests sent to `fake`, which answers with the
-    case's exchanges, its clock set to the fixture's and its waits kept
-    instead of taken.
+    """Replays `case`: its provider built from its configuration, its
+    requests sent to `fake`, which answers with the case's exchanges, its
+    clock set to the fixture's and its waits kept instead of taken.
 
     `read_timeout` replaces the configuration's timeout, for a case whose
     fake never answers: nothing else ends it."""
@@ -137,37 +132,37 @@ async def replay(
         config["timeout"] = read_timeout
     replayed = Replayed(key=config["api_key"])
     try:
-        provider = through.provider(config)
-    except through.failure as error:
+        provider = OpenAI(OpenAIConfig(**config))
+    except ProviderError as error:
         replayed.unbuilt = error
         return replayed
     replayed.vision = provider.supports_vision
     fake.answer(*(reply_of(exchange["response"]) for exchange in case["exchanges"]))
-    provider._native = provider._native._replaying("127.0.0.1", fake.port, CLOCK)
-    request, call = through.request(case["request"]), case["call"]
+    waits = replaying(provider, fake)
+    context, call = AIContext.model_validate(case["request"]), case["call"]
     replayed.asked = True
     # What a stream gave before it failed is kept too.
     items: list[Any] | None = None
     try:
         if call == "generate":
-            replayed.given = through.written(call, await provider.generate(request))
+            replayed.given = written(call, await provider.generate(context))
         elif call == "list_models":
-            replayed.given = through.written(call, await provider.list_models())
+            replayed.given = written(call, await provider.list_models())
         else:
             stream = (
-                provider.generate_stream(request)
+                provider.generate_stream(context)
                 if call == "generate_stream"
-                else provider.generate_structured_stream(request)
+                else provider.generate_structured_stream(context)
             )
             items = []
             async for item in stream:
                 items.append(item)
-    except through.failure as error:
+    except ProviderError as error:
         replayed.error = error
-        replayed.schema = isinstance(error, through.schema_failure)
+        replayed.schema = isinstance(error, ResponseSchemaError)
     if items is not None:
-        replayed.given = through.written(call, items)
-    replayed.waits = provider._native._waits()
+        replayed.given = written(call, items)
+    replayed.waits = waits.taken()
     # The provider gone, every connection is closed, and the fake ends
     # serving each: what it saw then says how it wrote each answer.
     del provider

@@ -1,11 +1,10 @@
 # Python
 
-`roomkit-providers` is the Python package of this repository: the Rust
-providers behind a native extension, for asynchronous programs. It needs
-CPython 3.12 or newer and has no Python dependency. RoomKit is not required:
-the package is used on its own, with plain dicts, or
-[in a RoomKit agent](#in-a-roomkit-agent) through its adapter, which the
-`roomkit` extra installs RoomKit for.
+`roomkit-providers` is the Python package of this repository: RoomKit's
+model providers, implemented in Rust behind a native extension. A provider
+is a RoomKit `AIProvider`: an AI channel takes it as it takes RoomKit's own.
+
+It needs CPython 3.12 or newer, and RoomKit, which it depends on.
 
 **Early development.** Nothing is published. The package is built from this
 repository, for Linux x86_64.
@@ -23,68 +22,79 @@ The build needs the Rust toolchain of `rust-toolchain.toml` and
 [uv](https://docs.astral.sh/uv/), which runs maturin. The wheel is built for
 the stable ABI: one wheel serves CPython 3.12 and every later version.
 
-## A first call
+The package asks for `roomkit>=0.117.0.dev0,<0.118`. It is tested against
+RoomKit 0.117.0.dev0, the development version of RoomKit's repository, and
+against no other. While no 0.117 is released, install RoomKit from its
+repository first: the requirement accepts it.
+
+## In a RoomKit agent
 
 ```python
-import asyncio
+from roomkit import AIChannel, RoomKit
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
-from roomkit_providers import AIRequest
-from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
-
-
-async def main() -> None:
-    config = OpenAIConfig(
-        api_key="placeholder-not-a-key",
-        model="local-model",
-        base_url="http://localhost:11434/v1",
-    )
-    provider = OpenAIAIProvider(config)
-    request: AIRequest = {"messages": [{"role": "user", "content": "Hello"}]}
-
-    response = await provider.generate(request)
-    print(response["content"], response["usage"])
-
-    async for event in provider.generate_structured_stream(request):
-        if event["type"] == "text_delta":
-            print(event["text"], end="")
-
-
-asyncio.run(main())
+config = OpenAIConfig(
+    api_key="placeholder-not-a-key",
+    model="local-model",
+    base_url="http://localhost:11434/v1",
+)
+kit = RoomKit()
+kit.register_channel(AIChannel("assistant", provider=OpenAI(config)))
 ```
 
-`examples/local_server.py` does the same against a stand-in server it starts
-on a local port, with no key and no network.
+`examples/roomkit_agent.py` is a whole agent: it answers a message, calls a
+tool on the way and streams its answer, against a stand-in server it starts
+on a local port. `examples/local_server.py` asks the provider alone, as
+RoomKit asks one: a context in, RoomKit's models out.
 
-## Requests and answers are plain dicts
+## One import per provider
 
-A request, a response, a stream event and a model's entry are plain dicts in
-the contract's JSON form: the one RoomKit's models give with
-`model_dump(mode="json")`. The package defines no class for them. It names
-their members for a type checker, with typed dicts called as RoomKit calls
-its models:
+The providers are filed by kind, then by vendor: `roomkit_providers.llm`
+holds those of language models, one module each. A module holds the
+provider's class, named for the vendor, and its configuration:
 
-| Type | What it is |
-| --- | --- |
-| `AIRequest` | What one generation is asked: `messages`, `system_prompt`, `temperature`, `max_tokens`, `thinking_budget`, `enable_thinking`, `reasoning_effort`, `tools`, `response_schema`, `metadata`. Every member may be left out |
-| `AIMessage` | A message: `role`, `content` (a text, or a list of parts), `metadata` |
-| `AITextPart`, `AIImagePart`, `AIToolCallPart`, `AIToolResultPart`, `AIThinkingPart` | The parts of a message, each with its `type` |
-| `AITool` | A tool the model may call |
-| `AIResponse`, `AIToolCall`, `ServedCall` | A whole answer and its calls |
-| `StreamTextDelta`, `StreamThinkingDelta`, `StreamToolCallDelta`, `StreamToolCall`, `StreamUsage`, `StreamDone` | The events of a stream, each with its `type`; `StreamEvent` is any of them |
-| `ModelInfo`, `ModelPricing` | What is known of a model |
+| Module | Class | Configuration |
+| --- | --- | --- |
+| `roomkit_providers.llm.openai` | `OpenAI` | `OpenAIConfig` |
 
-Nothing checks these types when the program runs. A request is read by the
-contract's own reader when the call is made: a member left out takes its
-default (`temperature` is 0.7), and what does not fit is a `ValueError`,
-before anything is sent. The reader is stricter than RoomKit's models: it
-converts nothing (`"0.7"` is no number, `1` is no boolean), and refuses a
-role that is not `system`, `user`, `assistant` or `tool`.
+`OpenAI` serves OpenAI's Chat Completions and the servers that speak it
+behind a base URL.
 
-What a provider gives back holds every member, `None` included.
+## Switching from RoomKit's own provider
+
+Change the import and the class's name:
+
+```python
+# from roomkit.providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
+
+provider = OpenAI(OpenAIConfig(api_key=..., model=...))
+```
+
+`OpenAI` also takes RoomKit's own `OpenAIConfig`, so that a host moves its
+provider first and its configuration when it wants. The members are
+RoomKit's, with RoomKit's types: `generate(context)` takes an `AIContext`
+and gives an `AIResponse`, `generate_structured_stream(context)` yields
+RoomKit's stream events, `generate_stream(context)` the answer's text,
+`list_models()` and `available_models()` give `ModelInfo`, and
+`catalog_entry()`, `context_window`, `model_name` and the `supports_*`
+properties answer as RoomKit's provider does for the same configuration. A
+failure is RoomKit's `ProviderError` or `ResponseSchemaError`, with the same
+attributes.
+
+What RoomKit records of a provider does not change with it. `name` is
+`OpenAIAIProvider`, the name RoomKit's own provider goes by: the
+`ai_provider` RoomKit stores with an answer, and the `provider` its
+telemetry labels a turn with, stay what they were. The time to the first
+token is recorded as RoomKit's provider records it: the metric
+`roomkit.llm.ttfb_ms`, in `ms`, labelled with that name and the model,
+through the telemetry the channel gives its provider. A stream records it
+once, at its first text or reasoning, and never at a fragment of a call.
 
 ## The configuration
 
-`OpenAIConfig` has the fields and the defaults of RoomKit's `OpenAIConfig`:
+`OpenAIConfig` is a pydantic model with the fields, the defaults and the
+validation of RoomKit's `OpenAIConfig`:
 
 ```python
 OpenAIConfig(
@@ -97,8 +107,8 @@ OpenAIConfig(
     connect_timeout=5.0,
     max_retries=0,
     include_stream_usage=True,
-    use_max_completion_tokens=None,            # None: decided from the model
-    supports_custom_temperature=None,          # None: decided from the model
+    use_max_completion_tokens=False,           # unset: decided from the model
+    supports_custom_temperature=True,          # unset: decided from the model
     reasoning_effort=None,
     default_headers=None,
     extra_body=None,
@@ -109,32 +119,54 @@ OpenAIConfig(
 )
 ```
 
-It is checked when it is built, and a value that does not fit is a
-`ValueError`. An argument it does not know is ignored, as RoomKit's
-configuration ignores it. It cannot be changed afterwards. `repr` never
-shows the key, the value of a default header, or what a base URL holds
-before its last `@`.
+It reads what RoomKit's reads, converts what RoomKit's converts, ignores an
+argument it does not know and refuses what RoomKit's refuses, with
+pydantic's `ValidationError`. The two switches a modern model decides on
+OpenAI's own endpoint are decided when the configuration is built, unless
+they were stated.
+
+`repr` never shows the key, the value of a default header, or what a base
+URL holds before its last `@`. RoomKit's own shows the last two.
+
+The provider reads its configuration once, when it is built. A value the
+provider cannot work with is refused then: a time below zero is a
+`ValueError`, a base URL the provider would not send to is a
+`ProviderError`.
 
 ## The provider
 
-`OpenAIAIProvider(config)` has the members of RoomKit's `AIProvider`:
+`OpenAI(config)` has the members of RoomKit's `AIProvider`:
 
 | Member | |
 | --- | --- |
-| `name`, `model_name` | Properties: the class name, and the configured model |
+| `name`, `model_name` | Properties: the name RoomKit records, and the configured model |
 | `supports_vision`, `supports_streaming`, `supports_structured_streaming`, `supports_response_schema`, `supports_response_schema_with_tools`, `supports_deferred_tools` | Properties |
 | `context_window`, `catalog_entry()` | The configured model's window and its entry in the catalogue, `None` for a model the catalogue does not know |
 | `available_models()` | A class method: the curated catalogue, with no request |
 | `await list_models()` | The models the endpoint lists |
-| `await generate(request)` | One whole answer |
-| `generate_stream(request)` | An async iterator over the answer's text |
-| `generate_structured_stream(request)` | An async iterator over the answer's events |
+| `await generate(context)` | One whole answer |
+| `generate_stream(context)` | An async iterator over the answer's text |
+| `generate_structured_stream(context)` | An async iterator over the answer's events |
 | `await close()` | Awaited when the provider is no longer needed |
 
 The provider's own README,
 [`crates/roomkit-providers-openai`](../crates/roomkit-providers-openai/README.md),
 says what it guarantees: the secrets a failure never repeats, the bounds on
 what a server sends, where a request goes, and the timeouts.
+
+### What crosses of a context
+
+A context is written once, as JSON, for the Rust provider: its `messages`,
+`system_prompt`, `temperature`, `max_tokens`, `thinking_budget`,
+`enable_thinking`, `reasoning_effort`, `tools` and `response_schema`, with
+everything they carry: images, deferred tools, a tool result's references,
+reasoning with its signatures.
+
+Its `metadata` does not cross. No provider reads anything of it but the
+credential a host lends one request (`api_key`), and a host or a hook may
+leave there what has no JSON form. That credential crosses apart, never
+inside the JSON, and reaches a provider that reads one. OpenAI's does not,
+here as in RoomKit: the configuration's key is the one sent.
 
 ### Streams
 
@@ -170,99 +202,13 @@ between Rust and Python, not one each.
 
 | Exception | When |
 | --- | --- |
-| `ProviderError` | A call failed. Its attributes are RoomKit's: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
-| `ResponseSchemaError` | A `ProviderError`: a response schema was set and no answer satisfying it can be returned. `reason` is `unsupported`, `refusal`, `truncated` or `invalid_json` |
-| `ValueError` | A configuration or a request the contract refuses as a value |
-| `TypeError` | A request that cannot be written as JSON, a configuration built without a required argument or with a positional one |
+| RoomKit's `ProviderError` | A call failed, or a provider could not be built. Its attributes: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
+| RoomKit's `ResponseSchemaError` | A `ProviderError`: a response schema was set and no answer satisfying it can be returned. `reason` is `unsupported`, `refusal`, `truncated` or `invalid_json` |
+| `ValueError` | A context the contract refuses as a value, or a configuration's value the provider cannot work with. A configuration pydantic refuses is its `ValidationError`, a `ValueError` too |
+| `TypeError` | A configuration that is not the provider's own: that of another provider, one derived from it |
 | `RuntimeError` | A call in a forked child, or once the interpreter is exiting |
 
-These are the package's own classes: `except roomkit.ProviderError` does not
-catch them. The adapter raises RoomKit's.
-
-## The key of one request
-
-RoomKit lets a host leave the credential of one request under `api_key` in a
-request's `metadata`. The OpenAI provider does not read it, here as in
-RoomKit: the configuration's key is the one sent. A request crosses to the
-native module as it is given, that entry included, and nothing of
-`metadata` is sent to the server. Through the adapter the entry does not
-cross: RoomKit writes it masked in a context's JSON form.
-
-## In a RoomKit agent
-
-`roomkit_providers.roomkit` holds the same provider as a RoomKit provider.
-Its `OpenAIAIProvider` is a subclass of RoomKit's `AIProvider`: an
-`AIChannel`, and whatever else takes a RoomKit provider, takes it as it
-takes RoomKit's own.
-
-```python
-from roomkit import AIChannel, RoomKit
-from roomkit.providers.openai import OpenAIConfig
-from roomkit_providers.roomkit import OpenAIAIProvider
-
-config = OpenAIConfig(
-    api_key="placeholder-not-a-key",
-    model="local-model",
-    base_url="http://localhost:11434/v1",
-)
-kit = RoomKit()
-kit.register_channel(AIChannel("assistant", provider=OpenAIAIProvider(config)))
-```
-
-`examples/roomkit_agent.py` is a whole agent: it answers a message, calls a
-tool on the way and streams its answer, against a stand-in server it starts
-on a local port.
-
-### Installing it
-
-The adapter needs RoomKit, which the distribution's `roomkit` extra asks
-for:
-
-```sh
-pip install "$(ls dist/roomkit_providers-*.whl)[roomkit]"
-```
-
-Importing `roomkit_providers.roomkit` without RoomKit is an `ImportError`
-that says so. The rest of the package never imports RoomKit.
-
-The extra asks for `roomkit>=0.117.0.dev0,<0.118`. The adapter is tested
-against RoomKit 0.117.0.dev0, the development version of RoomKit's
-repository, and against no other. While no 0.117 is released, install
-RoomKit from its repository first: the extra accepts it.
-
-### Switching from RoomKit's provider
-
-Change the import, and nothing else where the provider is built from a
-configuration alone:
-
-```python
-# from roomkit.providers.openai import OpenAIAIProvider
-from roomkit_providers.roomkit import OpenAIAIProvider
-
-provider = OpenAIAIProvider(config)    # the same RoomKit OpenAIConfig
-```
-
-The configuration is RoomKit's own `OpenAIConfig`, read once when the
-provider is built; this package's `OpenAIConfig` is taken too. The members
-are RoomKit's, with RoomKit's types: `generate(context)` takes an
-`AIContext` and gives an `AIResponse`, `generate_structured_stream(context)`
-yields RoomKit's stream events, `generate_stream(context)` the answer's
-text, `list_models()` and `available_models()` give `ModelInfo`, and
-`catalog_entry()`, `context_window`, `model_name`, `name` and the
-`supports_*` properties answer as RoomKit's provider does for the same
-configuration. A failure is RoomKit's `ProviderError` or
-`ResponseSchemaError`, with the same attributes; the package's own
-exception is its `__cause__`.
-
-The time to the first token is recorded as RoomKit's provider records it:
-the metric `roomkit.llm.ttfb_ms`, in `ms`, labelled with the provider's
-`name` and its model, through the telemetry the channel gives its provider.
-A stream records it once, at its first text or reasoning, and never at a
-fragment of a call.
-
-To switch back, change the import back.
-
-### What a RoomKit user sees differently
+## What a RoomKit user sees differently
 
 What is sent and read is the Rust provider's. Its README lists
 [where it differs on the wire](../crates/roomkit-providers-openai/README.md)
@@ -270,26 +216,25 @@ from RoomKit's Python provider; on a failure, for one, the text holds the
 message, the type and the code of the server's error object, not its whole
 body. Beside the wire:
 
-- **No `transport` parameter.** `OpenAIAIProvider(config)` takes the
-  configuration alone. The provider builds its own HTTP client: a host that
-  gave RoomKit's provider a transport, to pin addresses or to answer a test,
-  has no place to give it here.
+- **Another class name.** The class is `OpenAI`, where RoomKit's is
+  `OpenAIAIProvider`: `type(provider).__name__`, which an AI channel's
+  `info` shows, changes. The provider's `name` does not.
+- **No `transport` parameter.** `OpenAI(config)` takes the configuration
+  alone. The provider builds its own HTTP client: a host that gave RoomKit's
+  provider a transport, to pin addresses or to answer a test, has no place
+  to give it here.
 - **OpenAI's own configuration only.** The configuration of a provider
-  RoomKit derives from OpenAI's (a subclass of `OpenAIConfig`) is refused
+  derived from OpenAI's (a subclass of either `OpenAIConfig`) is refused
   with a `TypeError`: that provider's rules are not this one's.
-- **Not made to be subclassed.** The adapter has none of the private hooks
-  RoomKit's provider is derived through, and no `openai` client: what it
-  sends is decided in Rust. `provider._client` does not exist.
-- **A context is written once, as JSON**, from its ten members a provider
-  reads, `metadata` included. A response's `tasks` and `observations` stay
-  empty: the provider fills neither, as RoomKit's does not.
+- **Not made to be subclassed.** The provider has none of the private hooks
+  RoomKit's is derived through, and no `openai` client: what it sends is
+  decided in Rust. `provider._client` does not exist.
 - **A context the contract refuses is a `ValueError`**, raised when the call
-  is made and before anything is sent. Two contexts RoomKit's provider
-  takes are refused: one with a message whose role is not `system`, `user`,
-  `assistant` or `tool`, which RoomKit's provider sends as it is; and one
-  that cannot be written as JSON because a value a host left in its
-  `metadata` is no JSON value (an object of the host's), which RoomKit's
-  provider never reads.
+  is made and before anything is sent: a message whose role is not
+  `system`, `user`, `assistant` or `tool`, which RoomKit's provider sends as
+  it is.
+- **A response's `tasks` and `observations` stay empty**: the provider fills
+  neither, as RoomKit's does not.
 - **The time to the first token of `generate`** is recorded when the call
   gave an answer. RoomKit's records it as soon as the server answered, also
   when that answer is then refused: an error object answered with a 200, a
@@ -300,54 +245,17 @@ body. Beside the wire:
   provider is no longer held. RoomKit's closes its HTTP client.
 - **A forked process and the interpreter's exit** are refused with a
   `RuntimeError`, as [above](#cancellation-and-lifetime).
-- **The `openai` SDK is not needed.** The adapter runs without RoomKit's
+- **The `openai` SDK is not needed.** The provider runs without RoomKit's
   `openai` extra.
-
-## Where the package differs from RoomKit's provider
-
-What the provider sends and reads is the Rust provider's, which replays the
-cases captured on RoomKit's Python provider; its README lists where it
-differs on the wire. The Python surface differs in this:
-
-- **Plain dicts, not models.** `generate` takes an `AIRequest` dict where
-  RoomKit takes an `AIContext`, and its parameter is named `request`. An
-  answer, an event and a model's entry are dicts. A response has no `tasks`
-  and no `observations`, which RoomKit adds.
-- **No `transport` parameter.** `OpenAIAIProvider(config)` takes the
-  configuration alone.
-- **Not RoomKit's base class.** The provider does not inherit `AIProvider`,
-  has none of its private hooks, and records no telemetry. It is not made to
-  be subclassed: what it sends is decided in Rust.
-- **Its own exceptions**, with RoomKit's attributes; RoomKit's classes do
-  not catch them.
-- **`list_models` fails with a `ProviderError`**, where RoomKit raises the
-  openai SDK's error or a raw exception.
-- **`close()`** releases nothing by itself: the connections close when the
-  provider is no longer held. RoomKit's closes its HTTP client.
-- **The configuration is no pydantic model.** It is a frozen dataclass: no
-  `model_dump`, no `model_copy` (`dataclasses.replace` copies one). `api_key`
-  is a `str`, where RoomKit's is a `SecretStr`. A required argument left
-  out is a `TypeError`, where pydantic raises its `ValidationError`. Nothing
-  is converted: `"30"` for a number, `1024.0` for an integer and `1` for a
-  boolean are refused.
-- **The two switches** `use_max_completion_tokens` and
-  `supports_custom_temperature` default to `None`, a switch left unset,
-  where RoomKit's signature says `False` and `True`. Both are read back
-  decided, with the same values as RoomKit's.
-- **A request is checked when the call is made**, not when it is built.
-
-These are the differences of the package used on its own. The adapter
-removes those of its surface: it takes and gives RoomKit's models, takes
-RoomKit's configuration, is an `AIProvider`, records the time to the first
-token and raises RoomKit's exceptions.
-[What a RoomKit user sees differently](#what-a-roomkit-user-sees-differently)
-lists what is left.
 
 ## What is private
 
 A name that starts with an underscore is private, the native module
-`roomkit_providers._native` first: it may change with no notice. One of its
-members is carried by the wheel for this repository's tests alone: a method
-that builds, from a provider, one that sends to a server on the local
-machine and keeps its waits instead of taking them, which the tests replay
-the recorded wire cases through. It is no way to configure a provider.
+`roomkit_providers._native` first, and so is a module whose name does: it
+may change with no notice. The public names are those a provider's module
+exports.
+
+The native module carries one function for this repository's tests alone:
+it builds a provider that sends to a server on the local machine and keeps
+its waits instead of taking them, which the tests replay the recorded wire
+cases through. It is no way to configure a provider.

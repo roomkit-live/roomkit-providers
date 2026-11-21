@@ -1,14 +1,12 @@
 """A RoomKit agent whose model is asked through the Rust provider.
 
-The adapter takes the place of RoomKit's own OpenAI provider: it is given to
-an AI channel as any provider is. Here the agent answers a customer, calls a
+The provider takes the place of RoomKit's own OpenAI provider: it is given
+to an AI channel as any provider is. Here the agent answers a customer, calls a
 tool on the way, and streams its answer to the customer's connection.
 
 The example talks to a stand-in server it starts itself on a local port:
-nothing leaves the machine, and no key is needed. It needs RoomKit, which
-the `roomkit` extra installs:
+nothing leaves the machine, and no key is needed.
 
-    pip install "roomkit-providers[roomkit]"
     python examples/roomkit_agent.py
 """
 
@@ -29,8 +27,7 @@ from roomkit import (
 )
 from roomkit.channels import StreamChunk, StreamMessage
 from roomkit.providers.ai import AITool
-from roomkit.providers.openai import OpenAIConfig
-from roomkit_providers.roomkit import OpenAIAIProvider
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
 ANSWER = ["Your order ", "left ", "this morning."]
 
@@ -109,7 +106,7 @@ async def main() -> None:
     try:
         assistant = AIChannel(
             "assistant",
-            provider=OpenAIAIProvider(config),
+            provider=OpenAI(config),
             system_prompt="You answer in one sentence.",
             tools=[order],
             tool_handler=lookup_order,

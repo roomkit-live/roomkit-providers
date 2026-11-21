@@ -1,4 +1,4 @@
-"""A RoomKit agent over the adapter: a kit whose AI channel asks a local
+"""A RoomKit agent over the provider: a kit whose AI channel asks a local
 fake of the endpoint through the Rust provider. Everything is observed
 through RoomKit: what its channels deliver, what its tool handler is asked,
 what its telemetry records."""
@@ -9,7 +9,6 @@ import asyncio
 import json
 import unittest
 
-import adapter_tests  # noqa: F401
 from fake_endpoint import DEADLINE, EVENT_STREAM, Fake, Reads, call_events, events, local_config
 from roomkit import (
     AIChannel,
@@ -23,9 +22,8 @@ from roomkit import (
 )
 from roomkit.channels import StreamChunk, StreamEnd, StreamStart
 from roomkit.providers.ai import AITool
-from roomkit.providers.openai import OpenAIConfig
 from roomkit.telemetry import MockTelemetryProvider
-from roomkit_providers.roomkit import OpenAIAIProvider
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
 ORDER = AITool(
     name="lookup_order",
@@ -40,11 +38,11 @@ ORDER = AITool(
 
 class Agent:
     """A room with a user on a WebSocket channel and an AI channel over the
-    adapter, and what the user's connection was delivered."""
+    provider, and what the user's connection was delivered."""
 
     def __init__(self, fake: Fake, *, streaming: bool, telemetry=None) -> None:
         self.kit = RoomKit(telemetry=telemetry)
-        self.provider = OpenAIAIProvider(OpenAIConfig(**local_config(fake.port)))
+        self.provider = OpenAI(OpenAIConfig(**local_config(fake.port)))
         self.asked: list[tuple[str, dict]] = []
         self.rows: list[str] = []
         self.stream: list[object] = []

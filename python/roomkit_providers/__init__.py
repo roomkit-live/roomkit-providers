@@ -1,64 +1,12 @@
-"""Model providers implemented in Rust, for asynchronous Python programs.
+"""RoomKit's providers, implemented in Rust.
 
-A provider is used without RoomKit: it takes a request and gives its answer
-as plain dicts in the contract's JSON form, which the types here name.
+A provider here is a RoomKit provider: it is given to RoomKit as RoomKit's
+own is. The providers are filed by kind, then by vendor, one module each,
+and each module holds the provider's class and its configuration:
 
-    from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+    roomkit_providers.llm        the providers of language models
 """
-
-from ._contract import (
-    AIContentPart,
-    AIImagePart,
-    AIMessage,
-    AIRequest,
-    AIResponse,
-    AITextPart,
-    AIThinkingPart,
-    AITool,
-    AIToolCall,
-    AIToolCallPart,
-    AIToolResultPart,
-    ModelInfo,
-    ModelPricing,
-    ServedCall,
-    StreamDone,
-    StreamEvent,
-    StreamTextDelta,
-    StreamThinkingDelta,
-    StreamToolCall,
-    StreamToolCallDelta,
-    StreamUsage,
-    ToolCallOutcome,
-)
-from ._errors import ProviderError, ResponseSchemaError, ResponseSchemaFailure
 
 __version__ = "0.1.0a1"
 
-__all__ = [
-    "AIContentPart",
-    "AIImagePart",
-    "AIMessage",
-    "AIRequest",
-    "AIResponse",
-    "AITextPart",
-    "AIThinkingPart",
-    "AITool",
-    "AIToolCall",
-    "AIToolCallPart",
-    "AIToolResultPart",
-    "ModelInfo",
-    "ModelPricing",
-    "ProviderError",
-    "ResponseSchemaError",
-    "ResponseSchemaFailure",
-    "ServedCall",
-    "StreamDone",
-    "StreamEvent",
-    "StreamTextDelta",
-    "StreamThinkingDelta",
-    "StreamToolCall",
-    "StreamToolCallDelta",
-    "StreamUsage",
-    "ToolCallOutcome",
-    "__version__",
-]
+__all__ = ["__version__"]

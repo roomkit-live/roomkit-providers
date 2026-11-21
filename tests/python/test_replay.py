@@ -1,7 +1,7 @@
-"""The recorded wire cases, replayed through the Python binding.
+"""The recorded wire cases, replayed through the package's provider.
 
-Each case of ``python_chat_cases.json`` is asked of the provider through the
-package, against a local fake of the endpoint that serves each exchange, a
+Each case of ``python_chat_cases.json`` is asked of ``OpenAI`` as RoomKit
+asks it, against a local fake of the endpoint that serves each exchange, a
 stream read by read at the recorded bytes. What the provider sent and gave
 is what the Rust provider sends and gives: for a case the Rust replay holds
 as Python, what Python did; for a case it names, what its entry states.

@@ -17,21 +17,22 @@ from fake_endpoint import (
     events,
     local_config,
 )
-from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit.providers.ai import AIContext, AIMessage
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
-HELLO = {"messages": [{"role": "user", "content": "Hello"}]}
+HELLO = AIContext(messages=[AIMessage(role="user", content="Hello")])
 
 
 class LoopsAndThreadsTests(unittest.TestCase):
     def setUp(self) -> None:
         self.fake = ThreadedFake()
         self.addCleanup(self.fake.stop)
-        self.provider = OpenAIAIProvider(OpenAIConfig(**local_config(self.fake.port)))
+        self.provider = OpenAI(OpenAIConfig(**local_config(self.fake.port)))
 
     async def ask(self) -> tuple[str, list[str]]:
         whole = await self.provider.generate(HELLO)
         streamed = [piece async for piece in self.provider.generate_stream(HELLO)]
-        return whole["content"], streamed
+        return whole.content, streamed
 
     def answers(self, times: int) -> None:
         replies = []
@@ -65,7 +66,7 @@ class LoopsAndThreadsTests(unittest.TestCase):
         threads, each = 8, 4
 
         async def whole() -> str:
-            return (await self.provider.generate(HELLO))["content"]
+            return (await self.provider.generate(HELLO)).content
 
         self.fake.answer(*(Whole(200, JSON, completion("Yes.")) for _ in range(threads * each)))
         given: list[str] = []

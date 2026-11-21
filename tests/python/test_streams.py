@@ -9,9 +9,12 @@ import json
 import unittest
 
 from fake_endpoint import DEADLINE, EVENT_STREAM, Fake, Reads, events, local_config
-from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit.providers.ai import AIContext, AIMessage, ProviderError
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
-HELLO = {"messages": [{"role": "user", "content": "Hello"}]}
+HELLO = AIContext(messages=[AIMessage(role="user", content="Hello")])
+# The same request as the native module takes it.
+HELLO_JSON = HELLO.model_dump_json(include={"messages"})
 # The most items one crossing brings back.
 BATCH_LIMIT = 64
 
@@ -20,7 +23,7 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         self.fake = await Fake().start()
         self.addAsyncCleanup(self.fake.stop)
-        self.provider = OpenAIAIProvider(OpenAIConfig(**local_config(self.fake.port)))
+        self.provider = OpenAI(OpenAIConfig(**local_config(self.fake.port)))
 
     async def test_a_burst_is_handed_over_while_the_stream_is_still_open(self) -> None:
         # Two hundred events in one read, then the end, which the fake holds
@@ -30,7 +33,7 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
         let = asyncio.Semaphore(0)
         reads = [b"".join(burst), stop + done]
         self.fake.answer(Reads(200, EVENT_STREAM, reads, step=let.acquire))
-        stream = self.provider._native.stream(json.dumps(HELLO), False)
+        stream = self.provider._native.stream(HELLO_JSON, None)
         given: list[dict] = []
         while len(given) < len(words):
             crossed = json.loads(await asyncio.wait_for(stream.next(), DEADLINE))
@@ -53,7 +56,7 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_closing_a_stream_ends_the_crossing_under_way(self) -> None:
         self.fake.answer(Reads(200, EVENT_STREAM, events("Hel")[:1], then="silent"))
-        stream = self.provider._native.stream(json.dumps(HELLO), False)
+        stream = self.provider._native.stream(HELLO_JSON, None)
         self.assertEqual(len(json.loads(await stream.next())), 1)
         waiting = asyncio.ensure_future(stream.next())
         await self.fake.silent()
@@ -64,7 +67,7 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_a_native_stream_no_longer_held_stops_its_reading(self) -> None:
         self.fake.answer(Reads(200, EVENT_STREAM, events("Hel")[:1], then="silent"))
-        stream = self.provider._native.stream(json.dumps(HELLO), False)
+        stream = self.provider._native.stream(HELLO_JSON, None)
         self.assertEqual(len(json.loads(await stream.next())), 1)
         await self.fake.silent()
         # Never closed: dropping it is what closes its connection.
@@ -79,7 +82,7 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
         words = [f"word{at} " for at in range(200)]
         *reads, stop, done = events(*words)
         self.fake.answer(Reads(200, EVENT_STREAM, [*reads, stop + done]))
-        stream = self.provider._native.stream(json.dumps(HELLO), False)
+        stream = self.provider._native.stream(HELLO_JSON, None)
         given = json.loads(await stream.next())
         await self.fake.served()
         # Nothing tells when the bridge filled its inbox: it is asked until
@@ -105,7 +108,7 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
         words = [f"word{at} " for at in range(1000)]
         *reads, stop, done = events(*words)
         self.fake.answer(Reads(200, EVENT_STREAM, [*reads, stop + done]))
-        stream = self.provider._native.stream(json.dumps(HELLO), False)
+        stream = self.provider._native.stream(HELLO_JSON, None)
         given = json.loads(await stream.next())
         await self.fake.served()
         # Whatever else runs meanwhile, the next crossings hand over every
@@ -128,9 +131,9 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
         given = []
         with self.assertRaises(Exception) as failed:
             async for event in self.provider.generate_structured_stream(HELLO):
-                given.append(event["text"])
+                given.append(event.text)
         self.assertEqual(given, ["Hel", "lo."])
-        self.assertEqual(type(failed.exception).__name__, "ProviderError")
+        self.assertIs(type(failed.exception), ProviderError)
         self.assertFalse(failed.exception.retryable)
 
 

@@ -1,5 +1,5 @@
-"""What a turn costs through the Python binding, and through RoomKit's Python
-provider when RoomKit is installed.
+"""What a turn costs through the package's provider, and through RoomKit's
+own Python provider where its SDK is installed.
 
 A turn is asked of a local fake of the Chat Completions wire, which runs in a
 process of its own so that its work is not counted: a streamed answer of 500
@@ -9,12 +9,11 @@ measured in rounds interleaved with the others', so that drift lands on all
 of them; the medians of the wall time and of the process's CPU time are
 reported, the binding's threads included.
 
-The variants:
+The variants, each given RoomKit's AIContext and giving RoomKit's models:
 
-  binding           this package: a request and its answer as plain dicts
-  adapter           this package's RoomKit adapter: RoomKit's AIContext in,
-                    RoomKit's models out (with RoomKit)
-  roomkit           RoomKit's OpenAIAIProvider, the openai SDK (with RoomKit)
+  rust              this package's OpenAI: the Rust provider
+  roomkit           RoomKit's OpenAIAIProvider: the openai SDK, where it is
+                    installed
 
 Not a test, and not part of any gate. Build the native module optimized
 (`maturin develop --release`, which leaves it beside the package's sources),
@@ -168,34 +167,17 @@ def tools_and_image_request() -> dict[str, Any]:
 # -- The variants ----------------------------------------------------------------------
 
 
-def binding_turns(base_url: str, request: dict[str, Any]) -> dict[str, Turn]:
-    from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
-
-    config = OpenAIConfig(api_key="placeholder-not-a-key", model=MODEL, base_url=base_url)
-    provider = OpenAIAIProvider(config)
-
-    async def stream() -> int:
-        deltas = 0
-        async for event in provider.generate_structured_stream(request):
-            deltas += event["type"] == "text_delta"
-        return deltas
-
-    async def whole() -> int:
-        return len((await provider.generate(request))["content"])
-
-    return {"stream": stream, "whole": whole}
-
-
-def roomkit_turns(base_url: str, request: dict[str, Any]) -> dict[str, dict[str, Turn]]:
-    """The turns of this package's RoomKit adapter and of RoomKit's own
-    provider: both take RoomKit's context and give RoomKit's models."""
+def variants_of(base_url: str, request: dict[str, Any]) -> dict[str, dict[str, Turn]]:
+    """The turns of this package's provider and, where the openai SDK is
+    installed, of RoomKit's own: both take RoomKit's context and give
+    RoomKit's models."""
     from roomkit.providers.ai import AIContext, StreamTextDelta
     from roomkit.providers.openai import OpenAIAIProvider as RoomKitProvider
-    from roomkit.providers.openai import OpenAIConfig
-    from roomkit_providers.roomkit import OpenAIAIProvider as Adapter
+    from roomkit.providers.openai import OpenAIConfig as RoomKitConfig
+    from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
     context = AIContext.model_validate(request)
-    config = OpenAIConfig(api_key="placeholder-not-a-key", model=MODEL, base_url=base_url)
+    settings = {"api_key": "placeholder-not-a-key", "model": MODEL, "base_url": base_url}
 
     def turns(provider: Any) -> dict[str, Turn]:
         async def stream() -> int:
@@ -209,7 +191,13 @@ def roomkit_turns(base_url: str, request: dict[str, Any]) -> dict[str, dict[str,
 
         return {"stream": stream, "whole": whole}
 
-    return {"adapter": turns(Adapter(config)), "roomkit": turns(RoomKitProvider(config))}
+    variants = {"rust": turns(OpenAI(OpenAIConfig(**settings)))}
+    try:
+        import openai  # noqa: F401
+    except ImportError:
+        return variants
+    variants["roomkit"] = turns(RoomKitProvider(RoomKitConfig(**settings)))
+    return variants
 
 
 # -- The measure -----------------------------------------------------------------------
@@ -250,19 +238,11 @@ async def compare(variants: dict[str, Turn], expected: int) -> dict[str, dict[st
 
 
 async def run(base_url: str) -> dict[str, Any]:
-    try:
-        import roomkit  # noqa: F401
-
-        with_roomkit = True
-    except ImportError:
-        with_roomkit = False
     contexts = {"text": text_request(), "tools and an image": tools_and_image_request()}
     expected = {"stream": DELTAS, "whole": len("".join(WORDS))}
-    results: dict[str, Any] = {"roomkit": with_roomkit, "contexts": {}}
+    results: dict[str, Any] = {"contexts": {}}
     for label, request in contexts.items():
-        variants = {"binding": binding_turns(base_url, request)}
-        if with_roomkit:
-            variants.update(roomkit_turns(base_url, request))
+        variants = variants_of(base_url, request)
         measured = {"bytes": len(json.dumps(request))}
         for kind in ("stream", "whole"):
             turns = {name: turn[kind] for name, turn in variants.items()}

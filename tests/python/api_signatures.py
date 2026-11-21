@@ -9,7 +9,9 @@ Two files hold it, in the snapshot's directory:
 - ``public_api_signatures.json``: everything the package defines and a public
   module exports, keyed by the shortest path it is exported under: a
   function's parameters, a class's constructor, its public methods and
-  properties, its public bases from the package; the keys of a typed dict,
+  properties, its bases (a base the package does not export gives way to
+  its own, so that a class says what it is to its user); the keys of a
+  typed dict,
   each required or not; the values of a literal type and the members of a
   union. A parameter is written as ``inspect`` writes it, without its
   annotation: ``name``, ``name=default``, ``*args``, ``**kwargs``, and the
@@ -18,16 +20,11 @@ Two files hold it, in the snapshot's directory:
   possibly ``async``), ``property``, ``key``, ``bases``, ``literal`` or
   ``union``.
 
-The package's snapshot leaves out its RoomKit adapter, ``roomkit_providers.roomkit``,
-which is importable only with RoomKit: the adapter has a snapshot of its own,
-in ``tests/python/roomkit``, checked where RoomKit is installed.
-
 ``test_public_api.py`` fails when the code and the files differ, a compatible
 addition included. The commit that changes the surface rewrites them with
 ``make api-snapshot``, which runs this module against a freshly built wheel:
 
     python api_signatures.py write roomkit_providers DIRECTORY
-    python api_signatures.py write roomkit_providers.roomkit DIRECTORY
 
 Annotations are left out, a typed dict's keys aside: whether a type widens or
 narrows is not read mechanically. What a call does is not here either.
@@ -58,20 +55,12 @@ _ADDRESS = re.compile(r" at 0x[0-9a-fA-F]+")
 Spec = list[str]
 
 
-# The packages beneath a package that have a snapshot of their own.
-APART = {"roomkit_providers": ("roomkit_providers.roomkit",)}
-
-
 @dataclass(frozen=True)
 class Package:
     """An installed package whose public modules are snapshotted: itself and
-    what is beneath it, the packages snapshotted apart left out."""
+    what is beneath it."""
 
     name: str
-
-    def _apart(self, module: str) -> bool:
-        apart = APART.get(self.name, ())
-        return any(module == name or module.startswith(f"{name}.") for name in apart)
 
     def modules(self) -> list[ModuleType]:
         """The package and each public module beneath it, imported."""
@@ -84,7 +73,7 @@ class Package:
 
     def _beneath(self, info: pkgutil.ModuleInfo) -> list[ModuleType]:
         """The public module `info` names and those beneath it, imported."""
-        if info.name.rpartition(".")[2].startswith("_") or self._apart(info.name):
+        if info.name.rpartition(".")[2].startswith("_"):
             return []
         module = importlib.import_module(info.name)
         found = [module]
@@ -146,8 +135,7 @@ def describe(obj: Any, package: Package, paths: dict[int, str]) -> dict[str, Spe
             for name in obj.__annotations__
         }
     members: dict[str, Spec] = {}
-    bases = [_base(base, paths) for base in obj.__bases__]
-    bases = [base for base in bases if base is not None]
+    bases = _bases(obj, package, paths)
     if bases:
         members["__bases__"] = ["bases", *bases]
     if _builds_itself(obj, package):
@@ -167,6 +155,20 @@ def describe(obj: Any, package: Package, paths: dict[int, str]) -> dict[str, Spe
             if spec is not None:
                 members[name] = spec
     return dict(sorted(members.items()))
+
+
+def _bases(cls: type, package: Package, paths: dict[int, str]) -> list[str]:
+    """The bases of ``cls`` as the snapshot names them. A base the package
+    defines and does not export gives way to its own bases."""
+    found: list[str] = []
+    for base in cls.__bases__:
+        if id(base) not in paths and package.owns(base):
+            found += _bases(base, package, paths)
+            continue
+        named = _base(base, paths)
+        if named is not None:
+            found.append(named)
+    return found
 
 
 def _base(base: type, paths: dict[int, str]) -> str | None:
@@ -261,12 +263,14 @@ def _alias_spec(alias: Any, paths: dict[int, str]) -> dict[str, Spec]:
 
 def _builds_itself(cls: type, package: Package) -> bool:
     """Whether the package decides how ``cls`` is constructed: an ``__init__``
-    or ``__new__`` of its own. A protocol has no constructor, and one inherited
-    from the standard library is left out (it varies between Python versions)."""
+    or ``__new__`` of its own, or a signature of its own, which a model
+    built from its fields has. A protocol has no constructor, and one
+    inherited from the standard library is left out (it varies between
+    Python versions)."""
     if getattr(cls, "_is_protocol", False):
         return False
     for klass in cls.__mro__:
-        if "__init__" in vars(klass) or "__new__" in vars(klass):
+        if any(name in vars(klass) for name in ("__init__", "__new__", "__signature__")):
             return package.owns(klass)
     return False
 

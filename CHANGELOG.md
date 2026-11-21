@@ -24,7 +24,8 @@ nothing has been released yet.
 - `roomkit-providers-llm`: the readings of an image part a provider needs,
   `image_part_payload`, `image_part_base64` and `image_part_uri`.
 - `roomkit-providers-llm`: what a provider implements, the `AiProvider`
-  trait, with `DynAiProvider`, the `ProviderStream` and `TextStream` of a
+  trait, with `DynAiProvider`, which holds any provider as an object and
+  answers all a provider does, the `ProviderStream` and `TextStream` of a
   generation, and where a host leaves the credential of one request
   (`API_KEY_METADATA_KEY`).
 - `roomkit-providers-llm`: the response schema, `check_portable_schema`,
@@ -107,22 +108,17 @@ nothing has been released yet.
   stand-in server on a local port once whole and once streamed. `make all`
   runs it.
 - `roomkit-providers`, the Python package (CPython 3.12 or newer, Linux
-  x86_64, built from the repository): `roomkit_providers.openai` holds
-  `OpenAIAIProvider` and `OpenAIConfig`, the Rust OpenAI provider behind a
-  native extension, used without RoomKit. A request and its answer are plain
-  dicts in the contract's JSON form, named by typed dicts (`AIRequest`,
-  `AIResponse`, the stream events, `ModelInfo`); a failure is the package's
-  `ProviderError` or `ResponseSchemaError`. Cancelling a call's task, or
-  closing a stream, closes its connection. The guide (`guide/python.md`)
-  lists where it differs from RoomKit's Python provider.
-- `roomkit-providers`: the RoomKit adapter, `roomkit_providers.roomkit`,
-  which the `roomkit` extra installs RoomKit for (0.117). Its
-  `OpenAIAIProvider` is a RoomKit `AIProvider` over the Rust provider, to
-  give an `AIChannel` in place of RoomKit's own: it takes RoomKit's
-  `OpenAIConfig` and an `AIContext`, gives RoomKit's models, raises
-  RoomKit's `ProviderError` and `ResponseSchemaError`, and records the time
-  to the first token as RoomKit's provider does. It has no `transport`
-  parameter. The guide says how to switch and what differs.
+  x86_64, built from the repository), for RoomKit, which it depends on
+  (0.117): `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`,
+  the Rust OpenAI provider behind a native extension. `OpenAI` is a RoomKit
+  `AIProvider`, to give an `AIChannel` in place of RoomKit's own: it takes
+  an `AIContext`, gives RoomKit's models, raises RoomKit's `ProviderError`
+  and `ResponseSchemaError`, and records the time to the first token as
+  RoomKit's provider does, under the same name. A context's metadata does
+  not cross to the provider, and the credential of one request crosses
+  apart. Cancelling a call's task, or closing a stream, closes its
+  connection. There is no `transport` parameter. The guide
+  (`guide/python.md`) says how to switch and what differs.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of

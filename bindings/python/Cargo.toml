@@ -17,12 +17,18 @@ resolver = "3"
 name = "_native"
 crate-type = ["cdylib", "rlib"]
 
+[features]
+# A scripted provider of no vendor, which the Python tests of the crossing
+# are written against: built into the wheels the tests install, never into
+# one that is distributed.
+testing = []
+
 [dependencies]
 # The contract: the request read from JSON, the response and the events
 # written as JSON, the failure a call raises.
 roomkit-providers-llm = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-llm" }
 # The provider, which brings the HTTP crate. `replay` is the seam the Python
-# replay of the recorded cases drives a provider through: a private method
+# replay of the recorded cases drives a provider through: a private function
 # of the native module, which sends to a loopback address only.
 roomkit-providers-openai = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-openai", features = ["replay"] }
 # The trait of the stream a provider's events come as.

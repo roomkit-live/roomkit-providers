@@ -32,13 +32,17 @@ from fake_endpoint import (
     local_config,
 )
 
-HELLO = {"messages": [{"role": "user", "content": "Hello"}]}
+from roomkit.providers.ai import AIContext, AIMessage
+
+HELLO = AIContext(messages=[AIMessage(role="user", content="Hello")])
+# The same request as the native module takes it.
+HELLO_JSON = HELLO.model_dump_json(include={"messages"})
 
 
 def provider_at(fake):
-    from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+    from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
-    return OpenAIAIProvider(OpenAIConfig(**local_config(fake.port)))
+    return OpenAI(OpenAIConfig(**local_config(fake.port)))
 
 
 def answers(fake, times=1):
@@ -46,7 +50,7 @@ def answers(fake, times=1):
 
 
 async def ask(provider):
-    return (await provider.generate(HELLO))["content"]
+    return (await provider.generate(HELLO)).content
 """
 
 
@@ -93,10 +97,10 @@ class InterpreterShutdownTests(ChildProcess):
             from roomkit_providers import _native
 
             async def begin():
-                asking = provider._native.generate(json.dumps(HELLO))
+                asking = provider._native.generate(HELLO_JSON, None)
                 await asyncio.to_thread(fake.received)
                 # A stream that gave an item and is read no further.
-                stream = provider._native.stream(json.dumps(HELLO), False)
+                stream = provider._native.stream(HELLO_JSON, None)
                 assert len(json.loads(await stream.next())) == 1
                 return asking, stream
 
@@ -120,7 +124,7 @@ class InterpreterShutdownTests(ChildProcess):
                     fake.answer(*(Silent() for _ in range(32)))
 
                     async def main():
-                        pending = [provider._native.generate(json.dumps(HELLO)) for _ in range(32)]
+                        pending = [provider._native.generate(HELLO_JSON, None) for _ in range(32)]
                         for future in pending:
                             future.cancel()
                         return pending
@@ -137,7 +141,7 @@ class InterpreterShutdownTests(ChildProcess):
 
             async def main():
                 fake.answer(*(Silent() for _ in range(8)))
-                pending = [provider._native.generate(json.dumps(HELLO)) for _ in range(8)]
+                pending = [provider._native.generate(HELLO_JSON, None) for _ in range(8)]
                 drained = _native._shutdown()
                 assert drained > 0, drained
                 assert _native._activity() == 0
@@ -171,7 +175,7 @@ class InterpreterShutdownTests(ChildProcess):
 
             async def begin(gate):
                 fake.answer(Whole(200, JSON, completion("Yes."), gate=gate))
-                asking = provider._native.generate(json.dumps(HELLO))
+                asking = provider._native.generate(HELLO_JSON, None)
                 await asyncio.to_thread(fake.received)
                 return asking
 
@@ -209,10 +213,10 @@ class InterpreterShutdownTests(ChildProcess):
                     import os
                     import roomkit_providers
                     from roomkit_providers import _native
-                    from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+                    from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
                     config = OpenAIConfig(api_key="placeholder-not-a-key", model="gpt-4o")
-                    provider = OpenAIAIProvider(config)
+                    provider = OpenAI(config)
                     assert provider.supports_vision
                     assert len(os.listdir("/proc/self/task")) == 1
                     assert _native._shutdown() == 0
@@ -257,7 +261,7 @@ class ForkTests(ChildProcess):
                     else:
                         outcomes.append(("answered", ""))
                 try:
-                    provider._native.stream(json.dumps(HELLO), False)
+                    provider._native.stream(HELLO_JSON, None)
                 except BaseException as error:
                     outcomes.append((type(error).__name__, str(error)))
                 queue.put((outcomes, time.monotonic() - started))
@@ -299,7 +303,7 @@ class ForkTests(ChildProcess):
             from roomkit_providers import _native
 
             async def begin():
-                asking = provider._native.generate(json.dumps(HELLO))
+                asking = provider._native.generate(HELLO_JSON, None)
                 await asyncio.to_thread(fake.received)
                 return asking
 
@@ -374,7 +378,7 @@ class ForkTests(ChildProcess):
 
             os.register_at_fork = recording
             import roomkit_providers
-            import roomkit_providers.openai
+            import roomkit_providers.llm.openai
 
             native = [
                 callback

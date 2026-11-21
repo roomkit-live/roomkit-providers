@@ -1,15 +1,22 @@
-"""RoomKit's ``AIProvider`` over the Rust OpenAI provider."""
+"""A RoomKit provider over any provider of the contract.
+
+What RoomKit asks of a provider is translated here, once, for every provider
+the native module holds: a context becomes the contract's request, an answer
+RoomKit's models, a failure RoomKit's exception. A provider's own module
+adds its configuration, how it is built and its catalogue, and nothing of
+what follows.
+"""
 
 from __future__ import annotations
 
 import time
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import fields
-from typing import Annotated
+from typing import Annotated, ClassVar
 
-from pydantic import Field, TypeAdapter
+from pydantic import Field, SecretStr, TypeAdapter
 from roomkit.providers.ai import (
+    API_KEY_METADATA_KEY,
     AIContext,
     AIProvider,
     AIResponse,
@@ -24,12 +31,14 @@ from roomkit.providers.ai import (
     StreamToolCallDelta,
     StreamUsage,
 )
-from roomkit.providers.openai import OpenAIConfig as RoomKitOpenAIConfig
 
-from .. import _errors, _native
-from ..openai import OpenAIConfig
+from .. import _native
+from ._failure import ProviderFailure
 
-# What a provider reads of a context: the members of the contract's request.
+# What crosses of a context: the members of the contract's request, but its
+# metadata. No provider reads anything of a context's metadata but the
+# credential of one request, which crosses apart; and a host may leave there
+# what has no JSON form.
 _REQUEST = {
     "messages",
     "system_prompt",
@@ -40,7 +49,6 @@ _REQUEST = {
     "reasoning_effort",
     "tools",
     "response_schema",
-    "metadata",
 }
 
 # The events one crossing of a stream brings back, read as RoomKit's models
@@ -58,60 +66,65 @@ _EVENTS: TypeAdapter[list[StreamEvent]] = TypeAdapter(list[_Event])
 _MODELS: TypeAdapter[list[ModelInfo]] = TypeAdapter(list[ModelInfo])
 
 
-def _native_config(config: OpenAIConfig | RoomKitOpenAIConfig) -> OpenAIConfig:
-    """`config` as the native provider is built from it."""
-    if isinstance(config, OpenAIConfig):
-        return config
-    if type(config) is not RoomKitOpenAIConfig:
-        raise TypeError(
-            "config must be RoomKit's OpenAIConfig or roomkit_providers.openai.OpenAIConfig: "
-            "the configuration of a provider derived from OpenAI's belongs to that provider"
+def request_key(context: AIContext) -> str | None:
+    """The credential the context's host lent this one request, or None for
+    the provider's own: text that is not empty, as RoomKit's providers read
+    it. It never crosses inside the request's JSON, where RoomKit writes it
+    masked."""
+    value = context.metadata.get(API_KEY_METADATA_KEY)
+    if isinstance(value, SecretStr):
+        value = value.get_secret_value()
+    return value if isinstance(value, str) and value else None
+
+
+def _as_roomkit(failure: ProviderFailure) -> ProviderError:
+    """`failure` as RoomKit's own exception, with the same attributes."""
+    if failure.schema_reason is not None:
+        return ResponseSchemaError(
+            failure.args[0], reason=failure.schema_reason, provider=failure.provider
         )
-    members = {field.name: getattr(config, field.name) for field in fields(OpenAIConfig)}
-    members["api_key"] = config.api_key.get_secret_value()
-    return OpenAIConfig(**members)
-
-
-def _as_roomkit(error: _errors.ProviderError) -> ProviderError:
-    """`error` as RoomKit's own exception, with the same attributes."""
-    if isinstance(error, _errors.ResponseSchemaError):
-        return ResponseSchemaError(error.args[0], reason=error.reason, provider=error.provider)
     return ProviderError(
-        error.args[0],
-        retryable=error.retryable,
-        provider=error.provider,
-        status_code=error.status_code,
-        context_overflow=error.context_overflow,
-        before_request=error.before_request,
+        failure.args[0],
+        retryable=failure.retryable,
+        provider=failure.provider,
+        status_code=failure.status_code,
+        context_overflow=failure.context_overflow,
+        before_request=failure.before_request,
     )
 
 
 @contextmanager
-def _failing_as_roomkit() -> Iterator[None]:
-    """Raises a failure of the native provider as RoomKit's exception."""
+def failing_as_roomkit() -> Iterator[None]:
+    """Raises a failure of the native module as RoomKit's exception."""
     try:
         yield
-    except _errors.ProviderError as error:
-        raise _as_roomkit(error) from error
+    except ProviderFailure as failure:
+        raise _as_roomkit(failure) from None
 
 
-class OpenAIAIProvider(AIProvider):
-    """RoomKit's OpenAI provider, implemented in Rust.
+class Provider(AIProvider):
+    """A RoomKit provider over a provider the native module holds.
 
-    It takes the place of ``roomkit.providers.openai.OpenAIAIProvider`` in a
-    RoomKit agent: it is an ``AIProvider``, takes an ``AIContext``, gives
-    RoomKit's models and raises RoomKit's ``ProviderError``. What it sends
-    and reads is the Rust provider's.
+    Every answer RoomKit reads on a provider comes from the native provider:
+    its name, its model, what it supports, its catalogue's entry. A
+    generation crosses as the contract's JSON and comes back as RoomKit's
+    models; a failure is RoomKit's ``ProviderError`` or
+    ``ResponseSchemaError``; the time to the first token is recorded as
+    RoomKit's providers record it.
 
-    There is no ``transport`` parameter: the provider builds its own HTTP
-    client. ``config`` is RoomKit's ``OpenAIConfig``, or this package's.
+    A provider's class gives its native provider to ``__init__`` and, where
+    it has a catalogue, names what writes it in ``_catalogue``.
     """
 
-    def __init__(self, config: RoomKitOpenAIConfig | OpenAIConfig) -> None:
-        native = _native_config(config)
-        self._config = config
-        with _failing_as_roomkit():
-            self._native = _native._OpenAIProvider(native._form(), native.api_key)
+    _catalogue: ClassVar[Callable[[], str] | None] = None
+    """What writes the provider's curated catalogue, as a JSON list."""
+
+    def __init__(self, native: _native._Provider) -> None:
+        self._native = native
+
+    @property
+    def name(self) -> str:
+        return self._native.name
 
     @property
     def model_name(self) -> str:
@@ -134,22 +147,23 @@ class OpenAIAIProvider(AIProvider):
         return self._native.supports_response_schema
 
     @property
-    def supports_response_schema_with_tools(self) -> bool:
-        return self._native.supports_response_schema_with_tools
-
-    @property
     def supports_deferred_tools(self) -> bool:
         return self._native.supports_deferred_tools
 
+    @property
+    def supports_response_schema_with_tools(self) -> bool:
+        return self._native.supports_response_schema_with_tools
+
     @classmethod
     def available_models(cls) -> list[ModelInfo]:
-        """The curated catalogue of OpenAI's models, with no request."""
-        return _MODELS.validate_json(_native._OpenAIProvider.available_models_json())
+        """The provider's curated catalogue, with no request."""
+        catalogue = cls._catalogue
+        return [] if catalogue is None else _MODELS.validate_json(catalogue())
 
     async def list_models(self) -> list[ModelInfo]:
-        """Every model the endpoint lists, filled from the catalogue where
+        """Every model the provider lists, filled from its catalogue where
         it knows the model."""
-        with _failing_as_roomkit():
+        with failing_as_roomkit():
             return _MODELS.validate_json(await self._native.list_models())
 
     def catalog_entry(self) -> ModelInfo | None:
@@ -163,8 +177,8 @@ class OpenAIAIProvider(AIProvider):
     async def generate(self, context: AIContext) -> AIResponse:
         request = context.model_dump_json(include=_REQUEST)
         started = time.monotonic()
-        with _failing_as_roomkit():
-            answered = await self._native.generate(request)
+        with failing_as_roomkit():
+            answered = await self._native.generate(request, request_key(context))
         # The answer came: the time to it is the time to its first token.
         self._record_ttfb(started)
         return AIResponse.model_validate_json(answered)
@@ -179,12 +193,13 @@ class OpenAIAIProvider(AIProvider):
         """Yield the events of one generation as they come: reasoning and
         text, each call as it is written, then the whole calls and the done
         event. A response schema is checked before the done event."""
-        stream = self._native.stream(context.model_dump_json(include=_REQUEST), False)
+        request = context.model_dump_json(include=_REQUEST)
+        stream = self._native.stream(request, request_key(context))
         # The time to the first token is recorded once, at the first text
         # or reasoning, never at a call's fragment.
         started: float | None = time.monotonic()
         try:
-            with _failing_as_roomkit():
+            with failing_as_roomkit():
                 while (crossed := await stream.next()) is not None:
                     for event in _EVENTS.validate_json(crossed):
                         if started is not None and isinstance(

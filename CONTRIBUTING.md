@@ -28,9 +28,9 @@ uv pip install --python .venv/bin/python 'maturin>=1.15,<2' 'ruff>=0.14,<1'
 make python-check PYTHON=.venv/bin/python MATURIN=$PWD/.venv/bin/maturin RUFF=$PWD/.venv/bin/ruff
 ```
 
-The RoomKit adapter is checked where `PYTHON`'s environment has RoomKit, in
-the version the `roomkit` extra of `pyproject.toml` names. Install it there
-from a checkout of RoomKit, not editable:
+The package depends on RoomKit, and its check installs the RoomKit
+`PYTHON`'s environment has, in the version `pyproject.toml` names. Install it
+there from a checkout of RoomKit, not editable:
 
 ```sh
 uv pip install --python .venv/bin/python ../roomkit
@@ -43,8 +43,7 @@ uv pip install --python .venv/bin/python ../roomkit
 | `make fmt` | Format the workspace |
 | `make all` | Formatting, Clippy, tests, the examples, rustdoc, dependency policy and the contract crate's dependency allow list |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
-| `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed alone and tested; then `make python-roomkit-check` where `PYTHON`'s environment has RoomKit |
-| `make python-roomkit-check` | The RoomKit adapter: a wheel installed with its `roomkit` extra beside the RoomKit of `PYTHON`'s environment, the adapter's tests and its example |
+| `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed beside the RoomKit of `PYTHON`'s environment and tested |
 | `make python-msrv` | Check the binding on the minimum Rust toolchain |
 | `make python-wheel` | Build the optimized wheel into `dist/` |
 | `make api-snapshot` | Rewrite the snapshot of the Python public API from a freshly built wheel |
@@ -213,30 +212,52 @@ fails when the catalogue of the crate says otherwise.
 
 ## The Python package
 
-`python/roomkit_providers` wraps the native module `roomkit_providers._native`
-(`bindings/python`), which holds no behaviour of its own: what a provider
-sends and reads stays in the provider crates.
+`python/roomkit_providers` is RoomKit's: a provider there is a RoomKit
+`AIProvider`, and the package depends on RoomKit. It wraps the native module
+`roomkit_providers._native` (`bindings/python`), which holds no behaviour of
+its own: what a provider sends and reads stays in the provider crates.
 
+- **Written once for every provider.** What translates between RoomKit and
+  the contract belongs to no vendor: `python/roomkit_providers/llm/_provider.py`
+  (a context to the contract's request, an answer to RoomKit's models, a
+  failure to RoomKit's exception, the first-token metric) and, in the
+  binding, the one class that holds any provider of the contract as its
+  object-safe form, `DynAiProvider` (`src/provider.rs`, with `src/stream.rs`,
+  `src/runtime.rs`, `src/fork.rs` and `src/errors.rs`). A provider's own
+  part is its configuration, how it is built and its catalogue. Adding a
+  provider must change none of the shared files: `tests/python/test_generic.py`
+  fails when one of them holds a vendor's name.
 - **What crosses is JSON text**, both ways, in the contract's forms: a
   request as one text, a whole answer as one text, a stream as the list of
   every item already received at each crossing. A stream is read on the
   bridge between two crossings, at most 64 items ahead of what Python took,
-  and a crossing never waits to gather more. A failure crosses as the
-  attributes of the package's exception. A key never crosses inside a JSON
-  text.
+  and a crossing never waits to gather more. A failure crosses as its
+  attributes. A context's metadata does not cross. A key never crosses
+  inside a JSON text: a configuration's, and the one a host lends one
+  request, each cross apart, and the second is put back into the request in
+  Rust, where a provider reads it.
 - **Every call that waits returns an awaitable.** It is stopped by dropping
   its future: when its task is cancelled, when its stream is closed, and
   when the interpreter exits.
-- **The tests** (`tests/python`, `unittest`, no dependency) run against the
-  installed package and a local fake of the endpoint
-  (`tests/python/fake_endpoint.py`). `scripts/check-python.py` builds a
-  wheel and a source distribution, installs each alone in a new
-  environment, checks what each contains, and runs the tests and
-  `examples/local_server.py` on both. A test waits on what the fake
-  observed, never on a timer.
-- **The replay.** `tests/python/test_replay.py` replays the recorded wire
-  cases through the package, and compares as the Rust replay does. The cases
-  the provider answers otherwise than Python are read from
+- **The tests** (`tests/python`, `unittest`) run against the installed
+  package. `scripts/check-python.py` builds a wheel and a source
+  distribution, checks what each contains, installs each in a new
+  environment beside the RoomKit of `PYTHON`'s environment
+  (`scripts/roomkit_env.py` names it: where it was installed from, else its
+  version), and runs the tests and the examples on both. A test waits on
+  what the other side observed, never on a timer.
+- **The shared part is tested with no vendor and no HTTP**
+  (`tests/python/test_provider.py`), against a scripted provider: the
+  contract's `MockAiProvider`, which the binding builds under its `testing`
+  feature (`src/testing.rs`). The wheel `scripts/check-python.py` builds
+  carries it; a wheel that is distributed, and the source distribution, do
+  not, which the check verifies, and those tests are skipped there, saying
+  so.
+- **A provider is tested against a local fake of its endpoint**
+  (`tests/python/fake_endpoint.py`), through its public class.
+  `tests/python/test_replay.py` replays the recorded wire cases through
+  `OpenAI`, and compares as the Rust replay does. The cases the provider
+  answers otherwise than Python are read from
   `crates/roomkit-providers-openai/tests/fixtures/named_cases.json`, which
   the Rust replay writes from its own list: after a change to
   `src/replay/named.rs`, run `make named-cases` and commit the file; a test
@@ -244,14 +265,17 @@ sends and reads stays in the provider crates.
   through a seam of the OpenAI crate, its `replay` feature, which sends to a
   loopback address only, sets the clock a `retry-after` date is read against
   and keeps the waits between two tries instead of taking them. The seam is
-  a private method of the native module, for this replay, never for a host.
-  The cases whose fake stops answering under way stay with the Rust replay,
-  which moves its own clock.
+  a private function of the native module, for this replay, never for a
+  host. The cases whose fake stops answering under way stay with the Rust
+  replay, which moves its own clock.
 - **The public API snapshot.** `tests/python/public_api_names.json` and
-  `public_api_signatures.json` hold every public name, each signature, and
-  the keys of each typed dict. A test fails while they differ from the
-  code, a compatible addition included: the commit that changes the Python
-  surface rewrites them with `make api-snapshot`.
+  `public_api_signatures.json` hold every public name and each signature. A
+  test fails while they differ from the code, a compatible addition
+  included: the commit that changes the Python surface rewrites them with
+  `make api-snapshot`.
+- **RoomKit's range** in `pyproject.toml` is the RoomKit the package was
+  tested against: widen it with a run of `make python-check` on the version
+  added.
 - **Licenses.** The wheel ships the notices of every crate its extension
   links (`python/roomkit_providers/licenses/native_dependencies.txt`).
   After a change of dependencies, regenerate them with
@@ -261,31 +285,52 @@ sends and reads stays in the provider crates.
 - **What a distribution contains** is the repository's files and what the
   build generates: a file git ignores must not reach a wheel or a source
   distribution (`scripts/artifact_files.py`).
-- **The RoomKit adapter** (`python/roomkit_providers/roomkit`) is the only
-  part of the package that imports RoomKit, and it converts and nothing
-  else: a context to the contract's JSON, an answer to RoomKit's models, a
-  failure to RoomKit's exception. Its tests (`tests/python/roomkit`) are
-  skipped, saying why, where RoomKit is not installed: the replay of the
-  recorded cases through the adapter, an agent (a kit and an AI channel over
-  the adapter) that answers, calls a tool and streams, and the first-token
-  metric. `make python-roomkit-check` builds a wheel, installs it with its
-  `roomkit` extra beside the RoomKit of `PYTHON`'s environment
-  (`scripts/roomkit_env.py` names it: where it was installed from, else its
-  version) and runs those tests and `examples/roomkit_agent.py` there.
-  `make python-check` calls it when `PYTHON`'s environment has RoomKit, and
-  says that it did not when it has none. The adapter has its own API
-  snapshot, in `tests/python/roomkit`, which `make api-snapshot` rewrites
-  when RoomKit is installed. The extra's range is the RoomKit the adapter
-  was tested against: widen it with a run of `make python-roomkit-check` on
-  the version added.
-- `benchmarks/crossing.py` measures a turn through the package, through the
-  adapter and through RoomKit's own provider. It is no test and no gate.
+- `benchmarks/crossing.py` measures a turn through the package's provider
+  and through RoomKit's own. It is no test and no gate.
 
 CI runs `make python-check` on CPython 3.12 and 3.14, and the binding's
 MSRV check; the `Python distributions` workflow builds the Linux x86_64
-wheel and the source distribution on demand and checks both. Nothing is
-published from either. Neither installs RoomKit: the adapter's check runs
-where a developer has it.
+wheel and the source distribution on demand and checks both. Each installs
+RoomKit from its repository first, while the version the package asks for
+is not released. Nothing is published from either.
+
+### Adding a provider
+
+A provider of language models is one crate, one module of the binding and
+one module of the package. The names follow its vendor: the Rust type
+`OpenAi`, the Python class `OpenAI` with `OpenAIConfig`, no `Provider`
+suffix.
+
+In Rust:
+
+- `crates/roomkit-providers-<vendor>`: the provider, which implements the
+  contract's `AiProvider`, its configuration, its tests against a local fake
+  of its wire, and a line in the workspace's `Cargo.toml`.
+- `bindings/python/src/vendors/<vendor>.rs`: the functions the package
+  calls, each registered in the module's `register`: one that builds the
+  provider from its configuration's JSON form and its key, apart, and gives
+  it as the binding's one provider class (`PythonProvider::holding`); one
+  that writes its catalogue; what its configuration needs of Rust.
+- `bindings/python/src/vendors/mod.rs`: the module, and its line in
+  `register`.
+- `bindings/python/Cargo.toml`: the crate, then
+  `python scripts/native-notices.py write` for the notices of what it
+  brings.
+
+In Python:
+
+- `python/roomkit_providers/llm/<vendor>.py`: the configuration, a pydantic
+  model, and the provider's class, a subclass of `Provider`
+  (`llm/_provider.py`) whose `__init__` builds the native provider and whose
+  `_catalogue` names what writes its catalogue. Its `__all__` names both.
+- `python/roomkit_providers/_native.pyi`: the functions added to the native
+  module.
+- `tests/python/test_<vendor>.py`, and `make api-snapshot`.
+
+Then the README's and the guide's tables, and a line of the changelog.
+Nothing else: a provider that needs a change to the contract, to
+`llm/_provider.py` or to the binding's shared modules is a change to what
+every provider shares, made and reviewed as one.
 
 ## Implementation boundaries
 

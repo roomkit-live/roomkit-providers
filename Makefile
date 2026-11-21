@@ -15,15 +15,12 @@ RUFF ?= uv tool run --from 'ruff>=0.14,<1' ruff
 PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.py \
 	scripts/native-notices.py scripts/artifact_files.py scripts/api-snapshot.py \
 	scripts/roomkit_env.py
-# Whether PYTHON's environment has RoomKit, which the adapter is tested
-# against.
-HAS_ROOMKIT = $(PYTHON) scripts/roomkit_env.py
 
 .PHONY: all fmt fmt-check clippy test examples doc deny check-contract-deps msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-openai-config python-openai-chat-cases \
 	python-openai-catalogue \
 	printable-table named-cases \
-	python-wheel python-check python-roomkit-check python-msrv api-snapshot
+	python-wheel python-check python-msrv api-snapshot
 
 all: fmt-check clippy test examples doc deny check-contract-deps
 
@@ -88,38 +85,24 @@ python-wheel:
 
 # The binding's own lint, documentation and dependency policy, the Python
 # lint, then scripts/check-python.py: a wheel and a source distribution are
-# built, each installed alone in a new environment, and the Python tests
-# and the example run on each. The tests answer from a local fake: nothing
-# is asked of a network. Where PYTHON's environment has RoomKit, the
-# adapter's check follows.
+# built, each installed in a new environment beside the RoomKit PYTHON's
+# environment has, and the Python tests and the examples run on each. The
+# tests answer from a local fake: nothing is asked of a network.
 python-check:
 	$(CARGO) fmt --manifest-path $(PYTHON_MANIFEST) --all -- --check
-	$(CARGO) clippy --manifest-path $(PYTHON_MANIFEST) --all-targets --locked -- -D warnings
-	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --manifest-path $(PYTHON_MANIFEST) --no-deps --locked
+	$(CARGO) clippy --manifest-path $(PYTHON_MANIFEST) --all-targets --all-features --locked -- -D warnings
+	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --manifest-path $(PYTHON_MANIFEST) --no-deps --all-features --locked
 	$(CARGO) deny --manifest-path $(PYTHON_MANIFEST) --config deny.toml $(DENY_FLAGS) check
 	$(RUFF) check $(PYTHON_SOURCES)
 	$(RUFF) format --check $(PYTHON_SOURCES)
 	MATURIN="$(MATURIN)" $(PYTHON) scripts/check-python.py
-	@if $(HAS_ROOMKIT); then \
-		$(MAKE) --no-print-directory python-roomkit-check; \
-	else \
-		echo "RoomKit is not installed for $(PYTHON): its adapter's check did not run (make python-roomkit-check)"; \
-	fi
-
-# The RoomKit adapter: a wheel is built and installed, in a new environment,
-# with its `roomkit` extra and the RoomKit PYTHON's environment has; the
-# adapter's tests (tests/python/roomkit) and its example run there. It
-# fails where PYTHON's environment has no RoomKit.
-python-roomkit-check:
-	MATURIN="$(MATURIN)" $(PYTHON) scripts/check-python.py --roomkit
 
 python-msrv:
-	$(CARGO) +$(MSRV) check --manifest-path $(PYTHON_MANIFEST) --all-targets --locked
+	$(CARGO) +$(MSRV) check --manifest-path $(PYTHON_MANIFEST) --all-targets --all-features --locked
 
-# Rewrites the snapshots of the Python public API from a freshly built wheel:
-# the package's, and its RoomKit adapter's where PYTHON's environment has
-# RoomKit. The Python tests fail while a snapshot differs from the code: the
-# commit that changes the public surface rewrites it.
+# Rewrites the snapshot of the Python public API from a freshly built wheel.
+# The Python tests fail while the snapshot differs from the code: the commit
+# that changes the public surface rewrites it.
 api-snapshot:
 	MATURIN="$(MATURIN)" $(PYTHON) scripts/api-snapshot.py
 

@@ -1,11 +1,11 @@
 //! How a failure crosses: as the exception a Python caller catches.
 //!
-//! A provider's failure is raised as the package's `ProviderError`, built
-//! from its attributes, or as its `ResponseSchemaError` when a response
-//! schema could not be honoured. What the contract refuses as a value (a
-//! request that does not read) is a `ValueError`. The classes are Python's,
-//! defined in `roomkit_providers._errors`: the native module only raises
-//! them.
+//! A provider's failure is raised as the package's `ProviderFailure`, built
+//! from its attributes, with the reason of a response schema's failure when
+//! it is one. What the contract refuses as a value (a request that does not
+//! read) is a `ValueError`. The class is Python's, defined in
+//! `roomkit_providers.llm._failure`: the native module only raises it, and
+//! the package makes it the exception its caller catches.
 
 use std::error::Error as _;
 
@@ -46,26 +46,23 @@ impl Failure {
     }
 }
 
-/// `error` as the package's exception: `ResponseSchemaError(message, *,
-/// reason, provider)` for a response schema's failure, which derives the
-/// rest as the contract does, else `ProviderError` with every attribute.
+/// `error` as the package's exception: `ProviderFailure(message, **its
+/// attributes)`, `schema_reason` being the reason of a response schema's
+/// failure, None for any other.
 fn provider_error(py: Python<'_>, error: &ProviderError) -> PyResult<PyErr> {
-    let classes = py.import(intern!(py, "roomkit_providers._errors"))?;
+    let failures = py.import(intern!(py, "roomkit_providers.llm._failure"))?;
     let schema = error
         .source()
         .and_then(|source| source.downcast_ref::<ResponseSchemaError>());
     let attributes = PyDict::new(py);
+    attributes.set_item(intern!(py, "retryable"), error.retryable)?;
     attributes.set_item(intern!(py, "provider"), &error.provider)?;
-    let class = if let Some(schema) = schema {
-        attributes.set_item(intern!(py, "reason"), schema.reason.as_str())?;
-        classes.getattr(intern!(py, "ResponseSchemaError"))?
-    } else {
-        attributes.set_item(intern!(py, "retryable"), error.retryable)?;
-        attributes.set_item(intern!(py, "status_code"), error.status_code)?;
-        attributes.set_item(intern!(py, "context_overflow"), error.context_overflow)?;
-        attributes.set_item(intern!(py, "before_request"), error.before_request)?;
-        classes.getattr(intern!(py, "ProviderError"))?
-    };
+    attributes.set_item(intern!(py, "status_code"), error.status_code)?;
+    attributes.set_item(intern!(py, "context_overflow"), error.context_overflow)?;
+    attributes.set_item(intern!(py, "before_request"), error.before_request)?;
+    let reason = schema.map(|schema| schema.reason.as_str());
+    attributes.set_item(intern!(py, "schema_reason"), reason)?;
+    let class = failures.getattr(intern!(py, "ProviderFailure"))?;
     let raised = class.call((error.message.as_str(),), Some(&attributes))?;
     Ok(PyErr::from_value(raised))
 }

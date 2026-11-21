@@ -20,13 +20,14 @@ from fake_endpoint import (
     events,
     local_config,
 )
-from roomkit_providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit.providers.ai import AIContext, AIMessage, StreamTextDelta
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
-HELLO = {"messages": [{"role": "user", "content": "Hello"}]}
+HELLO = AIContext(messages=[AIMessage(role="user", content="Hello")])
 
 
-def provider_at(fake: Fake) -> OpenAIAIProvider:
-    return OpenAIAIProvider(OpenAIConfig(**local_config(fake.port)))
+def provider_at(fake: Fake) -> OpenAI:
+    return OpenAI(OpenAIConfig(**local_config(fake.port)))
 
 
 def one_event_then_silence() -> Reads:
@@ -83,7 +84,7 @@ class CancellationTests(unittest.IsolatedAsyncioTestCase):
     async def test_closing_a_stream_closes_its_connection(self) -> None:
         self.fake.answer(one_event_then_silence())
         stream = self.provider.generate_structured_stream(HELLO)
-        self.assertEqual(await anext(stream), {"type": "text_delta", "text": "Hel"})
+        self.assertEqual(await anext(stream), StreamTextDelta(text="Hel"))
         await stream.aclose()
         await self.fake.closed()
         # A stream that was closed gives nothing more, and asks nothing.
@@ -94,7 +95,7 @@ class CancellationTests(unittest.IsolatedAsyncioTestCase):
     async def test_leaving_the_loop_of_a_stream_closes_its_connection(self) -> None:
         self.fake.answer(one_event_then_silence())
         async for event in self.provider.generate_structured_stream(HELLO):
-            self.assertEqual(event["text"], "Hel")
+            self.assertEqual(event.text, "Hel")
             break
         await self.fake.closed()
 
@@ -113,7 +114,7 @@ class CancellationTests(unittest.IsolatedAsyncioTestCase):
         for _ in range(100):
             await asyncio.sleep(0)
         self.assertEqual(self.fake.seen, [])
-        texts = [event["text"] async for event in stream if event["type"] == "text_delta"]
+        texts = [event.text async for event in stream if isinstance(event, StreamTextDelta)]
         self.assertEqual(texts, ["Hel", "lo."])
         self.assertEqual(len(self.fake.seen), 1)
 
@@ -125,7 +126,7 @@ class CancellationTests(unittest.IsolatedAsyncioTestCase):
         gc.collect()
         # The next request is the first the fake receives.
         self.fake.answer(Whole(200, JSON, completion("Yes.")))
-        self.assertEqual((await self.provider.generate(HELLO))["content"], "Yes.")
+        self.assertEqual((await self.provider.generate(HELLO)).content, "Yes.")
         self.assertEqual(len(self.fake.seen), 1)
         self.assertNotIn("stream", self.fake.seen[0].body.decode())
 
@@ -135,7 +136,7 @@ class CancellationTests(unittest.IsolatedAsyncioTestCase):
         await self.fake.received()
         asking.cancel()
         await self.fake.closed()
-        self.assertEqual((await self.provider.generate(HELLO))["content"], "Yes.")
+        self.assertEqual((await self.provider.generate(HELLO)).content, "Yes.")
 
 
 class EventLoopTests(unittest.IsolatedAsyncioTestCase):
@@ -180,7 +181,7 @@ class EventLoopTests(unittest.IsolatedAsyncioTestCase):
         await self.ticked(1000)
         self.assertFalse(asking.done())
         gate.set()
-        self.assertEqual((await asking)["content"], "Yes.")
+        self.assertEqual((await asking).content, "Yes.")
         self.assertGreaterEqual(self.ticks - before, 1000)
 
     async def test_another_coroutine_runs_between_two_reads_of_a_stream(self) -> None:
@@ -194,7 +195,7 @@ class EventLoopTests(unittest.IsolatedAsyncioTestCase):
 
         async def read() -> None:
             async for event in self.provider.generate_structured_stream(HELLO):
-                given.put_nowait(event["type"])
+                given.put_nowait(event.type)
 
         reading = asyncio.create_task(read())
         for _ in range(2):

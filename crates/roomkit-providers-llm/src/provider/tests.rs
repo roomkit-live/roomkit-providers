@@ -250,6 +250,46 @@ fn a_provider_held_as_an_object_answers_as_itself() {
     assert!(closed.load(Ordering::SeqCst));
 }
 
+// A host that holds any provider reads everything a provider answers: a
+// whole answer, its text as it comes, its listing and what it supports.
+#[test]
+fn a_provider_held_as_an_object_generates_lists_and_says_what_it_supports() {
+    let provider = MockAiProvider::new(MockAiProviderOptions {
+        responses: vec!["held".into()],
+        streaming: true,
+        response_schema: true,
+        ..MockAiProviderOptions::default()
+    });
+    let request = asking(false);
+    let own = (
+        provider.supports_streaming(),
+        provider.supports_structured_streaming(),
+        provider.supports_response_schema(),
+        provider.supports_response_schema_with_tools(),
+    );
+    assert_eq!(own, (true, true, true, false));
+
+    let held: Arc<dyn DynAiProvider> = Arc::new(provider);
+    assert_eq!(
+        (
+            held.dyn_supports_streaming(),
+            held.dyn_supports_structured_streaming(),
+            held.dyn_supports_response_schema(),
+            held.dyn_supports_response_schema_with_tools(),
+        ),
+        own
+    );
+    let answered = block_on(held.dyn_generate(&request)).unwrap();
+    assert_eq!(answered.content, "held");
+    let text: Vec<String> = collected(held.dyn_generate_stream(&request))
+        .into_iter()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(text.concat(), "held");
+    let listed = block_on(held.dyn_list_models()).unwrap();
+    assert_eq!(listed, MockAiProvider::available_models());
+}
+
 // Python: AIProvider's defaults: its class name for a name, no capability,
 // and a close that does nothing.
 #[test]
