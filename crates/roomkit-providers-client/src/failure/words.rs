@@ -7,7 +7,8 @@ use super::retryable_status;
 /// failure, as Python's `_names_transient` reads it: `rate[ _-]?limit(ed|s)?`,
 /// `too many requests` or `overloaded`, in any case, or a retried status
 /// (`[45]\d\d`), each a whole word, a word's letters including `_`.
-pub(super) fn names_transient(message: &str) -> bool {
+#[must_use]
+pub fn names_transient(message: &str) -> bool {
     let chars: Vec<char> = message.chars().collect();
     let in_word = |at: usize| {
         let found = chars.get(at);

@@ -34,7 +34,7 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
                 written(body.as_ref())
             ));
         }
-        headers_differ(at, seen, sent, &replayed.config.api_key, found);
+        headers_differ(at, seen, sent, replayed, found);
         // The answer was served cut as the case records it: a stream read
         // by read, anything else whole.
         let recorded = exchange.response.chunks.as_ref();
@@ -69,12 +69,24 @@ const TRANSPORT_HEADERS: [&str; 2] = ["host", "content-length"];
 /// Where the headers of the request `seen`, the one at `at`, differ from
 /// those Python `sent`: each recorded header as Python sent it, or absent
 /// where Python sent none, no header twice, and no other header than the
-/// transport's own.
-fn headers_differ(at: usize, seen: &Seen, sent: &Sent, key: &str, found: &mut Vec<String>) {
-    let bearer = format!("Bearer {key}");
+/// transport's own. A recorded header names the key it carried, the
+/// configuration's or the request's, where `replayed` holds it.
+fn headers_differ(
+    at: usize,
+    seen: &Seen,
+    sent: &Sent,
+    replayed: &Replayed,
+    found: &mut Vec<String>,
+) {
+    let keyed = |value: &String| {
+        let value = value.replace("<config key>", &replayed.key);
+        match &replayed.request_key {
+            Some(key) => value.replace("<request key>", key),
+            None => value,
+        }
+    };
     for (name, value) in &sent.headers {
-        let value = value.as_ref();
-        let expected = value.map(|value| value.replace("Bearer <config key>", &bearer));
+        let expected = value.as_ref().map(keyed);
         if seen.headers.get(name) != expected.as_ref() {
             found.push(format!(
                 "request {at}: {name} is {:?}",

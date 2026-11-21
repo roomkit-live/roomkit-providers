@@ -21,6 +21,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 .PHONY: all fmt fmt-check clippy test examples doc deny check-contract-deps msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-openai-config python-openai-chat-cases \
 	python-openai-catalogue \
+	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
 	printable-table named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
@@ -149,6 +150,21 @@ python-openai-catalogue:
 # extra. The script answers its own requests: nothing is sent to a network.
 python-openai-chat-cases:
 	$(PYTHON) scripts/generate_openai_chat_cases.py
+
+# Rewrites the fixture of the JSON forms of RoomKit's Python `AnthropicConfig`.
+python-anthropic-config:
+	$(PYTHON) scripts/generate_anthropic_config_forms.py
+
+# Rewrites the catalogue of Anthropic's models the provider reads, from
+# RoomKit's Python.
+python-anthropic-catalogue:
+	$(PYTHON) scripts/generate_anthropic_catalogue.py
+
+# Rewrites the fixture of what RoomKit's Python Anthropic provider sends and
+# reads on the Messages API, case by case. PYTHON needs roomkit's `anthropic`
+# extra. The script answers its own requests: nothing is sent to a network.
+python-anthropic-messages-cases:
+	$(PYTHON) scripts/generate_anthropic_messages_cases.py
 
 # Rewrites the data file of the cases the OpenAI provider answers otherwise
 # than Python, from the replay's own list: a replay outside the crate reads

@@ -28,7 +28,6 @@ mod answer;
 mod call_slots;
 mod config;
 mod endpoint;
-mod exchange;
 mod failure;
 mod folding;
 mod messages;
@@ -40,7 +39,6 @@ mod provider;
 #[cfg(test)]
 mod replay;
 mod request;
-mod retry;
 mod stream;
 mod think_tags;
 

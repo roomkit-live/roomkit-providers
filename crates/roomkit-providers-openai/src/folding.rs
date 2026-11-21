@@ -23,7 +23,7 @@ use serde_json::Value;
 
 use crate::answer::{truthy, usage_of};
 use crate::call_slots::{ARGUMENTS_LIMIT, CallSlots, Fragment, FragmentId, RawCall};
-use crate::failure::Failure;
+use crate::failure::{self, Failure};
 use crate::think_tags::{Segment, ThinkTagParser, field_reasoning};
 
 /// A fragment of a call, which the call's `index` names across chunks.
@@ -117,7 +117,7 @@ impl<'p> Folding<'p> {
         let chunk: Value =
             serde_json::from_str(data).map_err(|error| Failure::malformed(&error))?;
         if let Some(error) = chunk.get("error").filter(|error| truthy(error)) {
-            return Err(Failure::stream_error(error));
+            return Err(failure::stream_error(error));
         }
         if !chunk.is_object() {
             return Err(Failure::unreadable(

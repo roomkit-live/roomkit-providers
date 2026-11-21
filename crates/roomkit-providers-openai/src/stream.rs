@@ -1,6 +1,6 @@
 //! A streamed answer read as it arrives: the request, the events of its
-//! answer through the bounded reader of `roomkit-providers-http`, and each
-//! event handed on before the next bytes are read.
+//! answer through the bounded reader of `roomkit-providers-client`, and
+//! each event handed on before the next bytes are read.
 //!
 //! The stream is pulled: nothing is sent before it is first polled, the
 //! answer is read only as its events are taken, and dropping the stream
@@ -12,28 +12,22 @@
 //! answer that gave no event and that the server says is JSON may be an
 //! error object in place of a stream: it reads as a whole answer's does.
 
-use roomkit_providers_http::sse::Events;
-use roomkit_providers_llm::{
-    AiRequest, ProviderError, ProviderStream, StreamEvent, TextStream, Yielder, items, next,
-};
+use roomkit_providers_client::failure::carried;
+use roomkit_providers_client::stream::Item;
+use roomkit_providers_llm::{AiRequest, ProviderStream, Yielder, items};
 use serde_json::Value;
 
 use crate::answer::truthy;
-use crate::exchange::{ANSWER_LIMIT, Call, is_json};
-use crate::failure::exit::{Exit, carried};
-use crate::failure::{Failure, past_mark};
+use crate::failure::{self, Failure};
 use crate::folding::{Folding, push_end};
-use crate::provider::{OpenAi, unwritten};
-
-/// What a stream of events hands next.
-type Item = Result<StreamEvent, ProviderError>;
+use crate::provider::OpenAi;
 
 /// The mark that ends a stream of chunks.
 const END_MARK: &str = "[DONE]";
 
 /// The events of the generation answering `request`, a failure the last
-/// of them. The failure has not left the provider yet: it is carried, for
-/// [`leaving`] to let out once the contract checked the stream.
+/// of them. The failure has not left the provider yet: it is carried, to
+/// be let out once the contract checked the stream.
 pub(crate) fn events<'a>(provider: &'a OpenAi, request: &'a AiRequest) -> ProviderStream<'a> {
     Box::pin(items(move |out: Yielder<Item>| async move {
         if let Err(failure) = read(provider, request, &out).await {
@@ -42,72 +36,14 @@ pub(crate) fn events<'a>(provider: &'a OpenAi, request: &'a AiRequest) -> Provid
     }))
 }
 
-/// `events` as they leave the provider: each failure, the one the stream
-/// carried or one the contract's check built on the way, through `exit`,
-/// and nothing after it.
-pub(crate) fn leaving<'a>(mut events: ProviderStream<'a>, exit: &'a Exit) -> ProviderStream<'a> {
-    Box::pin(items(move |out: Yielder<Item>| async move {
-        while let Some(event) = next(&mut events).await {
-            match event {
-                Ok(event) => out.give(Ok(event)).await,
-                Err(error) => return out.give(Err(exit.leave_carried(error))).await,
-            }
-        }
-    }))
-}
-
-/// The text of `events`, as it comes: its reasoning, its calls and its end
-/// are left out, a failure is the last item.
-pub(crate) fn text(mut events: ProviderStream<'_>) -> TextStream<'_> {
-    Box::pin(items(
-        move |out: Yielder<Result<String, ProviderError>>| async move {
-            while let Some(event) = next(&mut events).await {
-                match event {
-                    Ok(StreamEvent::TextDelta(delta)) => out.give(Ok(delta.text)).await,
-                    Ok(
-                        StreamEvent::ToolCall(_)
-                        | StreamEvent::ToolCallDelta(_)
-                        | StreamEvent::Done(_)
-                        | StreamEvent::ThinkingDelta(_)
-                        | StreamEvent::Usage(_),
-                    ) => {}
-                    Err(error) => return out.give(Err(error)).await,
-                }
-            }
-        },
-    ))
-}
-
-/// The bytes of an answer the server says is JSON, kept while it gave no
-/// event: within what an answer read whole may weigh, and given up at the
-/// first event.
-struct Unstreamed(Option<Vec<u8>>);
-
-impl Unstreamed {
-    /// Keeps `bytes`, the answer's next ones.
-    fn keep(&mut self, bytes: &[u8]) {
-        let Some(kept) = &mut self.0 else {
-            return;
-        };
-        if kept.len().saturating_add(bytes.len()) > ANSWER_LIMIT {
-            self.0 = None;
-        } else {
-            kept.extend_from_slice(bytes);
-        }
-    }
-
-    /// The failure of the answer, which gave no event: what the error
-    /// object it holds says, as the reader of a whole answer reads it,
-    /// else that no event came.
-    fn failure(self) -> Failure {
-        let answer = self
-            .0
-            .and_then(|body| serde_json::from_slice::<Value>(past_mark(&body)).ok());
-        let error = answer.as_ref().and_then(|answer| answer.get("error"));
-        match error.filter(|error| truthy(error)) {
-            Some(error) => Failure::error_object(error),
-            None => Failure::no_event(),
-        }
+/// The failure of an answer that gave no event: what the error object it
+/// holds says, when it is a JSON document that holds one, as the reader of
+/// a whole answer reads it, else that no event came.
+fn no_event(answer: Option<&Value>) -> Failure {
+    let error = answer.and_then(|answer| answer.get("error"));
+    match error.filter(|error| truthy(error)) {
+        Some(error) => Failure::error_object(error),
+        None => Failure::no_event(),
     }
 }
 
@@ -119,54 +55,28 @@ impl Unstreamed {
 /// is one.
 async fn read(provider: &OpenAi, request: &AiRequest, out: &Yielder<Item>) -> Result<(), Failure> {
     let body = provider.asked().body(request, true)?;
-    let body = serde_json::to_vec(&body).map_err(|_| unwritten())?;
-    let mut response = provider.open(Call::Chat(&body)).await?;
-    let mut unstreamed = Unstreamed(is_json(response.headers()).then(Vec::new));
-    let mut events = Events::new(provider.stream_limit);
+    let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
+    let mut answer = provider.client.stream(provider.asking(&body)).await?;
     let mut folding = Folding::new(&provider.config.model);
     let (mut chunks, mut marked, mut ready) = (0_usize, false, Vec::new());
-    'answer: loop {
-        let read = response.chunk().await;
-        let read = read.map_err(|error| Failure::transport(&error))?;
-        let (ended, unread) = match &read {
-            Some(bytes) => {
-                unstreamed.keep(bytes);
-                events.feed(bytes)
-            }
-            // An event the answer ends on with no blank line after it is
-            // read all the same.
-            None => match events.finish() {
-                Ok(last) => (last.into_iter().collect(), None),
-                Err(error) => (Vec::new(), Some(error)),
-            },
-        };
-        for data in ended {
-            if data.starts_with(END_MARK) {
-                marked = true;
-                break 'answer;
-            }
-            let taken = folding.take(&data, &mut ready);
-            // What a chunk gave before it failed is handed on first.
-            for event in ready.drain(..) {
-                out.give(Ok(event)).await;
-            }
-            taken?;
-            chunks = chunks.saturating_add(1);
-            unstreamed = Unstreamed(None);
-        }
-        // What the reader read before it failed was handed on first.
-        if let Some(error) = unread {
-            return Err(Failure::stream_unread(&error));
-        }
-        if read.is_none() {
+    while let Some(data) = answer.next().await? {
+        if data.starts_with(END_MARK) {
+            marked = true;
             break;
         }
+        let taken = folding.take(&data, &mut ready);
+        // What a chunk gave before it failed is handed on first.
+        for event in ready.drain(..) {
+            out.give(Ok(event)).await;
+        }
+        taken?;
+        chunks = chunks.saturating_add(1);
     }
     // The connection is not read past the end of the answer.
-    drop(response);
     if chunks == 0 {
-        return Err(unstreamed.failure());
+        return Err(no_event(answer.unstreamed().as_ref()));
     }
+    drop(answer);
     end(folding, marked, out).await
 }
 
@@ -187,7 +97,7 @@ async fn end(mut folding: Folding<'_>, marked: bool, out: &Yielder<Item>) -> Res
         let finished = folding.finish();
         finished.map(|(calls, done)| push_end(&mut ready, calls, done))
     } else {
-        Err(Failure::cut_short())
+        Err(failure::cut_short())
     };
     for event in ready {
         out.give(Ok(event)).await;

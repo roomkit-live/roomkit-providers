@@ -1,0 +1,18 @@
+[package]
+name = "roomkit-providers-anthropic"
+description = "The Anthropic model provider: the Messages API, whole and streamed, held to the wire cases of RoomKit's Python provider"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+readme = "README.md"
+include = ["/LICENSE", "/README.md", "/catalog", "/examples", "/src", "/tests"]
+keywords = ["llm", "ai", "provider", "anthropic", "messages"]
+categories = ["api-bindings"]
+
+[dependencies]
+
+[lints]
+workspace = true

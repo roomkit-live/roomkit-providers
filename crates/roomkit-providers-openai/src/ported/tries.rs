@@ -10,10 +10,10 @@ use serde_json::json;
 use super::support::{
     KEY, chunk, elsewhere, events, hello, json_reply, pointed, saying, stream_reply, text_of,
 };
-use crate::exchange::Pace;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
 use crate::replay::{drained, let_pass};
 use crate::{OpenAi, OpenAiConfig};
+use roomkit_providers_client::Pace;
 
 /// A provider behind a base URL that keeps its waits instead of taking
 /// them, pointed at a fake that answers with `replies`.
@@ -25,13 +25,13 @@ async fn retrying(
     let mut provider = pointed(config, &fake);
     let waits = Arc::new(Mutex::new(Vec::new()));
     let kept = Arc::clone(&waits);
-    provider.pace = Pace {
+    provider.client.set_pace(Pace {
         now: Arc::new(|| 1_000_000.0),
         wait: Arc::new(move |wait| {
             kept.lock().unwrap().push(wait);
             Box::pin(std::future::ready(()))
         }),
-    };
+    });
     (provider, fake, waits)
 }
 
@@ -99,7 +99,7 @@ async fn a_connection_that_closed_is_tried_again_after_its_backoff() {
 async fn a_timeout_is_tried_again() {
     let replies = vec![Reply::Silent, saying_streamed("Recovered")];
     let (provider, fake, waits) = retrying(replies, retried(1)).await;
-    let timeout = provider.timeouts.read;
+    let timeout = provider.client.timeouts().read;
     let mut answered = std::pin::pin!(answer(&provider, true));
     tokio::select! {
         biased;

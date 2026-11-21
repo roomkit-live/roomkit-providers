@@ -10,8 +10,9 @@ use roomkit_providers_llm::{
 use serde_json::{Value, json};
 
 use crate::replay::drained;
-use crate::replay::fake::{Body, Ending, Fake, Reply};
+use crate::replay::fake::{Ending, Fake, Reply};
 use crate::{OpenAi, OpenAiConfig};
+pub(crate) use roomkit_providers_client::harness::text_of;
 
 /// The key every test configures: a placeholder.
 pub(crate) const KEY: &str = "placeholder-not-a-key";
@@ -55,11 +56,7 @@ pub(crate) fn hello_with_a_tool() -> AiRequest {
 
 /// An answer of HTTP `status` whose JSON body is `body`.
 pub(crate) fn json_reply(status: u16, body: impl Into<Vec<u8>>) -> Reply {
-    Reply::Answer {
-        status,
-        headers: vec![("content-type".to_owned(), "application/json".to_owned())],
-        body: Body::Whole(body.into()),
-    }
+    Reply::json(status, body)
 }
 
 /// A completion whose one choice holds `message` and ends for
@@ -121,11 +118,7 @@ pub(crate) async fn asked(reply: Reply, request: &AiRequest) -> Result<AiRespons
 /// A streamed answer of HTTP 200: `reads`, each sent as one read, and how
 /// they end.
 pub(crate) fn stream_reply(reads: Vec<Vec<u8>>, ending: Ending) -> Reply {
-    Reply::Answer {
-        status: 200,
-        headers: vec![("content-type".to_owned(), "text/event-stream".to_owned())],
-        body: Body::Reads(reads, ending),
-    }
+    Reply::stream(reads, ending)
 }
 
 /// The text of a stream of events: one event for each of `chunks`, then
@@ -164,19 +157,6 @@ pub(crate) async fn streamed(
     let fake = Fake::serving(vec![reply]).await;
     let provider = pointed(elsewhere("local-model"), &fake);
     drained(provider.generate_structured_stream(request)).await
-}
-
-/// The text the deltas of `events` wrote.
-pub(crate) fn text_of(events: &[StreamEvent]) -> String {
-    let said = events.iter().filter_map(|event| match event {
-        StreamEvent::TextDelta(delta) => Some(delta.text.as_str()),
-        StreamEvent::ToolCall(_)
-        | StreamEvent::ToolCallDelta(_)
-        | StreamEvent::Done(_)
-        | StreamEvent::ThinkingDelta(_)
-        | StreamEvent::Usage(_) => None,
-    });
-    said.collect()
 }
 
 /// Why `error` says a response schema failed, when it is one's failure.

@@ -10,14 +10,32 @@ names one the test does not know, fails there.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, replace
 from typing import Any
 
-KEY = "placeholder-not-a-key"
-REQUEST_KEY = "placeholder-not-a-key-either"
-
-JSON = {"content-type": "application/json"}
-EVENTS = {"content-type": "text/event-stream"}
+from wire_capture import (
+    GENERATE,
+    JSON,
+    KEY,
+    LISTING,
+    LOST,
+    REFUSED,
+    REQUEST_KEY,
+    STREAM,
+    TEXT,
+    TIMED_OUT,
+    TIMEOUT,
+    Case,
+    Reply,
+    annotate,
+    answer,
+    cut_every,
+    cut_inside_characters,
+    half,
+    one_byte_at_a_time,
+    page,
+    registrar,
+    stream,
+)
 
 SDK_RETRIES = (
     "The openai SDK decides which answers it tries again, how many times and after what wait."
@@ -25,54 +43,8 @@ SDK_RETRIES = (
 SDK_WORDS = "No answer came: the message is the openai SDK's."
 PYTHON_WORDS = "The message holds what Python's JSON reader says of the text, in its words."
 
-
-@dataclass(frozen=True)
-class Reply:
-    """What the fake endpoint answers one request with."""
-
-    status: int = 200
-    headers: dict[str, str] = field(default_factory=dict)
-    body: Any = None
-    text: str | None = None
-    chunks: list[str] | list[bytes] | None = None
-    cut: str | None = None
-    failure: str | None = None
-
-
-@dataclass(frozen=True)
-class Case:
-    """One run of the provider."""
-
-    name: str
-    kinds: frozenset[str]
-    call: str
-    config: dict[str, Any]
-    request: dict[str, Any]
-    replies: tuple[Reply, ...]
-    note: str | None = None
-    sdk: str | None = None
-    questioned: str | None = None
-
-
 CASES: list[Case] = []
-
-GENERATE = "generate"
-TEXT = "generate_stream"
-STREAM = "generate_structured_stream"
-LISTING = "list_models"
-
-
-def case(
-    name: str,
-    kinds: str,
-    call: str,
-    config: dict[str, Any],
-    request: dict[str, Any],
-    *replies: Reply,
-    note: str | None = None,
-    sdk: str | None = None,
-) -> None:
-    CASES.append(Case(name, frozenset(kinds.split()), call, config, request, replies, note, sdk))
+case = registrar(CASES)
 
 
 def raw_call(**members: Any) -> dict[str, Any]:
@@ -84,30 +56,6 @@ def raw_call(**members: Any) -> dict[str, Any]:
 
 USAGE = {"prompt_tokens": 12, "completion_tokens": 5, "total_tokens": 17}
 ANSWERED_BY = "gpt-4o-2024-08-06"
-
-
-def answer(body: Any, status: int = 200, **headers: str) -> Reply:
-    return Reply(status=status, headers={**JSON, **headers}, body=body)
-
-
-def page(text: str, status: int, content_type: str = "text/html") -> Reply:
-    return Reply(status=status, headers={"content-type": content_type}, text=text)
-
-
-LOST = "the connection is lost"
-TIMEOUT = "the read times out"
-
-
-def stream(chunks: list[str] | list[bytes], *, cut: str | None = None, status: int = 200) -> Reply:
-    """A streamed answer, read chunk by chunk; ``cut`` is how its reads fail
-    after them, ``LOST`` or ``TIMEOUT``."""
-    return Reply(status=status, headers=dict(EVENTS), chunks=chunks, cut=cut)
-
-
-def half(body: Any, cut: str) -> Reply:
-    """A whole answer whose body fails midway, ``LOST`` or ``TIMEOUT``."""
-    text = json.dumps(body)
-    return Reply(status=200, headers=dict(JSON), chunks=[text[: len(text) // 2]], cut=cut)
 
 
 def completion(
@@ -190,18 +138,9 @@ def fragment(index: int, call_id: str | None, name: str | None, arguments: str) 
     return chunk({"tool_calls": [call]})
 
 
-def cut_every(chunks: list[str], size: int) -> list[str]:
-    """The same bytes, read ``size`` characters at a time."""
-    whole = "".join(chunks)
-    return [whole[at : at + size] for at in range(0, len(whole), size)]
-
-
 def failed(message: str, kind: str, code: str | None = None, param: str | None = None) -> Any:
     return {"error": {"message": message, "type": kind, "param": param, "code": code}}
 
-
-REFUSED = Reply(failure="connection refused")
-TIMED_OUT = Reply(failure="timeout")
 
 # -- What a case is given ------------------------------------------------------
 
@@ -1355,9 +1294,7 @@ case(
     STREAM,
     LOCAL,
     HELLO,
-    stream(
-        sse(chunk({"role": "assistant", "content": "Hello."}, model="local-model"), done=False)
-    ),
+    stream(sse(chunk({"role": "assistant", "content": "Hello."}, model="local-model"), done=False)),
     note="No finish reason and no end mark: the stream's end is the answer's.",
 )
 case(
@@ -1700,26 +1637,6 @@ WIDE = f"caf{E_ACUTE} {EURO} {GRIN}"
 INSIDE = "stream stream_cut_inside_a_character"
 
 
-def cut_inside_characters(chunks: list[str]) -> list[bytes]:
-    """The same bytes, each character of several bytes read one byte at a
-    time: a read ends before it, and after each of its bytes."""
-    text = "".join(chunks)
-    data = text.encode("utf-8")
-    edges, at = {0, len(data)}, 0
-    for character in text:
-        size = len(character.encode("utf-8"))
-        if size > 1:
-            edges.update(range(at, at + size + 1))
-        at += size
-    ordered = sorted(edges)
-    return [data[start:end] for start, end in zip(ordered, ordered[1:], strict=False)]
-
-
-def one_byte_at_a_time(chunks: list[str]) -> list[bytes]:
-    data = "".join(chunks).encode("utf-8")
-    return [data[at : at + 1] for at in range(len(data))]
-
-
 case(
     "stream_text_cut_inside_characters",
     INSIDE,
@@ -1922,9 +1839,7 @@ case(
     TOOLS,
     stream(
         sse(
-            raw_call(
-                index=0, id=None, type="function", function={"name": None, "arguments": None}
-            ),
+            raw_call(index=0, id=None, type="function", function={"name": None, "arguments": None}),
             raw_call(
                 index=None, id="call_1", type=None, function={"name": "clock", "arguments": None}
             ),
@@ -2699,9 +2614,7 @@ case(
     TOOLS,
     stream(
         sse(
-            raw_call(
-                index=0, id=7, type="function", function={"name": "clock", "arguments": "{}"}
-            ),
+            raw_call(index=0, id=7, type="function", function={"name": "clock", "arguments": "{}"}),
             ENDED,
         )
     ),
@@ -2802,9 +2715,7 @@ for status in (301, 303, 308):
         answer(completion(model="local-model")),
         sdk=FOLLOWED,
     )
-AROUND = Reply(
-    status=307, headers={"location": "https://llm.example/v1/chat/completions"}, text=""
-)
+AROUND = Reply(status=307, headers={"location": "https://llm.example/v1/chat/completions"}, text="")
 case(
     "redirects_past_the_hop_limit",
     "redirect",
@@ -3408,15 +3319,5 @@ QUESTIONED = {
 }
 
 
-def annotate() -> None:
-    """Write the tables above into their cases."""
-    by_name = {found.name: at for at, found in enumerate(CASES)}
-    for table, member in ((ALSO_DECIDED_BY_THE_SDK, "sdk"), (QUESTIONED, "questioned")):
-        for name, sentence in table.items():
-            found = CASES[by_name[name]]
-            if getattr(found, member) is not None:
-                raise AssertionError(f"{name} already says {member}")
-            CASES[by_name[name]] = replace(found, **{member: sentence})
-
-
-annotate()
+annotate(CASES, "sdk", ALSO_DECIDED_BY_THE_SDK)
+annotate(CASES, "questioned", QUESTIONED)

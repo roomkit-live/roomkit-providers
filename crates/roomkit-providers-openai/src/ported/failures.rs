@@ -7,9 +7,9 @@ use roomkit_providers_llm::{AiProvider, ProviderError};
 use tokio::net::TcpSocket;
 
 use super::support::{KEY, asked, elsewhere, hello, json_reply, pointed, saying, streamed};
-use crate::exchange::ANSWER_LIMIT;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
 use crate::{OpenAi, OpenAiConfig};
+use roomkit_providers_client::ANSWER_LIMIT;
 
 /// More bytes than the provider reads of an answer.
 const TOO_LONG: usize = ANSWER_LIMIT + 1024 * 1024;

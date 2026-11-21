@@ -15,7 +15,6 @@ mod endpoints;
 mod failures;
 mod reasoning;
 mod requests;
-mod retries;
 mod streams;
 pub(crate) mod support;
 mod tries;

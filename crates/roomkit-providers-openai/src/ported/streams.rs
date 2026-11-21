@@ -151,7 +151,7 @@ async fn the_timeout_bounds_reads_not_the_stream() {
     };
     let fake = Fake::serving(vec![stepped]).await;
     let provider = pointed(elsewhere("local-model"), &fake);
-    let timeout = provider.timeouts.read;
+    let timeout = provider.client.timeouts().read;
     let request = hello();
     let mut stream = provider.generate_structured_stream(&request);
     let mut read = String::new();
@@ -232,7 +232,7 @@ async fn a_long_reasoning_streams_past_what_a_whole_answer_may_weigh() {
     chunks.push(chunk(&json!({"content": "Done."})));
     chunks.extend(ending("stop", 10, 50_001));
     let body = sse_of(&chunks).into_bytes();
-    assert!(body.len() > crate::exchange::ANSWER_LIMIT);
+    assert!(body.len() > roomkit_providers_client::ANSWER_LIMIT);
     let reads = body.chunks(64 * 1024).map(<[u8]>::to_vec);
     let reply = stream_reply(reads.collect(), Ending::Ends);
     let (events, failure) = streamed(reply, &hello()).await;

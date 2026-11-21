@@ -718,6 +718,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-anthropic"
+version = "0.1.0-alpha.1"
+
+[[package]]
+name = "roomkit-providers-client"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "futures-core",
+ "jiff",
+ "reqwest",
+ "roomkit-providers-http",
+ "roomkit-providers-llm",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "roomkit-providers-http"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -744,16 +764,14 @@ dependencies = [
 name = "roomkit-providers-openai"
 version = "0.1.0-alpha.1"
 dependencies = [
- "futures-core",
  "jiff",
  "reqwest",
- "roomkit-providers-http",
+ "roomkit-providers-client",
  "roomkit-providers-llm",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
- "url",
 ]
 
 [[package]]

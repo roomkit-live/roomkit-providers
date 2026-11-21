@@ -1,0 +1,58 @@
+//! The HTTP client a model provider of `RoomKit` Providers is built on:
+//! what every provider that speaks HTTP does the same way, written once.
+//!
+//! A provider crate holds its wire: its configuration, how it writes a
+//! request, how it reads an answer and the events of a stream, how it
+//! reads an error body and words a failure of its own, its catalogue and
+//! its recorded cases. It builds the rest from this crate:
+//!
+//! - [`Client`]: the HTTP client, built from the [`Settings`] a provider
+//!   states. It sends a [`Call`] until an answer comes or no try is left,
+//!   whole ([`Client::send`]) or as a stream of events
+//!   ([`Client::stream`], [`stream::Streamed`]), and bounds what it reads
+//!   of each.
+//! - [`retry`]: whether a failed try is tried again and after what wait,
+//!   with the [`retry::Rule`] that says where a vendor's SDK differs.
+//! - [`failure`]: a [`Failure`] as a provider builds it, and the one
+//!   [`Exit`] it leaves through as the contract's error, without a secret
+//!   of the configuration, on one line and bounded.
+//! - [`endpoint`]: the URL of a path under a base URL, with the base URLs
+//!   refused when a provider is built, and whether a base URL is the
+//!   vendor's own endpoint.
+//!
+//! Under its `harness` feature, for the tests of a provider crate, the
+//! crate also holds the replay of a fixture of recorded cases through a
+//! local fake of an endpoint (`harness`). Its `replay` feature is the seam
+//! a replay outside a provider crate's tests drives a provider through.
+//!
+//! It depends on neither Python nor `RoomKit`. The crate's README says how
+//! a provider crate is written on it.
+
+#![forbid(unsafe_code)]
+
+mod client;
+pub mod endpoint;
+mod exchange;
+pub mod failure;
+#[cfg(any(test, feature = "harness"))]
+pub mod harness;
+pub mod retry;
+pub mod stream;
+#[cfg(test)]
+mod testing;
+
+pub use self::client::{Client, Settings, Timeouts};
+#[cfg(feature = "replay")]
+pub use self::client::{ReplayWaits, replayed_at};
+pub use self::exchange::{ANSWER_LIMIT, Call, Pace, Wait, is_json};
+pub use self::failure::{Exit, Failure, Secrets};
+
+// What `tried_again!` logs with, in the crate that calls it.
+#[doc(hidden)]
+pub use tracing as __tracing;
+
+/// The README's examples, compiled and run with the crate's documentation
+/// tests: what it says of the crate's names stays true.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct Readme;

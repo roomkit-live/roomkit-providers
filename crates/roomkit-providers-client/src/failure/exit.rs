@@ -1,8 +1,8 @@
-//! The one way a failure leaves the provider: its text without a secret of
+//! The one way a failure leaves a provider: its text without a secret of
 //! the configuration, on one line, without a character a terminal acts on,
 //! within its bound.
 //!
-//! Inside the provider a failure is a [`Failure`], which keeps apart the
+//! Inside a provider a failure is a [`Failure`], which keeps apart the
 //! provider's own words and what a server, a reader or the contract said.
 //! Only [`Exit::leave`] makes the contract's `ProviderError` of it, and
 //! there what was said is cleaned, once; the provider's own words are not
@@ -15,15 +15,15 @@ use roomkit_providers_llm::{
     ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions, repr,
 };
 
-use super::{Built, Failure, MESSAGE_LIMIT, Said};
+use super::{Built, Failure, MESSAGE_LIMIT, Piece};
 
 /// The fewest characters of a secret: a shorter text of the configuration
 /// is not removed from a failure, for it would be found in ordinary words.
-pub(crate) const SECRET_MIN: usize = 8;
+pub const SECRET_MIN: usize = 8;
 
 /// What stands where a secret stood. It is shorter than any secret, so it
 /// holds none, and each removal shortens the text.
-pub(crate) const MARK: &str = "[***]";
+pub const MARK: &str = "[***]";
 
 /// Whether `character` shows nothing: a soft hyphen, a zero-width or
 /// format character, a control of the direction of a text, a tag character.
@@ -46,7 +46,8 @@ fn shown(text: &str) -> String {
 /// `text` on one line: without the characters that show nothing, each
 /// control character and each run of white space one space, none at its
 /// ends.
-pub(crate) fn one_line(text: &str) -> String {
+#[must_use]
+pub fn one_line(text: &str) -> String {
     let shown = shown(text);
     let spaced = shown.chars().map(|c| if c.is_control() { ' ' } else { c });
     let spaced: String = spaced.collect();
@@ -79,7 +80,7 @@ fn written_forms(text: &str) -> Vec<String> {
 
 /// The secrets of a configuration: what no failure's text may repeat.
 #[derive(Clone, Default)]
-pub(crate) struct Secrets {
+pub struct Secrets {
     /// The forms a text holds only before it is put on one line.
     before: Vec<String>,
     /// The forms a text on one line holds.
@@ -96,8 +97,15 @@ impl fmt::Debug for Secrets {
 impl Secrets {
     /// The secrets among `texts`: each of [`SECRET_MIN`] characters or
     /// more, in every form a failure's text may hold it in.
-    pub(crate) fn of(texts: impl IntoIterator<Item = String>) -> Self {
-        let (mut before, mut after) = (Vec::new(), Vec::new());
+    pub fn of(texts: impl IntoIterator<Item = String>) -> Self {
+        Self::default().with(texts)
+    }
+
+    /// These secrets and those among `texts`: for a secret one request
+    /// brings, beside the configuration's.
+    #[must_use]
+    pub fn with(&self, texts: impl IntoIterator<Item = String>) -> Self {
+        let (mut before, mut after) = (self.before.clone(), self.after.clone());
         let keep = |held: &mut Vec<String>, form: String| {
             if form.chars().count() >= SECRET_MIN && !held.contains(&form) {
                 held.push(form);
@@ -143,33 +151,52 @@ impl Secrets {
     /// The secrets are then looked for twice: before the text is put on
     /// one line, in the forms that step would lose, and after it, in every
     /// form, a secret sent back with other white space included.
-    pub(crate) fn clean(&self, text: &str, limit: usize) -> String {
+    #[must_use]
+    pub fn clean(&self, text: &str, limit: usize) -> String {
         let text = Self::removed(&shown(text), &self.before);
         let line = Self::removed(&one_line(&text), &self.after);
         line.chars().take(limit).collect()
     }
 }
 
-/// Where a failure leaves the provider.
+/// Where a failure leaves a provider.
 #[derive(Clone, Debug)]
-pub(crate) struct Exit {
-    /// The provider's name, which each failure carries.
-    pub(crate) provider: &'static str,
-    pub(crate) secrets: Secrets,
+pub struct Exit {
+    /// The provider's label, which each failure carries.
+    provider: &'static str,
+    secrets: Secrets,
 }
 
 impl Exit {
+    /// The exit of the provider labelled `provider`, whose failures repeat
+    /// none of `secrets`.
+    #[must_use]
+    pub fn new(provider: &'static str, secrets: Secrets) -> Self {
+        Self { provider, secrets }
+    }
+
+    /// This exit, whose failures repeat none of `texts` either: the exit of
+    /// one request that brings a secret of its own, a key a host lends it.
+    #[must_use]
+    pub fn with_secrets(&self, texts: impl IntoIterator<Item = String>) -> Self {
+        Self {
+            provider: self.provider,
+            secrets: self.secrets.with(texts),
+        }
+    }
+
     /// `failure` as the contract's error: the only place one is made.
-    pub(crate) fn leave(&self, failure: &Failure) -> ProviderError {
+    #[must_use]
+    pub fn leave(&self, failure: &Failure) -> ProviderError {
         let (said, built) = match &failure.0 {
             Built::Elsewhere(error) => return self.cleaned(error),
             Built::Here { said, .. } => (said, &failure.0),
         };
         let mut message = String::new();
         for part in said {
-            match part {
-                Said::Own(text) => message.push_str(text),
-                Said::Told(text, limit) => message.push_str(&self.secrets.clean(text, *limit)),
+            match &part.0 {
+                Piece::Own(text) => message.push_str(text),
+                Piece::Told(text, limit) => message.push_str(&self.secrets.clean(text, *limit)),
             }
         }
         let Built::Here {
@@ -232,7 +259,8 @@ impl Exit {
 
     /// An item of a stream that went through the contract's check: the
     /// failure it carries leaves, and so does one the check built.
-    pub(crate) fn leave_carried(&self, error: ProviderError) -> ProviderError {
+    #[must_use]
+    pub fn leave_carried(&self, error: ProviderError) -> ProviderError {
         let carried = error.source();
         match carried.and_then(|cause| cause.downcast_ref::<Carried>()) {
             Some(carried) => self.leave(&carried.0),
@@ -257,16 +285,7 @@ impl Error for Carried {}
 
 /// `failure` as an item of a stream of the contract's errors, to leave
 /// through [`Exit::leave_carried`]. It says nothing by itself.
-pub(crate) fn carried(failure: Failure) -> ProviderError {
+#[must_use]
+pub fn carried(failure: Failure) -> ProviderError {
     ProviderError::new(String::new(), ProviderErrorOptions::default()).with_source(Carried(failure))
-}
-
-/// The exit of a test's provider, whose key is the placeholder every test
-/// configures.
-#[cfg(test)]
-pub(crate) fn test_exit() -> Exit {
-    Exit {
-        provider: "openai",
-        secrets: Secrets::of(["placeholder-not-a-key".to_owned()]),
-    }
 }

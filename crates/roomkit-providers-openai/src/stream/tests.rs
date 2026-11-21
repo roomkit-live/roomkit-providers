@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use roomkit_providers_http::sse::STREAM_LIMIT;
+use roomkit_providers_client::stream::STREAM_LIMIT;
 use roomkit_providers_llm::{AiProvider, StreamEvent, next};
 use serde_json::json;
 
@@ -143,14 +143,14 @@ async fn a_stream_past_its_whole_bound_fails() {
     let reads: Vec<Vec<u8>> = (0..64).map(|_| said("Hello.")).collect();
     let fake = Fake::serving(vec![stream_reply(reads.clone(), Ending::Ends)]).await;
     let mut provider = pointed(elsewhere("local-model"), &fake);
-    assert_eq!(provider.stream_limit, STREAM_LIMIT);
-    provider.stream_limit = 10 * reads[0].len();
+    assert_eq!(provider.client.stream_limit(), STREAM_LIMIT);
+    provider.client.set_stream_limit(10 * reads[0].len());
     let (events, failure) = drained(provider.generate_structured_stream(&hello())).await;
     assert_eq!(text_of(&events), "Hello.".repeat(10));
     let error = failure.unwrap();
     let said = format!(
         "the provider's answer is longer than {} bytes",
-        provider.stream_limit
+        provider.client.stream_limit()
     );
     assert_eq!(
         (error.message, error.retryable, error.status_code),

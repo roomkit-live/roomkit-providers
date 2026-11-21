@@ -4,52 +4,9 @@
 //! entry states and in nothing else, and the provider sends as many
 //! requests and gives what the entry states.
 
-use std::collections::BTreeMap;
+use roomkit_providers_client::harness::named::{Does, Entry, Instead, Named, Says, fails};
 
-use roomkit_providers_llm::{ProviderError, StreamDone, StreamEvent};
-
-use super::{Outcome, Replayed, fixture};
-use crate::ported::support::text_of;
-
-/// What a failure says.
-#[derive(Clone, Copy, Debug)]
-enum Says {
-    /// These words, the provider's own, and no other.
-    Exactly(&'static str),
-    /// A reader's words, which hold these.
-    Holding(&'static str),
-}
-
-/// What the provider does where it does not do as Python.
-#[derive(Clone, Copy, Debug)]
-enum Does {
-    /// It is not built, and says why.
-    Unbuilt(&'static str),
-    /// The call fails: with this status, retried or not, saying whether
-    /// the context overflowed, in these words.
-    Fails(Option<u16>, bool, Option<bool>, Says),
-    /// The call is answered, whole or as a stream that ends without a
-    /// failure: it says this text, stops for this reason, and counts this
-    /// usage.
-    Answers(&'static str, &'static str, &'static str),
-    /// It is built where Python's is not, and asks with no `Authorization`:
-    /// the fake, which the case gives no answer, answers its 599.
-    AsksWithoutAKey,
-}
-
-/// What the provider does of a named case: how many requests it sends, and
-/// what the call gives.
-#[derive(Clone, Copy, Debug)]
-pub(super) struct Instead {
-    requests: usize,
-    does: Does,
-}
-
-/// A failure after one request, final or not, in the provider's words.
-const fn fails(status: Option<u16>, retryable: bool, says: &'static str) -> Instead {
-    let does = Does::Fails(status, retryable, None, Says::Exactly(says));
-    Instead { requests: 1, does }
-}
+use super::fixture;
 
 /// A whole answer after one request, the one the cases of a usage give,
 /// with this usage.
@@ -70,117 +27,6 @@ const fn streams(text: &'static str, usage: &'static str) -> Instead {
 const fn stream_counts(usage: &'static str) -> Instead {
     streams("Hello.", usage)
 }
-
-/// A named case as its entry states it: how its replay differs from
-/// Python's, each difference by the words it starts with, and what the
-/// provider does instead.
-#[derive(Clone, Copy, Debug)]
-pub(super) struct Stated {
-    differs: &'static [&'static str],
-    instead: Instead,
-}
-
-impl Stated {
-    /// Whether the replay is what the entry states: `differing`, the
-    /// differences found from Python, are the ones stated, each of them
-    /// and no other, and `replayed` did what is stated.
-    ///
-    /// # Errors
-    ///
-    /// What is not as stated.
-    pub(super) fn holds(&self, differing: &[String], replayed: &Replayed) -> Result<(), String> {
-        let as_stated = differing.len() == self.differs.len()
-            && differing
-                .iter()
-                .zip(self.differs)
-                .all(|(found, stated)| found.starts_with(stated));
-        if !as_stated {
-            return Err(format!(
-                "it differs from Python otherwise than its entry states, {:?}: {differing:?}",
-                self.differs
-            ));
-        }
-        if !self.instead.is_done(replayed) {
-            let (unbuilt, outcome) = (&replayed.unbuilt, &replayed.outcome);
-            return Err(format!("not {:?}: {unbuilt:?} {outcome:?}", self.instead));
-        }
-        Ok(())
-    }
-}
-
-/// The done event of `events`.
-fn done_of(events: &[StreamEvent]) -> Option<&StreamDone> {
-    events.iter().find_map(|event| match event {
-        StreamEvent::Done(done) => Some(done),
-        StreamEvent::TextDelta(_)
-        | StreamEvent::ToolCall(_)
-        | StreamEvent::ToolCallDelta(_)
-        | StreamEvent::ThinkingDelta(_)
-        | StreamEvent::Usage(_) => None,
-    })
-}
-
-impl Instead {
-    /// Whether `replayed` did exactly what this says.
-    pub(super) fn is_done(self, replayed: &Replayed) -> bool {
-        if replayed.seen.len() != self.requests {
-            return false;
-        }
-        let failed = |error: &ProviderError, expected: Does| {
-            let Does::Fails(status, retryable, overflow, says) = expected else {
-                return false;
-            };
-            let said = match says {
-                Says::Exactly(words) => error.message == words,
-                Says::Holding(words) => error.message.contains(words),
-            };
-            said && error.status_code == status
-                && error.retryable == retryable
-                && error.context_overflow == overflow
-                && !error.before_request
-        };
-        match (self.does, &replayed.unbuilt, &replayed.outcome) {
-            (Does::Unbuilt(words), Some(error), None) => {
-                error.before_request && !error.retryable && error.message == words
-            }
-            (
-                Does::Fails(..),
-                None,
-                Some(
-                    Outcome::Response(Err(error))
-                    | Outcome::Models(Err(error))
-                    | Outcome::Events(_, Some(error)),
-                ),
-            ) => failed(error, self.does),
-            (Does::AsksWithoutAKey, None, Some(Outcome::Response(Err(error)))) => {
-                let asked = replayed.seen.first();
-                let no_key = asked.is_some_and(|seen| !seen.headers.contains_key("authorization"));
-                let nothing = Says::Exactly("the provider answered HTTP 599: no message");
-                no_key && failed(error, Does::Fails(Some(599), true, None, nothing))
-            }
-            (Does::Answers(text, finish, usage), None, Some(Outcome::Response(Ok(response)))) => {
-                response.content == text
-                    && response.finish_reason.as_deref() == Some(finish)
-                    && serde_json::to_string(&response.usage).unwrap() == usage
-            }
-            (Does::Answers(text, finish, usage), None, Some(Outcome::Events(events, None))) => {
-                let done = done_of(events);
-                let stopped = done.and_then(|done| done.finish_reason.as_deref());
-                let counted = done.map(|done| serde_json::to_string(&done.usage).unwrap());
-                text_of(events) == text
-                    && stopped == Some(finish)
-                    && counted.as_deref() == Some(usage)
-            }
-            _ => false,
-        }
-    }
-}
-
-/// A named case: its name in the fixture, why the provider answers it
-/// otherwise than Python, how its replay then differs from Python's, each
-/// difference by the words it starts with, and what the provider does
-/// instead.
-type Entry = (&'static str, &'static str, &'static [&'static str], Instead);
 
 /// The response differs from Python's.
 const ANOTHER_RESPONSE: &[&str] = &["the response: "];
@@ -641,84 +487,27 @@ const BY_ITS_OWN_RULE: &[Entry] = &[
     ),
 ];
 
-/// The cases the provider answers otherwise than Python, by name: what
-/// the entry of each states.
-pub(super) fn named() -> BTreeMap<&'static str, Stated> {
-    let lists = [QUESTIONED_OTHERWISE, ONLY_PYTHON, BY_ITS_OWN_RULE];
-    let named = lists.into_iter().flatten();
-    let stated = |(name, _, differs, instead): &Entry| {
-        let (differs, instead) = (*differs, *instead);
-        (*name, Stated { differs, instead })
-    };
-    named.map(stated).collect()
-}
+/// The cases the provider answers otherwise than Python, each in the list
+/// its case belongs to.
+pub(super) const NAMED: Named = Named {
+    questioned_otherwise: QUESTIONED_OTHERWISE,
+    only_python: ONLY_PYTHON,
+    by_its_own_rule: BY_ITS_OWN_RULE,
+};
 
-/// What a failure says, as the data file writes it.
-fn says_as_data(says: Says) -> serde_json::Value {
-    match says {
-        Says::Exactly(words) => serde_json::json!({"exactly": words}),
-        Says::Holding(words) => serde_json::json!({"holding": words}),
-    }
-}
-
-/// What the provider does of a named case, as the data file writes it.
-fn does_as_data(does: Does) -> serde_json::Value {
-    match does {
-        Does::Unbuilt(says) => serde_json::json!({"kind": "unbuilt", "says": says}),
-        Does::Fails(status_code, retryable, context_overflow, says) => serde_json::json!({
-            "kind": "fails",
-            "status_code": status_code,
-            "retryable": retryable,
-            "context_overflow": context_overflow,
-            "says": says_as_data(says),
-        }),
-        Does::Answers(text, finish_reason, usage) => serde_json::json!({
-            "kind": "answers",
-            "text": text,
-            "finish_reason": finish_reason,
-            "usage": serde_json::from_str::<serde_json::Value>(usage).unwrap(),
-        }),
-        Does::AsksWithoutAKey => serde_json::json!({"kind": "asks_without_a_key"}),
-    }
-}
-
-/// The named cases as a data file, for a replay outside this crate: each
-/// with the list it stands in, its reason, the differences from Python its
-/// replay shows and what the provider does instead.
-fn named_as_data() -> String {
-    let lists = [
-        ("questioned_otherwise", QUESTIONED_OTHERWISE),
-        ("only_python", ONLY_PYTHON),
-        ("by_its_own_rule", BY_ITS_OWN_RULE),
-    ];
-    let mut cases = Vec::new();
-    for (list, entries) in lists {
-        for (name, reason, differs, instead) in entries {
-            cases.push(serde_json::json!({
-                "name": name,
-                "list": list,
-                "reason": reason,
-                "differs": differs,
-                "requests": instead.requests,
-                "does": does_as_data(instead.does),
-            }));
-        }
-    }
-    let notes = "The cases of python_chat_cases.json the provider answers otherwise than \
-                 Python, as src/replay/named.rs states them, for a replay outside the crate. \
-                 'differs' lists the differences from Python a replay finds, each by the words \
-                 it starts with; 'requests' is how many requests the provider sends; 'does' \
-                 is what the call gives. A test of the crate keeps this file equal to the \
-                 source: rewrite it with make named-cases.";
-    let file = serde_json::json!({"notes": notes, "cases": cases});
-    serde_json::to_string_pretty(&file).unwrap() + "\n"
-}
+/// What the data file of the named cases says of itself.
+const NOTES: &str = "The cases of python_chat_cases.json the provider answers otherwise than \
+                     Python, as src/replay/named.rs states them, for a replay outside the crate. \
+                     'differs' lists the differences from Python a replay finds, each by the words \
+                     it starts with; 'requests' is how many requests the provider sends; 'does' \
+                     is what the call gives. A test of the crate keeps this file equal to the \
+                     source: rewrite it with make named-cases.";
 
 /// The data file of the named cases is what this module states. Run with
 /// `NAMED_CASES_OUT` naming a file, it writes the file instead.
 #[test]
 fn the_named_cases_file_is_what_this_module_states() {
-    let stated = named_as_data();
+    let stated = NAMED.as_data(NOTES);
     if let Some(out) = std::env::var_os("NAMED_CASES_OUT") {
         std::fs::write(out, stated).unwrap();
         return;
@@ -732,27 +521,5 @@ fn the_named_cases_file_is_what_this_module_states() {
 /// neither; and it says why.
 #[test]
 fn each_named_case_is_one_the_fixture_sets_apart() {
-    let fixture = fixture();
-    let case = |name: &str| {
-        let found = fixture.cases.iter().find(|case| case.name == name);
-        found.unwrap_or_else(|| panic!("no case {name}"))
-    };
-    let raw = |name: &str| {
-        let compare = case(name).compare.as_ref();
-        compare.is_some_and(|compare| compare.exactly.is_empty())
-    };
-    for (name, reason, differs, _) in QUESTIONED_OTHERWISE {
-        assert!(case(name).questioned.is_some(), "{name}");
-        assert!(reason.ends_with('.') && !differs.is_empty(), "{name}");
-    }
-    for (name, reason, differs, _) in ONLY_PYTHON {
-        assert!(raw(name), "{name}");
-        assert!(reason.ends_with('.') && !differs.is_empty(), "{name}");
-    }
-    for (name, reason, differs, _) in BY_ITS_OWN_RULE {
-        assert!(case(name).questioned.is_none() && !raw(name), "{name}");
-        assert!(reason.ends_with('.') && !differs.is_empty(), "{name}");
-    }
-    let listed = QUESTIONED_OTHERWISE.len() + ONLY_PYTHON.len() + BY_ITS_OWN_RULE.len();
-    assert_eq!(named().len(), listed);
+    NAMED.set_apart(&fixture());
 }

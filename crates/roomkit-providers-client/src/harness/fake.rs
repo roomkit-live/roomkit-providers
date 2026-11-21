@@ -12,22 +12,49 @@ use tokio::task::JoinHandle;
 
 /// What the fake does with one request.
 #[derive(Clone, Debug)]
-pub(crate) enum Reply {
+pub enum Reply {
     /// Reads the request and closes the connection: no answer comes.
     Refused,
     /// Reads the request and never answers.
     Silent,
     /// Answers with a status, headers and a body.
     Answer {
+        /// The status of the answer.
         status: u16,
+        /// The headers of the answer, beside those the fake writes of the
+        /// transfer.
         headers: Vec<(String, String)>,
+        /// The body of the answer, and how it is sent.
         body: Body,
     },
 }
 
+impl Reply {
+    /// An answer of HTTP `status` the server says is JSON, whose body is
+    /// `body`, sent whole.
+    pub fn json(status: u16, body: impl Into<Vec<u8>>) -> Self {
+        Self::Answer {
+            status,
+            headers: vec![("content-type".to_owned(), "application/json".to_owned())],
+            body: Body::Whole(body.into()),
+        }
+    }
+
+    /// A streamed answer of HTTP 200 the server says is a stream of events:
+    /// `reads`, each sent as one read, and how they end.
+    #[must_use]
+    pub fn stream(reads: Vec<Vec<u8>>, ending: Ending) -> Self {
+        Self::Answer {
+            status: 200,
+            headers: vec![("content-type".to_owned(), "text/event-stream".to_owned())],
+            body: Body::Reads(reads, ending),
+        }
+    }
+}
+
 /// The body of an answer.
 #[derive(Clone, Debug)]
-pub(crate) enum Body {
+pub enum Body {
     /// Sent whole, its length declared.
     Whole(Vec<u8>),
     /// Sent read by read, each read one chunk of the transfer, written and
@@ -39,31 +66,40 @@ pub(crate) enum Body {
     Stepped(Vec<Vec<u8>>, Arc<Notify>),
 }
 
+/// How the reads of a body end.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Ending {
+pub enum Ending {
+    /// The stream ends.
     Ends,
+    /// The connection is lost.
     Lost,
+    /// Nothing more comes, and the connection stays open.
     Silent,
 }
 
 /// A request the fake was sent.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct Seen {
-    pub(crate) method: String,
+pub struct Seen {
+    /// The method of the request.
+    pub method: String,
     /// The path and the query.
-    pub(crate) target: String,
+    pub target: String,
     /// The headers, their names in lower case: the last of each name.
-    pub(crate) headers: BTreeMap<String, String>,
+    pub headers: BTreeMap<String, String>,
     /// Every header line, in the order sent, its name in lower case.
-    pub(crate) lines: Vec<(String, String)>,
-    pub(crate) body: Vec<u8>,
+    pub lines: Vec<(String, String)>,
+    /// The body of the request.
+    pub body: Vec<u8>,
     /// How many reads its answer was written in, each flushed before the
     /// next: none for an answer sent whole.
-    pub(crate) reads: usize,
+    pub reads: usize,
 }
 
-pub(crate) struct Fake {
-    pub(crate) address: SocketAddr,
+/// A local server that answers each connection with the next reply of a
+/// script, and keeps what it was sent. It stops when it is dropped.
+pub struct Fake {
+    /// Where the fake listens: a port of this machine.
+    pub address: SocketAddr,
     seen: Arc<Mutex<Vec<Seen>>>,
     /// Told what the connections live: a request received, a connection
     /// its client closed.
@@ -83,12 +119,20 @@ struct Told {
 /// A local port a fake listens on. Fakes that serve one after the other may
 /// share one: a port a server closed its connections on stays taken for a
 /// minute, and a test that opens hundreds of them leaves none to open.
-#[derive(Clone)]
-pub(crate) struct Door(Arc<TcpListener>);
+#[derive(Clone, Debug)]
+pub struct Door(Arc<TcpListener>);
+
+impl std::fmt::Debug for Fake {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Fake")
+            .field("address", &self.address)
+            .finish_non_exhaustive()
+    }
+}
 
 impl Door {
     /// A port of its own on this machine.
-    pub(crate) async fn open() -> Self {
+    pub async fn open() -> Self {
         Self(Arc::new(TcpListener::bind("127.0.0.1:0").await.unwrap()))
     }
 }
@@ -96,13 +140,14 @@ impl Door {
 impl Fake {
     /// A server on a port of its own that answers with `replies`, in order;
     /// a request past them is kept and answered 599.
-    pub(crate) async fn serving(replies: Vec<Reply>) -> Self {
+    pub async fn serving(replies: Vec<Reply>) -> Self {
         Self::behind(&Door::open().await, replies)
     }
 
     /// As [`serving`](Self::serving), on the port of `door`: for fakes that
     /// serve one after the other, each dropped before the next is made.
-    pub(crate) fn behind(door: &Door, replies: Vec<Reply>) -> Self {
+    #[must_use]
+    pub fn behind(door: &Door, replies: Vec<Reply>) -> Self {
         let listener = Arc::clone(&door.0);
         let address = listener.local_addr().unwrap();
         let seen = Arc::new(Mutex::new(Vec::new()));
@@ -143,7 +188,7 @@ impl Fake {
     /// end: its answer written, and its client gone where the fake keeps
     /// the connection open. What was [`seen`](Self::seen) then says in how
     /// many reads each answer was written.
-    pub(crate) async fn served(&self) {
+    pub async fn served(&self) {
         let serving = std::mem::take(&mut *self.serving.lock().unwrap());
         for connection in serving {
             connection.await.ok();
@@ -151,24 +196,25 @@ impl Fake {
     }
 
     /// Returns once a request was received.
-    pub(crate) async fn received(&self) {
+    pub async fn received(&self) {
         self.told.received.notified().await;
     }
 
     /// Returns once the fake stopped answering a request and keeps its
     /// connection open and silent: once for each time it does.
-    pub(crate) async fn silent(&self) {
+    pub async fn silent(&self) {
         self.told.silent.notified().await;
     }
 
     /// Returns once the client closed a connection the fake kept open and
     /// silent.
-    pub(crate) async fn closed(&self) {
+    pub async fn closed(&self) {
         self.told.closed.notified().await;
     }
 
     /// The requests received so far, in order.
-    pub(crate) fn seen(&self) -> Vec<Seen> {
+    #[must_use]
+    pub fn seen(&self) -> Vec<Seen> {
         self.seen.lock().unwrap().clone()
     }
 }

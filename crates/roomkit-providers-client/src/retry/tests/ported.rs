@@ -1,13 +1,14 @@
 //! Whether a failed try is tried again and after what wait, read through
-//! what the provider calls: the wait before a try, and whether an answer is
-//! worth one.
+//! what a provider calls: the wait before a try, and whether an answer is
+//! worth one. Each test names the test it was ported from, in the crate the
+//! rule was written from.
 
 use std::time::Duration;
 
 use reqwest::StatusCode;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
-use crate::retry::{delay, should_retry};
+use super::TWO_MINUTES;
 
 /// The clock a date is read against, in seconds since 1970:
 /// 1970-01-12T13:46:40Z.
@@ -15,6 +16,14 @@ const NOW: f64 = 1_000_000.0;
 
 /// The longest first backoff: a wait the headers do not give is at most it.
 const FIRST_BACKOFF: Duration = Duration::from_millis(500);
+
+fn should_retry(status: StatusCode, headers: &HeaderMap, now: f64) -> bool {
+    TWO_MINUTES.should_retry(status, headers, now)
+}
+
+fn delay(retries_taken: u32, headers: Option<&HeaderMap>, now: f64) -> Duration {
+    TWO_MINUTES.delay(retries_taken, headers, now)
+}
 
 fn headers(given: &[(&'static str, &'static str)]) -> HeaderMap {
     let named = given.iter().map(|(name, value)| {

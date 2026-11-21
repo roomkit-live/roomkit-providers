@@ -7,7 +7,7 @@ use roomkit_providers_llm::{
 };
 use serde_json::{Map, Value};
 
-use crate::failure::{Failure, past_mark};
+use crate::failure::{self, Failure, past_mark};
 use crate::think_tags::{extract_think_tags, field_reasoning, merge_thinking};
 
 /// The response of a 2xx answer: `body` as it came, `json` whether the
@@ -26,11 +26,11 @@ pub(crate) fn read(
     provider: &str,
 ) -> Result<AiResponse, Failure> {
     if !json {
-        return Err(Failure::no_completion(None));
+        return Err(failure::no_completion(None));
     }
     let answer: Value =
         serde_json::from_slice(past_mark(body)).map_err(|error| Failure::malformed(&error))?;
-    let no_completion = || Failure::no_completion(Some(&answer));
+    let no_completion = || failure::no_completion(Some(&answer));
     let completion = answer.as_object().ok_or_else(no_completion)?;
     if let Some(error) = completion.get("error").filter(|error| truthy(error)) {
         return Err(Failure::error_object(error));

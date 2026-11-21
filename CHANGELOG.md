@@ -113,6 +113,12 @@ nothing has been released yet.
 - `roomkit-providers-openai`: an example, `local_server`, that asks a
   stand-in server on a local port once whole and once streamed. `make all`
   runs it.
+- `roomkit-providers-client`: the HTTP client a provider is built on, which
+  `roomkit-providers-openai` is now written on: a request and its tries, the
+  bounds of an answer and of a stream, the base URLs refused when a provider
+  is built, the one exit of failures and, for a provider's tests, the replay
+  of its recorded wire cases. A provider crate holds its wire and nothing
+  else.
 - `roomkit-providers`, the Python package (CPython 3.12 or newer, Linux
   x86_64, built from the repository), for RoomKit, which it depends on
   (0.117): `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`,

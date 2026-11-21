@@ -10,7 +10,7 @@ use super::support::{
     KEY, asked, chunk, completion, elsewhere, events, hello, official, pointed, saying,
     schema_failure, streamed,
 };
-use crate::failure::exit::test_exit;
+use crate::failure::test_exit;
 use crate::replay::fake::Fake;
 use crate::{OpenAi, OpenAiConfig};
 

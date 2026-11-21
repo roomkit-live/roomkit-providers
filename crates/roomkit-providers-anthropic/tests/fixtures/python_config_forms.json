@@ -1,0 +1,2010 @@
+{
+    "generator": "scripts/generate_anthropic_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "AnthropicConfig",
+    "examples": [
+        {
+            "name": "required_alone",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "local-model",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "base_url": "https://llm.example",
+                "extra_headers": {
+                    "X-Route": "blue",
+                    "X-Tenant": "acme"
+                },
+                "enable_prompt_caching": false,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "local-model",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "base_url": "https://llm.example",
+                "extra_headers": {
+                    "X-Route": "blue",
+                    "X-Tenant": "acme"
+                },
+                "enable_prompt_caching": false,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "modern_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "modern_model_on_the_endpoint_written_out",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "base_url": "https://api.anthropic.com"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": "https://api.anthropic.com",
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "modern_model_behind_a_base_url",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "base_url": "https://llm.example"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": "https://llm.example",
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "modern_model_with_its_switches_stated",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "modern_model_with_one_switch_stated",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "supports_custom_temperature": true
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "modern_model_with_the_other_switch_stated",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "use_adaptive_thinking": false
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "old_model_with_its_switches_stated",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-2.1",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-2.1"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-2.1",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-instant-1.2",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-instant-1.2"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-instant-1.2",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-3-opus-20240229",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-3-opus-20240229"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-3-5-sonnet-latest",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-3-5-sonnet-latest"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-3-5-sonnet-latest",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-3-7-sonnet-20250219",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-3-7-sonnet-20250219"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-3-7-sonnet-20250219",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-0",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-0"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-0",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-1",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-1"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-1",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-1-20250805",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-1-20250805"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-1-20250805",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-20250514",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-20250514"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-20250514",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-sonnet-4-20250514",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-20250514"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-sonnet-4-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-sonnet-4-5-20250929",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-5-20250929"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-5-20250929",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-haiku-4-5-20251001",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-haiku-4-5-20251001"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-6",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-6"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-6-fast",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-6-fast"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-6-fast",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-7",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-7"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-7",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-8",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-8"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-8",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-10",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-10"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-10",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-60",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-60"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-60",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-4-2025051",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-4-2025051"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-4-2025051",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-opus-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-sonnet-5-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-5-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-haiku-5-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-haiku-5-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-haiku-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-fable-5-2",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-fable-5-2"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-fable-5-2",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-mythos-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-mythos-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-mythos-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-next",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-next"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-next",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "profile_of_claude-3",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-3"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-3",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude-30",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-30"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-30",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_claude",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_Claude-Opus-5-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "Claude-Opus-5-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "Claude-Opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_my-claude-opus-5-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "my-claude-opus-5-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "my-claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_anthropic.claude-opus-5-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "anthropic.claude-opus-5-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "anthropic.claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_ claude-opus-5-5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": " claude-opus-5-5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": " claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "profile_of_local-model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "local-model"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "local-model",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "empty_key",
+            "given": {
+                "api_key": "",
+                "model": "claude-sonnet-4-6"
+            },
+            "form": {
+                "api_key": "",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "empty_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": ""
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 64000
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 64000,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "token_bound_of_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 0
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 0,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "timeouts_as_integers",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "timeout": 120,
+                "connect_timeout": 2
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 120.0,
+                "connect_timeout": 2.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "timeouts_with_fractions",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "timeout": 0.25,
+                "connect_timeout": 1.5
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 0.25,
+                "connect_timeout": 1.5,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "timeout_of_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "timeout": 0
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 0.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "retries",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_retries": 2
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 2,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "no_prompt_caching",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "enable_prompt_caching": false
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": false,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "headers",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "extra_headers": {
+                    "X-Api-Key": "placeholder",
+                    "X-A": "1"
+                }
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": {
+                    "X-Api-Key": "placeholder",
+                    "X-A": "1"
+                },
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "no_header",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "extra_headers": {}
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": {},
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "base_url_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "base_url": null
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "base_url_with_credentials",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "base_url": "https://user:word@llm.example?k=word"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": "https://user:word@llm.example?k=word",
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "vision": true,
+                "organization": "acme"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_key",
+            "given": {
+                "model": "claude-sonnet-4-6"
+            }
+        },
+        {
+            "name": "no_model",
+            "given": {
+                "api_key": "placeholder-not-a-key"
+            }
+        },
+        {
+            "name": "key_null",
+            "given": {
+                "api_key": null,
+                "model": "claude-sonnet-4-6"
+            }
+        },
+        {
+            "name": "key_a_number",
+            "given": {
+                "api_key": 42,
+                "model": "claude-sonnet-4-6"
+            }
+        },
+        {
+            "name": "model_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": null
+            }
+        },
+        {
+            "name": "model_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": 4
+            }
+        },
+        {
+            "name": "base_url_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "base_url": 8080
+            }
+        },
+        {
+            "name": "timeout_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "timeout": null
+            }
+        },
+        {
+            "name": "timeout_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "timeout": "soon"
+            }
+        },
+        {
+            "name": "connect_timeout_a_list",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "connect_timeout": [
+                    5
+                ]
+            }
+        },
+        {
+            "name": "max_tokens_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": null
+            }
+        },
+        {
+            "name": "max_tokens_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": "many"
+            }
+        },
+        {
+            "name": "max_tokens_with_a_fraction",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 10.5
+            }
+        },
+        {
+            "name": "max_retries_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_retries": null
+            }
+        },
+        {
+            "name": "prompt_caching_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "enable_prompt_caching": null
+            }
+        },
+        {
+            "name": "switch_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "use_adaptive_thinking": null
+            }
+        },
+        {
+            "name": "other_switch_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "supports_custom_temperature": null
+            }
+        },
+        {
+            "name": "switch_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "use_adaptive_thinking": "perhaps"
+            }
+        },
+        {
+            "name": "header_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "extra_headers": {
+                    "X-A": 1
+                }
+            }
+        },
+        {
+            "name": "headers_a_list",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "extra_headers": [
+                    [
+                        "X-A",
+                        "1"
+                    ]
+                ]
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                "placeholder-not-a-key",
+                "claude-sonnet-4-6"
+            ]
+        },
+        {
+            "name": "a_text",
+            "given": "claude-sonnet-4-6"
+        },
+        {
+            "name": "null",
+            "given": null
+        }
+    ],
+    "converted": [
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "timeout": "30"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "timeout_below_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "timeout": -1.0
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": -1.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": "2048"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 2048,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "max_tokens_a_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 2048.0
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 2048,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "max_tokens_below_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": -5
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": -5,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "max_tokens_past_32_bits",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 4294967296
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 4294967296,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "max_retries_below_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_retries": -1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": -1,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "max_retries_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "max_retries": "2"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 2,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "prompt_caching_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-sonnet-4-6",
+                "enable_prompt_caching": 0
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": false,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": true
+            }
+        },
+        {
+            "name": "switch_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "use_adaptive_thinking": "false"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": false,
+                "supports_custom_temperature": false
+            }
+        },
+        {
+            "name": "switch_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "claude-opus-5-5",
+                "supports_custom_temperature": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "claude-opus-5-5",
+                "max_tokens": 1024,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "base_url": null,
+                "extra_headers": null,
+                "enable_prompt_caching": true,
+                "use_adaptive_thinking": true,
+                "supports_custom_temperature": true
+            }
+        }
+    ],
+    "endpoints": [
+        {
+            "base_url": "https://api.anthropic.com",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com/",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com//",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "HTTPS://API.Anthropic.com",
+            "kept": "HTTPS://API.Anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com:443",
+            "kept": "https://api.anthropic.com:443",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com:0443/",
+            "kept": "https://api.anthropic.com:0443",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com:00000000000000000000443",
+            "kept": "https://api.anthropic.com:00000000000000000000443",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com:",
+            "kept": "https://api.anthropic.com:",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com:444",
+            "kept": "https://api.anthropic.com:444",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com:80",
+            "kept": "https://api.anthropic.com:80",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com:99999",
+            "kept": "https://api.anthropic.com:99999",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com:99999999999999999999",
+            "kept": "https://api.anthropic.com:99999999999999999999",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com:x",
+            "kept": "https://api.anthropic.com:x",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com:443:80",
+            "kept": "https://api.anthropic.com:443:80",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com:+443",
+            "kept": "https://api.anthropic.com:+443",
+            "anthropic": false
+        },
+        {
+            "base_url": "http://api.anthropic.com",
+            "kept": "http://api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "http://api.anthropic.com:443",
+            "kept": "http://api.anthropic.com:443",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/messages",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/messages/",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com/V1/Messages",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/messages//",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/messages/v1/messages",
+            "kept": "https://api.anthropic.com/v1/messages",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/messages?route=1",
+            "kept": "https://api.anthropic.com/v1/messages?route=1",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/messages/count_tokens",
+            "kept": "https://api.anthropic.com/v1/messages/count_tokens",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://llm.example/anthropic/v1/messages",
+            "kept": "https://llm.example/anthropic",
+            "anthropic": false
+        },
+        {
+            "base_url": "/v1/messages",
+            "kept": "/v1/messages",
+            "anthropic": false
+        },
+        {
+            "base_url": "v1/messages",
+            "kept": "v1/messages",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1",
+            "kept": "https://api.anthropic.com/v1",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/",
+            "kept": "https://api.anthropic.com/v1",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com/v1/..",
+            "kept": "https://api.anthropic.com/v1/..",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com/%2F",
+            "kept": "https://api.anthropic.com/%2F",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com?route=1",
+            "kept": "https://api.anthropic.com?route=1",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com/?route=1#top",
+            "kept": "https://api.anthropic.com/?route=1#top",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com#top",
+            "kept": "https://api.anthropic.com#top",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com.",
+            "kept": "https://api.anthropic.com.",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com.example",
+            "kept": "https://api.anthropic.com.example",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://example.api.anthropic.com",
+            "kept": "https://example.api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://user@api.anthropic.com",
+            "kept": "https://user@api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://user:word@api.anthropic.com",
+            "kept": "https://user:word@api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://:word@api.anthropic.com",
+            "kept": "https://:word@api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://@api.anthropic.com",
+            "kept": "https://@api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://:@api.anthropic.com",
+            "kept": "https://:@api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://a@b@api.anthropic.com",
+            "kept": "https://a@b@api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": " https://api.anthropic.com ",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "\thttps://api.anthropic.com/\r\n",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com/ /",
+            "kept": "https://api.anthropic.com/ ",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthro\tpic.com",
+            "kept": "https://api.anthro\tpic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "\u001fhttps://api.anthropic.com\u001c",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "\u0000 https://api.anthropic.com",
+            "kept": "\u0000 https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com\u0000",
+            "kept": "https://api.anthropic.com\u0000",
+            "anthropic": false
+        },
+        {
+            "base_url": "\u00a0https://api.anthropic.com\u3000",
+            "kept": "https://api.anthropic.com",
+            "anthropic": true
+        },
+        {
+            "base_url": "https://api.anthropic.com%25x",
+            "kept": "https://api.anthropic.com%25x",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://[api.anthropic.com]",
+            "kept": null,
+            "anthropic": "refused"
+        },
+        {
+            "base_url": "https://[::1]",
+            "kept": "https://[::1]",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://[::1",
+            "kept": null,
+            "anthropic": "refused"
+        },
+        {
+            "base_url": "https://api.anthropic.com]",
+            "kept": null,
+            "anthropic": "refused"
+        },
+        {
+            "base_url": "//api.anthropic.com",
+            "kept": "//api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "api.anthropic.com",
+            "kept": "api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https:/api.anthropic.com",
+            "kept": "https:/api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https:api.anthropic.com",
+            "kept": "https:api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "1https://api.anthropic.com",
+            "kept": "1https://api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "ht+tp-s.x://api.anthropic.com",
+            "kept": "ht+tp-s.x://api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "",
+            "kept": "",
+            "anthropic": false
+        },
+        {
+            "base_url": " ",
+            "kept": "",
+            "anthropic": false
+        },
+        {
+            "base_url": "/",
+            "kept": "/",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://",
+            "kept": "https:",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://\u212api.anthropic.com",
+            "kept": "https://\u212api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://api.anthropic.com\uff0f",
+            "kept": null,
+            "anthropic": "refused"
+        },
+        {
+            "base_url": "https://caf\u00e9@api.anthropic.com",
+            "kept": "https://caf\u00e9@api.anthropic.com",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://llm.example",
+            "kept": "https://llm.example",
+            "anthropic": false
+        },
+        {
+            "base_url": "https://llm.example/v1",
+            "kept": "https://llm.example/v1",
+            "anthropic": false
+        },
+        {
+            "base_url": "http://localhost:8080",
+            "kept": "http://localhost:8080",
+            "anthropic": false
+        },
+        {
+            "base_url": "http://127.0.0.1:8000/anthropic/",
+            "kept": "http://127.0.0.1:8000/anthropic",
+            "anthropic": false
+        }
+    ]
+}

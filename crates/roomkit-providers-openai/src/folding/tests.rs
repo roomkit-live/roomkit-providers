@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 use super::Folding;
 use crate::call_slots::RawCall;
 use crate::failure::Failure;
-use crate::failure::exit::test_exit;
+use crate::failure::test_exit;
 
 fn folding() -> Folding<'static> {
     Folding::new("asked-model")

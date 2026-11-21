@@ -328,7 +328,12 @@ In Rust:
 
 - `crates/roomkit-providers-<vendor>`: the provider, which implements the
   contract's `AiProvider`, its configuration, its tests against a local fake
-  of its wire, and a line in the workspace's `Cargo.toml`.
+  of its wire, and a line in the workspace's `Cargo.toml`. It holds its wire
+  and nothing else: the HTTP client, the tries of a request, the bounds of
+  an answer, the exit of its failures and the replay of its recorded cases
+  are `roomkit-providers-client`'s, whose README says how a provider is
+  written on it. What a second provider would copy from another belongs
+  there.
 - `bindings/python/src/vendors/<vendor>.rs`: the functions the package
   calls, each registered in the module's `register`: one that builds the
   provider from its configuration's JSON form and its key, apart, and gives

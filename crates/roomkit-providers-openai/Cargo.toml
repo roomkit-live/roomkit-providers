@@ -17,34 +17,33 @@ categories = ["api-bindings"]
 # a provider's requests are sent to a local fake of its endpoint, its clock
 # is set and its waits are kept instead of taken. Not for a host: nothing
 # of it shows in the documentation.
-replay = []
+replay = ["roomkit-providers-client/replay"]
 
 [dependencies]
 # The contract: the request a provider is given, what it answers, and the
 # JSON object a configuration's extra body is.
 roomkit-providers-llm = { workspace = true }
-# The TLS configuration the client is built with.
-roomkit-providers-http = { workspace = true }
-# An HTTP date a server's `retry-after` names.
-jiff = { workspace = true }
-# `rustls-no-provider` makes the client take the configuration given it.
+# The HTTP client the provider is built on: its requests and their tries,
+# the bounds of an answer, and the one exit of its failures.
+roomkit-providers-client = { workspace = true }
+# The URLs and the headers of a request, as the client takes them.
+# `rustls-no-provider` makes the HTTP client take the configuration given
+# it.
 reqwest = { workspace = true, features = ["rustls-no-provider"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-# The wait between two tries of a request.
-tokio = { workspace = true, features = ["time"] }
 tracing = { workspace = true }
-# The parser the client reads a URL with: named here to hold, at compile
-# time, that the client's URL type is this one.
-url = { workspace = true }
 
 [dev-dependencies]
+# The replay of the recorded cases, and the local fake of the endpoint it
+# and the other tests send to.
+roomkit-providers-client = { workspace = true, features = ["harness"] }
 # With gzip turned on, as a host's build may turn it on for the same HTTP
 # client: the tests hold that the provider still asks for no compressed
 # answer.
 reqwest = { workspace = true, features = ["gzip"] }
-# The trait of the streams a test reads.
-futures-core = { workspace = true }
+# The dates the catalogue's entries name, which a test reads.
+jiff = { workspace = true }
 # The fake of the wire the provider is replayed against, and the example's
 # stand-in server: local servers.
 tokio = { workspace = true, features = ["macros", "rt", "net", "io-util", "sync", "test-util"] }

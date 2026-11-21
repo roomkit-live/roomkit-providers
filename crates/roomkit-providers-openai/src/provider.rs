@@ -6,27 +6,24 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 use reqwest::header::HeaderMap;
+use roomkit_providers_client::endpoint::joined;
+use roomkit_providers_client::retry::{Past, Rule};
+use roomkit_providers_client::{Call, Client, Exit, Secrets, Settings, Timeouts, tried_again};
 use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
     TextStream, checked_stream, listing,
 };
 
-use roomkit_providers_http::sse::STREAM_LIMIT;
-
+use self::build::{headers_of, own_endpoint, secrets_of};
 use crate::answer;
 use crate::config::OpenAiConfig;
 use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint};
-
-pub(crate) use self::build::Timeouts;
-use self::build::{headers_of, joined, own_endpoint, refused, secrets_of};
-use crate::exchange::{Call, Pace};
-use crate::failure::Failure;
-use crate::failure::exit::{Exit, Secrets};
-
-mod build;
+use crate::failure::{self, Failure};
 use crate::models;
 use crate::request::Asked;
 use crate::stream;
+
+mod build;
 
 /// The provider's name in its failures: Python's `_provider_name`.
 const NAME: &str = "openai";
@@ -41,16 +38,16 @@ const CHAT_COMPLETIONS: &str = "/chat/completions";
 /// The path of the model listing under a base URL.
 const MODELS: &str = "/models";
 
-/// How long a connection no request uses is kept: the 5 seconds the client
-/// of Python's provider keeps one (httpx's `keepalive_expiry`).
-const IDLE_FOR: std::time::Duration = std::time::Duration::from_secs(5);
+/// Where the retry rule of Python's openai SDK stands: a server may ask for
+/// a wait of two minutes at most, and an answer that asks for more is
+/// final.
+const RETRY: Rule = Rule {
+    longest_asked: 120.0,
+    past_it: Past::Final,
+};
 
-/// How many idle connections are kept for a host: the 100 the client of
-/// Python's provider keeps (the `openai` SDK's `max_keepalive_connections`).
-const IDLE_AT_MOST: usize = 100;
-
-/// What a request asks for, and what the body of a completion's is.
-pub(crate) const JSON: &str = "application/json";
+/// What a request asks for.
+const JSON: &str = "application/json";
 
 /// An AI provider for `OpenAI`'s Chat Completions, and for the servers that
 /// speak it behind a base URL: Python's `OpenAIAIProvider`.
@@ -111,17 +108,13 @@ pub struct OpenAi {
     /// Where the models are listed.
     pub(crate) models: reqwest::Url,
     pub(crate) headers: HeaderMap,
-    pub(crate) client: reqwest::Client,
+    /// The client every request is sent with: its tries, its timeouts and
+    /// the bounds of what it reads.
+    pub(crate) client: Client,
     own_endpoint: bool,
     left_out_warned: Arc<AtomicBool>,
-    pub(crate) pace: Pace,
-    /// The most bytes read of a streamed answer: the reader's bound, which
-    /// a test lowers.
-    pub(crate) stream_limit: usize,
     /// Where every failure leaves, cleaned of the configuration's secrets.
     exit: Arc<Exit>,
-    /// The timeouts the client was built with.
-    pub(crate) timeouts: Timeouts,
 }
 
 impl OpenAi {
@@ -135,10 +128,7 @@ impl OpenAi {
     /// client that could not be built.
     pub fn new(config: OpenAiConfig) -> Result<Self, ProviderError> {
         // A provider that cannot be built says why in its own words.
-        let nothing_to_hide = Exit {
-            provider: NAME,
-            secrets: Secrets::default(),
-        };
+        let nothing_to_hide = Exit::new(NAME, Secrets::default());
         Self::built(config).map_err(|failure| nothing_to_hide.leave(&failure))
     }
 
@@ -147,31 +137,14 @@ impl OpenAi {
         let chat = joined(base_url, CHAT_COMPLETIONS)?;
         let models = joined(base_url, MODELS)?;
         let headers = headers_of(&config, &chat)?;
-        let timeouts = Timeouts::of(&config)?;
-        let tls = roomkit_providers_http::tls_config().map_err(|_| refused("TLS is not set"))?;
-        let client = reqwest::Client::builder()
-            .tls_backend_preconfigured(tls)
-            // No compressed answer is asked for, whatever a host's build
-            // turns on in the HTTP client.
-            .no_gzip()
-            .no_brotli()
-            .no_zstd()
-            .no_deflate()
-            // Neither the system's proxies nor its variables are read.
-            .no_proxy()
-            .read_timeout(timeouts.read)
-            .connect_timeout(timeouts.connect)
-            // A connection no request uses is kept as long, and as many of
-            // them, as the client of Python's provider keeps.
-            .pool_idle_timeout(IDLE_FOR)
-            .pool_max_idle_per_host(IDLE_AT_MOST)
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .map_err(|_| refused("the HTTP client could not be built"))?;
-        let exit = Exit {
-            provider: NAME,
-            secrets: secrets_of(&config, &client, &chat),
-        };
+        let client = Client::new(Settings {
+            timeouts: Timeouts::new(config.timeout, config.connect_timeout)?,
+            max_retries: config.max_retries,
+            retry: RETRY,
+            refused: failure::status,
+            tried_again: tried_again!("roomkit::providers::openai"),
+        })?;
+        let exit = Exit::new(NAME, secrets_of(&config, &client, &chat));
         Ok(Self {
             own_endpoint: own_endpoint(&config, &chat),
             config: Arc::new(config),
@@ -180,11 +153,26 @@ impl OpenAi {
             headers,
             client,
             left_out_warned: Arc::new(AtomicBool::new(false)),
-            pace: Pace::default(),
-            stream_limit: STREAM_LIMIT,
             exit: Arc::new(exit),
-            timeouts,
         })
+    }
+
+    /// The call that asks a completion, the body of its request `body`.
+    pub(crate) fn asking<'a>(&'a self, body: &'a [u8]) -> Call<'a> {
+        Call {
+            url: &self.chat,
+            headers: &self.headers,
+            body: Some(body),
+        }
+    }
+
+    /// The call that asks the models the endpoint lists.
+    fn asking_the_models(&self) -> Call<'_> {
+        Call {
+            url: &self.models,
+            headers: &self.headers,
+            body: None,
+        }
     }
 
     /// The URL the provider asks its completions at.
@@ -199,21 +187,9 @@ impl OpenAi {
     /// its configuration says.
     #[cfg(test)]
     pub(crate) fn point_at(&mut self, address: std::net::SocketAddr) {
-        assert!(
-            self.moved_to(address),
-            "the endpoint is pointed at the fake"
-        );
-    }
-
-    /// Writes `address` as the host and the port of every URL the provider
-    /// asks, over plain HTTP; `false` when a URL could not take it.
-    #[cfg(any(test, feature = "replay"))]
-    fn moved_to(&mut self, address: std::net::SocketAddr) -> bool {
-        [&mut self.chat, &mut self.models].into_iter().all(|url| {
-            url.set_scheme("http").is_ok()
-                && url.set_ip_host(address.ip()).is_ok()
-                && url.set_port(Some(address.port())).is_ok()
-        })
+        let mut urls = [&mut self.chat, &mut self.models].into_iter();
+        let moved = urls.all(|url| roomkit_providers_client::endpoint::moved_to(url, address));
+        assert!(moved, "the endpoint is pointed at the fake");
     }
 
     /// The provider as a replay of recorded cases drives it, outside this
@@ -235,20 +211,9 @@ impl OpenAi {
         fake: std::net::SocketAddr,
         clock: f64,
     ) -> Result<(Self, ReplayWaits), ProviderError> {
-        let no_loopback = refused("a replay sends to a loopback address only");
-        let no_loopback = self.exit.leave(&no_loopback);
-        if !fake.ip().is_loopback() || !self.moved_to(fake) {
-            return Err(no_loopback);
-        }
-        let waits = ReplayWaits::default();
-        let kept = waits.clone();
-        self.pace = Pace {
-            now: Arc::new(move || clock),
-            wait: Arc::new(move |wait| {
-                kept.keep(wait.as_secs_f64());
-                Box::pin(std::future::ready(()))
-            }),
-        };
+        let moved = roomkit_providers_client::replayed_at([&mut self.chat, &mut self.models], fake);
+        moved.map_err(|failure| self.exit.leave(&failure))?;
+        let waits = self.client.replaying(clock);
         Ok((self, waits))
     }
 
@@ -267,15 +232,15 @@ impl OpenAi {
     /// allows, and the response read from the answer.
     async fn answer(&self, request: &AiRequest) -> Result<AiResponse, Failure> {
         let body = self.asked().body(request, false)?;
-        let body = serde_json::to_vec(&body).map_err(|_| unwritten())?;
-        let (answer, json) = self.send(Call::Chat(&body)).await?;
+        let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
+        let (answer, json) = self.client.send(self.asking(&body)).await?;
         answer::read(&answer, json, request, &self.config.model, NAME)
     }
 
     /// The models the endpoint lists, each by its id alone, as Python's
     /// `list_models` reads the page.
     async fn live_models(&self) -> Result<Vec<ModelInfo>, Failure> {
-        let (page, json) = self.send(Call::Models).await?;
+        let (page, json) = self.client.send(self.asking_the_models()).await?;
         let no_page =
             || Failure::unreadable("the model listing is no page of models with their ids");
         let listed = json.then(|| models::listed(&page)).flatten();
@@ -292,12 +257,6 @@ fn refusal(done: &StreamDone) -> Option<String> {
         return Some(refused.to_owned());
     }
     (done.finish_reason.as_deref() == Some("content_filter")).then(|| "content_filter".to_owned())
-}
-
-/// The failure of a request that could not be written: final, and nothing
-/// was sent.
-pub(crate) fn unwritten() -> Failure {
-    Failure::before_request("the request could not be written as JSON")
 }
 
 impl AiProvider for OpenAi {
@@ -372,7 +331,7 @@ impl AiProvider for OpenAi {
     ///
     /// [`generate_structured_stream`]: AiProvider::generate_structured_stream
     fn generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a> {
-        stream::text(self.generate_structured_stream(request))
+        roomkit_providers_client::stream::text(self.generate_structured_stream(request))
     }
 
     /// The events of one generation, as they come: the text and the
@@ -382,7 +341,7 @@ impl AiProvider for OpenAi {
     /// before its done event, which its failure replaces.
     fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
         let checked = checked_stream(stream::events(self, request), request, NAME, refusal);
-        stream::leaving(checked, &self.exit)
+        roomkit_providers_client::stream::leaving(checked, &self.exit)
     }
 }
 
@@ -390,29 +349,7 @@ impl AiProvider for OpenAi {
 /// `OpenAi::replaying`).
 #[cfg(feature = "replay")]
 #[doc(hidden)]
-#[derive(Clone, Debug, Default)]
-pub struct ReplayWaits(Arc<std::sync::Mutex<Vec<f64>>>);
-
-#[cfg(feature = "replay")]
-impl ReplayWaits {
-    fn keep(&self, seconds: f64) {
-        let mut waits = self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        waits.push(seconds);
-    }
-
-    /// The waits so far, in seconds, in the order they were asked.
-    #[must_use]
-    pub fn taken(&self) -> Vec<f64> {
-        let waits = self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        waits.clone()
-    }
-}
+pub use roomkit_providers_client::ReplayWaits;
 
 impl fmt::Debug for OpenAi {
     /// The configuration's `Debug` form: neither the key nor what a base
@@ -421,7 +358,7 @@ impl fmt::Debug for OpenAi {
         f.debug_struct("OpenAi")
             .field("config", &self.config)
             .field("own_endpoint", &self.own_endpoint)
-            .field("timeouts", &self.timeouts)
+            .field("timeouts", &self.client.timeouts())
             .finish_non_exhaustive()
     }
 }

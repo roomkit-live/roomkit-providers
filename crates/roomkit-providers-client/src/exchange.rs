@@ -12,25 +12,29 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
 
+use crate::client::Client;
 use crate::failure::Failure;
-use crate::provider::{JSON, OpenAi};
-use crate::retry;
 
 /// The most bytes of an answer read whole: a server that sends more fails
 /// the request.
-pub(crate) const ANSWER_LIMIT: usize = 4 * 1024 * 1024;
+pub const ANSWER_LIMIT: usize = 4 * 1024 * 1024;
 
-/// A wait the provider takes between two tries.
-type Wait = Pin<Box<dyn Future<Output = ()> + Send>>;
+/// What a request with a body says its body is, unless a header of the
+/// provider's says otherwise.
+const JSON: &str = "application/json";
+
+/// A wait a client takes between two tries.
+pub type Wait = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 /// The clock a `retry-after` date is read against, and the wait between
-/// two tries: the system's, which a test replaces.
+/// two tries: the system's, which a test replaces
+/// ([`Client::set_pace`]).
 #[derive(Clone)]
-pub(crate) struct Pace {
+pub struct Pace {
     /// The seconds since 1970.
-    pub(crate) now: Arc<dyn Fn() -> f64 + Send + Sync>,
+    pub now: Arc<dyn Fn() -> f64 + Send + Sync>,
     /// Waits before the next try.
-    pub(crate) wait: Arc<dyn Fn(Duration) -> Wait + Send + Sync>,
+    pub wait: Arc<dyn Fn(Duration) -> Wait + Send + Sync>,
 }
 
 impl Default for Pace {
@@ -46,13 +50,23 @@ impl Default for Pace {
     }
 }
 
-/// What is asked of the endpoint.
-#[derive(Clone, Copy)]
-pub(crate) enum Call<'b> {
-    /// A completion: the body of its request.
-    Chat(&'b [u8]),
-    /// The models the endpoint lists.
-    Models,
+impl std::fmt::Debug for Pace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Pace").finish_non_exhaustive()
+    }
+}
+
+/// What is asked of an endpoint: one request, as each of its tries sends
+/// it.
+#[derive(Clone, Copy, Debug)]
+pub struct Call<'a> {
+    /// Where the request is sent.
+    pub url: &'a reqwest::Url,
+    /// The headers the request carries. One with a body also says that its
+    /// body is JSON, unless a header here already says what it is.
+    pub headers: &'a HeaderMap,
+    /// The body of a `POST`, a JSON document; `None` for a `GET`.
+    pub body: Option<&'a [u8]>,
 }
 
 /// How a try ended without an answer.
@@ -71,10 +85,18 @@ enum Unread {
     Lost(reqwest::Error),
 }
 
-impl OpenAi {
+impl Client {
     /// Sends `call` until a whole answer comes or no try is left: the
-    /// answer's body, and whether the server said it is JSON.
-    pub(crate) async fn send(&self, call: Call<'_>) -> Result<(Vec<u8>, bool), Failure> {
+    /// answer's body, within [`ANSWER_LIMIT`], and whether the server said
+    /// it is JSON.
+    ///
+    /// # Errors
+    ///
+    /// The failure that ended the request: one that could not be built, a
+    /// connection lost or an answer that did not come in time once no try
+    /// is left, a redirect, a status the provider reads as a refusal, or an
+    /// answer past [`ANSWER_LIMIT`].
+    pub async fn send(&self, call: Call<'_>) -> Result<(Vec<u8>, bool), Failure> {
         let mut retries_taken = 0;
         loop {
             match self.whole(call, retries_taken).await {
@@ -101,12 +123,7 @@ impl OpenAi {
         match failed {
             Failed::Final(error) => Err(error),
             Failed::Again(wait) => {
-                tracing::info!(
-                    target: "roomkit::providers::openai",
-                    retries_taken = *retries_taken,
-                    ?wait,
-                    "a request is tried again"
-                );
+                (self.tried_again)(*retries_taken, wait);
                 (self.pace.wait)(wait).await;
                 *retries_taken = retries_taken.saturating_add(1);
                 Ok(())
@@ -116,7 +133,7 @@ impl OpenAi {
 
     /// Whether a try is left after `retries_taken`.
     fn left(&self, retries_taken: u32) -> bool {
-        retries_taken < self.config.max_retries
+        retries_taken < self.max_retries
     }
 
     /// The failure of a try that lost its connection: another try when one
@@ -124,7 +141,7 @@ impl OpenAi {
     fn lost(&self, error: &reqwest::Error, retries_taken: u32) -> Failed {
         if self.left(retries_taken) {
             let now = (self.pace.now)();
-            Failed::Again(retry::delay(retries_taken, None, now))
+            Failed::Again(self.retry.delay(retries_taken, None, now))
         } else {
             Failed::Final(Failure::transport(error))
         }
@@ -156,15 +173,15 @@ impl OpenAi {
         whole: bool,
     ) -> Result<reqwest::Response, Failed> {
         let now = (self.pace.now)();
-        let mut headers = self.headers.clone();
-        let request = match call {
-            Call::Chat(body) => {
-                // A configured header replaces the provider's own.
+        let mut headers = call.headers.clone();
+        let request = match call.body {
+            Some(body) => {
+                // A header of the provider's replaces the client's own.
                 let kind = headers.entry(CONTENT_TYPE);
                 kind.or_insert(HeaderValue::from_static(JSON));
-                self.client.post(self.chat.clone()).body(body.to_vec())
+                self.http.post(call.url.clone()).body(body.to_vec())
             }
-            Call::Models => self.client.get(self.models.clone()),
+            None => self.http.get(call.url.clone()),
         };
         let response = match request.headers(headers).send().await {
             Ok(response) => response,
@@ -180,8 +197,9 @@ impl OpenAi {
         if status.is_success() {
             return Ok(response);
         }
-        if self.left(retries_taken) && retry::should_retry(status, response.headers(), now) {
-            let wait = retry::delay(retries_taken, Some(response.headers()), now);
+        let answered = response.headers();
+        if self.left(retries_taken) && self.retry.should_retry(status, answered, now) {
+            let wait = self.retry.delay(retries_taken, Some(answered), now);
             return Err(Failed::Again(wait));
         }
         // An error body past what a request reads still keeps its status,
@@ -192,12 +210,19 @@ impl OpenAi {
             Err(Unread::Lost(error)) if whole => return Err(self.lost(&error, retries_taken)),
             Err(Unread::Lost(error)) => return Err(Failed::Final(Failure::transport(&error))),
         };
-        Err(Failed::Final(Failure::status(status.as_u16(), &body)))
+        // A redirect is a failure: it is not followed.
+        let failure = if status.is_redirection() {
+            Failure::redirect(status.as_u16())
+        } else {
+            (self.refused)(status.as_u16(), &body)
+        };
+        Err(Failed::Final(failure))
     }
 }
 
 /// Whether the server says its answer is JSON.
-pub(crate) fn is_json(headers: &HeaderMap) -> bool {
+#[must_use]
+pub fn is_json(headers: &HeaderMap) -> bool {
     let kind = headers.get(CONTENT_TYPE);
     let kind = kind.and_then(|value| value.to_str().ok());
     kind.is_some_and(|value| value.trim_start().starts_with("application/json"))

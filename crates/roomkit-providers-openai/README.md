@@ -330,8 +330,9 @@ backoff" is a new try after the backoff's wait:
 | a date with single-digit fields (`Thu, 1 Jan 2026 0:0:7 GMT`) | read | no date: the backoff |
 | a date whose day is past its month (`32 Jan`) | the first day of the next month, too far to wait for: gives the request up | no date: the backoff |
 
-It depends on `roomkit-providers-llm` and `roomkit-providers-http`, and on
-neither Python nor RoomKit.
+It depends on `roomkit-providers-llm` and on `roomkit-providers-client`, the
+HTTP client every provider of this repository is built on, and on neither
+Python nor RoomKit.
 
 ## Where the configuration differs from Python's
 
@@ -401,10 +402,11 @@ Three members say how a replay takes a case:
 
 The crate's tests read every case with `OpenAiConfig` and the contract's
 types, and require every kind of case: a regenerated fixture that loses one
-fails. Every case is replayed against the provider: the requests it sends,
-the tries and the waits, and what it gives are compared with Python's: the
-response, the events in their order, the text, the models, and a failure
-with what the stream gave before it. The fake serves a stream read by read,
+fails. Every case is replayed against the provider, by the harness of
+`roomkit-providers-client`: the requests it sends, the tries and the waits,
+and what it gives are compared with Python's: the response, the events in
+their order, the text, the models, and a failure with what the stream gave
+before it. The fake serves a stream read by read,
 each read the bytes of one recorded chunk, written and flushed before the
 next; the replay requires that it wrote as many reads as the case records.
 An id the provider mints for a call is compared by its shape. A case the
