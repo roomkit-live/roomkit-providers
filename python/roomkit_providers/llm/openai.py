@@ -36,6 +36,12 @@ def _profile(model: str, base_url: str | None) -> dict[str, bool]:
     return {name: decided[name] for name in _PROFILED}
 
 
+def _catalogue() -> str:
+    """OpenAI's curated catalogue, as a JSON list."""
+    _process.enter()
+    return _native.openai_available_models_json()
+
+
 def _shown_url(url: str) -> str:
     """`url` as it is shown: its scheme, its host and its port. A user and a
     password, a path and a query may each hold a credential, and a URL that
@@ -189,7 +195,7 @@ class OpenAI(Provider):
     connection; so does closing a stream, or leaving it unread.
     """
 
-    _catalogue = staticmethod(_native.openai_available_models_json)
+    _catalogue = _catalogue()
 
     def __init__(self, config: OpenAIConfig | RoomKitOpenAIConfig) -> None:
         # From here on no frame holds the configuration as it shows itself.

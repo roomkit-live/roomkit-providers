@@ -10,7 +10,7 @@ what follows.
 from __future__ import annotations
 
 import time
-from collections.abc import AsyncIterator, Callable, Iterator
+from collections.abc import AsyncIterator, Iterator
 from contextlib import contextmanager, suppress
 from typing import Annotated, ClassVar
 
@@ -117,11 +117,12 @@ class Provider(AIProvider):
     first token is recorded as RoomKit's providers record it.
 
     A provider's class gives its native provider to ``__init__`` and, where
-    it has a catalogue, names what writes it in ``_catalogue``.
+    it has a catalogue, holds it in ``_catalogue``.
     """
 
-    _catalogue: ClassVar[Callable[[], str] | None] = None
-    """What writes the provider's curated catalogue, as a JSON list."""
+    _catalogue: ClassVar[str | None] = None
+    """The provider's curated catalogue, as a JSON list, read once when the
+    class is defined: reading it later asks nothing of the native module."""
 
     def __init__(self, native: _native._Provider) -> None:
         self._native = native
@@ -175,10 +176,7 @@ class Provider(AIProvider):
     def available_models(cls) -> list[ModelInfo]:
         """The provider's curated catalogue, with no request."""
         catalogue = cls._catalogue
-        if catalogue is None:
-            return []
-        _process.enter()
-        return _MODELS.validate_json(catalogue())
+        return [] if catalogue is None else _MODELS.validate_json(catalogue)
 
     async def list_models(self) -> list[ModelInfo]:
         """Every model the provider lists, filled from its catalogue where

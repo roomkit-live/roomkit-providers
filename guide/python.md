@@ -215,9 +215,10 @@ between Rust and Python, not one each.
 - **A forked process.** A child forked after its parent's first call cannot
   use a provider: the threads that carry the calls are not copied. The
   package refuses it in Python, with a `RuntimeError`, before it enters the
-  native code: a call, a stream, a listing, the catalogue, a new provider or
-  a new configuration. What a provider it inherited says of itself still
-  answers, `close()` does nothing, and the child's exit waits for nothing.
+  native code: a call, a stream, a listing, a new provider or a new
+  configuration. What a provider it inherited says of itself still
+  answers, and so does the catalogue (`available_models()`); `close()` does
+  nothing, and the child's exit waits for nothing.
   Make the first call after forking, or use the `spawn` or `forkserver`
   start method.
 

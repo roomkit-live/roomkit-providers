@@ -373,7 +373,6 @@ class ForkTests(ChildProcess):
                     lambda: asyncio.run(provider.list_models()),
                     lambda: asyncio.run(reads(provider.generate_structured_stream(HELLO))),
                     lambda: asyncio.run(reads(provider.generate_stream(HELLO))),
-                    lambda: OpenAI.available_models(),
                     lambda: OpenAI(OpenAIConfig(**local_config(fake.port))),
                     lambda: OpenAIConfig(api_key="placeholder-not-a-key", model="gpt-5.1"),
                 ):
@@ -386,10 +385,12 @@ class ForkTests(ChildProcess):
                     else:
                         refused.append("not refused")
                 # What a provider says of itself was read when it was built,
-                # and closing it does nothing, without failing.
+                # and its catalogue when its class was defined; closing it
+                # does nothing, without failing.
                 said = (provider.name, provider.model_name, provider.supports_vision)
+                listed = len(OpenAI.available_models())
                 closed = asyncio.run(provider.close())
-                queue.put((refused, said, closed))
+                queue.put((refused, said, listed, closed))
 
             answers(fake)
             assert asyncio.run(ask(provider)) == "Yes."
@@ -397,9 +398,10 @@ class ForkTests(ChildProcess):
             queue = context.Queue()
             process = context.Process(target=child, args=(queue,))
             process.start()
-            refused, said, closed = queue.get(timeout=30)
+            refused, said, listed, closed = queue.get(timeout=30)
             process.join(30)
-            assert refused == [True] * 7, refused
+            assert refused == [True] * 6, refused
+            assert listed == len(OpenAI.available_models()) > 0, listed
             assert said == ("OpenAIAIProvider", "local-model", provider.supports_vision), said
             assert closed is None
             # Its exit entered nothing either.

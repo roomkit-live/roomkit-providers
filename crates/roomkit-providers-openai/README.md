@@ -173,7 +173,9 @@ catalogue, with no request.
   certificate is signed by a private authority cannot be reached, whatever
   the system's store or `SSL_CERT_FILE` hold, which Python's client reads.
 - **Idle connections** are kept 5 seconds, 100 of them for a host at most,
-  as Python's client keeps them.
+  as Python's client keeps them. The connections in use are not capped: the
+  HTTP client has no such bound, where Python's client holds 1,000 at most
+  and makes the calls past them wait.
 - **No compressed answer.** The client sends no `accept-encoding`, whatever
   compression a host's build turns on in the HTTP client, so a server has no
   reason to compress. An answer compressed all the same is not decompressed:
