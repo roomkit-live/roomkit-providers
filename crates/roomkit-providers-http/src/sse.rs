@@ -7,6 +7,15 @@
 //! growing the memory: a line, an event's data and the whole stream, each
 //! failing the turn once passed, so that a line that never ends, or events
 //! that never stop, are cut.
+//!
+//! The reader is narrower than the format on three points:
+//!
+//! - a `\r` ends a line only before a `\n`, or as the answer's last byte:
+//!   elsewhere it stays in its line;
+//! - a byte order mark at the start of the answer is not dropped: the line
+//!   it starts is read as a field other than `data`, and skipped;
+//! - a `data` line without a colon, which the format reads as an empty line
+//!   of data, is skipped as another field is.
 
 use crate::SseError;
 
@@ -78,17 +87,20 @@ impl Events {
     }
 
     /// The data of the event the answer's end cut, if any: an answer that
-    /// ends without its blank line.
+    /// ends without its blank line, or on a `\r` whose `\n` never came.
     ///
     /// # Errors
     ///
     /// As [`feed`](Self::feed), for the last line.
     pub fn finish(&mut self) -> Result<Option<String>, SseError> {
         let line = std::mem::take(&mut self.line);
-        if !line.is_empty() {
-            self.take_line(&line)?;
+        if line.is_empty() {
+            return Ok(self.data.take());
         }
-        Ok(self.data.take())
+        // The last line ends the event (a lone `\r`), or is the last of the
+        // event the answer's end cuts.
+        let ended = self.take_line(&line)?;
+        Ok(ended.or_else(|| self.data.take()))
     }
 
     fn grow_line(&mut self, bytes: &[u8]) -> Result<(), SseError> {
@@ -156,6 +168,148 @@ mod tests {
         let mut events = Events::new(1024);
         assert_eq!(events.feed(b"data: last").unwrap(), Vec::<String>::new());
         assert_eq!(events.finish().unwrap().as_deref(), Some("last"));
+    }
+
+    /// The events of `answer` sent in two chunks, cut at `at`, then ended.
+    fn read_in_two(answer: &[u8], at: usize) -> Result<Vec<String>, SseError> {
+        let (head, tail) = answer.split_at(at);
+        let mut events = Events::new(1024);
+        let mut read = events.feed(head)?;
+        read.extend(events.feed(tail)?);
+        read.extend(events.finish()?);
+        Ok(read)
+    }
+
+    /// An answer may end on a carriage return whose line feed never came:
+    /// the event before it is read, wherever the chunks are cut.
+    #[test]
+    fn an_event_is_read_when_the_answer_ends_on_a_lone_carriage_return() {
+        for answer in [
+            &b"data: last\r\n\r"[..],
+            b"data: last\n\r",
+            b"data: last\r",
+            b"data: first\ndata: last\n\r",
+        ] {
+            let last = if answer.starts_with(b"data: first") {
+                "first\nlast"
+            } else {
+                "last"
+            };
+            for at in 0..=answer.len() {
+                assert_eq!(
+                    read_in_two(answer, at),
+                    Ok(vec![last.to_owned()]),
+                    "{:?} cut at {at}",
+                    String::from_utf8_lossy(answer)
+                );
+            }
+        }
+        let two = b"data: one\n\ndata: two\r\n\r";
+        for at in 0..=two.len() {
+            assert_eq!(
+                read_in_two(two, at),
+                Ok(vec!["one".to_owned(), "two".to_owned()]),
+                "cut at {at}"
+            );
+        }
+    }
+
+    /// A line is decoded once it is whole: a character cut by a chunk is
+    /// read, and bytes that are no UTF-8 are refused wherever the chunks
+    /// are cut, at the answer's end too.
+    #[test]
+    fn data_that_is_no_utf_8_is_refused_whole_or_split_across_chunks() {
+        let malformed = SseError::Malformed {
+            reason: "an event's data is not UTF-8".to_owned(),
+        };
+        for answer in [
+            &b"data: \xff\n\n"[..],
+            b"data: caf\xc3\n\n",
+            b"data: \xe2\x82\n\n",
+            b"data: \xe2\x82",
+        ] {
+            for at in 0..=answer.len() {
+                assert_eq!(
+                    read_in_two(answer, at),
+                    Err(malformed.clone()),
+                    "{:?} cut at {at}",
+                    String::from_utf8_lossy(answer)
+                );
+            }
+        }
+        let answer = "data: caf\u{e9} \u{20ac}\n\n".as_bytes();
+        for at in 0..=answer.len() {
+            assert_eq!(
+                read_in_two(answer, at),
+                Ok(vec!["caf\u{e9} \u{20ac}".to_owned()]),
+                "cut at {at}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_byte_order_mark_and_a_data_line_without_a_colon_are_skipped() {
+        let mut events = Events::new(1024);
+        let marked = b"\xef\xbb\xbfdata: first\ndata: second\n\n";
+        assert_eq!(events.feed(marked).unwrap(), ["second"]);
+        let bare = b"data: one\ndata\ndata: two\n\n";
+        assert_eq!(events.feed(bare).unwrap(), ["one\ntwo"]);
+    }
+
+    #[test]
+    fn the_bounds_are_a_mebibyte_for_a_line_and_an_event_and_256_for_a_stream() {
+        assert_eq!(LINE_LIMIT, 1_048_576);
+        assert_eq!(EVENT_LIMIT, 1_048_576);
+        assert_eq!(STREAM_LIMIT, 268_435_456);
+    }
+
+    #[test]
+    fn a_stream_is_read_to_its_bound_and_refused_one_byte_past_it() {
+        let mut events = Events::new(16);
+        assert_eq!(events.feed(b"data: 12345678\n\n").unwrap(), ["12345678"]);
+        assert_eq!(
+            events.feed(b"\n"),
+            Err(SseError::AnswerTooLong { limit: 16 })
+        );
+        let mut events = Events::new(16);
+        assert_eq!(
+            events.feed(b"data: 123456789\n\n"),
+            Err(SseError::AnswerTooLong { limit: 16 })
+        );
+    }
+
+    #[test]
+    fn a_line_is_read_to_its_bound_and_refused_one_byte_past_it() {
+        let too_long = Err(SseError::StreamLineTooLong { limit: LINE_LIMIT });
+        let line = |length: usize| format!("data:{}\n\n", "x".repeat(length - 5));
+        let mut events = Events::new(usize::MAX);
+        let read = events.feed(line(LINE_LIMIT).as_bytes()).unwrap();
+        let lengths: Vec<usize> = read.iter().map(String::len).collect();
+        assert_eq!(lengths, [LINE_LIMIT - 5]);
+        let mut events = Events::new(usize::MAX);
+        assert_eq!(events.feed(line(LINE_LIMIT + 1).as_bytes()), too_long);
+        // The bound is the line's, however many chunks bring it.
+        let mut events = Events::new(usize::MAX);
+        assert_eq!(events.feed(&vec![b'x'; LINE_LIMIT]), Ok(Vec::new()));
+        assert_eq!(events.feed(b"x"), too_long);
+    }
+
+    /// The line break that joins two data lines counts in the event.
+    #[test]
+    fn an_event_is_read_to_its_bound_and_refused_one_byte_past_it() {
+        let event = |second: usize| {
+            let first = "x".repeat(EVENT_LIMIT - 10);
+            format!("data:{first}\ndata:{}\n\n", "x".repeat(second))
+        };
+        let mut events = Events::new(usize::MAX);
+        let read = events.feed(event(9).as_bytes()).unwrap();
+        let lengths: Vec<usize> = read.iter().map(String::len).collect();
+        assert_eq!(lengths, [EVENT_LIMIT]);
+        let mut events = Events::new(usize::MAX);
+        assert_eq!(
+            events.feed(event(10).as_bytes()),
+            Err(SseError::StreamEventTooLong { limit: EVENT_LIMIT })
+        );
     }
 
     /// A server that sends a line without end is cut at the line's bound,

@@ -6,17 +6,17 @@ yanked = "deny"
 
 [licenses]
 # Unicode-3.0 covers the crates that hold or read Unicode data: the ICU crates
-# behind the URL parser, unicode-ident behind the derive macros, and this
-# repository's contract crate, whose table of printable characters ships that
-# data's notice (LICENSE-UNICODE).
+# behind the URL parser, unicode-ident behind the derive macros, and the two
+# crates of this repository that ship that data's notice (LICENSE-UNICODE):
+# the contract crate for its table of printable characters, the HTTP support
+# crate for its list of the characters that normalize to a URL's delimiter.
 allow = ["MIT", "Apache-2.0", "Unicode-3.0"]
 # Any other license is allowed for the one crate that needs it.
 exceptions = [
     # The hasher of serde_json's ordered map (its `preserve_order` feature).
     { crate = "foldhash", allow = ["Zlib"] },
-    # The HTTP client's TLS, behind roomkit-providers-http: ring, the
-    # cryptography of rustls, its certificate checks and the reader ring
-    # parses with.
+    # The TLS configuration of roomkit-providers-http: ring, the cryptography
+    # of rustls, its certificate checks and the reader ring parses with.
     { crate = "ring", allow = ["ISC"] },
     { crate = "rustls-webpki", allow = ["ISC"] },
     { crate = "untrusted", allow = ["ISC"] },
@@ -24,9 +24,6 @@ exceptions = [
     { crate = "subtle", allow = ["BSD-3-Clause"] },
     # The public web PKI roots a server is checked against: certificate data.
     { crate = "webpki-roots", allow = ["CDLA-Permissive-2.0"] },
-    # The same data, compiled into the client's platform verifier, which the
-    # configuration the providers give it leaves unused.
-    { crate = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] },
 ]
 confidence-threshold = 0.9
 

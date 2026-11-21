@@ -4,20 +4,25 @@ description = "Outbound URL validation and shared HTTP support for model provide
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+# MIT, and the Unicode License V3 for the list of the characters that
+# normalize to a URL's delimiter, which is derived from Unicode data
+# (src/public_url/authority.rs).
+license = "MIT AND Unicode-3.0"
 repository.workspace = true
 publish.workspace = true
 readme = "README.md"
+# What a published crate carries, both license files by name: the MIT
+# license, and the notice of the Unicode data its list is derived from.
+include = ["/LICENSE", "/LICENSE-UNICODE", "/README.md", "/src", "/tests"]
 keywords = ["llm", "ai", "provider", "http", "ssrf"]
 categories = ["web-programming::http-client"]
 
 [dependencies]
-# The URL a destination is checked as is the one the client dials: the
-# client's own parser. `rustls-no-provider` makes the client take the
-# configuration `tls_config` builds.
-reqwest = { workspace = true, features = ["rustls-no-provider"] }
 rustls = { workspace = true, features = ["ring", "std", "tls12"] }
 thiserror = { workspace = true }
+# A host is read as an HTTP client reads it: with the parser `reqwest` reads
+# a URL with, and no client in this crate's tree.
+url = { workspace = true }
 webpki-roots = { workspace = true }
 
 [dev-dependencies]

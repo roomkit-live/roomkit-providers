@@ -107,7 +107,11 @@ what RoomKit's Python `validate_public_url` decides of a table of URLs and
 addresses, with the same `PYTHON`. The script answers its own lookups from a
 table the fixture carries, and the test resolves from that table. A case
 where the crate does not decide as Python is named in the test, with the
-reason, never left out of the fixture.
+reason, never left out of the fixture. The fixture also carries the
+characters that Python's Unicode data turns into a delimiter of a URL, which
+the crate lists: the same command writes the notice of that data as
+`crates/roomkit-providers-http/LICENSE-UNICODE`, and the crate is
+`MIT AND Unicode-3.0` too.
 
 ## Implementation boundaries
 

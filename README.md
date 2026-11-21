@@ -57,6 +57,7 @@ Items 3 and 4 are not started.
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
 | `scripts/generate_printable_ranges.py` | Writes the table of the characters Python's `repr` writes as they are |
+| `scripts/unicode_notice.py` | The notice of the Unicode License V3, which the two scripts that read Python's Unicode data write as their crate's `LICENSE-UNICODE` |
 
 ## Development
 
@@ -73,6 +74,9 @@ vulnerability.
 
 [MIT](LICENSE).
 
-`roomkit-providers-core` is `MIT AND Unicode-3.0`: it holds a table derived
-from Unicode data, under the
-[Unicode License V3](crates/roomkit-providers-core/LICENSE-UNICODE).
+`roomkit-providers-core` and `roomkit-providers-http` are
+`MIT AND Unicode-3.0`: the first holds a table and the second a list derived
+from Unicode data, under the Unicode License V3, which each crate ships as
+its `LICENSE-UNICODE`
+([core](crates/roomkit-providers-core/LICENSE-UNICODE),
+[http](crates/roomkit-providers-http/LICENSE-UNICODE)).

@@ -18,6 +18,10 @@ const STRAY_BRACKET: &str = "Invalid IPv6 URL";
 /// wide and small forms of those marks, and signs such as the "account of"
 /// sign. Python's `urlsplit` refuses an authority that holds one, since a
 /// reader that normalizes it would split it elsewhere.
+///
+/// The script that writes the tests' table computes the list from Python's
+/// Unicode data, and a test holds this one against it. It is derived from
+/// Unicode data, under the notice the crate ships as `LICENSE-UNICODE`.
 pub(super) const DELIMITER_LOOKALIKES: [char; 19] = [
     '\u{2047}', '\u{2048}', '\u{2049}', '\u{2100}', '\u{2101}', '\u{2105}', '\u{2106}', '\u{2a74}',
     '\u{fe13}', '\u{fe16}', '\u{fe55}', '\u{fe56}', '\u{fe5f}', '\u{fe6b}', '\u{ff03}', '\u{ff0f}',

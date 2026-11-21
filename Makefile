@@ -50,8 +50,10 @@ hooks:
 python-forms:
 	$(PYTHON) scripts/generate_python_forms.py
 
-# Rewrites the fixture of what RoomKit's Python decides of a table of URLs.
-# The script answers its own lookups: nothing is asked of the network.
+# Rewrites the fixture of what RoomKit's Python decides of a table of URLs,
+# and the license file of the Unicode data the fixture's list of characters
+# comes from. The script answers its own lookups: nothing is asked of the
+# network.
 python-public-urls:
 	$(PYTHON) scripts/generate_python_public_urls.py
 

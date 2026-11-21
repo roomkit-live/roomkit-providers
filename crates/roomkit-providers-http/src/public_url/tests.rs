@@ -105,3 +105,66 @@ fn custom_schemes_share_the_same_leading_whitespace_rule() {
         );
     }
 }
+
+// The client's parser reads each host as a name, which the client resolves
+// by itself: the public address it spells without its dots does not stand
+// for it.
+#[test]
+fn a_name_that_spells_a_public_address_without_its_dots_is_still_resolved() {
+    let options = ValidatePublicUrlOptions::default();
+    for (uri, name) in [
+        ("http://15.0x../", "15.0x"),
+        ("http://192.10.0x.0x..../", "192.10.0x.0x"),
+    ] {
+        let mut asked = Vec::new();
+        let unanswered = validate(uri, &options, |host, port| {
+            asked.push((host.to_owned(), port));
+            Vec::new()
+        });
+        assert_eq!(
+            unanswered,
+            Err(format!("URL host '{name}' did not resolve to any address"))
+        );
+        assert_eq!(asked, [(name.to_owned(), 80)]);
+        assert_eq!(
+            validate(uri, &options, |_, _| vec!["10.0.0.5".parse().unwrap()]),
+            Err(format!(
+                "URL host '{name}' resolves to private address 10.0.0.5"
+            ))
+        );
+        assert_eq!(
+            validate(uri, &options, |_, _| vec!["93.184.216.34".parse().unwrap()]),
+            Ok(uri)
+        );
+    }
+}
+
+// No name is taken unchecked under the defaults. With a resolver that
+// answers nothing, a URL is taken only when the client's parser reads its
+// host as an address, whatever numbers, hexadecimal parts and dots the host
+// is written with.
+#[test]
+fn a_host_is_taken_without_an_answer_only_when_the_parser_reads_an_address() {
+    const PARTS: [&str; 6] = ["0", "15", "0x", "0xf", "017", "256"];
+    let options = ValidatePublicUrlOptions::default();
+    let mut hosts = vec![String::new()];
+    let mut taken = 0;
+    for _ in 0..4 {
+        hosts = hosts
+            .iter()
+            .flat_map(|host| PARTS.iter().map(move |part| format!("{host}{part}.")))
+            .collect();
+        for host in &hosts {
+            for dots in ["", ".", "..", "..."] {
+                let uri = format!("http://{}{dots}/", host.trim_end_matches('.'));
+                if validate(&uri, &options, |_, _| Vec::new()).is_err() {
+                    continue;
+                }
+                let parsed = url::Url::parse(&uri).unwrap();
+                assert!(matches!(parsed.host(), Some(url::Host::Ipv4(_))), "{uri}");
+                taken += 1;
+            }
+        }
+    }
+    assert!(taken > 0);
+}

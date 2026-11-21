@@ -78,6 +78,26 @@ fn an_application_scheme_uses_the_same_address_policy() {
     assert!(validate_public_url("service://127.0.0.1/resource", &options).is_err());
 }
 
+// Python: validate_public_url("http://127.0.01../", resolve_dns=False). The
+// dots dropped, the host is the address its short form spells: no lookup is
+// needed to refuse it.
+#[test]
+fn a_short_address_followed_by_dots_is_refused_without_a_lookup() {
+    let offline = ValidatePublicUrlOptions {
+        resolve_dns: false,
+        ..Default::default()
+    };
+    for dots in [".", "..", "..."] {
+        assert_eq!(
+            validate_public_url(&format!("http://127.0.01{dots}/"), &offline),
+            Err("URL host '127.0.01' resolves to loopback address 127.0.0.1".to_owned()),
+            "{dots}"
+        );
+    }
+    let name = "http://service.example../";
+    assert_eq!(validate_public_url(name, &offline), Ok(name));
+}
+
 // The default resolves a name. An address is judged as it is written, and
 // asks none.
 #[test]

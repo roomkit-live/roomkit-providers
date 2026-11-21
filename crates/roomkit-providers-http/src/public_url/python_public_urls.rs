@@ -46,10 +46,11 @@ const NO_IPV4: &str = "Invalid URL: invalid IPv4 address";
 /// What this crate says of a bracketed host that is no IPv6 address.
 const NO_IPV6: &str = "Invalid IPv6 host or port in URL authority";
 
-/// The cases Python takes and this crate refuses, with its words. Each is a
-/// host the client's parser reads otherwise than Python reads it: Python
-/// takes it for a name, which it does not resolve here.
+/// The cases Python takes and this crate refuses, with its words. Python
+/// takes each host for a name, which it does not resolve here.
 const STRICTER: &[(&str, &str)] = &[
+    // The client's parser refuses the host, or reads an address that is not
+    // public.
     ("number_past_the_largest_not_resolved", NO_IPV4),
     ("part_past_255_not_resolved", NO_IPV4),
     ("five_parts_not_resolved", NO_IPV4),
@@ -61,8 +62,18 @@ const STRICTER: &[(&str, &str)] = &[
         "URL host '0x' resolves to private address 0.0.0.0",
     ),
     (
+        "hexadecimal_parts_of_no_digit_private_not_resolved",
+        "URL host '0xa.0x.0x.0x' resolves to private address 10.0.0.0",
+    ),
+    (
         "punycode_that_decodes_to_nothing",
         "Invalid URL: invalid international domain name",
+    ),
+    // A name to the client's parser too, which spells a private address once
+    // its trailing dots are dropped.
+    (
+        "hexadecimal_part_of_no_digit_private_with_dots_not_resolved",
+        "URL host '10.0x' resolves to private address 10.0.0.0",
     ),
 ];
 
@@ -98,8 +109,33 @@ const OTHER_WORDS: &[(&str, &str)] = &[
     ),
 ];
 
+/// The cases Python refuses and this crate takes. Each is a host the
+/// client's parser reads as a public address, which the client dials: Python
+/// takes it for a name, asks a resolver, and gets no answer.
+const READ_AS_AN_ADDRESS: &[&str] = &["hexadecimal_parts_of_no_digit"];
+
+/// The cases both take, where this crate asks a resolver and Python asks
+/// none, with the name asked. Each is a public address followed by two dots
+/// or more: Python drops the dots and reads the address; the client's parser
+/// reads a name, which the client resolves, so the name is resolved here,
+/// without its dots, and its answers checked. The fixture's table answers
+/// what a resolver answers: the address the text spells.
+const ASKED_OF_A_RESOLVER: &[(&str, &str)] = &[
+    ("ipv4_short_public_with_dots", "1.2.3"),
+    ("ipv4_public_with_dots", "93.184.216.34"),
+];
+
+impl Fixture {
+    fn case(&self, name: &str) -> &Case {
+        let found = self.cases.iter().find(|case| case.name == name);
+        found.unwrap_or_else(|| panic!("the fixture has no case {name}"))
+    }
+}
+
 /// What the validator answers for `case`, and the names it asked for, each
-/// resolved from the fixture's table.
+/// resolved from the fixture's table. A name the table does not hold has no
+/// address: Python asked for every name the table holds and no other, so the
+/// lookup shows as a difference.
 fn decided(case: &Case, answers: &Answers) -> (Option<String>, Vec<(String, u16)>) {
     let schemes: Vec<&str> = case.allowed_schemes.iter().map(String::as_str).collect();
     let options = ValidatePublicUrlOptions {
@@ -109,13 +145,7 @@ fn decided(case: &Case, answers: &Answers) -> (Option<String>, Vec<(String, u16)
     let mut lookups = Vec::new();
     let result = validate(&case.url, &options, |host, port| {
         lookups.push((host.to_owned(), port));
-        let Some(found) = answers.get(host) else {
-            panic!(
-                "{}: the fixture has no answer for {host:?}, which would need the network",
-                case.name
-            );
-        };
-        found.clone().unwrap_or_default()
+        answers.get(host).cloned().flatten().unwrap_or_default()
     });
     if let Ok(taken) = result {
         assert_eq!(taken, case.url, "{}: a URL taken is given back", case.name);
@@ -125,7 +155,11 @@ fn decided(case: &Case, answers: &Answers) -> (Option<String>, Vec<(String, u16)
 
 /// The fixture, and the names of the cases the lists above set apart.
 fn fixture() -> (Fixture, HashSet<&'static str>) {
-    let apart = STRICTER.iter().chain(OTHER_WORDS).map(|(name, _)| *name);
+    let listed = [STRICTER, OTHER_WORDS, ASKED_OF_A_RESOLVER];
+    let named = listed
+        .iter()
+        .flat_map(|list| list.iter().map(|(name, _)| *name));
+    let apart = named.chain(READ_AS_AN_ADDRESS.iter().copied());
     (serde_json::from_str(FIXTURE).unwrap(), apart.collect())
 }
 
@@ -149,7 +183,7 @@ fn the_validator_decides_as_python_does() {
         }
     }
     assert_eq!(differing, Vec::<String>::new());
-    assert!(fixture.cases.len() >= 370, "the fixture lost cases");
+    assert!(fixture.cases.len() >= 398, "the fixture lost cases");
 }
 
 /// The characters this crate refuses in an authority are the ones Python's
@@ -160,15 +194,26 @@ fn the_characters_that_normalize_to_a_delimiter_are_python_s() {
     assert_eq!(DELIMITER_LOOKALIKES.to_vec(), fixture.delimiter_lookalikes);
 }
 
-/// The cases set apart: this crate refuses each, in its own words, and asks
-/// no name for it.
+/// The list of those characters is computed from Unicode data: the crate
+/// ships the data's notice beside its own license, in what it publishes,
+/// and declares both.
+#[test]
+fn the_crate_ships_and_declares_the_license_of_its_unicode_list() {
+    let license = include_str!("../../LICENSE-UNICODE");
+    assert!(license.starts_with("UNICODE LICENSE V3\n"));
+    assert_eq!(env!("CARGO_PKG_LICENSE"), "MIT AND Unicode-3.0");
+    let manifest = include_str!("../../Cargo.toml");
+    for shipped in ["\"/LICENSE\"", "\"/LICENSE-UNICODE\""] {
+        assert!(manifest.contains(shipped), "{shipped}");
+    }
+}
+
+/// The cases set apart that this crate refuses: each in its own words, and
+/// no name asked for it.
 #[test]
 fn the_cases_set_apart_are_refused_in_this_crate_s_words() {
     let (fixture, _) = fixture();
-    let case = |name: &str| {
-        let found = fixture.cases.iter().find(|case| case.name == name);
-        found.unwrap_or_else(|| panic!("the fixture has no case {name}"))
-    };
+    let case = |name: &str| fixture.case(name);
     for (name, words) in STRICTER {
         assert!(case(name).accepted, "{name}: Python takes it");
         let (error, lookups) = decided(case(name), &fixture.answers);
@@ -188,6 +233,42 @@ fn the_cases_set_apart_are_refused_in_this_crate_s_words() {
         assert_eq!(
             (error.as_deref(), lookups),
             (Some(*words), Vec::new()),
+            "{name}"
+        );
+    }
+}
+
+/// The cases set apart that this crate takes: each without a lookup, where
+/// Python refuses a name that has no answer.
+#[test]
+fn a_host_the_parser_reads_as_a_public_address_is_taken_without_a_lookup() {
+    let (fixture, _) = fixture();
+    for name in READ_AS_AN_ADDRESS {
+        let case = fixture.case(name);
+        let python = case.error.as_deref();
+        assert!(
+            python.is_some_and(|said| said.ends_with("did not resolve to any address")),
+            "{name}: {python:?}"
+        );
+        assert_eq!(
+            decided(case, &fixture.answers),
+            (None, Vec::new()),
+            "{name}"
+        );
+    }
+}
+
+/// The cases set apart that both take: Python without a lookup, this crate
+/// once the name the client resolves has answered.
+#[test]
+fn a_public_address_followed_by_dots_is_resolved_as_the_name_the_client_reads() {
+    let (fixture, _) = fixture();
+    for (name, asked) in ASKED_OF_A_RESOLVER {
+        let case = fixture.case(name);
+        assert!(case.accepted && case.lookups.is_empty(), "{name}");
+        assert_eq!(
+            decided(case, &fixture.answers),
+            (None, vec![((*asked).to_owned(), 80)]),
             "{name}"
         );
     }

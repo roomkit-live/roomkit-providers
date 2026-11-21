@@ -78,6 +78,18 @@
         "example.123": null,
         "example.0x10": null,
         "0x": null,
+        "0xf.0x.0x.0x": null,
+        "15.0x": null,
+        "192.10.0x.0x": null,
+        "16.0x": [
+            "10.0.0.5"
+        ],
+        "1.2.3": [
+            "1.2.0.3"
+        ],
+        "93.184.216.34": [
+            "93.184.216.34"
+        ],
         "address-0.example": [
             "93.184.216.34"
         ],
@@ -650,6 +662,30 @@
         {
             "name": "leading_no_break_space",
             "url": "\u00a0https://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "leading_vertical_tab",
+            "url": "\u000bhttps://service.example/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL must have a scheme and host",
+            "lookups": []
+        },
+        {
+            "name": "leading_form_feed",
+            "url": "\fhttps://service.example/",
             "allowed_schemes": [
                 "http",
                 "https"
@@ -1930,6 +1966,30 @@
             ]
         },
         {
+            "name": "name_under_localhost_not_resolved",
+            "url": "https://sub.localhost/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "name_starting_with_localhost_not_resolved",
+            "url": "https://localhost.localdomain/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
             "name": "ipv4_two_parts",
             "url": "http://127.1/",
             "allowed_schemes": [
@@ -2143,6 +2203,173 @@
             "resolve_dns": true,
             "accepted": true,
             "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv4_short_with_a_dot_not_resolved",
+            "url": "http://127.0.01./",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '127.0.01' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_short_with_dots_not_resolved",
+            "url": "http://127.0.01../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '127.0.01' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_short_with_three_dots_not_resolved",
+            "url": "http://127.0.01.../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '127.0.01' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_short_with_dots",
+            "url": "http://127.0.01../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '127.0.01' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_hexadecimal_part_with_dots_not_resolved",
+            "url": "http://0x7f../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '0x7f' resolves to private address 0.0.0.127",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_zero_with_dots_not_resolved",
+            "url": "http://0../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '0' resolves to private address 0.0.0.0",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_three_parts_with_dots_not_resolved",
+            "url": "http://192.168.1../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '192.168.1' resolves to private address 192.168.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_octal_with_dots_not_resolved",
+            "url": "http://0177.0.0.1../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '0177.0.0.1' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "ipv4_short_public_with_dots_not_resolved",
+            "url": "http://1.2.3../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv4_short_public_with_dots",
+            "url": "http://1.2.3../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv4_public_with_dots",
+            "url": "http://93.184.216.34../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv4_short_with_dots_of_an_application",
+            "url": "service://127.0.01../resource",
+            "allowed_schemes": [
+                "service"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "URL host '127.0.01' resolves to loopback address 127.0.0.1",
+            "lookups": []
+        },
+        {
+            "name": "name_with_dots_not_resolved",
+            "url": "http://service.example../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "ipv6_with_dots_not_resolved",
+            "url": "http://[::1]../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": false,
+            "error": "Invalid IPv6 host or port in URL authority",
             "lookups": []
         },
         {
@@ -2370,6 +2597,35 @@
             "lookups": []
         },
         {
+            "name": "part_past_255_with_dots_not_resolved",
+            "url": "http://999.1.1.1../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "part_past_255_with_dots",
+            "url": "http://999.1.1.1../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '999.1.1.1' did not resolve to any address",
+            "lookups": [
+                [
+                    "999.1.1.1",
+                    80
+                ]
+            ]
+        },
+        {
             "name": "name_ending_in_a_number",
             "url": "http://example.123/",
             "allowed_schemes": [
@@ -2418,6 +2674,122 @@
         {
             "name": "hexadecimal_of_no_digit_not_resolved",
             "url": "http://0x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "hexadecimal_parts_of_no_digit",
+            "url": "http://0xf.0x.0x.0x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '0xf.0x.0x.0x' did not resolve to any address",
+            "lookups": [
+                [
+                    "0xf.0x.0x.0x",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "hexadecimal_parts_of_no_digit_not_resolved",
+            "url": "http://0xf.0x.0x.0x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "hexadecimal_parts_of_no_digit_private_not_resolved",
+            "url": "http://0xa.0x.0x.0x/",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "hexadecimal_part_of_no_digit_with_dots",
+            "url": "http://15.0x../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '15.0x' did not resolve to any address",
+            "lookups": [
+                [
+                    "15.0x",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "hexadecimal_part_of_no_digit_with_dots_not_resolved",
+            "url": "http://15.0x../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": false,
+            "accepted": true,
+            "error": null,
+            "lookups": []
+        },
+        {
+            "name": "hexadecimal_parts_of_no_digit_with_dots",
+            "url": "http://192.10.0x.0x..../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '192.10.0x.0x' did not resolve to any address",
+            "lookups": [
+                [
+                    "192.10.0x.0x",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "hexadecimal_part_of_no_digit_with_dots_answered",
+            "url": "http://16.0x../",
+            "allowed_schemes": [
+                "http",
+                "https"
+            ],
+            "resolve_dns": true,
+            "accepted": false,
+            "error": "URL host '16.0x' resolves to private address 10.0.0.5",
+            "lookups": [
+                [
+                    "16.0x",
+                    80
+                ]
+            ]
+        },
+        {
+            "name": "hexadecimal_part_of_no_digit_private_with_dots_not_resolved",
+            "url": "http://10.0x../",
             "allowed_schemes": [
                 "http",
                 "https"

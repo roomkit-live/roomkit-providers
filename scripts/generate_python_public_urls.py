@@ -16,6 +16,10 @@ Run it with a Python interpreter that has ``roomkit`` installed
 versions it was written from: the address policy follows Python's
 ``ipaddress`` module. It also records, from Python's Unicode data, the
 characters ``urlsplit`` refuses in an authority, which the crate lists.
+
+That list is derived from Unicode data, under the Unicode License V3. The
+script writes that license's notice as the license file the crate ships
+beside its own, ``LICENSE-UNICODE``.
 """
 
 from __future__ import annotations
@@ -29,9 +33,12 @@ from typing import Any
 
 import roomkit
 from roomkit.providers import validate_public_url
+from unicode_notice import UNICODE_NOTICE
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-FIXTURE = REPOSITORY / "crates/roomkit-providers-http/tests/fixtures/python_public_urls.json"
+CRATE = REPOSITORY / "crates/roomkit-providers-http"
+FIXTURE = CRATE / "tests/fixtures/python_public_urls.json"
+LICENSE = CRATE / "LICENSE-UNICODE"
 
 PUBLIC = "93.184.216.34"
 PUBLIC_V6 = "2606:4700:4700::1111"
@@ -63,6 +70,15 @@ ANSWERS: dict[str, list[str] | None] = {
     "example.123": None,
     "example.0x10": None,
     "0x": None,
+    "0xf.0x.0x.0x": None,
+    "15.0x": None,
+    "192.10.0x.0x": None,
+    "16.0x": ["10.0.0.5"],
+    # Texts a resolver reads as the address they spell. Python reads the
+    # address itself and asks for none of them; the crate asks for the ones
+    # that dots follow.
+    "1.2.3": ["1.2.0.3"],
+    PUBLIC: [PUBLIC],
 }
 
 OFFLINE = {"resolve_dns": False}
@@ -88,6 +104,8 @@ URLS: list[tuple[str, str, dict[str, Any]]] = [
     ("leading_tab", "\thttps://service.example/", {}),
     ("leading_line_break", "\r\nhttps://service.example/", {}),
     ("leading_no_break_space", "\u00a0https://service.example/", {}),
+    ("leading_vertical_tab", "\x0bhttps://service.example/", {}),
+    ("leading_form_feed", "\x0chttps://service.example/", {}),
     ("path_past_ascii", "https://service.example/caf\u00e9?q=\u00e9t\u00e9", {}),
     ("underscore_in_a_name", "https://a_b.example/", {}),
     ("hyphen_first_in_a_name", "https://-a.example/", {}),
@@ -201,6 +219,12 @@ URLS: list[tuple[str, str, dict[str, Any]]] = [
     ("localhost_after_its_port", "https://localhost:99999/", {}),
     ("name_under_localhost", "https://sub.localhost/", {}),
     ("name_starting_with_localhost", "https://localhost.localdomain/", {}),
+    ("name_under_localhost_not_resolved", "https://sub.localhost/", OFFLINE),
+    (
+        "name_starting_with_localhost_not_resolved",
+        "https://localhost.localdomain/",
+        OFFLINE,
+    ),
     # An IPv4 address in the forms a resolver reads.
     ("ipv4_two_parts", "http://127.1/", {}),
     ("ipv4_one_number", "http://2130706433/", {}),
@@ -220,6 +244,26 @@ URLS: list[tuple[str, str, dict[str, Any]]] = [
     ("ipv4_hexadecimal_mark_in_upper_case", "http://0X7F.1/", {}),
     ("ipv4_with_dots", "http://127.0.0.1../", {}),
     ("ipv4_public_with_a_dot", f"http://{PUBLIC}./", {}),
+    # An address followed by dots: the dots dropped, Python reads the address
+    # and asks no resolver.
+    ("ipv4_short_with_a_dot_not_resolved", "http://127.0.01./", OFFLINE),
+    ("ipv4_short_with_dots_not_resolved", "http://127.0.01../", OFFLINE),
+    ("ipv4_short_with_three_dots_not_resolved", "http://127.0.01.../", OFFLINE),
+    ("ipv4_short_with_dots", "http://127.0.01../", {}),
+    ("ipv4_hexadecimal_part_with_dots_not_resolved", "http://0x7f../", OFFLINE),
+    ("ipv4_zero_with_dots_not_resolved", "http://0../", OFFLINE),
+    ("ipv4_three_parts_with_dots_not_resolved", "http://192.168.1../", OFFLINE),
+    ("ipv4_octal_with_dots_not_resolved", "http://0177.0.0.1../", OFFLINE),
+    ("ipv4_short_public_with_dots_not_resolved", "http://1.2.3../", OFFLINE),
+    ("ipv4_short_public_with_dots", "http://1.2.3../", {}),
+    ("ipv4_public_with_dots", f"http://{PUBLIC}../", {}),
+    (
+        "ipv4_short_with_dots_of_an_application",
+        "service://127.0.01../resource",
+        {**SERVICE, **OFFLINE},
+    ),
+    ("name_with_dots_not_resolved", "http://service.example../", OFFLINE),
+    ("ipv6_with_dots_not_resolved", "http://[::1]../", OFFLINE),
     # An IPv6 address in the spellings that name the same one.
     ("ipv6_with_zeros", "https://[::0001]/", {}),
     ("ipv6_run_in_the_middle", "https://[0::1]/", {}),
@@ -240,10 +284,26 @@ URLS: list[tuple[str, str, dict[str, Any]]] = [
     ("five_parts_not_resolved", "http://1.2.3.4.5/", OFFLINE),
     ("octal_with_an_eight", "http://08.1.1.1/", {}),
     ("octal_with_an_eight_not_resolved", "http://08.1.1.1/", OFFLINE),
+    ("part_past_255_with_dots_not_resolved", "http://999.1.1.1../", OFFLINE),
+    ("part_past_255_with_dots", "http://999.1.1.1../", {}),
     ("name_ending_in_a_number", "http://example.123/", {}),
     ("name_ending_in_a_number_not_resolved", "http://example.123/", OFFLINE),
     ("hexadecimal_of_no_digit", "http://0x/", {}),
     ("hexadecimal_of_no_digit_not_resolved", "http://0x/", OFFLINE),
+    ("hexadecimal_parts_of_no_digit", "http://0xf.0x.0x.0x/", {}),
+    ("hexadecimal_parts_of_no_digit_not_resolved", "http://0xf.0x.0x.0x/", OFFLINE),
+    ("hexadecimal_parts_of_no_digit_private_not_resolved", "http://0xa.0x.0x.0x/", OFFLINE),
+    # The same followed by dots: a name, whatever address it spells without
+    # them.
+    ("hexadecimal_part_of_no_digit_with_dots", "http://15.0x../", {}),
+    ("hexadecimal_part_of_no_digit_with_dots_not_resolved", "http://15.0x../", OFFLINE),
+    ("hexadecimal_parts_of_no_digit_with_dots", "http://192.10.0x.0x..../", {}),
+    ("hexadecimal_part_of_no_digit_with_dots_answered", "http://16.0x../", {}),
+    (
+        "hexadecimal_part_of_no_digit_private_with_dots_not_resolved",
+        "http://10.0x../",
+        OFFLINE,
+    ),
     ("name_ending_in_a_hexadecimal_number", "http://example.0x10/", {}),
     ("name_ending_in_a_hexadecimal_number_not_resolved", "http://example.0x10/", OFFLINE),
     # What a name resolves to.
@@ -460,11 +520,13 @@ def main() -> None:
     FIXTURE.parent.mkdir(parents=True, exist_ok=True)
     # Escaped, so that a no-break space or a control character shows.
     FIXTURE.write_text(json.dumps(fixture, indent=4) + "\n", encoding="utf-8")
+    LICENSE.write_text(UNICODE_NOTICE, encoding="utf-8")
     taken = sum(case["accepted"] for case in cases)
     print(
         f"Wrote {FIXTURE.relative_to(REPOSITORY)}: {len(cases)} cases, {taken} taken, "
         f"from roomkit {roomkit.__version__} on Python {platform.python_version()}"
     )
+    print(f"Wrote {LICENSE.relative_to(REPOSITORY)}")
 
 
 if __name__ == "__main__":

@@ -51,8 +51,18 @@ nothing has been released yet.
   data, and the crate ships that data's license, `LICENSE-UNICODE`, beside
   its own.
 - `roomkit-providers-http`: `validate_public_url`, which checks that a URL
-  names a public destination before a transport is given it, and refuses a
-  loopback, private, reserved or multicast address however it is written or
-  resolved. It decides as `validate_public_url` of RoomKit's Python
-  implementation, in the same words, on a table of 370 URLs and addresses;
-  its README lists where it differs.
+  names a public destination before a transport is given it. It refuses a
+  host that is this machine by name, an address that is loopback, private,
+  reserved or multicast in the forms the URL parser of `reqwest` reads, and
+  a name one of whose addresses is, as it resolves when the call is made. It
+  decides as `validate_public_url` of RoomKit's Python implementation, in
+  the same words, on a table of 398 URLs and addresses. Its README lists
+  where it differs and what it does not guard: a name the client resolves
+  again, a client behind a proxy, redirects, and a name when resolution is
+  turned off.
+- `roomkit-providers-http` depends on no HTTP client: it reads a host with
+  the `url` crate, the parser `reqwest` reads a URL with.
+- `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of
+  the characters that normalize to a delimiter of a URL is derived from
+  Unicode data, and the crate ships that data's license, `LICENSE-UNICODE`,
+  beside its own.
