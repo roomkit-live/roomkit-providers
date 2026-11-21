@@ -77,7 +77,7 @@ impl AiToolCall {
 /// (RFC §6.4). Python's `CallIds`.
 ///
 /// ```
-/// use roomkit_providers_core::CallIds;
+/// use roomkit_providers_llm::CallIds;
 ///
 /// let mut ids = CallIds::new();
 /// assert_eq!(ids.call("c1", "now"), "c1");
@@ -124,7 +124,7 @@ fn minted_call_id(name: &str) -> String {
 /// whole under `raw`.
 ///
 /// ```
-/// use roomkit_providers_core::tool_arguments;
+/// use roomkit_providers_llm::tool_arguments;
 /// use serde_json::json;
 ///
 /// assert_eq!(json!(tool_arguments(r#"{"order": "42"}"#)), json!({ "order": "42" }));

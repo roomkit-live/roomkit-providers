@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use roomkit_providers_core::{AiProvider, AiRequest, ResponseSchemaFailure, StreamEvent, next};
+use roomkit_providers_llm::{AiProvider, AiRequest, ResponseSchemaFailure, StreamEvent, next};
 use serde_json::{Value, json};
 use tokio::sync::Notify;
 

@@ -1,4 +1,4 @@
-# roomkit-providers-core
+# roomkit-providers-llm
 
 Runtime-independent contracts for model providers: what a provider is asked,
 what it answers, the events of a streamed answer, typed failures and model
@@ -48,7 +48,7 @@ Every type that is a model in Python reads and writes the JSON its Python
 model gives with `model_dump(mode="json")`:
 
 ```rust
-use roomkit_providers_core::{AiMessage, AiRole};
+use roomkit_providers_llm::{AiMessage, AiRole};
 
 let message = AiMessage::new(AiRole::User, "Where is my order?");
 assert_eq!(

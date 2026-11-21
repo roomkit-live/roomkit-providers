@@ -13,7 +13,7 @@ license = "MIT AND Unicode-3.0"
 # extension links derive a table from, and the notices of its dependencies.
 license-files = [
     "LICENSE",
-    "crates/roomkit-providers-core/LICENSE-UNICODE",
+    "crates/roomkit-providers-llm/LICENSE-UNICODE",
     "crates/roomkit-providers-http/LICENSE-UNICODE",
     "python/roomkit_providers/licenses/native_dependencies.txt",
 ]

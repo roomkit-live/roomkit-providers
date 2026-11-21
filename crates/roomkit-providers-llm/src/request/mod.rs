@@ -41,7 +41,7 @@ const MASK: &str = "**********";
 /// A request is built by struct update over its defaults:
 ///
 /// ```
-/// use roomkit_providers_core::{AiMessage, AiRequest, AiRole};
+/// use roomkit_providers_llm::{AiMessage, AiRequest, AiRole};
 ///
 /// let request = AiRequest {
 ///     messages: vec![AiMessage::new(AiRole::User, "Where is my order?")],

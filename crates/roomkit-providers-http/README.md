@@ -26,7 +26,7 @@ The crate also holds what the provider crates build their HTTP on, hidden
 from its documentation: a bounded reader of server-sent events and the TLS
 configuration their clients take.
 
-It depends on neither Python nor RoomKit, nor on `roomkit-providers-core`,
+It depends on neither Python nor RoomKit, nor on `roomkit-providers-llm`,
 and on no HTTP client: it reads a URL with the `url` crate, the parser
 `reqwest` reads one with.
 

@@ -4,7 +4,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use roomkit_providers_core::{AiProvider, ProviderError};
+use roomkit_providers_llm::{AiProvider, ProviderError};
 use serde_json::json;
 
 use super::support::{
@@ -13,14 +13,14 @@ use super::support::{
 use crate::exchange::Pace;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
 use crate::replay::{drained, let_pass};
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 /// A provider behind a base URL that keeps its waits instead of taking
 /// them, pointed at a fake that answers with `replies`.
 async fn retrying(
     replies: Vec<Reply>,
     config: OpenAiConfig,
-) -> (OpenAiAiProvider, Fake, Arc<Mutex<Vec<Duration>>>) {
+) -> (OpenAi, Fake, Arc<Mutex<Vec<Duration>>>) {
     let fake = Fake::serving(replies).await;
     let mut provider = pointed(config, &fake);
     let waits = Arc::new(Mutex::new(Vec::new()));
@@ -44,7 +44,7 @@ fn retried(max_retries: u32) -> OpenAiConfig {
 
 /// The text a generation answered, or its failure, through `generate` or
 /// through its stream.
-async fn answer(provider: &OpenAiAiProvider, streamed: bool) -> Result<String, ProviderError> {
+async fn answer(provider: &OpenAi, streamed: bool) -> Result<String, ProviderError> {
     let request = hello();
     if !streamed {
         let response = provider.generate(&request).await;

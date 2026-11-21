@@ -5,13 +5,13 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use roomkit_providers_core::AiProvider;
+use roomkit_providers_llm::AiProvider;
 
 use super::Pace;
 use crate::ported::support::{KEY, elsewhere, hello, pointed};
 use crate::replay::fake::{Fake, Reply};
 use crate::replay::{let_pass, poll_once};
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 // A request that gets no answer fails once the configuration's timeout
 // passed, and not before: half of it later the request still waits, and
@@ -71,7 +71,7 @@ async fn a_connection_that_does_not_open_fails_at_the_connect_timeout() {
         timeout: READ,
         ..OpenAiConfig::new(KEY, "local-model")
     };
-    let provider = OpenAiAiProvider::new(config).unwrap();
+    let provider = OpenAi::new(config).unwrap();
     let request = hello();
     let mut asked = std::pin::pin!(provider.generate(&request));
     // The connection begins, and waits.
@@ -103,7 +103,7 @@ async fn a_request_that_cannot_be_built_is_final() {
         max_retries: 3,
         ..OpenAiConfig::new(KEY, "local-model")
     };
-    let mut provider = OpenAiAiProvider::new(config).unwrap();
+    let mut provider = OpenAi::new(config).unwrap();
     let waits = Arc::new(Mutex::new(0));
     let kept = Arc::clone(&waits);
     provider.pace = Pace {

@@ -8,7 +8,7 @@
 //! answer. Each argument text holds the mapping Python's `tool_arguments`
 //! reads it as.
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiToolCall, CallCutOptions, CallGarbledOptions, CallPartialOptions, Metadata, call_cut,
     call_garbled, call_partial, tool_arguments, unreadable_arguments,
 };

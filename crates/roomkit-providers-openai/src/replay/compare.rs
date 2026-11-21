@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::error::Error as _;
 
-use roomkit_providers_core::{ProviderError, ResponseSchemaError};
+use roomkit_providers_llm::{ProviderError, ResponseSchemaError};
 use serde::Serialize;
 use serde_json::Value;
 

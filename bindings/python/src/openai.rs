@@ -1,5 +1,5 @@
 //! The `OpenAI` provider as Python holds it; what it sends and reads stays
-//! in Rust's `OpenAiAiProvider`.
+//! in Rust's `OpenAi`.
 //!
 //! JSON text crosses, both ways, in the contract's forms: a request as one
 //! text, a whole answer as one text, and a stream, at each crossing, as the
@@ -16,8 +16,8 @@ use std::sync::{Arc, Mutex, PoisonError};
 use futures_core::Stream;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use roomkit_providers_core::{AiProvider, AiRequest, ProviderError, Yielder, items, next};
-use roomkit_providers_openai::{OpenAiAiProvider, OpenAiConfig, ReplayWaits};
+use roomkit_providers_llm::{AiProvider, AiRequest, ProviderError, Yielder, items, next};
+use roomkit_providers_openai::{OpenAi, OpenAiConfig, ReplayWaits};
 use serde::Serialize;
 use tokio::sync::Mutex as TaskMutex;
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -62,7 +62,7 @@ pub(crate) fn openai_config_form(config_json: &str) -> PyResult<String> {
 #[pyclass(name = "_OpenAIProvider", frozen, module = "roomkit_providers._native")]
 #[derive(Debug)]
 pub(crate) struct PythonOpenAiProvider {
-    provider: OpenAiAiProvider,
+    provider: OpenAi,
     /// The waits of a provider a replay drives, which takes none.
     waits: Option<ReplayWaits>,
 }
@@ -75,8 +75,7 @@ impl PythonOpenAiProvider {
     fn new(config_json: &str, api_key: &str) -> PyResult<Self> {
         let mut config = config_of(config_json)?;
         api_key.clone_into(&mut config.api_key);
-        let provider =
-            OpenAiAiProvider::new(config).map_err(|error| Failure::from(error).raised())?;
+        let provider = OpenAi::new(config).map_err(|error| Failure::from(error).raised())?;
         Ok(Self {
             provider,
             waits: None,
@@ -133,7 +132,7 @@ impl PythonOpenAiProvider {
     /// The curated catalogue as a JSON list, with no request.
     #[staticmethod]
     fn available_models_json() -> PyResult<String> {
-        let models = OpenAiAiProvider::available_models();
+        let models = OpenAi::available_models();
         written(&models, "the catalogue").map_err(Failure::raised)
     }
 
@@ -224,7 +223,7 @@ type Feed = Pin<Box<dyn Stream<Item = Item> + Send>>;
 /// The stream of `provider` answering the request `request_json` writes,
 /// owning both: each event as JSON, or each piece of text as a JSON string
 /// when `text` is set. A request that does not read is its one failure.
-fn feed(provider: OpenAiAiProvider, request_json: String, text: bool) -> Feed {
+fn feed(provider: OpenAi, request_json: String, text: bool) -> Feed {
     Box::pin(items(move |out: Yielder<Item>| async move {
         let request = match request_of(&request_json) {
             Ok(request) => request,

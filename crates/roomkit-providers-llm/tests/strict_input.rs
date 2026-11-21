@@ -2,7 +2,7 @@
 //! from an object only, a name and a `type` from a string only, and the
 //! differences from Python's reading the crate's documentation lists.
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRequest, AiResponse, AiRole,
     AiTextPart, AiThinkingPart, AiTool, AiToolCall, AiToolCallPart, AiToolResultPart, Date,
     ModelInfo, ModelPricing, ServedCall, StreamDone, StreamEvent, StreamTextDelta,

@@ -41,7 +41,7 @@ uv pip install --python .venv/bin/python ../roomkit
 | Command | Scope |
 | --- | --- |
 | `make fmt` | Format the workspace |
-| `make all` | Formatting, Clippy, tests, the examples, rustdoc, dependency policy and the core dependency allow list |
+| `make all` | Formatting, Clippy, tests, the examples, rustdoc, dependency policy and the contract crate's dependency allow list |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
 | `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed alone and tested; then `make python-roomkit-check` where `PYTHON`'s environment has RoomKit |
 | `make python-roomkit-check` | The RoomKit adapter: a wheel installed with its `roomkit` extra beside the RoomKit of `PYTHON`'s environment, the adapter's tests and its example |
@@ -99,7 +99,7 @@ Every contract type that is a model in RoomKit's Python implementation reads
 and writes the JSON that model gives with `model_dump(mode="json")`: no form
 is specific to one language. The proof is a fixture written by RoomKit's
 Python,
-`crates/roomkit-providers-core/tests/fixtures/python_forms.json`, which the
+`crates/roomkit-providers-llm/tests/fixtures/python_forms.json`, which the
 `python_forms` test reads into the Rust types and writes back.
 
 - `make all` and CI only read the fixture: they need no Python.
@@ -135,7 +135,7 @@ make printable-table PYTHON=path/to/venv/bin/python
 Run it with the Python version RoomKit is tested with; the table's header
 records the Python and Unicode versions it was written from, and carries
 the notice of the Unicode data it is derived from. The same command writes
-that notice as `crates/roomkit-providers-core/LICENSE-UNICODE`, the license
+that notice as `crates/roomkit-providers-llm/LICENSE-UNICODE`, the license
 file the crate ships beside its own: the crate is `MIT AND Unicode-3.0`.
 
 `roomkit-providers-http` is checked the same way: `make python-public-urls`
@@ -289,9 +289,9 @@ where a developer has it.
 
 ## Implementation boundaries
 
-- Keep `roomkit-providers-core` free of I/O, async runtimes, Python and
-  RoomKit dependencies. `make check-core-deps` holds its allow list; update
-  the list in the commit that changes the core's dependencies.
+- Keep `roomkit-providers-llm` free of I/O, async runtimes, Python and
+  RoomKit dependencies. `make check-contract-deps` holds its allow list; update
+  the list in the commit that changes the crate's dependencies.
 - Put dependency versions in `workspace.dependencies`; consuming crates enable
   only the features they need.
 - The host sets endpoints, credentials, timeouts and limits explicitly. A
@@ -314,6 +314,6 @@ data. Keep local files out of version control with your checkout's
 ## Commits
 
 Use `type(scope): summary`, at most 72 characters, for example
-`feat(core): add the request contract`. The hook and CI share the same
+`feat(llm): add the request contract`. The hook and CI share the same
 checker. Record user-visible changes under `Unreleased` in
 [CHANGELOG.md](CHANGELOG.md).

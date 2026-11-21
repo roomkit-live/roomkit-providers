@@ -46,7 +46,7 @@ pub const API_KEY_METADATA_KEY: &str = "api_key";
 /// the key apart.
 ///
 /// ```
-/// use roomkit_providers_core::{API_KEY_METADATA_KEY, AiRequest, request_api_key};
+/// use roomkit_providers_llm::{API_KEY_METADATA_KEY, AiRequest, request_api_key};
 ///
 /// let mut request = AiRequest::default();
 /// assert_eq!(request_api_key(&request), None);

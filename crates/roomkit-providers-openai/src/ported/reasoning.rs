@@ -2,7 +2,7 @@
 //! catalogue says of its model and what the configuration says of a server
 //! behind a base URL; and the models the endpoint refuses a turn.
 
-use roomkit_providers_core::{AiProvider, AiRequest};
+use roomkit_providers_llm::{AiProvider, AiRequest};
 use serde_json::{Value, json};
 
 use super::support::{

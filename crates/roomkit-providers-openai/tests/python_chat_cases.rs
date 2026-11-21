@@ -19,7 +19,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiRequest, AiResponse, ModelInfo, ProviderError, ProviderErrorOptions, ResponseSchemaError,
     ResponseSchemaErrorOptions, ResponseSchemaFailure, StreamEvent,
 };

@@ -13,7 +13,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
 
 use crate::failure::Failure;
-use crate::provider::{JSON, OpenAiAiProvider};
+use crate::provider::{JSON, OpenAi};
 use crate::retry;
 
 /// The most bytes of an answer read whole: a server that sends more fails
@@ -71,7 +71,7 @@ enum Unread {
     Lost(reqwest::Error),
 }
 
-impl OpenAiAiProvider {
+impl OpenAi {
     /// Sends `call` until a whole answer comes or no try is left: the
     /// answer's body, and whether the server said it is JSON.
     pub(crate) async fn send(&self, call: Call<'_>) -> Result<(Vec<u8>, bool), Failure> {

@@ -50,7 +50,7 @@
 //! exceptions in Python and have no JSON form.
 //!
 //! ```
-//! use roomkit_providers_core::{AiMessage, AiRole};
+//! use roomkit_providers_llm::{AiMessage, AiRole};
 //! use serde_json::json;
 //!
 //! let message = AiMessage::new(AiRole::User, "Where is my order?");

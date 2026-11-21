@@ -3,13 +3,13 @@
 
 use std::net::SocketAddr;
 
-use roomkit_providers_core::{AiProvider, ProviderError};
+use roomkit_providers_llm::{AiProvider, ProviderError};
 use tokio::net::TcpSocket;
 
 use super::support::{KEY, asked, elsewhere, hello, json_reply, pointed, saying, streamed};
 use crate::exchange::ANSWER_LIMIT;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 /// More bytes than the provider reads of an answer.
 const TOO_LONG: usize = ANSWER_LIMIT + 1024 * 1024;
@@ -118,7 +118,7 @@ async fn an_unreachable_endpoint_fails_the_request_without_naming_its_url() {
         base_url: Some(format!("http://{address}/v1")),
         ..OpenAiConfig::new(KEY, "local-model")
     };
-    let provider = OpenAiAiProvider::new(config).unwrap();
+    let provider = OpenAi::new(config).unwrap();
     let error = provider.generate(&hello()).await.unwrap_err();
     assert_eq!(read(&error), (true, None));
     assert_eq!(error.message, "the connection to the provider failed");

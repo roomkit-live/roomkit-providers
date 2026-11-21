@@ -718,17 +718,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "roomkit-providers-core"
-version = "0.1.0-alpha.1"
-dependencies = [
- "futures-core",
- "serde",
- "serde_json",
- "thiserror",
- "uuid",
-]
-
-[[package]]
 name = "roomkit-providers-http"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -741,14 +730,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-llm"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "futures-core",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
 name = "roomkit-providers-openai"
 version = "0.1.0-alpha.1"
 dependencies = [
  "futures-core",
  "jiff",
  "reqwest",
- "roomkit-providers-core",
  "roomkit-providers-http",
+ "roomkit-providers-llm",
  "serde",
  "serde_json",
  "tokio",

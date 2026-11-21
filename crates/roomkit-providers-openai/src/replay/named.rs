@@ -6,7 +6,7 @@
 
 use std::collections::BTreeMap;
 
-use roomkit_providers_core::{ProviderError, StreamDone, StreamEvent};
+use roomkit_providers_llm::{ProviderError, StreamDone, StreamEvent};
 
 use super::{Outcome, Replayed, fixture};
 use crate::ported::support::text_of;

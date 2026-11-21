@@ -13,7 +13,7 @@ use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use roomkit_providers_core::{ProviderError, ResponseSchemaError};
+use roomkit_providers_llm::{ProviderError, ResponseSchemaError};
 
 /// Why a call gave nothing, before it is a Python exception: a failure is
 /// built off the interpreter's lock and raised under it.

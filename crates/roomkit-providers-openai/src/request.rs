@@ -4,7 +4,7 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiRequest, AiTool, ModelInfo, ProviderError, ProviderErrorOptions, declared_parameters,
     schema_for_generate,
 };

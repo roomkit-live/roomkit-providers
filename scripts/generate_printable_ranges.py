@@ -24,7 +24,7 @@ from pathlib import Path
 from unicode_notice import UNICODE_NOTICE
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-CRATE = REPOSITORY / "crates/roomkit-providers-core"
+CRATE = REPOSITORY / "crates/roomkit-providers-llm"
 TABLE = CRATE / "src/python/printable.rs"
 LICENSE = CRATE / "LICENSE-UNICODE"
 

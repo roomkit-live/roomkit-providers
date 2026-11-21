@@ -1,7 +1,7 @@
 //! What the provider reads of a whole answer: its calls, its usage, its
 //! reasoning, and an answer constrained by a response schema.
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, Metadata, ProviderError, ResponseSchemaFailure,
 };
 use serde_json::{Map, Value, json};
@@ -12,7 +12,7 @@ use super::support::{
 };
 use crate::failure::exit::test_exit;
 use crate::replay::fake::Fake;
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 /// What the provider reads of a 200 JSON answer whose body is `body`, a
 /// failure as it leaves the provider.
@@ -229,7 +229,7 @@ fn on_for_the_official_endpoint_off_behind_a_base_url() {
             supports_response_schema_with_tools: stated,
             ..official("gpt-6-luna")
         };
-        let provider = OpenAiAiProvider::new(config).unwrap();
+        let provider = OpenAi::new(config).unwrap();
         provider.supports_response_schema_with_tools()
     };
     assert_eq!(

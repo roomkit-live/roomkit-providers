@@ -5,12 +5,12 @@ use std::collections::BTreeSet;
 
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
-use roomkit_providers_core::{AiProvider, Date};
+use roomkit_providers_llm::{AiProvider, Date};
 use serde_json::Value;
 
 use super::support::official;
 use crate::models::{entry, models};
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 /// The catalogue as Python wrote it.
 const CATALOGUE: &str = include_str!("../../catalog/models.json");
@@ -27,7 +27,7 @@ fn the_catalogue_reads_whole() {
 // Source: src/models/tests.rs::curated_catalog_is_nonempty_and_unique
 #[test]
 fn curated_catalog_is_nonempty_and_unique() {
-    let models = OpenAiAiProvider::available_models();
+    let models = OpenAi::available_models();
     assert_ne!(models, Vec::new());
     let ids: BTreeSet<&str> = models.iter().map(|model| model.id.as_str()).collect();
     assert_eq!(ids.len(), models.len(), "duplicate model ids");
@@ -91,11 +91,11 @@ fn openai_gpt_5_6_luna_has_its_smaller_untiered_context() {
 // Source: src/models/tests.rs::the_provider_reads_its_model_s_entry
 #[test]
 fn the_provider_reads_its_model_s_entry() {
-    let provider = OpenAiAiProvider::new(official("gpt-6-luna")).unwrap();
+    let provider = OpenAi::new(official("gpt-6-luna")).unwrap();
     let entry = provider.catalog_entry().unwrap();
     assert_eq!(entry.id, "gpt-6-luna");
     assert_eq!(provider.context_window(), entry.context_window);
-    let local = OpenAiAiProvider::new(OpenAiConfig::new("", "local-model")).unwrap();
+    let local = OpenAi::new(OpenAiConfig::new("", "local-model")).unwrap();
     assert_eq!(local.catalog_entry(), None);
     assert_eq!(local.context_window(), None);
 }

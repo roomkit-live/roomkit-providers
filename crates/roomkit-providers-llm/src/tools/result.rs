@@ -21,7 +21,7 @@ const IMAGE_BELOW: &str = "[see image below]";
 /// or a list of parts.
 ///
 /// ```
-/// use roomkit_providers_core::{
+/// use roomkit_providers_llm::{
 ///     AiImagePart, AiTextPart, AiToolResultPart, ToolResult, ToolResultPart,
 /// };
 ///

@@ -1,6 +1,6 @@
 //! The `OpenAI` model provider of `RoomKit` Providers.
 //!
-//! - [`OpenAiAiProvider`]: a provider for `OpenAI`'s Chat Completions and
+//! - [`OpenAi`]: a provider for `OpenAI`'s Chat Completions and
 //!   for the servers that speak it behind a base URL, Python's
 //!   `OpenAIAIProvider`. It answers a request whole or as a stream, of
 //!   events or of text, and lists the models its endpoint serves.
@@ -11,7 +11,7 @@
 //! A stream is pulled: nothing is sent before it is polled, and dropping it
 //! stops the request and closes its connection. Every size a server
 //! controls is bounded, and a stream that stalls ends at the
-//! configuration's timeout: [`OpenAiAiProvider`] says how.
+//! configuration's timeout: [`OpenAi`] says how.
 //!
 //! The provider is held to a table of cases captured on `RoomKit`'s Python
 //! provider (`tests/fixtures/python_chat_cases.json`), each with the
@@ -45,7 +45,7 @@ mod stream;
 mod think_tags;
 
 pub use config::OpenAiConfig;
-pub use provider::OpenAiAiProvider;
+pub use provider::OpenAi;
 #[cfg(feature = "replay")]
 #[doc(hidden)]
 pub use provider::ReplayWaits;

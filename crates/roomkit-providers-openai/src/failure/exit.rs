@@ -11,7 +11,7 @@
 use std::error::Error;
 use std::fmt;
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions, repr,
 };
 

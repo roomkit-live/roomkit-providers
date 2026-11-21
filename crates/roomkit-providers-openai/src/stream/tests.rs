@@ -3,8 +3,8 @@
 
 use std::time::Duration;
 
-use roomkit_providers_core::{AiProvider, StreamEvent, next};
 use roomkit_providers_http::sse::STREAM_LIMIT;
+use roomkit_providers_llm::{AiProvider, StreamEvent, next};
 use serde_json::json;
 
 use crate::OpenAiConfig;
@@ -322,7 +322,7 @@ async fn a_json_error_object_answering_a_stream_reads_as_the_status_it_names() {
         let whole = crate::ported::support::asked(reply(), &hello())
             .await
             .unwrap_err();
-        let attributes = |error: &roomkit_providers_core::ProviderError| {
+        let attributes = |error: &roomkit_providers_llm::ProviderError| {
             (
                 error.message.clone(),
                 error.status_code,

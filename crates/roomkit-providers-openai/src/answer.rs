@@ -1,7 +1,7 @@
 //! A whole answer read as the contract's response: Python's `_response_of`
 //! and the readers of the Chat Completions dialect it calls.
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiRequest, AiResponse, AiToolCall, CallGarbledOptions, CallIds, CallPartialOptions, Metadata,
     call_garbled, call_partial, check_schema_answer, tool_arguments,
 };

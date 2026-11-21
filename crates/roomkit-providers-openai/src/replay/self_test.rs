@@ -4,7 +4,7 @@
 //! which is made to serve a stream in one piece, and of a named case,
 //! which is made to differ or to do otherwise than its entry states.
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions,
     ResponseSchemaFailure, StreamEvent,
 };

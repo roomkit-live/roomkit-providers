@@ -3,12 +3,12 @@
 
 use std::time::{Duration, Instant};
 
-use roomkit_providers_core::AiProvider;
+use roomkit_providers_llm::AiProvider;
 use serde_json::json;
 
 use crate::ported::support::{KEY, hello, pointed, saying};
 use crate::replay::fake::Fake;
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 fn behind(base_url: &str) -> OpenAiConfig {
     OpenAiConfig {
@@ -42,7 +42,7 @@ fn the_debug_form_names_the_origin_the_client_dials() {
     for (base_url, origin) in dialled {
         let config = behind(base_url);
         assert_eq!(shown(&config), origin, "{base_url}");
-        let provider = OpenAiAiProvider::new(config).unwrap();
+        let provider = OpenAi::new(config).unwrap();
         let endpoint = provider.endpoint();
         let port = endpoint
             .port()
@@ -136,7 +136,7 @@ fn a_base_url_the_two_clients_read_otherwise_is_refused() {
     for (base_url, origin, why) in odd.into_iter().chain(dotted) {
         let config = behind(base_url);
         assert_eq!(shown(&config), origin, "{base_url:?}");
-        let error = OpenAiAiProvider::new(config).unwrap_err();
+        let error = OpenAi::new(config).unwrap_err();
         assert!(error.before_request && !error.retryable, "{base_url:?}");
         assert!(
             error
@@ -160,7 +160,7 @@ async fn a_timeout_the_clock_cannot_count_is_refused() {
         let mut written = json!({"api_key": KEY, "model": "local-model"});
         written[member] = json!(1e19);
         let config: OpenAiConfig = serde_json::from_value(written).unwrap();
-        let error = OpenAiAiProvider::new(config).unwrap_err();
+        let error = OpenAi::new(config).unwrap_err();
         assert_eq!(
             error.message,
             "the provider cannot be built: its timeout is longer than the clock can count"
@@ -208,7 +208,7 @@ fn a_timeout_leaves_the_clock_a_hundred_years() {
             "timeout" => config.timeout = timeout,
             _ => config.connect_timeout = timeout,
         }
-        OpenAiAiProvider::new(config)
+        OpenAi::new(config)
             .map(|_| ())
             .map_err(|error| error.message)
     };
@@ -241,7 +241,7 @@ fn the_path_of_the_api_follows_the_base_url_as_python_s_client_writes_it() {
         ),
     ];
     for (base_url, path) in paths {
-        let provider = OpenAiAiProvider::new(behind(base_url)).unwrap();
+        let provider = OpenAi::new(behind(base_url)).unwrap();
         assert_eq!(provider.endpoint().path(), path, "{base_url}");
     }
 }

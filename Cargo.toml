@@ -12,7 +12,7 @@ repository = "https://github.com/roomkit-live/roomkit-providers"
 publish = false
 
 [workspace.dependencies]
-roomkit-providers-core = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-core" }
+roomkit-providers-llm = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-llm" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 futures-core = { version = "0.3", default-features = false }
 # An HTTP date a server's `retry-after` names.

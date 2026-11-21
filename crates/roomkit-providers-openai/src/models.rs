@@ -4,7 +4,7 @@
 
 use std::sync::LazyLock;
 
-use roomkit_providers_core::ModelInfo;
+use roomkit_providers_llm::ModelInfo;
 use serde::Deserialize;
 use serde_json::Value;
 

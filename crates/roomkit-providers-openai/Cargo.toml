@@ -22,7 +22,7 @@ replay = []
 [dependencies]
 # The contract: the request a provider is given, what it answers, and the
 # JSON object a configuration's extra body is.
-roomkit-providers-core = { workspace = true }
+roomkit-providers-llm = { workspace = true }
 # The TLS configuration the client is built with.
 roomkit-providers-http = { workspace = true }
 # An HTTP date a server's `retry-after` names.

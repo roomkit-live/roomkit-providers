@@ -4,7 +4,7 @@ The OpenAI model provider of RoomKit Providers.
 
 **Early development.** The crate holds today:
 
-- `OpenAiAiProvider`, a provider for OpenAI's Chat Completions and for the
+- `OpenAi`, a provider for OpenAI's Chat Completions and for the
   servers that speak it behind a base URL. It answers a request whole
   (`generate`), as a stream of events (`generate_structured_stream`) or of
   text (`generate_stream`), and lists the models its endpoint serves
@@ -20,15 +20,15 @@ The OpenAI model provider of RoomKit Providers.
   the endpoint.
 
 ```rust
-use roomkit_providers_core::{AiMessage, AiProvider, AiRequest, AiRole};
-use roomkit_providers_openai::{OpenAiAiProvider, OpenAiConfig};
+use roomkit_providers_llm::{AiMessage, AiProvider, AiRequest, AiRole};
+use roomkit_providers_openai::{OpenAi, OpenAiConfig};
 
-async fn ask() -> Result<String, roomkit_providers_core::ProviderError> {
+async fn ask() -> Result<String, roomkit_providers_llm::ProviderError> {
     let config = OpenAiConfig {
         base_url: Some("http://localhost:11434/v1".to_owned()),
         ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
     };
-    let provider = OpenAiAiProvider::new(config)?;
+    let provider = OpenAi::new(config)?;
     let request = AiRequest {
         messages: vec![AiMessage::new(AiRole::User, "Hello")],
         ..AiRequest::default()
@@ -310,7 +310,7 @@ backoff" is a new try after the backoff's wait:
 | a date with single-digit fields (`Thu, 1 Jan 2026 0:0:7 GMT`) | read | no date: the backoff |
 | a date whose day is past its month (`32 Jan`) | the first day of the next month, too far to wait for: gives the request up | no date: the backoff |
 
-It depends on `roomkit-providers-core` and `roomkit-providers-http`, and on
+It depends on `roomkit-providers-llm` and `roomkit-providers-http`, and on
 neither Python nor RoomKit.
 
 ## Where the configuration differs from Python's

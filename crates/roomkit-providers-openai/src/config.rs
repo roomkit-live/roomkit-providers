@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::time::Duration;
 
-use roomkit_providers_core::Metadata;
+use roomkit_providers_llm::Metadata;
 
 use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint, shown_url};
 

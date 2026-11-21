@@ -2,12 +2,12 @@
 //! base URL it accepts, `OpenAI`'s own endpoint however it is written, and
 //! what its `Debug` form shows.
 
-use roomkit_providers_core::{AiProvider, AiRequest, ProviderError};
+use roomkit_providers_llm::{AiProvider, AiRequest, ProviderError};
 use serde_json::{Value, json};
 
 use super::support::{KEY, body_sent, hello, hello_with_a_tool, pointed, saying, tool};
 use crate::replay::fake::Fake;
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 /// The configuration calling `base_url` for `model`.
 fn at(base_url: Option<&str>, model: &str) -> OpenAiConfig {
@@ -57,7 +57,7 @@ async fn on_openai_s_own_endpoint_a_tool_turn_keeps_its_effort() {
 // Source: src/provider.rs::tests::the_endpoint_is_the_base_url_s_chat_completions
 #[test]
 fn the_endpoint_is_the_base_url_s_chat_completions() {
-    let provider = OpenAiAiProvider::new(at(Some("https://api.openai.com/v1/"), "gpt-4o")).unwrap();
+    let provider = OpenAi::new(at(Some("https://api.openai.com/v1/"), "gpt-4o")).unwrap();
     assert_eq!(
         provider.endpoint().as_str(),
         "https://api.openai.com/v1/chat/completions"
@@ -66,7 +66,7 @@ fn the_endpoint_is_the_base_url_s_chat_completions() {
 
 /// Why no provider is built for `base_url`.
 fn unbuilt(base_url: &str) -> ProviderError {
-    OpenAiAiProvider::new(at(Some(base_url), "gpt-4o")).unwrap_err()
+    OpenAi::new(at(Some(base_url), "gpt-4o")).unwrap_err()
 }
 
 // Source: src/provider.rs::tests::a_base_url_that_is_no_http_url_is_refused
@@ -115,7 +115,7 @@ fn a_refused_base_url_is_not_repeated() {
 #[test]
 fn the_provider_s_debug_form_hides_the_api_key_and_the_base_url_s_credentials() {
     let base_url = "https://user:placeholder-password@example.com:8443/v1";
-    let provider = OpenAiAiProvider::new(at(Some(base_url), "gpt-6-luna")).unwrap();
+    let provider = OpenAi::new(at(Some(base_url), "gpt-6-luna")).unwrap();
     let printed = format!("{provider:?}");
     for secret in [KEY, "user", "placeholder-password", "/v1"] {
         assert!(!printed.contains(secret), "{secret} in {printed}");

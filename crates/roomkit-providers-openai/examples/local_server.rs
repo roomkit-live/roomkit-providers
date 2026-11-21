@@ -14,8 +14,8 @@ use std::fmt::Write as _;
 use std::future::poll_fn;
 use std::io::Write as _;
 
-use roomkit_providers_core::{AiMessage, AiProvider, AiRequest, AiRole, StreamEvent};
-use roomkit_providers_openai::{OpenAiAiProvider, OpenAiConfig};
+use roomkit_providers_llm::{AiMessage, AiProvider, AiRequest, AiRole, StreamEvent};
+use roomkit_providers_openai::{OpenAi, OpenAiConfig};
 use serde_json::{Value, json};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -118,7 +118,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         base_url: Some(format!("http://{address}/v1")),
         ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
     };
-    let provider = OpenAiAiProvider::new(config)?;
+    let provider = OpenAi::new(config)?;
     let request = AiRequest {
         system_prompt: Some("You answer in one sentence.".to_owned()),
         messages: vec![AiMessage::new(AiRole::User, "When do you open?")],

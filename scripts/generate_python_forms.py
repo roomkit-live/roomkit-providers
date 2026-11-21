@@ -59,7 +59,7 @@ from roomkit.providers.ai import (
 )
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-FIXTURES = REPOSITORY / "crates/roomkit-providers-core/tests/fixtures"
+FIXTURES = REPOSITORY / "crates/roomkit-providers-llm/tests/fixtures"
 FORMS = FIXTURES / "python_forms.json"
 CALL_RULES = FIXTURES / "python_call_rules.json"
 

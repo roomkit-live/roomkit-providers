@@ -10,8 +10,8 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use roomkit_providers_core::{ProviderError, is_context_overflow_message};
 use roomkit_providers_http::SseError;
+use roomkit_providers_llm::{ProviderError, is_context_overflow_message};
 use serde_json::Value;
 
 use self::words::names_transient;
@@ -371,7 +371,7 @@ mod tests {
     use super::*;
 
     use super::exit::test_exit;
-    use roomkit_providers_core::ProviderError;
+    use roomkit_providers_llm::ProviderError;
 
     /// The failure of a status, as it leaves a provider whose key is the
     /// placeholder.

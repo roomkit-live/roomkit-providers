@@ -41,7 +41,7 @@ Section numbers in the code and its documentation (`RFC §6.7`) refer to the
 
 In this order:
 
-1. the contract crate, `roomkit-providers-core`: written, not released;
+1. the contract crate, `roomkit-providers-llm`: written, not released;
 2. a provider for OpenAI-compatible Chat Completions endpoints,
    `roomkit-providers-openai`: written, not released. It answers a request
    whole or as a stream and lists its endpoint's models, replaying the cases
@@ -98,9 +98,9 @@ Python provider.
 
 | Path | Contents |
 | --- | --- |
-| `crates/roomkit-providers-core` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests |
+| `crates/roomkit-providers-llm` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests |
 | `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients |
-| `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAiAiProvider`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and an example against a local server |
+| `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and an example against a local server |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter |
 | `python/roomkit_providers` | The Python package: `roomkit_providers.openai` (`OpenAIAIProvider`, `OpenAIConfig`), its errors and the typed dicts of the contract's JSON forms |
 | `python/roomkit_providers/roomkit` | The RoomKit adapter: `OpenAIAIProvider` as a RoomKit `AIProvider`, importable where RoomKit is installed |
@@ -136,11 +136,11 @@ vulnerability.
 
 [MIT](LICENSE).
 
-`roomkit-providers-core` and `roomkit-providers-http` are
+`roomkit-providers-llm` and `roomkit-providers-http` are
 `MIT AND Unicode-3.0`: the first holds a table and the second a list derived
 from Unicode data, under the Unicode License V3, which each crate ships as
 its `LICENSE-UNICODE`
-([core](crates/roomkit-providers-core/LICENSE-UNICODE),
+([llm](crates/roomkit-providers-llm/LICENSE-UNICODE),
 [http](crates/roomkit-providers-http/LICENSE-UNICODE)).
 
 The Python package links both, so it is `MIT AND Unicode-3.0` too, and ships

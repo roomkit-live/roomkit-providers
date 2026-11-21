@@ -60,7 +60,7 @@ pub struct MockAiProviderOptions {
 /// something else holds the provider.
 ///
 /// ```
-/// use roomkit_providers_core::{AiProvider, MockAiProvider, MockAiProviderOptions};
+/// use roomkit_providers_llm::{AiProvider, MockAiProvider, MockAiProviderOptions};
 ///
 /// let model = MockAiProvider::new(MockAiProviderOptions {
 ///     responses: vec!["Order 42 shipped on Monday.".into()],

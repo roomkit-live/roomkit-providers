@@ -3,7 +3,7 @@
 
 use std::error::Error as _;
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiMessage, AiProvider, AiRequest, AiResponse, AiRole, AiTool, ProviderError,
     ResponseSchemaError, ResponseSchemaFailure, StreamEvent,
 };
@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 use crate::replay::drained;
 use crate::replay::fake::{Body, Ending, Fake, Reply};
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 /// The key every test configures: a placeholder.
 pub(crate) const KEY: &str = "placeholder-not-a-key";
@@ -82,8 +82,8 @@ pub(crate) fn saying(text: &str) -> Reply {
 
 /// The provider of `config`, its requests sent to `fake`: what it knows of
 /// its endpoint stays what `config` says.
-pub(crate) fn pointed(config: OpenAiConfig, fake: &Fake) -> OpenAiAiProvider {
-    let mut provider = OpenAiAiProvider::new(config).unwrap();
+pub(crate) fn pointed(config: OpenAiConfig, fake: &Fake) -> OpenAi {
+    let mut provider = OpenAi::new(config).unwrap();
     provider.point_at(fake.address);
     provider
 }

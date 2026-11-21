@@ -12,10 +12,10 @@
 //! answer that gave no event and that the server says is JSON may be an
 //! error object in place of a stream: it reads as a whole answer's does.
 
-use roomkit_providers_core::{
+use roomkit_providers_http::sse::Events;
+use roomkit_providers_llm::{
     AiRequest, ProviderError, ProviderStream, StreamEvent, TextStream, Yielder, items, next,
 };
-use roomkit_providers_http::sse::Events;
 use serde_json::Value;
 
 use crate::answer::truthy;
@@ -23,7 +23,7 @@ use crate::exchange::{ANSWER_LIMIT, Call, is_json};
 use crate::failure::Failure;
 use crate::failure::exit::{Exit, carried};
 use crate::folding::{Folding, push_end};
-use crate::provider::{OpenAiAiProvider, unwritten};
+use crate::provider::{OpenAi, unwritten};
 
 /// What a stream of events hands next.
 type Item = Result<StreamEvent, ProviderError>;
@@ -34,10 +34,7 @@ const END_MARK: &str = "[DONE]";
 /// The events of the generation answering `request`, a failure the last
 /// of them. The failure has not left the provider yet: it is carried, for
 /// [`leaving`] to let out once the contract checked the stream.
-pub(crate) fn events<'a>(
-    provider: &'a OpenAiAiProvider,
-    request: &'a AiRequest,
-) -> ProviderStream<'a> {
+pub(crate) fn events<'a>(provider: &'a OpenAi, request: &'a AiRequest) -> ProviderStream<'a> {
     Box::pin(items(move |out: Yielder<Item>| async move {
         if let Err(failure) = read(provider, request, &out).await {
             out.give(Err(carried(failure))).await;
@@ -120,11 +117,7 @@ impl Unstreamed {
 /// is, as Python's client reads it: a page or a whole JSON body holds no
 /// event, which is a failure, the one an error object names when the body
 /// is one.
-async fn read(
-    provider: &OpenAiAiProvider,
-    request: &AiRequest,
-    out: &Yielder<Item>,
-) -> Result<(), Failure> {
+async fn read(provider: &OpenAi, request: &AiRequest, out: &Yielder<Item>) -> Result<(), Failure> {
     let body = provider.asked().body(request, true)?;
     let body = serde_json::to_vec(&body).map_err(|_| unwritten())?;
     let mut response = provider.open(Call::Chat(&body)).await?;

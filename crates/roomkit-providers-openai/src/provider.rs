@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 use reqwest::header::HeaderMap;
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
     TextStream, checked_stream, listing,
 };
@@ -96,7 +96,7 @@ pub(crate) const JSON: &str = "application/json";
 /// request is refused when the provider is built. The crate's README says
 /// each of these in full.
 #[derive(Clone)]
-pub struct OpenAiAiProvider {
+pub struct OpenAi {
     pub(crate) config: Arc<OpenAiConfig>,
     /// Where a completion is asked.
     pub(crate) chat: reqwest::Url,
@@ -116,7 +116,7 @@ pub struct OpenAiAiProvider {
     pub(crate) timeouts: Timeouts,
 }
 
-impl OpenAiAiProvider {
+impl OpenAi {
     /// The provider for `config`.
     ///
     /// # Errors
@@ -288,7 +288,7 @@ pub(crate) fn unwritten() -> Failure {
     Failure::before_request("the request could not be written as JSON")
 }
 
-impl AiProvider for OpenAiAiProvider {
+impl AiProvider for OpenAi {
     fn name(&self) -> &'static str {
         CLASS_NAME
     }
@@ -371,7 +371,7 @@ impl AiProvider for OpenAiAiProvider {
 }
 
 /// The waits a replayed provider did not take between its tries (see
-/// `OpenAiAiProvider::replaying`).
+/// `OpenAi::replaying`).
 #[cfg(feature = "replay")]
 #[doc(hidden)]
 #[derive(Clone, Debug, Default)]
@@ -398,11 +398,11 @@ impl ReplayWaits {
     }
 }
 
-impl fmt::Debug for OpenAiAiProvider {
+impl fmt::Debug for OpenAi {
     /// The configuration's `Debug` form: neither the key nor what a base
     /// URL holds beside its scheme, host and port.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("OpenAiAiProvider")
+        f.debug_struct("OpenAi")
             .field("config", &self.config)
             .field("own_endpoint", &self.own_endpoint)
             .field("timeouts", &self.timeouts)

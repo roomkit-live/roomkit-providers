@@ -1,5 +1,5 @@
 [package]
-name = "roomkit-providers-core"
+name = "roomkit-providers-llm"
 description = "Runtime-independent contracts for model providers: requests, responses, streams and failures"
 version.workspace = true
 edition.workspace = true

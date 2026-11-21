@@ -1,7 +1,7 @@
 //! What a request carries: its token bound, the switches of its
 //! configuration, and its conversation as Chat Completions messages.
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiContentPart, AiImagePart, AiMessage, AiRequest, AiRole, AiTextPart, AiThinkingPart,
     AiToolCallPart, AiToolResultPart, ToolResult, ToolResultPart,
 };

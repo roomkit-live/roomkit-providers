@@ -19,13 +19,13 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 # against.
 HAS_ROOMKIT = $(PYTHON) scripts/roomkit_env.py
 
-.PHONY: all fmt fmt-check clippy test examples doc deny check-core-deps msrv msrv-toolchain hooks \
+.PHONY: all fmt fmt-check clippy test examples doc deny check-contract-deps msrv msrv-toolchain hooks \
 	python-forms python-public-urls python-openai-config python-openai-chat-cases \
 	python-openai-catalogue \
 	printable-table named-cases \
 	python-wheel python-check python-roomkit-check python-msrv api-snapshot
 
-all: fmt-check clippy test examples doc deny check-core-deps
+all: fmt-check clippy test examples doc deny check-contract-deps
 
 fmt:
 	$(CARGO) fmt --all
@@ -66,8 +66,8 @@ deny:
 	}
 	$(CARGO) deny $(DENY_FLAGS) check
 
-check-core-deps:
-	CARGO="$(CARGO)" bash scripts/check-core-deps.sh
+check-contract-deps:
+	CARGO="$(CARGO)" bash scripts/check-contract-deps.sh
 
 msrv:
 	$(CARGO) +$(MSRV) check --workspace --all-targets --all-features --locked

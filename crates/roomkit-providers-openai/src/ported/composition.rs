@@ -3,7 +3,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use roomkit_providers_core::{AiRequest, ProviderError, StreamEvent};
+use roomkit_providers_llm::{AiRequest, ProviderError, StreamEvent};
 use serde_json::{Value, json};
 
 use super::support::{chunk, ending, events, streamed};

@@ -11,7 +11,7 @@
 
 use std::collections::BTreeSet;
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRequest, AiResponse, AiRole,
     AiTextPart, AiThinkingPart, AiTool, AiToolCall, AiToolCallPart, AiToolResultPart, Date,
     ModelInfo, ModelPricing, ServedCall, StreamDone, StreamEvent, StreamTextDelta,

@@ -7,34 +7,34 @@ nothing has been released yet.
 
 ### Added
 
-- `roomkit-providers-core`: the request a provider is given, `AiRequest`,
+- `roomkit-providers-llm`: the request a provider is given, `AiRequest`,
   with its messages (`AiMessage`, `AiRole`, `AiMessageContent`) and their
   parts: text, image, reasoning, tool call and tool result.
-- `roomkit-providers-core`: a tool as the model is told of it, `AiTool`, what
+- `roomkit-providers-llm`: a tool as the model is told of it, `AiTool`, what
   a call answered, `ToolResult`, how it ended, `ToolCallOutcome`, and
   `ValueError` for a value the contract refuses.
-- `roomkit-providers-core`: what a generation answers, `AiResponse`, with
+- `roomkit-providers-llm`: what a generation answers, `AiResponse`, with
   its calls (`AiToolCall`, `ServedCall`), the events of a structured stream
   (`StreamEvent`), and the reading of a call's id and arguments every
   provider applies (`CallIds`, `tool_arguments`, `is_truncation`).
-- `roomkit-providers-core`: a provider's call that failed, `ProviderError`,
+- `roomkit-providers-llm`: a provider's call that failed, `ProviderError`,
   with `is_context_overflow_message`.
-- `roomkit-providers-core`: the model catalogue, `ModelInfo` and
+- `roomkit-providers-llm`: the model catalogue, `ModelInfo` and
   `ModelPricing` with `cost_for`, `Date`, and the speech tags of a listing.
-- `roomkit-providers-core`: the readings of an image part a provider needs,
+- `roomkit-providers-llm`: the readings of an image part a provider needs,
   `image_part_payload`, `image_part_base64` and `image_part_uri`.
-- `roomkit-providers-core`: what a provider implements, the `AiProvider`
+- `roomkit-providers-llm`: what a provider implements, the `AiProvider`
   trait, with `DynAiProvider`, the `ProviderStream` and `TextStream` of a
   generation, and where a host leaves the credential of one request
   (`API_KEY_METADATA_KEY`).
-- `roomkit-providers-core`: the response schema, `check_portable_schema`,
+- `roomkit-providers-llm`: the response schema, `check_portable_schema`,
   `schema_mismatch` and `ResponseSchemaError`; a request read from JSON
   refuses a schema outside the portable subset.
-- `roomkit-providers-core`: the replay of a round, `round_parts`,
+- `roomkit-providers-llm`: the replay of a round, `round_parts`,
   `RoundTranscript` and `ThinkingBlocks`, the rules on a call's arguments
   (`unreadable_arguments`, `call_partial`, `call_cut`, `call_garbled`) and
   `declared_parameters`.
-- `roomkit-providers-core`: `MockAiProvider`, a provider answering from a
+- `roomkit-providers-llm`: `MockAiProvider`, a provider answering from a
   list, for tests and examples.
 - Each of these types that is a model in RoomKit's Python implementation
   reads and writes the JSON that model gives with `model_dump(mode="json")`,
@@ -46,7 +46,7 @@ nothing has been released yet.
   JSON string only, as Python reads them. A refusal that names a value quotes
   it as Python's `repr` does. The crate's documentation lists where input is
   stricter than Python's and what the JSON parser reads differently.
-- `roomkit-providers-core` is licensed `MIT AND Unicode-3.0`: its table of
+- `roomkit-providers-llm` is licensed `MIT AND Unicode-3.0`: its table of
   the characters Python's `repr` writes as they are is derived from Unicode
   data, and the crate ships that data's license, `LICENSE-UNICODE`, beside
   its own.
@@ -66,7 +66,7 @@ nothing has been released yet.
   masked. Its `Debug` form prints neither the key nor what a base URL holds
   beside its scheme, host and port, as the HTTP client reads them. The
   crate's README lists where it differs from Python's.
-- `roomkit-providers-openai`: `OpenAiAiProvider`, a provider for OpenAI's
+- `roomkit-providers-openai`: `OpenAi`, a provider for OpenAI's
   Chat Completions and the servers that speak it behind a base URL. It
   answers a request whole (`generate`), as `OpenAIAIProvider` of RoomKit's
   Python implementation does on the cases captured from it; its README lists

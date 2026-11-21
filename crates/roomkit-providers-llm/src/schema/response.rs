@@ -53,7 +53,7 @@ impl ResponseSchemaFailure {
 ///
 /// ```
 /// use std::error::Error;
-/// use roomkit_providers_core::{
+/// use roomkit_providers_llm::{
 ///     ProviderError, ResponseSchemaError, ResponseSchemaErrorOptions, ResponseSchemaFailure,
 /// };
 ///

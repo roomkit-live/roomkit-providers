@@ -8,7 +8,7 @@ use std::pin::pin;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::task::{Context, Poll, Waker};
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiRequest, AiResponse, AiToolCall, DataUriError, MockAiProvider, ModelInfo, ObjectOnly,
     ProviderError, ResponseSchemaError, ResponseSchemaFailure, StreamDone, StreamEvent, Yielder,
     check_schema_answer, checked_stream, dumps, items, listing, next, parse_data_uri, read_name,
@@ -101,8 +101,8 @@ fn a_request_s_schema_is_refused_or_carried_before_any_request() {
 
     // Without a schema, a stream is handed back untouched.
     let plain = AiRequest::default();
-    let provider = MockAiProvider::new(roomkit_providers_core::MockAiProviderOptions::default());
-    let events = roomkit_providers_core::AiProvider::generate_structured_stream(&provider, &plain);
+    let provider = MockAiProvider::new(roomkit_providers_llm::MockAiProviderOptions::default());
+    let events = roomkit_providers_llm::AiProvider::generate_structured_stream(&provider, &plain);
     let _untouched = checked_stream(events, &plain, "acme", |_: &StreamDone| None);
 }
 

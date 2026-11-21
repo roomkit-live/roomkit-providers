@@ -25,7 +25,7 @@ use std::sync::{Arc, Mutex};
 use std::task::Poll;
 use std::time::Duration;
 
-use roomkit_providers_core::{
+use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, StreamEvent, next,
 };
 use serde::Deserialize;
@@ -36,7 +36,7 @@ use self::fake::{Body, Door, Ending, Fake, Reply, Seen};
 use self::named::{Stated, named};
 use crate::exchange::Pace;
 use crate::provider::Timeouts;
-use crate::{OpenAiAiProvider, OpenAiConfig};
+use crate::{OpenAi, OpenAiConfig};
 
 const FIXTURE: &str = include_str!("../../tests/fixtures/python_chat_cases.json");
 
@@ -314,7 +314,7 @@ async fn replay_served(
         timeouts: None,
         vision: None,
     };
-    let mut provider = match OpenAiAiProvider::new(config) {
+    let mut provider = match OpenAi::new(config) {
         Ok(provider) => provider,
         Err(error) => {
             replayed.unbuilt = Some(error);
@@ -454,7 +454,7 @@ async fn the_seam_of_a_replay_outside_the_crate_does_as_this_one() {
     let config: OpenAiConfig = serde_json::from_value(dated.config.clone()).unwrap();
     let replies = dated.exchanges.iter().map(|e| reply_of(&e.response));
     let fake = Fake::serving(replies.collect()).await;
-    let provider = OpenAiAiProvider::new(config.clone()).unwrap();
+    let provider = OpenAi::new(config.clone()).unwrap();
     let (provider, waits) = provider.replaying(fake.address, CLOCK).unwrap();
     let request: AiRequest = serde_json::from_value(dated.request.clone()).unwrap();
     let response = provider.generate(&request).await.unwrap();
@@ -472,7 +472,7 @@ async fn the_seam_of_a_replay_outside_the_crate_does_as_this_one() {
             .collect(),
     )
     .await;
-    let provider = OpenAiAiProvider::new(config.clone()).unwrap();
+    let provider = OpenAi::new(config.clone()).unwrap();
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH);
     let (provider, waits) = provider
         .replaying(fake.address, now.unwrap().as_secs_f64())
@@ -484,9 +484,7 @@ async fn the_seam_of_a_replay_outside_the_crate_does_as_this_one() {
     assert!((0.375..=0.5).contains(&wait), "{wait}");
     // Nothing is sent off the machine.
     let elsewhere = "192.0.2.1:80".parse().unwrap();
-    let refused = OpenAiAiProvider::new(config)
-        .unwrap()
-        .replaying(elsewhere, CLOCK);
+    let refused = OpenAi::new(config).unwrap().replaying(elsewhere, CLOCK);
     let refused = refused.unwrap_err();
     assert!(refused.before_request && !refused.retryable);
     assert_eq!(

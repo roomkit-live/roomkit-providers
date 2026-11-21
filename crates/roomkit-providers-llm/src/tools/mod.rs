@@ -89,7 +89,7 @@ impl AiTool {
     /// their provider when it declares the tool.
     ///
     /// ```
-    /// use roomkit_providers_core::AiTool;
+    /// use roomkit_providers_llm::AiTool;
     /// use serde_json::json;
     ///
     /// let mut lookup = AiTool::new("lookup_order", "Find an order by its number")?;
@@ -98,7 +98,7 @@ impl AiTool {
     ///     .parameters
     ///     .insert("properties".into(), json!({ "order": { "type": "string" } }));
     /// assert!(AiTool::new("files read", "Reads files").is_err());
-    /// # Ok::<(), roomkit_providers_core::ValueError>(())
+    /// # Ok::<(), roomkit_providers_llm::ValueError>(())
     /// ```
     pub fn new(
         name: impl Into<String>,
@@ -135,7 +135,7 @@ pub fn some_vendor_accepts_tool_name(name: &str) -> bool {
 /// caller's own to edit.
 ///
 /// ```
-/// use roomkit_providers_core::{AiTool, declared_parameters};
+/// use roomkit_providers_llm::{AiTool, declared_parameters};
 /// use serde_json::json;
 ///
 /// let tool = AiTool::new("now", "The time it is")?;
@@ -143,7 +143,7 @@ pub fn some_vendor_accepts_tool_name(name: &str) -> bool {
 ///     json!(declared_parameters(Some(&tool.parameters))),
 ///     json!({ "type": "object", "properties": {} })
 /// );
-/// # Ok::<(), roomkit_providers_core::ValueError>(())
+/// # Ok::<(), roomkit_providers_llm::ValueError>(())
 /// ```
 #[must_use]
 pub fn declared_parameters(parameters: Option<&Map<String, Value>>) -> Map<String, Value> {

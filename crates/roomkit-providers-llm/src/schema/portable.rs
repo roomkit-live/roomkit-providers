@@ -37,7 +37,7 @@ const KEYWORDS_BY_TYPE: [(&str, &[&str]); 6] = [
 /// `description`, strings, are allowed anywhere.
 ///
 /// ```
-/// use roomkit_providers_core::check_portable_schema;
+/// use roomkit_providers_llm::check_portable_schema;
 /// use serde_json::json;
 ///
 /// let verdict = json!({
@@ -103,7 +103,7 @@ impl Default for SchemaMismatchOptions {
 /// float included, and a boolean is never a number.
 ///
 /// ```
-/// use roomkit_providers_core::{SchemaMismatchOptions, schema_mismatch};
+/// use roomkit_providers_llm::{SchemaMismatchOptions, schema_mismatch};
 /// use serde_json::json;
 ///
 /// let schema = json!({

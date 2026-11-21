@@ -5,7 +5,7 @@
 
 use std::fmt::Write as _;
 
-use roomkit_providers_core::{AiProvider, AiRequest, ProviderError, ResponseSchemaFailure};
+use roomkit_providers_llm::{AiProvider, AiRequest, ProviderError, ResponseSchemaFailure};
 use serde_json::{Value, json};
 
 use super::MESSAGE_LIMIT;
