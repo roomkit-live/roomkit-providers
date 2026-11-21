@@ -171,7 +171,9 @@ async fn an_unreachable_endpoint_fails_the_request_without_naming_its_url() {
         base_url: Some(format!("http://{address}/v1")),
         ..OpenAiConfig::new(KEY, "local-model")
     };
-    let provider = OpenAi::new(config).unwrap();
+    let mut provider = OpenAi::new(config).unwrap();
+    // Asked directly, whatever proxy the environment of the test names.
+    provider.point_at(address);
     let error = provider.generate(&hello()).await.unwrap_err();
     assert_eq!(read(&error), (true, None));
     assert_eq!(error.message, "the connection to the provider failed");

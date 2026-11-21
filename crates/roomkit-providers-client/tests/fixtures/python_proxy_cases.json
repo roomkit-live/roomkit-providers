@@ -13,12 +13,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -39,12 +43,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -61,7 +69,9 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -70,7 +80,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -91,7 +103,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -100,7 +114,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -125,7 +141,9 @@
       "host": "all.example",
       "port": 1
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -134,7 +152,9 @@
       "host": "secure.example",
       "port": 2
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -159,7 +179,9 @@
       "host": "lower.example",
       "port": 1
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -184,7 +206,9 @@
       "host": "lower.example",
       "port": 1
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -205,7 +229,9 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -230,7 +256,9 @@
       "host": "lower.example",
       "port": 1
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -247,12 +275,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -273,7 +305,9 @@
       "host": "mixed.example",
       "port": 1
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -298,7 +332,9 @@
       "host": "mixed.example",
       "port": 1
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -323,7 +359,9 @@
       "host": "last.example",
       "port": 2
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -344,12 +382,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -370,12 +412,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -396,12 +442,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -422,12 +472,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -452,12 +506,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -490,7 +548,9 @@
       "host": "all.example",
       "port": 1
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -499,7 +559,9 @@
       "host": "secure.example",
       "port": 2
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -520,7 +582,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -541,7 +605,9 @@
       "host": "proxy.example",
       "port": 80
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -558,7 +624,9 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -567,7 +635,9 @@
       "host": "proxy.example",
       "port": 443
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -588,7 +658,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -609,7 +681,9 @@
       "host": "10.0.0.7",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -630,7 +704,9 @@
       "host": "fd00::7",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -651,7 +727,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -672,7 +750,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": "user:placeholder-word"
+     "credentials": "user:placeholder-word",
+     "user": "user",
+     "password": "placeholder-word"
     },
     {
      "url": "https://llm.example/v1",
@@ -681,7 +761,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": "user:placeholder-word"
+     "credentials": "user:placeholder-word",
+     "user": "user",
+     "password": "placeholder-word"
     }
    ]
   },
@@ -702,7 +784,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": "user:pass@word:"
+     "credentials": "user:pass@word:",
+     "user": "user",
+     "password": "pass@word:"
     }
    ]
   },
@@ -723,7 +807,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": "user:"
+     "credentials": "user:",
+     "user": "user",
+     "password": ""
     }
    ]
   },
@@ -744,7 +830,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": "user:"
+     "credentials": "user:",
+     "user": "user",
+     "password": ""
     }
    ]
   },
@@ -765,7 +853,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": ":word"
+     "credentials": ":word",
+     "user": "",
+     "password": "word"
     }
    ]
   },
@@ -786,7 +876,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -807,7 +899,491 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": "user@realm:word"
+     "credentials": "user@realm:word",
+     "user": "user@realm",
+     "password": "word"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_user_holds_a_backslash",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://CORP\\jdoe:placeholder-word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "CORP\\jdoe:placeholder-word",
+     "user": "CORP\\jdoe",
+     "password": "placeholder-word"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_user_holds_an_encoded_backslash",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://CORP%5Cjdoe:placeholder-word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "CORP\\jdoe:placeholder-word",
+     "user": "CORP\\jdoe",
+     "password": "placeholder-word"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_password_holds_a_backslash",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:place\\holder@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:place\\holder",
+     "user": "user",
+     "password": "place\\holder"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_password_ends_in_a_backslash",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:placeholder\\@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:placeholder\\",
+     "user": "user",
+     "password": "placeholder\\"
+    }
+   ]
+  },
+  {
+   "name": "a_backslash_before_an_at_sign_is_in_the_password",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:word@other.example:1\\x@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:word@other.example:1\\x",
+     "user": "user",
+     "password": "word@other.example:1\\x"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_password_holds_colons",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:place:holder:@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:place:holder:",
+     "user": "user",
+     "password": "place:holder:"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_user_holds_an_encoded_colon",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us%3Aer:word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "us:er:word",
+     "user": "us:er",
+     "password": "word"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_password_holds_encoded_delimiters",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:a%2Fb%3Fc%23d%40e@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:a/b?c#d@e",
+     "user": "user",
+     "password": "a/b?c#d@e"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_credentials_are_decoded_once",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us%2565r:a%255Cb%2540c@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "us%65r:a%5Cb%40c",
+     "user": "us%65r",
+     "password": "a%5Cb%40c"
+    }
+   ]
+  },
+  {
+   "name": "a_percent_sign_that_encodes_nothing_is_kept",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us%er:100%:%zz%4%+1@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "us%er:100%:%zz%4%+1",
+     "user": "us%er",
+     "password": "100%:%zz%4%+1"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_credentials_hold_spaces",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us er:pass word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "us er:pass word",
+     "user": "us er",
+     "password": "pass word"
+    }
+   ]
+  },
+  {
+   "name": "a_plus_sign_is_no_space",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us+er:pass+word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "us+er:pass+word",
+     "user": "us+er",
+     "password": "pass+word"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_password_holds_other_signs",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:\"a'<b>^`{c}|[d]~!$&*(),;=@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:\"a'<b>^`{c}|[d]~!$&*(),;=",
+     "user": "user",
+     "password": "\"a'<b>^`{c}|[d]~!$&*(),;="
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_credentials_are_not_ascii",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://\u00fcser:p\u00e4ss\u20acword@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "\u00fcser:p\u00e4ss\u20acword",
+     "user": "\u00fcser",
+     "password": "p\u00e4ss\u20acword"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_encoded_credentials_are_utf_8",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://%C3%BCser:p%C3%A4ss%E2%82%ACword@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "\u00fcser:p\u00e4ss\u20acword",
+     "user": "\u00fcser",
+     "password": "p\u00e4ss\u20acword"
+    }
+   ]
+  },
+  {
+   "name": "encoded_credentials_that_are_no_utf_8_are_replaced",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us%FFer:%E2%82word%C0%AF%ED%A0%80%F4%90%80%80%E2@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "us\ufffder:\ufffdword\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd",
+     "user": "us\ufffder",
+     "password": "\ufffdword\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd"
+    }
+   ]
+  },
+  {
+   "name": "an_encoded_byte_joins_no_character_written_after_it",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:%C3\u00a9%E2\u20ac@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:\ufffd\u00a9\ufffd\u20ac",
+     "user": "user",
+     "password": "\ufffd\u00a9\ufffd\u20ac"
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_s_password_holds_encoded_control_characters",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:pass%0Aword%00%7F@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": "user:pass\nword\u0000\u007f",
+     "user": "user",
+     "password": "pass\nword\u0000\u007f"
+    }
+   ]
+  },
+  {
+   "name": "a_slash_in_a_proxy_s_password_ends_its_authority",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:pass/word@proxy.example:3128"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "a_slash_in_a_proxy_s_user_ends_its_authority",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us/er:word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "us",
+      "port": 80
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
+    }
+   ]
+  },
+  {
+   "name": "a_question_mark_in_a_proxy_s_password_ends_its_authority",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://user:pass?word@proxy.example:3128"
+    ]
+   ],
+   "refused": "InvalidURL",
+   "asked": []
+  },
+  {
+   "name": "a_number_sign_in_a_proxy_s_user_ends_its_authority",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://us#er:word@proxy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "us",
+      "port": 80
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -927,7 +1503,9 @@
       "host": "",
       "port": 80
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -948,7 +1526,101 @@
       "host": "xn--bcher-kva.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_whose_host_holds_a_backslash",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy.example\\.other.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example\\.other.example",
+      "port": 3128
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_whose_host_holds_a_percent_sign",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://proxy%2Eexample:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy%2eexample",
+      "port": 3128
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_whose_host_holds_a_quote",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://pro\"xy.example:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "pro\"xy.example",
+      "port": 3128
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
+    }
+   ]
+  },
+  {
+   "name": "a_proxy_whose_ipv6_address_has_a_zone",
+   "environment": [
+    [
+     "HTTPS_PROXY",
+     "http://[fe80::1%25eth0]:3128"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "https://llm.example/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "fe80::1%25eth0",
+      "port": 3128
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -969,7 +1641,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -990,7 +1664,9 @@
       "host": "proxy.example",
       "port": 70000
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1011,12 +1687,16 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -1025,7 +1705,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -1034,12 +1716,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1060,12 +1746,16 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -1074,7 +1764,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -1083,12 +1775,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1113,12 +1809,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -1127,7 +1827,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -1136,7 +1838,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
@@ -1145,7 +1849,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1166,17 +1872,23 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -1185,12 +1897,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://anexample/v1",
@@ -1199,7 +1915,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1224,7 +1942,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
@@ -1233,7 +1953,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -1242,7 +1964,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -1251,7 +1975,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
@@ -1260,7 +1986,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1285,7 +2013,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
@@ -1294,7 +2024,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -1303,7 +2035,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -1312,7 +2046,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
@@ -1321,7 +2057,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1346,7 +2084,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
@@ -1355,7 +2095,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -1364,7 +2106,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -1373,7 +2117,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
@@ -1382,7 +2128,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1407,17 +2155,23 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example./v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example./v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1442,7 +2196,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1463,7 +2219,9 @@
     {
      "url": "https://api.xn--bcher-kva.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1488,12 +2246,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://kva.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1514,17 +2276,23 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://10.0.0.1/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1545,12 +2313,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1571,12 +2343,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1597,12 +2373,16 @@
     {
      "url": "http://10.0.0.1/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://10.0.0.1:8080/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://10.0.0.11/v1",
@@ -1611,7 +2391,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://110.0.0.1/v1",
@@ -1620,7 +2402,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1641,7 +2425,9 @@
     {
      "url": "http://10.0.0.0/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://10.1.2.3/v1",
@@ -1650,7 +2436,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://11.0.0.1/v1",
@@ -1659,7 +2447,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1680,7 +2470,9 @@
     {
      "url": "http://192.168.1.7/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://192.168.1.8/v1",
@@ -1689,7 +2481,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1710,7 +2504,9 @@
     {
      "url": "http://127.0.0.1:8000/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://localhost:8000/v1",
@@ -1719,7 +2515,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://127.0.0.2/v1",
@@ -1728,7 +2526,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1749,7 +2549,9 @@
     {
      "url": "http://10.0.0.1:8080/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://10.0.0.1/v1",
@@ -1758,7 +2560,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://10.0.0.1:8081/v1",
@@ -1767,7 +2571,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1788,7 +2594,9 @@
     {
      "url": "http://[::1]:8000/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://[::2]/v1",
@@ -1797,7 +2605,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1818,7 +2628,9 @@
     {
      "url": "http://[fd00::]/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://[fd00::1]/v1",
@@ -1827,7 +2639,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1867,7 +2681,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1888,12 +2704,16 @@
     {
      "url": "http://localhost:8000/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://LOCALHOST/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://api.localhost/v1",
@@ -1902,7 +2722,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://127.0.0.1/v1",
@@ -1911,7 +2733,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1932,7 +2756,9 @@
     {
      "url": "http://localhost/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://api.localhost/v1",
@@ -1941,7 +2767,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1962,7 +2790,9 @@
     {
      "url": "http://localhost:8000/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://localhost/v1",
@@ -1971,12 +2801,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://api.localhost:8000/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -1997,17 +2831,23 @@
     {
      "url": "https://llm.example:8443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://llm.example:8443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example:8443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2016,7 +2856,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2041,7 +2883,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example:443/v1",
@@ -2050,12 +2894,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://llm.example:443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2076,12 +2924,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2102,7 +2954,9 @@
     {
      "url": "https://llm.example:8443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2111,7 +2965,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2132,7 +2988,9 @@
     {
      "url": "https://llm.example:8443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2168,7 +3026,9 @@
     {
      "url": "https://llm.example:8443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2193,7 +3053,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2202,7 +3064,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2227,12 +3091,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
@@ -2241,7 +3109,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2266,12 +3136,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2296,7 +3170,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example:443/v1",
@@ -2305,7 +3181,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2326,7 +3204,9 @@
     {
      "url": "https://llm.example:8443/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2335,7 +3215,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2360,12 +3242,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -2374,7 +3260,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -2383,7 +3271,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
@@ -2392,7 +3282,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2413,12 +3305,16 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://notllm.example/v1",
@@ -2427,7 +3323,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example.org/v1",
@@ -2436,12 +3334,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://LLM.Example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://llm.example/v1",
@@ -2450,7 +3352,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2475,12 +3379,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2505,7 +3413,9 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2514,7 +3424,9 @@
       "host": "secure.example",
       "port": 2
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2535,12 +3447,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2565,7 +3481,9 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2574,7 +3492,9 @@
       "host": "secure.example",
       "port": 2
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2599,7 +3519,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2608,7 +3530,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2629,12 +3553,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2655,7 +3583,9 @@
     {
      "url": "http://[::1]/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://[::2]/v1",
@@ -2664,7 +3594,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2700,7 +3632,9 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
@@ -2709,7 +3643,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2730,12 +3666,16 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://api.llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2756,12 +3696,16 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://other.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2786,7 +3730,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://other.example/v1",
@@ -2795,7 +3741,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2820,7 +3768,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://other.example/v1",
@@ -2829,7 +3779,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2854,7 +3806,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
@@ -2863,7 +3817,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2933,7 +3889,9 @@
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://other.example/v1",
@@ -2942,7 +3900,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2971,7 +3931,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -2988,12 +3950,16 @@
     {
      "url": "http://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -3018,7 +3984,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "https://llm.example:443/v1",
@@ -3027,12 +3995,16 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://llm.example:8080/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -3053,7 +4025,9 @@
     {
      "url": "http://[::1]/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://[0:0:0:0:0:0:0:1]/v1",
@@ -3062,7 +4036,9 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   },
@@ -3083,7 +4059,9 @@
     {
      "url": "http://127.0.0.1/v1",
      "proxy": null,
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
     },
     {
      "url": "http://127.1/v1",
@@ -3092,7 +4070,54 @@
       "host": "proxy.example",
       "port": 3128
      },
-     "credentials": null
+     "credentials": null,
+     "user": null,
+     "password": null
+    }
+   ]
+  },
+  {
+   "name": "an_address_written_short_exempts_the_endpoint_written_as_it_is",
+   "environment": [
+    [
+     "ALL_PROXY",
+     "http://proxy.example:3128"
+    ],
+    [
+     "NO_PROXY",
+     "127.1"
+    ]
+   ],
+   "refused": null,
+   "asked": [
+    {
+     "url": "http://127.1/v1",
+     "proxy": null,
+     "credentials": null,
+     "user": null,
+     "password": null
+    },
+    {
+     "url": "http://127.0.0.1/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
+    },
+    {
+     "url": "http://127.2/v1",
+     "proxy": {
+      "scheme": "http",
+      "host": "proxy.example",
+      "port": 3128
+     },
+     "credentials": null,
+     "user": null,
+     "password": null
     }
    ]
   }

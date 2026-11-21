@@ -20,6 +20,7 @@
 use std::env;
 use std::ffi::OsString;
 use std::io::Write as _;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
@@ -37,6 +38,11 @@ const CHILD: &str = "a_child_asks_what_its_parent_tells_it";
 
 /// The variable that holds the URLs a child asks, between spaces.
 const ASKS: &str = "ROOMKIT_PROVIDERS_TEST_ASKS";
+
+/// The variable that has a child point its client at a local fake before
+/// it asks, and says through which seam: `test` or `replay`, a space, then
+/// the address of the fake.
+const SEAM: &str = "ROOMKIT_PROVIDERS_TEST_SEAM";
 
 /// What starts a line a child writes for its parent.
 const MARK: &str = "came-of-it\t";
@@ -76,14 +82,32 @@ fn left(failure: &Failure) -> Value {
     })
 }
 
+/// Points `client` at the fake `seam` names, through the seam it names: a
+/// test's, or a replay's. `url`, which the client is about to ask, is sent
+/// there.
+fn pointed(client: &mut Client, url: &mut reqwest::Url, seam: &str) {
+    let (seam, fake) = seam.split_once(' ').unwrap();
+    let fake: SocketAddr = fake.parse().unwrap();
+    match seam {
+        "test" => assert!(client.pointed_at([url], fake)),
+        #[cfg(feature = "replay")]
+        "replay" => {
+            roomkit_providers_client::replayed_at([url], fake).unwrap();
+            client.replaying(0.0);
+        }
+        _ => unreachable!("a parent names one of the seams, not {seam}"),
+    }
+}
+
 // Run by the other tests alone, each in the environment it gives its child:
 // builds a client there, asks each URL once, and writes a line for each.
 #[tokio::test]
 #[ignore = "the child the other tests run, each in the environment it gives it"]
 async fn a_child_asks_what_its_parent_tells_it() {
     let asks = env::var(ASKS).expect("run by another test, which says what to ask");
+    let seam = env::var(SEAM).ok();
     let mut out = std::io::stdout().lock();
-    let client = match Client::new(settings()) {
+    let mut client = match Client::new(settings()) {
         Ok(client) => client,
         Err(failure) => {
             writeln!(out, "{MARK}{}", left(&failure)).unwrap();
@@ -92,7 +116,10 @@ async fn a_child_asks_what_its_parent_tells_it() {
     };
     let headers = HeaderMap::new();
     for url in asks.split(' ').filter(|url| !url.is_empty()) {
-        let url = reqwest::Url::parse(url).unwrap();
+        let mut url = reqwest::Url::parse(url).unwrap();
+        if let Some(seam) = &seam {
+            pointed(&mut client, &mut url, seam);
+        }
         let call = Call {
             url: &url,
             headers: &headers,
@@ -221,6 +248,25 @@ async fn a_client_sends_through_the_proxy_its_environment_names_unless_no_proxy_
     assert!(!came.printed.contains("placeholder-not-a-password"));
 }
 
+// The proxies a client sends through are those it read of its environment,
+// and no other: where it reads none, the HTTP client under it does not read
+// the variables its own way. A lower-case name set to nothing unsets the
+// upper-case one, as with Python's client, where the HTTP client's own
+// reader would take the upper-case one.
+#[tokio::test]
+async fn a_client_that_reads_no_proxy_of_its_environment_sends_directly() {
+    let proxy = Fake::serving(vec![Reply::json(200, "through the proxy")]).await;
+    let endpoint = Fake::serving(vec![Reply::json(200, "directly")]).await;
+    let named = format!("http://{CREDENTIALS}@{}", proxy.address);
+    let variables = [("HTTP_PROXY", named.as_str()), ("http_proxy", "")];
+    let direct = format!("http://{}{PATH}", endpoint.address);
+    let came = child(&variables, &[direct]).await;
+    assert_eq!(came.of_each, [answered("directly")]);
+    assert!(proxy.seen().is_empty());
+    assert_eq!(endpoint.seen().len(), 1);
+    assert!(came.printed.contains("Proxies { rules: 0, proxies: 0 }"));
+}
+
 // An `https` endpoint is reached through a tunnel the proxy opens, and its
 // certificate is checked against the authority `SSL_CERT_FILE` names: the
 // endpoint's name is not one this machine resolves, and the proxy alone
@@ -251,6 +297,99 @@ async fn a_client_reaches_an_https_endpoint_through_a_tunnel_and_trusts_the_auth
         ("POST", PATH)
     );
     assert!(!carried[0].headers.contains_key("proxy-authorization"));
+}
+
+// The user information of a proxy is what stands before the last `@` of its
+// URL, whatever it holds, and no part of where the proxy is: a backslash
+// there, as the user of a Windows domain is written, ends no host. The
+// request goes to the proxy the variable names, with the user and the
+// password the client of Python's providers gives it.
+#[tokio::test]
+async fn a_backslash_in_a_proxy_s_user_ends_no_host() {
+    let scratch = Scratch::new("backslash");
+    let authority = Authority::new();
+    let tls = authority.serving(&["llm.example"]);
+    let endpoint = Fake::serving_tls(vec![Reply::json(200, "through the tunnel")], tls).await;
+    let proxy = Fake::serving(vec![Reply::Tunnel(endpoint.address)]).await;
+    let given = "CORP\\jdoe:placeholder-not-a-password";
+    let named = format!("http://{given}@{}", proxy.address);
+    let file = scratch.file("authority.pem", &authority.pem());
+    let variables = [("HTTPS_PROXY", named.as_str()), ("SSL_CERT_FILE", &file)];
+    let came = child(&variables, &[format!("https://llm.example{PATH}")]).await;
+    assert_eq!(came.of_each, [answered("through the tunnel")]);
+    let asked = proxy.seen();
+    assert_eq!(asked.len(), 1);
+    assert_eq!(
+        (asked[0].method.as_str(), asked[0].target.as_str()),
+        ("CONNECT", "llm.example:443")
+    );
+    assert_eq!(
+        asked[0].basic("proxy-authorization").as_deref(),
+        Some(given)
+    );
+    assert!(!came.printed.contains("placeholder-not-a-password"));
+}
+
+// What stands between a first `@` and a backslash names no host either: it
+// is a part of the password. The listener there is sent nothing, and the
+// proxy after the last `@` is handed the request.
+#[tokio::test]
+async fn an_address_before_a_backslash_in_a_proxy_s_password_is_sent_nothing() {
+    let elsewhere = Fake::serving(vec![Reply::json(200, "elsewhere")]).await;
+    let proxy = Fake::serving(vec![Reply::json(200, "through the proxy")]).await;
+    let given = format!("user:pw@{}\\x", elsewhere.address);
+    let named = format!("http://{given}@{}", proxy.address);
+    let proxied = format!("http://llm.example{PATH}");
+    let came = child(&[("HTTP_PROXY", &named)], std::slice::from_ref(&proxied)).await;
+    assert_eq!(came.of_each, [answered("through the proxy")]);
+    assert!(elsewhere.seen().is_empty());
+    let handed = proxy.seen();
+    assert_eq!(handed.len(), 1);
+    assert_eq!(handed[0].target, proxied);
+    assert_eq!(
+        handed[0].basic("proxy-authorization").as_deref(),
+        Some(given.as_str())
+    );
+}
+
+/// Has a child point its client at a local fake through `seam`, in an
+/// environment that names a proxy for every scheme, and ask: the fake must
+/// answer, and the proxy be handed nothing.
+async fn pointed_at_a_fake_through(seam: &str) {
+    let proxy = Fake::serving(vec![Reply::json(200, "through the proxy")]).await;
+    let fake = Fake::serving(vec![Reply::json(200, "directly")]).await;
+    let named = format!("http://{CREDENTIALS}@{}", proxy.address);
+    let pointed = format!("{seam} {}", fake.address);
+    let variables = [
+        ("HTTP_PROXY", named.as_str()),
+        ("http_proxy", named.as_str()),
+        ("ALL_PROXY", named.as_str()),
+        (SEAM, pointed.as_str()),
+    ];
+    let came = child(&variables, &[format!("http://llm.example{PATH}")]).await;
+    assert_eq!(came.of_each, [answered("directly")]);
+    assert!(proxy.seen().is_empty());
+    let direct = fake.seen();
+    assert_eq!(direct.len(), 1);
+    let direct = direct.first().unwrap();
+    assert_eq!(direct.target, PATH);
+    assert!(!direct.headers.contains_key("proxy-authorization"));
+}
+
+// A client a test points at a local fake reaches it directly: the proxy
+// its environment names is handed nothing. A developer's proxy then changes
+// no test of a provider, and receives none of its requests.
+#[tokio::test]
+async fn a_client_a_test_points_at_a_fake_goes_through_no_proxy_of_its_environment() {
+    pointed_at_a_fake_through("test").await;
+}
+
+// A replay sends nothing off the machine, whatever proxy the environment
+// names: the client it drives reaches the fake directly too.
+#[cfg(feature = "replay")]
+#[tokio::test]
+async fn a_client_a_replay_drives_goes_through_no_proxy_of_its_environment() {
+    pointed_at_a_fake_through("replay").await;
 }
 
 // A server is reached when the file `SSL_CERT_FILE` names holds the

@@ -336,9 +336,13 @@ pub fn shown_url(url: &str) -> String {
 /// Writes `address` as the host and the port of `url`, over plain HTTP,
 /// its path and its user information as they were: a local fake of the
 /// endpoint. `false` when the URL could not take it.
+///
+/// A provider is pointed at a fake through its client alone
+/// ([`Client::pointed_at`](crate::Client::pointed_at), or the replay seam),
+/// which sends there through no proxy.
 #[cfg(any(test, feature = "replay", feature = "harness"))]
 #[must_use]
-pub fn moved_to(url: &mut reqwest::Url, address: std::net::SocketAddr) -> bool {
+pub(crate) fn moved_to(url: &mut reqwest::Url, address: std::net::SocketAddr) -> bool {
     url.set_scheme("http").is_ok()
         && url.set_ip_host(address.ip()).is_ok()
         && url.set_port(Some(address.port())).is_ok()

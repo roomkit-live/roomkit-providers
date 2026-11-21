@@ -67,13 +67,14 @@ pub enum SseError {
 /// verifier on macOS and Windows, and elsewhere the store of authorities
 /// the system keeps on its disk. A system that keeps none is given the
 /// public roots compiled in, which are never added to a store that holds an
-/// authority.
+/// authority, and never stand in for one that does not read.
 ///
 /// # Errors
 ///
 /// The cryptography provider has no usable protocol version; the file
-/// `SSL_CERT_FILE` names does not read or holds no certificate; or the
-/// system's verifier could not be made.
+/// `SSL_CERT_FILE` names does not read or holds no certificate; the
+/// system's verifier could not be made; or the store the system keeps on
+/// its disk is there and does not read.
 #[doc(hidden)]
 pub fn tls_config() -> Result<rustls::ClientConfig, TlsUnset> {
     trust::tls_config()

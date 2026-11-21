@@ -104,6 +104,37 @@ pub struct Seen {
     pub reads: usize,
 }
 
+impl Seen {
+    /// What the Basic credentials of the header `name` decode to, its name
+    /// in lower case: the user and the password a proxy was given in a
+    /// `proxy-authorization`, around a colon. `None` for a request without
+    /// the header, and for a header that holds no such credentials.
+    #[must_use]
+    pub fn basic(&self, name: &str) -> Option<String> {
+        let encoded = self.headers.get(name)?.strip_prefix("Basic ")?;
+        let mut decoded = Vec::new();
+        let (mut bits, mut held) = (0_u32, 0_u32);
+        for sign in encoded.bytes().filter(|sign| *sign != b'=') {
+            let value = match sign {
+                b'A'..=b'Z' => sign - b'A',
+                b'a'..=b'z' => sign - b'a' + 26,
+                b'0'..=b'9' => sign - b'0' + 52,
+                b'+' => 62,
+                b'/' => 63,
+                _ => return None,
+            };
+            // Six bits a sign: a byte is taken once eight are held.
+            bits = ((bits << 6) | u32::from(value)) & 0xffff;
+            held += 6;
+            if held >= 8 {
+                held -= 8;
+                decoded.push(u8::try_from((bits >> held) & 0xff).ok()?);
+            }
+        }
+        String::from_utf8(decoded).ok()
+    }
+}
+
 /// A local server that answers each connection with the next reply of a
 /// script, and keeps what it was sent. It stops when it is dropped.
 pub struct Fake {

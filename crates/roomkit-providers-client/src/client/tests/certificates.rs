@@ -2,11 +2,14 @@
 //! and how it is typed. Each test gives its client the authority it
 //! trusts, made when the test runs, and reads no environment.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use reqwest::header::HeaderMap;
+use roomkit_providers_http::TlsUnset;
 
+use crate::client::without_tls;
 use crate::harness::fake::{Fake, Reply};
 use crate::harness::tls::Authority;
 use crate::proxy::Proxies;
@@ -82,4 +85,25 @@ async fn a_server_the_client_s_authority_signed_is_reached() {
     let (body, json) = client.send(call).await.unwrap();
     assert_eq!((body.as_slice(), json), (&b"trusted"[..], true));
     assert_eq!(server.seen()[0].target, PATH);
+}
+
+// A provider is not built on a system whose certificate store is there and
+// does not read: the failure is one of before any request, final, and names
+// the store by its path. The public roots compiled in are for a system that
+// keeps no store, and stand in for no other.
+#[test]
+fn a_system_store_that_does_not_read_is_a_provider_that_cannot_be_built() {
+    let store = PathBuf::from("/etc/ssl/certs/ca-certificates.crt");
+    let refused = left(&without_tls(&TlsUnset::SystemUnread(store)));
+    assert_eq!(
+        refused.message,
+        "the provider cannot be built: the system's certificate store at \
+         /etc/ssl/certs/ca-certificates.crt cannot be read"
+    );
+    assert!(refused.before_request && !refused.retryable);
+    // A file the environment names is refused in the same words as before.
+    assert_eq!(
+        left(&without_tls(&TlsUnset::FileEmpty)).message,
+        "the provider cannot be built: the file SSL_CERT_FILE names holds no certificate"
+    );
 }

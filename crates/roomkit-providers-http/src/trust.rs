@@ -13,8 +13,10 @@
 //! system that keeps no authority at all, a container without a certificate
 //! store, is given the public roots compiled in. They are never added to a
 //! store that holds an authority of its own, and never stand in for what a
-//! variable names.
+//! variable names, nor for a store of the system that is there and does not
+//! read: no client is built on such a system.
 
+use std::borrow::Cow;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
@@ -27,6 +29,8 @@ use rustls::pki_types::CertificateDer;
 use rustls::pki_types::pem::PemObject;
 use rustls::{CertificateError, ClientConfig, RootCertStore};
 
+use self::system::{Found, kept_at};
+
 /// The variable that names a file of authorities.
 const FILE: &str = "SSL_CERT_FILE";
 
@@ -35,7 +39,7 @@ const DIRECTORIES: &str = "SSL_CERT_DIR";
 
 /// Why the TLS configuration of a client could not be made.
 #[doc(hidden)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TlsUnset {
     /// The cryptography provider has no usable protocol version.
     Cryptography,
@@ -45,24 +49,33 @@ pub enum TlsUnset {
     FileEmpty,
     /// The system's certificate verifier could not be made.
     Verifier,
+    /// The store of authorities the system keeps at this path, a file or a
+    /// directory, is there and does not read as authorities.
+    SystemUnread(PathBuf),
 }
 
 impl TlsUnset {
-    /// Why, in words that follow `the provider cannot be built: `.
+    /// Why, in words that follow `the provider cannot be built: `. They
+    /// name a variable or the path of the system's store, and hold nothing
+    /// of what a file contains.
     #[must_use]
-    pub const fn reason(self) -> &'static str {
+    pub fn reason(&self) -> Cow<'static, str> {
         match self {
-            Self::Cryptography => "TLS is not set",
-            Self::FileUnread => "the file SSL_CERT_FILE names cannot be read",
-            Self::FileEmpty => "the file SSL_CERT_FILE names holds no certificate",
-            Self::Verifier => "the system's certificate verifier cannot be used",
+            Self::Cryptography => "TLS is not set".into(),
+            Self::FileUnread => "the file SSL_CERT_FILE names cannot be read".into(),
+            Self::FileEmpty => "the file SSL_CERT_FILE names holds no certificate".into(),
+            Self::Verifier => "the system's certificate verifier cannot be used".into(),
+            Self::SystemUnread(path) => {
+                let path = path.display();
+                format!("the system's certificate store at {path} cannot be read").into()
+            }
         }
     }
 }
 
 impl std::fmt::Display for TlsUnset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.reason())
+        f.write_str(&self.reason())
     }
 }
 
@@ -114,8 +127,9 @@ pub(crate) enum Trust {
 /// # Errors
 ///
 /// The cryptography provider has no usable protocol version, the file
-/// `SSL_CERT_FILE` names does not read or holds no certificate, or the
-/// system's verifier could not be made.
+/// `SSL_CERT_FILE` names does not read or holds no certificate, the
+/// system's verifier could not be made, or the store the system keeps on
+/// its disk is there and does not read.
 pub(crate) fn tls_config() -> Result<ClientConfig, TlsUnset> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     let trust = trust(&Named::of_the_environment(), &provider, system)?;
@@ -176,8 +190,8 @@ fn sections_of(
     CertificateDer::pem_file_iter(file)
 }
 
-/// The certificates of `file` that read: for a file of the system's store,
-/// of which a part that does not read is passed over.
+/// The certificates of `file` that read: for a file of a directory the
+/// environment names, of which a part that does not read is passed over.
 fn readable_of(file: &Path) -> Vec<CertificateDer<'static>> {
     let sections = sections_of(file).into_iter().flatten();
     sections.filter_map(Result::ok).collect()
@@ -197,8 +211,10 @@ fn is_filed_by_hash(path: &Path) -> bool {
         && number.bytes().all(|byte| byte.is_ascii_digit())
 }
 
-/// The certificates filed in `directory` under the names OpenSSL looks an
-/// authority up by. A directory or a file that does not read gives none.
+/// The certificates filed in `directory`, a directory the environment
+/// names, under the names OpenSSL looks an authority up by. A directory or
+/// a file that does not read gives none: nothing stands in for what such
+/// a directory does not give.
 fn filed_in(directory: &Path) -> Vec<CertificateDer<'static>> {
     let entries = std::fs::read_dir(directory).into_iter().flatten();
     let mut filed: Vec<PathBuf> = entries
@@ -220,7 +236,7 @@ fn store_of(mut certificates: Vec<CertificateDer<'static>>) -> RootCertStore {
 }
 
 /// `roots`, the system's, or the public roots compiled in when the system
-/// gave none: they are never added to a store that holds an authority.
+/// keeps none: they are never added to a store that holds an authority.
 pub(crate) fn or_compiled_in(roots: RootCertStore) -> RootCertStore {
     if roots.is_empty() {
         public_roots()
@@ -249,24 +265,7 @@ fn system(provider: &Arc<CryptoProvider>) -> Result<Trust, TlsUnset> {
         let verifier = verifier.map_err(|_| TlsUnset::Verifier)?;
         return Ok(Trust::Verifier(Arc::new(verifier)));
     }
-    Ok(Trust::Roots(or_compiled_in(store_of(kept_by_the_system()))))
-}
-
-/// The authorities the system keeps on its disk: those of its bundle file
-/// and those filed in its directories, where OpenSSL looks for them.
-#[cfg(all(unix, not(target_vendor = "apple")))]
-fn kept_by_the_system() -> Vec<CertificateDer<'static>> {
-    let found = openssl_probe::probe();
-    let bundled = found.cert_file.iter().flat_map(|file| readable_of(file));
-    let filed = found.cert_dir.iter().flat_map(|named| filed_in(named));
-    bundled.chain(filed).collect()
-}
-
-/// The authorities the system keeps on its disk: none where it keeps its
-/// store elsewhere.
-#[cfg(not(all(unix, not(target_vendor = "apple"))))]
-fn kept_by_the_system() -> Vec<CertificateDer<'static>> {
-    Vec::new()
+    Ok(Trust::Roots(kept_at(&Found::on_the_disk())?))
 }
 
 /// What a client refused of the certificate a server showed it.
@@ -333,6 +332,8 @@ fn refusal_of(why: &CertificateError) -> CertificateRefused {
         CertificateRefused::Untrusted
     }
 }
+
+mod system;
 
 #[cfg(test)]
 mod tests;

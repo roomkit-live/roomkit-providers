@@ -21,14 +21,21 @@
 //! is: a proxy that is neither `http` nor `https`, a text that does not
 //! read. Nothing of a variable is repeated in the refusal: a proxy's URL
 //! may carry credentials.
+//!
+//! A proxy is held as its address and its credentials, apart ([`Proxy`]):
+//! the user information of a variable is never written into a URL.
 
 use std::collections::HashMap;
 use std::fmt;
 
-use self::pattern::{Host, Pattern, Unread};
+pub(crate) use self::dialed::{Credentials, Proxy};
+use self::pattern::Pattern;
+pub(crate) use self::route::Route;
 use crate::failure::Failure;
 
+mod dialed;
 mod pattern;
+mod route;
 
 /// What marks a CGI program, whose `HTTP_PROXY` a request could set.
 const CGI: &str = "REQUEST_METHOD";
@@ -42,7 +49,7 @@ const SCHEMES: [&str; 3] = ["http", "https", "all"];
 #[derive(Clone)]
 struct Rule {
     pattern: Pattern,
-    proxy: Option<reqwest::Url>,
+    proxy: Option<Proxy>,
 }
 
 /// The proxies a client sends through, as the environment named them when
@@ -55,11 +62,11 @@ pub(crate) struct Proxies {
 
 impl fmt::Debug for Proxies {
     /// How many rules, and how many of them name a proxy: never a proxy's
-    /// URL, which may carry credentials.
+    /// address, nor what it is given.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Proxies")
             .field("rules", &self.rules.len())
-            .field("proxies", &self.urls().count())
+            .field("proxies", &self.named().count())
             .finish()
     }
 }
@@ -127,42 +134,6 @@ fn stripped(text: &str) -> &str {
     text.trim_matches(|c: char| c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c))
 }
 
-/// The proxy `written` names, as the HTTP client takes it: its scheme, its
-/// user information, its host and its port, without its path.
-fn proxy_of(written: &str) -> Result<reqwest::Url, Failure> {
-    let unread = |_| Failure::unbuilt("a proxy the environment names does not read as a URL");
-    let read = pattern::read(written).map_err(unread)?;
-    match read.scheme.as_str() {
-        "http" | "https" => {}
-        "socks5" | "socks5h" => {
-            return Err(Failure::unbuilt(
-                "the environment names a SOCKS proxy, which is not supported",
-            ));
-        }
-        _ => {
-            return Err(Failure::unbuilt(
-                "a proxy the environment names is neither an http nor an https proxy",
-            ));
-        }
-    }
-    let host = match read.host {
-        Host::Name(name) | Host::International(name) => name,
-        Host::V6(address, _) => format!("[{address}]"),
-        Host::Absent => return Err(unread(Unread)),
-    };
-    let credentials = match read.user_information {
-        "" => String::new(),
-        written => format!("{written}@"),
-    };
-    let port = match read.port.map(u16::try_from) {
-        Some(Ok(port)) => format!(":{port}"),
-        Some(Err(_)) => return Err(unread(Unread)),
-        None => String::new(),
-    };
-    let url = format!("{}://{credentials}{host}{port}", read.scheme);
-    reqwest::Url::parse(&url).map_err(|_| unread(Unread))
-}
-
 impl Proxies {
     /// What the environment names now.
     ///
@@ -217,7 +188,7 @@ impl Proxies {
                 |_| Failure::unbuilt("an entry of NO_PROXY in the environment does not read");
             rules.push(Rule {
                 pattern: Pattern::of(&pattern).map_err(unread)?,
-                proxy: proxy.as_deref().map(proxy_of).transpose()?,
+                proxy: proxy.as_deref().map(dialed::proxy_of).transpose()?,
             });
         }
         // The sort keeps the order of the rules of one rank.
@@ -225,16 +196,18 @@ impl Proxies {
         Ok(Self { rules })
     }
 
-    /// The proxy a request for `url` is sent through: `None` when it is
-    /// sent directly.
-    pub(crate) fn for_url(&self, url: &reqwest::Url) -> Option<reqwest::Url> {
-        let rule = self.rules.iter().find(|rule| rule.pattern.applies_to(url));
-        rule.and_then(|rule| rule.proxy.clone())
+    /// The proxy a request for `url` is sent through, with the place of
+    /// the rule that names it: `None` when it is sent directly.
+    pub(crate) fn for_url(&self, url: &reqwest::Url) -> Option<(usize, &Proxy)> {
+        let mut rules = self.rules.iter().enumerate();
+        let (place, rule) = rules.find(|(_, rule)| rule.pattern.applies_to(url))?;
+        Some((place, rule.proxy.as_ref()?))
     }
 
-    /// The URLs of the proxies, each of which may carry credentials.
-    pub(crate) fn urls(&self) -> impl Iterator<Item = &reqwest::Url> {
-        self.rules.iter().filter_map(|rule| rule.proxy.as_ref())
+    /// The proxies, each with the place of the rule that names it.
+    pub(crate) fn named(&self) -> impl Iterator<Item = (usize, &Proxy)> {
+        let rules = self.rules.iter().enumerate();
+        rules.filter_map(|(place, rule)| Some((place, rule.proxy.as_ref()?)))
     }
 }
 

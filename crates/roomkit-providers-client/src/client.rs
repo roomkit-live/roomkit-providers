@@ -6,12 +6,13 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use reqwest::header::AUTHORIZATION;
+use roomkit_providers_http::TlsUnset;
 use roomkit_providers_http::sse::STREAM_LIMIT;
 
 use crate::endpoint::{has_user_information, percent_decoded};
 use crate::exchange::Pace;
 use crate::failure::{Failure, Secrets};
-use crate::proxy::Proxies;
+use crate::proxy::{Credentials, Proxies, Route};
 use crate::retry::Rule;
 
 /// For how long a request takes again a connection no request uses: the 5
@@ -114,8 +115,9 @@ pub struct Client {
     pub(crate) tried_again: fn(u32, Duration),
     pub(crate) pace: Pace,
     stream_limit: usize,
-    /// The proxies the environment named when the client was built.
-    proxies: Arc<Proxies>,
+    /// The proxies the environment named when the client was built, and
+    /// whether the client still sends through them.
+    route: Arc<Route>,
 }
 
 impl Client {
@@ -128,12 +130,13 @@ impl Client {
     ///
     /// The failure of a provider that cannot be built: a proxy variable
     /// that does not read or names a proxy that is neither `http` nor
-    /// `https`, a file `SSL_CERT_FILE` names that holds no certificate, or
+    /// `https`, a file `SSL_CERT_FILE` names that holds no certificate, a
+    /// certificate store of the system that is there and does not read, or
     /// a TLS configuration or an HTTP client that could not be made.
     pub fn new(settings: Settings) -> Result<Self, Failure> {
         let proxies = Proxies::of_the_environment()?;
         let tls = roomkit_providers_http::tls_config();
-        let tls = tls.map_err(|unset| Failure::unbuilt(unset.reason()))?;
+        let tls = tls.map_err(|unset| without_tls(&unset))?;
         Self::built(settings, proxies, tls)
     }
 
@@ -146,9 +149,8 @@ impl Client {
         proxies: Proxies,
         tls: rustls::ClientConfig,
     ) -> Result<Self, Failure> {
-        let proxies = Arc::new(proxies);
+        let route = Arc::new(Route::through(proxies));
         let timeouts = settings.timeouts;
-        let through = Arc::clone(&proxies);
         let http = reqwest::Client::builder()
             .tls_backend_preconfigured(tls)
             // No compressed answer is asked for, whatever a host's build
@@ -157,10 +159,10 @@ impl Client {
             .no_brotli()
             .no_zstd()
             .no_deflate()
-            // The proxies are those read above: given one rule of its
-            // own, the HTTP client reads neither the environment nor the
+            // The proxies are those read above, given below, and no other:
+            // the HTTP client reads neither the environment nor the
             // system's settings itself.
-            .proxy(reqwest::Proxy::custom(move |url| through.for_url(url)))
+            .no_proxy()
             .read_timeout(timeouts.read)
             .connect_timeout(timeouts.connect)
             // A connection no request uses is taken again for as long, and
@@ -168,9 +170,11 @@ impl Client {
             // providers.
             .pool_idle_timeout(IDLE_FOR)
             .pool_max_idle_per_host(IDLE_AT_MOST)
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .map_err(|_| Failure::unbuilt("the HTTP client could not be built"))?;
+            .redirect(reqwest::redirect::Policy::none());
+        let rules = route.rules().into_iter();
+        let http = rules.fold(http, reqwest::ClientBuilder::proxy);
+        let http = http.build();
+        let http = http.map_err(|_| Failure::unbuilt("the HTTP client could not be built"))?;
         Ok(Self {
             http,
             timeouts,
@@ -180,7 +184,7 @@ impl Client {
             tried_again: settings.tried_again,
             pace: Pace::default(),
             stream_limit: STREAM_LIMIT,
-            proxies,
+            route,
         })
     }
 
@@ -224,10 +228,34 @@ impl Client {
     ) -> Secrets {
         let mut texts: Vec<String> = keys.into_iter().collect();
         texts.extend(headers.into_iter().flat_map(with_credentials).flatten());
-        for carrying in std::iter::once(url).chain(self.proxies.urls()) {
-            texts.extend(self.user_information_of(carrying));
+        texts.extend(self.user_information_of(url));
+        let proxies = self.route.proxies().named();
+        for given in proxies.filter_map(|(_, proxy)| proxy.credentials.as_ref()) {
+            texts.extend(self.given_to_a_proxy(given));
         }
         Secrets::of(texts)
+    }
+
+    /// What a proxy is given, in each form a text may hold it in: its user
+    /// information as the variable writes it and as the proxy reads it,
+    /// each part and the two together, and the Basic credentials the
+    /// client writes of it in a `Proxy-Authorization`.
+    fn given_to_a_proxy(&self, given: &Credentials) -> Vec<String> {
+        let (user, password) = (&given.user, &given.password);
+        let written = given.written.split_once(':');
+        let (written_user, written_password) = written.unwrap_or((&given.written, ""));
+        let mut texts = vec![given.written.clone(), format!("{user}:{password}")];
+        texts.extend([written_user, written_password, user, password].map(str::to_owned));
+        // What the HTTP client writes of a user and a password: the same
+        // for an endpoint as for a proxy.
+        let written = self.http.get("http://proxy.invalid/");
+        let written = written.basic_auth(user, Some(password)).build().ok();
+        let written = written
+            .as_ref()
+            .and_then(|request| request.headers().get(AUTHORIZATION));
+        let written = written.and_then(|value| value.to_str().ok());
+        texts.extend(written.into_iter().flat_map(with_credentials).flatten());
+        texts
     }
 
     /// The user information of `url` in each form a text may hold it in: as
@@ -254,12 +282,39 @@ impl Client {
         texts
     }
 
+    /// Sends each of `urls`, the URLs a provider asks, to `fake` instead, a
+    /// local fake of its endpoint, over plain HTTP, each to the path it had
+    /// and with the user information it had; and sends there directly,
+    /// through no proxy the environment named: for a test of a provider,
+    /// which a developer's proxy must neither change nor receive. A clone
+    /// of the client goes directly too.
+    ///
+    /// `false`, with nothing changed, for a `fake` that is no loopback
+    /// address; `false` too when a URL could not take the address.
+    #[cfg(any(test, feature = "replay", feature = "harness"))]
+    #[must_use]
+    pub fn pointed_at<'u>(
+        &mut self,
+        urls: impl IntoIterator<Item = &'u mut reqwest::Url>,
+        fake: std::net::SocketAddr,
+    ) -> bool {
+        if !fake.ip().is_loopback() {
+            return false;
+        }
+        self.route.go_direct();
+        let mut urls = urls.into_iter();
+        urls.all(|url| crate::endpoint::moved_to(url, fake))
+    }
+
     /// The client as a replay of recorded cases drives it, outside a
     /// provider crate's tests: a `retry-after` date is read against
     /// `clock`, in seconds since 1970, and no wait is taken between two
-    /// tries: each is kept, in the waits returned.
+    /// tries: each is kept, in the waits returned. It sends directly from
+    /// then on, through no proxy the environment named, and so do its
+    /// clones: a replay sends nothing off the machine.
     #[cfg(feature = "replay")]
     pub fn replaying(&mut self, clock: f64) -> ReplayWaits {
+        self.route.go_direct();
         let waits = ReplayWaits::default();
         let kept = waits.clone();
         self.pace = Pace {
@@ -282,9 +337,16 @@ impl fmt::Debug for Client {
             .field("max_retries", &self.max_retries)
             .field("retry", &self.retry)
             .field("stream_limit", &self.stream_limit)
-            .field("proxies", &self.proxies)
+            .field("proxies", self.route.proxies())
             .finish_non_exhaustive()
     }
+}
+
+/// The failure of a provider whose TLS could not be set, which `unset` says
+/// why: in its own words, which hold nothing of what a file contains.
+fn without_tls(unset: &TlsUnset) -> Failure {
+    let reason = unset.reason();
+    Failure::before_request(format!("the provider cannot be built: {reason}"))
 }
 
 /// A header's value, and the credentials it holds when it names a scheme

@@ -11,7 +11,8 @@ use roomkit_providers_llm::ProviderError;
 use serde_json::Value;
 
 use crate::failure::{Stated, past_mark};
-use crate::harness::fake::{Body, Fake, Reply};
+use crate::harness::fake::{Body, Fake, Reply, Seen};
+use crate::harness::tls::Authority;
 use crate::proxy::Proxies;
 use crate::testing::{left, no_authority, settings, usual};
 use crate::{Call, Client, Exit, Failure, Pace};
@@ -30,10 +31,20 @@ const BASIC: &str = "Basic dXNlcjpwbGFjZWhvbGRlci1ub3QtYS1wYXNzd29yZA==";
 /// takes no wait between two tries: each is counted in what is returned
 /// beside it.
 fn behind(proxy: &str, max_retries: u32) -> (Client, Arc<AtomicU32>) {
+    behind_trusting(proxy, max_retries, no_authority())
+}
+
+/// As [`behind`], a client that checks a server's certificate as `tls`
+/// says.
+fn behind_trusting(
+    proxy: &str,
+    max_retries: u32,
+    tls: rustls::ClientConfig,
+) -> (Client, Arc<AtomicU32>) {
     let named = format!("http://{CREDENTIALS}@{proxy}");
     let proxies = Proxies::read([("ALL_PROXY".to_owned(), named)]).unwrap();
     let settings = settings(usual(), max_retries);
-    let mut client = Client::built(settings, proxies, no_authority()).unwrap();
+    let mut client = Client::built(settings, proxies, tls).unwrap();
     let waits = Arc::new(AtomicU32::new(0));
     let counted = Arc::clone(&waits);
     client.set_pace(Pace {
@@ -139,24 +150,212 @@ async fn a_proxy_s_redirect_is_not_followed() {
 
 // A proxy nothing listens at is a connection that failed, for an `http`
 // endpoint as for an `https` one: tried again, and worth a new request.
-// The endpoint is there, and is not reached around the proxy.
+// Each endpoint is there, and would answer a client that went around the
+// proxy: the `https` one shows a certificate the client trusts. Neither is
+// sent anything.
 #[tokio::test]
 async fn a_proxy_that_is_not_there_is_a_connection_that_failed() {
     // A port that was open a moment ago, and that nothing listens on now.
     let closed = Fake::serving(Vec::new()).await.address.to_string();
-    let endpoint = Fake::serving(vec![Reply::json(200, "{}")]).await;
+    let plain = Fake::serving(vec![Reply::json(200, "{}")]).await;
+    let authority = Authority::new();
+    let tls = authority.serving(&["127.0.0.1"]);
+    let secure = Fake::serving_tls(vec![Reply::json(200, "{}")], tls).await;
     let urls = [
-        format!("http://{}{PATH}", endpoint.address),
-        format!("https://llm.example{PATH}"),
+        format!("http://{}{PATH}", plain.address),
+        format!("https://{}{PATH}", secure.address),
     ];
     for url in urls {
-        let (client, waits) = behind(&closed, 1);
+        let (client, waits) = behind_trusting(&closed, 1, authority.trusting());
         let refused = failed(&client, &url).await;
         let said = "the connection to the provider failed";
         assert_eq!(read(&refused), (said, true, None), "{url}");
         assert_eq!(waits.load(Ordering::Relaxed), 1);
     }
-    assert!(endpoint.seen().is_empty());
+    assert!(plain.seen().is_empty() && secure.seen().is_empty());
+}
+
+// Python: httpx2 `Proxy`, which takes the user and the password of a
+// proxy's URL, and the proxy pool of httpcore2, which writes them in a
+// `Proxy-Authorization`. For each way the table of Python's decisions
+// writes the credentials of a proxy, the proxy is sent what Python's client
+// sends it, in a request handed to it as in the request for a tunnel; and
+// it is sent no such header where Python's client reads no credentials.
+#[tokio::test]
+async fn a_proxy_is_given_the_user_and_the_password_python_s_client_gives_it() {
+    let fixture = include_str!("../../../tests/fixtures/python_proxy_cases.json");
+    let fixture: Value = serde_json::from_str(fixture).unwrap();
+    let (mut given, mut none) = (0, 0);
+    for case in fixture["cases"].as_array().unwrap() {
+        let [variable] = case["environment"].as_array().unwrap().as_slice() else {
+            continue;
+        };
+        let written = variable[1].as_str().unwrap();
+        let asked = &case["asked"][0];
+        // The cases whose one proxy carries user information.
+        let Some(written) = written.strip_suffix("@proxy.example:3128") else {
+            continue;
+        };
+        if asked["proxy"]["host"] != "proxy.example" {
+            continue;
+        }
+        // The same variable, its proxy on a port of this machine.
+        let proxy = Fake::serving(vec![page(502)]).await;
+        let named = format!("{written}@{}", proxy.address);
+        let name = variable[0].as_str().unwrap().to_owned();
+        let about = &case["name"];
+        let proxies = Proxies::read([(name, named)]).unwrap_or_else(|_| panic!("{about}"));
+        let client = Client::built(settings(usual(), 0), proxies, no_authority()).unwrap();
+        failed(&client, asked["url"].as_str().unwrap()).await;
+        let handed = proxy.seen();
+        assert_eq!(handed.len(), 1, "{about}");
+        let sent = handed[0].basic("proxy-authorization");
+        let python_s = asked["user"].as_str().zip(asked["password"].as_str());
+        if let Some((user, password)) = python_s {
+            assert_eq!(sent, Some(format!("{user}:{password}")), "{about}");
+            given += 1;
+        } else {
+            let headers = &handed[0].headers;
+            assert!(!headers.contains_key("proxy-authorization"), "{about}");
+            none += 1;
+        }
+    }
+    assert_eq!((given, none), (24, 1));
+}
+
+// Each proxy is given its own credentials and no other's: the proxy of the
+// `http` endpoints and that of the `https` ones, each named with a user and
+// a password of its own, or one of them with none.
+#[tokio::test]
+async fn each_proxy_is_given_its_own_credentials_and_no_other_s() {
+    let cases = [
+        (
+            Some("first:placeholder-one"),
+            Some("second:placeholder-two"),
+        ),
+        (Some("first:placeholder-one"), None),
+        (None, Some("second:placeholder-two")),
+    ];
+    for (of_plain, of_secure) in cases {
+        let plain = Fake::serving(vec![page(502)]).await;
+        let secure = Fake::serving(vec![page(502)]).await;
+        let named = |given: Option<&str>, proxy: &Fake| match given {
+            Some(given) => format!("http://{given}@{}", proxy.address),
+            None => format!("http://{}", proxy.address),
+        };
+        let variables = [
+            ("HTTP_PROXY".to_owned(), named(of_plain, &plain)),
+            ("HTTPS_PROXY".to_owned(), named(of_secure, &secure)),
+        ];
+        let proxies = Proxies::read(variables).unwrap();
+        let client = Client::built(settings(usual(), 0), proxies, no_authority()).unwrap();
+        failed(&client, &format!("http://llm.example{PATH}")).await;
+        failed(&client, &format!("https://llm.example{PATH}")).await;
+        let (handed, asked) = (plain.seen(), secure.seen());
+        assert_eq!((handed.len(), asked.len()), (1, 1));
+        let given = |seen: &[Seen]| seen[0].basic("proxy-authorization");
+        assert_eq!(given(&handed).as_deref(), of_plain);
+        assert_eq!(given(&asked).as_deref(), of_secure);
+        assert_eq!(asked[0].method, "CONNECT");
+    }
+}
+
+// The user and the password a proxy is given are secrets of the process as
+// the proxy reads them, however its URL writes them: with a backslash, with
+// a second `@`, encoded. A failure repeats neither, nor the two as the
+// variable writes them, nor the header the client sends them in.
+#[tokio::test]
+async fn what_a_proxy_is_given_is_a_secret_however_its_url_writes_it() {
+    let cases = [
+        (
+            "DOMAIN\\placeholder-user:placeholder\\not-a-password",
+            "DOMAIN\\placeholder-user",
+            "placeholder\\not-a-password",
+        ),
+        (
+            "placeholder-user:placeholder@other.example:1\\not-a-password",
+            "placeholder-user",
+            "placeholder@other.example:1\\not-a-password",
+        ),
+        (
+            "placeholder%5Cuser%40realm:placeholder%2Fnot%3Fa%23password%25",
+            "placeholder\\user@realm",
+            "placeholder/not?a#password%",
+        ),
+    ];
+    for (written, user, password) in cases {
+        let proxy = Fake::serving(vec![page(407)]).await;
+        let named = format!("http://{written}@{}", proxy.address);
+        let proxies = Proxies::read([("ALL_PROXY".to_owned(), named)]).unwrap();
+        let mut client = Client::built(settings(usual(), 0), proxies, no_authority()).unwrap();
+        client.refused = echoing;
+        let url = reqwest::Url::parse(&format!("http://llm.example{PATH}")).unwrap();
+        let no_headers: [&str; 0] = [];
+        let exit = Exit::new("test", client.secrets([], no_headers, &url));
+        let repeated = |said: String| {
+            let body = serde_json::json!({"error": {"message": said}}).to_string();
+            exit.leave(&echoing(407, body.as_bytes())).message
+        };
+        assert_eq!(
+            repeated(format!("{user} with {password}, or {user}:{password}")),
+            "the provider answered HTTP 407: [***] with [***], or [***]",
+            "{written}"
+        );
+        assert_eq!(
+            repeated(format!("written {written}")),
+            "the provider answered HTTP 407: written [***]"
+        );
+        // What the client sent the proxy, as the proxy may send it back.
+        failed(&client, url.as_str()).await;
+        let sent = proxy.seen()[0].headers["proxy-authorization"].clone();
+        assert_eq!(
+            proxy.seen()[0].basic("proxy-authorization"),
+            Some(format!("{user}:{password}"))
+        );
+        let encoded = sent.strip_prefix("Basic ").unwrap();
+        assert_eq!(
+            repeated(format!("sent {sent}, or {encoded}")),
+            "the provider answered HTTP 407: sent [***], or [***]"
+        );
+        let shown = format!("{client:?} {exit:?}");
+        assert!(!shown.contains("placeholder"), "{shown}");
+    }
+}
+
+// A client pointed at a local fake sends there directly, and so does a
+// clone made before: the proxy it was built with is handed nothing more. It
+// is pointed at a loopback address alone: pointed elsewhere, it moves no
+// URL and keeps its proxy.
+#[tokio::test]
+async fn a_client_pointed_at_a_fake_leaves_its_proxy() {
+    let proxy = Fake::serving(vec![Reply::json(200, "{}")]).await;
+    let fake = Fake::serving(vec![Reply::json(200, "{}"), Reply::json(200, "{}")]).await;
+    let (mut client, _) = behind(&proxy.address.to_string(), 0);
+    let cloned = client.clone();
+    let asked = format!("http://llm.example{PATH}");
+    let mut url = reqwest::Url::parse(&asked).unwrap();
+    let headers = HeaderMap::new();
+    let sent = async |client: &Client, url: &reqwest::Url| {
+        let call = Call {
+            url,
+            headers: &headers,
+            body: Some(b"{}"),
+        };
+        client.send(call).await.unwrap();
+    };
+    let off_the_machine = "192.0.2.1:80".parse().unwrap();
+    assert!(!client.pointed_at([&mut url], off_the_machine));
+    assert_eq!(url.as_str(), asked);
+    sent(&client, &url).await;
+    assert_eq!((proxy.seen().len(), fake.seen().len()), (1, 0));
+
+    assert!(client.pointed_at([&mut url], fake.address));
+    assert_eq!(url.as_str(), format!("http://{}{PATH}", fake.address));
+    sent(&client, &url).await;
+    sent(&cloned, &url).await;
+    assert_eq!((proxy.seen().len(), fake.seen().len()), (1, 2));
+    assert_eq!(fake.seen()[0].target, PATH);
+    assert!(!fake.seen()[0].headers.contains_key("proxy-authorization"));
 }
 
 /// A refusal that repeats what its body says under `error.message`, as a

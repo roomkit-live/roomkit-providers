@@ -7,7 +7,6 @@
 use serde::Deserialize;
 
 use super::*;
-use crate::endpoint::percent_decoded;
 use crate::testing::left;
 
 /// What Python's client decided of a table of environments.
@@ -31,8 +30,13 @@ struct Case {
 struct Asked {
     url: String,
     proxy: Option<Dialed>,
-    /// The user and the password the proxy is given, around a colon.
+    /// What the header the proxy is sent decodes to: the user and the
+    /// password, around a colon.
     credentials: Option<String>,
+    /// The user the proxy is given.
+    user: Option<String>,
+    /// The password the proxy is given.
+    password: Option<String>,
 }
 
 /// The proxy a request goes through.
@@ -46,10 +50,29 @@ struct Dialed {
 /// The cases Python's client reads and this one refuses when it is built,
 /// each with the reason: a proxy Python's client could not reach, or a
 /// port its number parser alone reads.
-const REFUSED_HERE_ALONE: [(&str, &str); 4] = [
+const REFUSED_HERE_ALONE: [(&str, &str); 8] = [
     (
         "a_proxy_without_a_host",
         "Python's client takes it, and connects to no host",
+    ),
+    (
+        "a_proxy_whose_host_holds_a_backslash",
+        "Python's client asks the network for a name that holds the backslash; the HTTP client \
+         here would end the host at it, and dial another",
+    ),
+    (
+        "a_proxy_whose_host_holds_a_percent_sign",
+        "Python's client asks the network for the name as written; the HTTP client here would \
+         decode it, and dial another",
+    ),
+    (
+        "a_proxy_whose_host_holds_a_quote",
+        "Python's client asks the network for the name as written; the HTTP client here would \
+         not read the proxy, and send around it",
+    ),
+    (
+        "a_proxy_whose_ipv6_address_has_a_zone",
+        "Python's client takes the zone of a link-local address, which this one does not read",
     ),
     (
         "a_proxy_whose_port_is_past_the_last",
@@ -68,7 +91,7 @@ const REFUSED_HERE_ALONE: [(&str, &str); 4] = [
 /// The endpoints this client reaches directly where Python's goes through
 /// the proxy: an address of `NO_PROXY` is compared with the address the
 /// HTTP client dials, where Python compares it with the text of the URL.
-const EXEMPTED_HERE_ALONE: [(&str, &str); 2] = [
+const EXEMPTED_HERE_ALONE: [(&str, &str); 3] = [
     (
         "an_ipv6_endpoint_is_the_text_it_is_written_in",
         "http://[0:0:0:0:0:0:0:1]/v1",
@@ -77,6 +100,10 @@ const EXEMPTED_HERE_ALONE: [(&str, &str); 2] = [
         "an_ipv4_endpoint_is_the_text_it_is_written_in",
         "http://127.1/v1",
     ),
+    (
+        "an_address_written_short_exempts_the_endpoint_written_as_it_is",
+        "http://127.0.0.1/v1",
+    ),
 ];
 
 fn fixture() -> Fixture {
@@ -84,20 +111,19 @@ fn fixture() -> Fixture {
     serde_json::from_str(fixture).unwrap()
 }
 
-/// Where `proxy` is dialed, and the credentials the HTTP client gives it:
-/// its user information once decoded, as the client writes it.
-fn dialed(proxy: &reqwest::Url) -> (Dialed, Option<String>) {
-    let host = proxy.host_str().unwrap_or_default();
-    let dialed = Dialed {
-        scheme: proxy.scheme().to_owned(),
+/// Where `proxy` is dialed, which is all its address holds: nothing of the
+/// user information or of the path its variable wrote.
+fn dialed(proxy: &Proxy) -> Dialed {
+    let address = &proxy.address;
+    let nothing_else = (address.username(), address.password(), address.path());
+    assert_eq!(nothing_else, ("", None, "/"));
+    assert_eq!((address.query(), address.fragment()), (None, None));
+    let host = address.host_str().unwrap_or_default();
+    Dialed {
+        scheme: address.scheme().to_owned(),
         host: host.trim_matches(['[', ']']).to_owned(),
-        port: proxy.port_or_known_default().map(u32::from).unwrap(),
-    };
-    let user = percent_decoded(proxy.username());
-    let password = proxy.password().map(percent_decoded);
-    let credentials = (!user.is_empty() || password.is_some())
-        .then(|| format!("{user}:{}", password.unwrap_or_default()));
-    (dialed, credentials)
+        port: address.port_or_known_default().map(u32::from).unwrap(),
+    }
 }
 
 // Python: httpx2 `get_environment_proxies`, `URLPattern` and
@@ -127,9 +153,8 @@ fn an_environment_names_the_proxies_python_s_client_reads_of_it() {
         assert!(!named, "{name}: it is read here");
         for asked in case.asked {
             let url = reqwest::Url::parse(&asked.url).unwrap();
-            let taken = proxies.for_url(&url).as_ref().map(dialed);
-            let (proxy, credentials) =
-                taken.map_or((None, None), |(proxy, given)| (Some(proxy), given));
+            let taken = proxies.for_url(&url).map(|(_, proxy)| proxy);
+            let proxy = taken.map(dialed);
             let about = format!("{name}: {}", asked.url);
             if EXEMPTED_HERE_ALONE.contains(&(name, asked.url.as_str())) {
                 assert!(
@@ -141,14 +166,57 @@ fn an_environment_names_the_proxies_python_s_client_reads_of_it() {
                 continue;
             }
             assert_eq!(proxy, asked.proxy, "{about}");
-            assert_eq!(credentials, asked.credentials, "{about}");
+            // The user and the password, each as Python's client gives it,
+            // and the two as the header carries them.
+            let given = taken.and_then(|proxy| proxy.credentials.as_ref());
+            let given = given.map(|given| (given.user.clone(), given.password.clone()));
+            assert_eq!(given, asked.user.zip(asked.password), "{about}");
+            let sent = given.map(|(user, password)| format!("{user}:{password}"));
+            assert_eq!(sent, asked.credentials, "{about}");
         }
         as_python += 1;
     }
     assert_eq!(
         (as_python, refused_here_alone, exempted_here_alone),
-        (105, 4, 2)
+        (128, 8, 3)
     );
+}
+
+// A proxy's name holds letters, digits, hyphens, dots and underscores. The
+// HTTP client reads a proxy's address twice, with two readers that do not
+// take every other sign alike: it ends a host at a backslash, decodes one
+// after a percent sign, and sends around a proxy whose name holds a quote.
+// Such a name is refused when the client is built, written in ASCII or in
+// a character the HTTP client turns into one.
+#[test]
+fn a_proxy_whose_name_holds_another_sign_is_refused() {
+    let read = |host: &str| {
+        let named = format!("http://{host}:3128");
+        Proxies::read([("HTTPS_PROXY".to_owned(), named)])
+    };
+    // The signs that end an authority, or part it, name another proxy.
+    let parts_an_authority = |sign: &char| "/?#@:[]".contains(*sign);
+    let of_a_name = |sign: &char| sign.is_ascii_alphanumeric() || "-._".contains(*sign);
+    let others = (' '..='~').filter(|sign| !of_a_name(sign) && !parts_an_authority(sign));
+    let mut refused = 0;
+    for sign in others.chain(['\u{ff02}', '\u{ff5b}', '\u{2100}']) {
+        let unread = read(&format!("pro{sign}xy.example")).map(|_| ());
+        assert_eq!(
+            left(&unread.unwrap_err()).message,
+            "the provider cannot be built: a proxy the environment names does not read as a URL",
+            "{sign}"
+        );
+        refused += 1;
+    }
+    assert_eq!(refused, 23 + 3);
+    for name in [
+        "pro-xy_1.example",
+        "PROXY.Example.",
+        "b\u{fc}cher.example",
+        "10.0.0.7",
+    ] {
+        assert!(read(name).is_ok(), "{name}");
+    }
 }
 
 /// What a provider says when it cannot be built in the environment

@@ -220,8 +220,8 @@ impl Anthropic {
     /// its configuration says.
     #[cfg(test)]
     pub(crate) fn point_at(&mut self, address: std::net::SocketAddr) {
-        let mut urls = [&mut self.messages, &mut self.models].into_iter();
-        let moved = urls.all(|url| roomkit_providers_client::endpoint::moved_to(url, address));
+        let urls = [&mut self.messages, &mut self.models];
+        let moved = self.client.pointed_at(urls, address);
         assert!(moved, "the endpoint is pointed at the fake");
     }
 

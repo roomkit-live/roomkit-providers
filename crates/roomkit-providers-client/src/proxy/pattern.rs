@@ -7,6 +7,12 @@
 //! dropped only under a scheme written in lower case, a star stands for
 //! other names at the start of a host alone, an address is one host and
 //! never a range.
+//!
+//! One point is this client's own. An endpoint is compared as the HTTP
+//! client dials it, where Python compares the text of its URL: the client
+//! has one writing for an address, so a pattern that names an IPv4 address
+//! written short (`127.1`) applies to that address however the endpoint
+//! writes it.
 
 use std::cmp::Reverse;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -203,6 +209,17 @@ fn under(name: &str, domain: &str) -> bool {
     label.is_some_and(|label| !label.is_empty())
 }
 
+/// Whether `url` is dialed at the IPv4 address the HTTP client reads
+/// `written` as: an address written short (`127.1`) names the address it
+/// stands for, which an endpoint written the same way is dialed at.
+fn dials(written: &str, url: &reqwest::Url) -> bool {
+    let named = url::Host::parse(written);
+    matches!(
+        (named, url.host()),
+        (Ok(url::Host::Ipv4(named)), Some(url::Host::Ipv4(dialed))) if named == dialed
+    )
+}
+
 impl Pattern {
     /// The pattern `written` is, a URL whose scheme may be `all` and whose
     /// host may start with a star.
@@ -267,10 +284,12 @@ impl Pattern {
         };
         match &self.hosts {
             Hosts::Every => true,
-            Hosts::Named(named) => *named == name,
+            Hosts::Named(named) => *named == name || dials(named, url),
             Hosts::Address(named) => address == Some(*named),
             Hosts::Under(domain) => under(&name, domain),
-            Hosts::AtOrUnder(domain) => name == *domain || under(&name, domain),
+            Hosts::AtOrUnder(domain) => {
+                name == *domain || under(&name, domain) || dials(domain, url)
+            }
         }
     }
 }

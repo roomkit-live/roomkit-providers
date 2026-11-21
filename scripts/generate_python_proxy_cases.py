@@ -4,10 +4,10 @@
 RoomKit's Python providers send through the HTTP client of their vendor's
 SDK, which reads the proxy variables of the environment when it is built.
 Each case here is an environment and the URLs of some endpoints; the fixture
-records, for each URL, the proxy that client sends through, with the
-credentials it gives it, or that it sends directly; or the exception the
-client raises when it is built. The Rust test ``python_proxy_cases`` reads
-the same environments and requires the same answers.
+records, for each URL, the proxy that client sends through, with the user
+and the password it gives it, or that it sends directly; or the exception
+the client raises when it is built. The Rust test ``python_proxy_cases``
+reads the same environments and requires the same answers.
 
 Nothing is sent: a client is built, asked which transport it takes for a
 URL, and dropped.
@@ -24,11 +24,13 @@ import base64
 import json
 import os
 import platform
+from collections.abc import Iterator
 from contextlib import contextmanager
 from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+import httpcore2
 import httpx2
 import openai
 
@@ -56,6 +58,12 @@ def no_proxy(name: str, value: str, urls: list[str]) -> Case:
     """A case whose every endpoint goes through one proxy, unless ``NO_PROXY``,
     set to `value`, says otherwise."""
     return (name, {**ALL, "NO_PROXY": value}, urls)
+
+
+def given(name: str, written: str) -> Case:
+    """A case whose `https` endpoint goes through a proxy whose URL carries
+    `written` as its user information."""
+    return (name, {"HTTPS_PROXY": f"http://{written}@proxy.example:3128"}, [HTTPS])
 
 
 CASES: list[Case] = [
@@ -176,6 +184,38 @@ CASES: list[Case] = [
         {"HTTPS_PROXY": "http://user@realm:word@proxy.example:3128"},
         [HTTPS],
     ),
+    # A proxy's user information: what stands before the last at sign of
+    # its authority, the user before its first colon, each decoded once.
+    given("a_proxy_s_user_holds_a_backslash", "CORP\\jdoe:placeholder-word"),
+    given("a_proxy_s_user_holds_an_encoded_backslash", "CORP%5Cjdoe:placeholder-word"),
+    given("a_proxy_s_password_holds_a_backslash", "user:place\\holder"),
+    given("a_proxy_s_password_ends_in_a_backslash", "user:placeholder\\"),
+    given(
+        "a_backslash_before_an_at_sign_is_in_the_password",
+        "user:word@other.example:1\\x",
+    ),
+    given("a_proxy_s_password_holds_colons", "user:place:holder:"),
+    given("a_proxy_s_user_holds_an_encoded_colon", "us%3Aer:word"),
+    given("a_proxy_s_password_holds_encoded_delimiters", "user:a%2Fb%3Fc%23d%40e"),
+    given("a_proxy_s_credentials_are_decoded_once", "us%2565r:a%255Cb%2540c"),
+    given("a_percent_sign_that_encodes_nothing_is_kept", "us%er:100%:%zz%4%+1"),
+    given("a_proxy_s_credentials_hold_spaces", "us er:pass word"),
+    given("a_plus_sign_is_no_space", "us+er:pass+word"),
+    given("a_proxy_s_password_holds_other_signs", "user:\"a'<b>^`{c}|[d]~!$&*(),;="),
+    given("a_proxy_s_credentials_are_not_ascii", "\u00fcser:p\u00e4ss\u20acword"),
+    given("a_proxy_s_encoded_credentials_are_utf_8", "%C3%BCser:p%C3%A4ss%E2%82%ACword"),
+    given(
+        "encoded_credentials_that_are_no_utf_8_are_replaced",
+        "us%FFer:%E2%82word%C0%AF%ED%A0%80%F4%90%80%80%E2",
+    ),
+    given("an_encoded_byte_joins_no_character_written_after_it", "user:%C3\u00a9%E2\u20ac"),
+    given("a_proxy_s_password_holds_encoded_control_characters", "user:pass%0Aword%00%7F"),
+    # The authority ends at the first slash, question mark or number sign:
+    # what stands before one is then the host and the port.
+    given("a_slash_in_a_proxy_s_password_ends_its_authority", "user:pass/word"),
+    given("a_slash_in_a_proxy_s_user_ends_its_authority", "us/er:word"),
+    given("a_question_mark_in_a_proxy_s_password_ends_its_authority", "user:pass?word"),
+    given("a_number_sign_in_a_proxy_s_user_ends_its_authority", "us#er:word"),
     ("a_socks5_proxy_is_refused", {"HTTPS_PROXY": "socks5://proxy.example:1080"}, [HTTPS]),
     ("a_socks5h_proxy_is_refused", {"ALL_PROXY": "socks5h://proxy.example:1080"}, [HTTPS]),
     ("a_socks4_proxy_is_refused", {"HTTPS_PROXY": "socks4://proxy.example:1080"}, [HTTPS]),
@@ -209,6 +249,22 @@ CASES: list[Case] = [
     (
         "a_proxy_whose_host_is_not_ascii",
         {"HTTPS_PROXY": "http://b\u00fccher.example:3128"},
+        [HTTPS],
+    ),
+    (
+        "a_proxy_whose_host_holds_a_backslash",
+        {"HTTPS_PROXY": "http://proxy.example\\.other.example:3128"},
+        [HTTPS],
+    ),
+    (
+        "a_proxy_whose_host_holds_a_percent_sign",
+        {"HTTPS_PROXY": "http://proxy%2Eexample:3128"},
+        [HTTPS],
+    ),
+    ("a_proxy_whose_host_holds_a_quote", {"HTTPS_PROXY": 'http://pro"xy.example:3128'}, [HTTPS]),
+    (
+        "a_proxy_whose_ipv6_address_has_a_zone",
+        {"HTTPS_PROXY": "http://[fe80::1%25eth0]:3128"},
         [HTTPS],
     ),
     ("a_proxy_whose_port_has_a_sign", {"HTTPS_PROXY": "http://proxy.example:+3128"}, [HTTPS]),
@@ -439,6 +495,11 @@ CASES: list[Case] = [
         "127.0.0.1",
         ["http://127.0.0.1/v1", "http://127.1/v1"],
     ),
+    no_proxy(
+        "an_address_written_short_exempts_the_endpoint_written_as_it_is",
+        "127.1",
+        ["http://127.1/v1", "http://127.0.0.1/v1", "http://127.2/v1"],
+    ),
 ]
 
 # What every case is read without: the variables of whoever runs the script.
@@ -461,12 +522,36 @@ def environment(variables: dict[str, str]) -> Any:
         os.environ.update(kept)
 
 
-def taken(client: httpx2.AsyncClient, url: str) -> dict[str, Any]:
+# The user and the password a proxy is given, by the proxy's pool.
+Given = dict[int, tuple[bytes, bytes] | None]
+
+
+@contextmanager
+def given_to_each_proxy() -> Iterator[Given]:
+    """What each proxy built meanwhile is given as its user and its password:
+    what the client hands the pool that writes them in a header."""
+    kept: Given = {}
+    built = httpcore2.AsyncHTTPProxy.__init__
+
+    def keeping(pool: Any, *args: Any, **named: Any) -> None:
+        kept[id(pool)] = named.get("proxy_auth")
+        built(pool, *args, **named)
+
+    httpcore2.AsyncHTTPProxy.__init__ = keeping
+    try:
+        yield kept
+    finally:
+        httpcore2.AsyncHTTPProxy.__init__ = built
+
+
+def taken(client: httpx2.AsyncClient, url: str, given_to: Given) -> dict[str, Any]:
     """Where `client` sends a request for `url`: the proxy it goes through,
-    with the credentials it is given, or neither when it goes directly."""
+    with the user and the password it is given, or none of them when it goes
+    directly. `credentials` is what the header the proxy is sent decodes to:
+    the user and the password around a colon."""
     transport = client._transport_for_url(httpx2.URL(url))
     if transport is client._transport:
-        return {"url": url, "proxy": None, "credentials": None}
+        return {"url": url, "proxy": None, "credentials": None, "user": None, "password": None}
     pool = transport._pool
     origin = pool._proxy_url
     host = origin.host.decode("ascii")
@@ -477,24 +562,29 @@ def taken(client: httpx2.AsyncClient, url: str) -> dict[str, Any]:
             scheme, _, encoded = value.partition(b" ")
             assert scheme == b"Basic", value
             credentials = base64.b64decode(encoded).decode("utf-8")
+    handed = given_to[id(pool)]
+    user, password = (None, None) if handed is None else (part.decode("utf-8") for part in handed)
+    assert credentials == (None if user is None else f"{user}:{password}"), url
     return {
         "url": url,
         "proxy": {"scheme": origin.scheme.decode("ascii"), "host": host, "port": port},
         "credentials": credentials,
+        "user": user,
+        "password": password,
     }
 
 
 def decided(name: str, variables: dict[str, str], urls: list[str]) -> dict[str, Any]:
     """What Python's client decides of one case."""
     case: dict[str, Any] = {"name": name, "environment": list(variables.items())}
-    with environment(variables):
+    with environment(variables), given_to_each_proxy() as given_to:
         try:
             # The client RoomKit's OpenAI provider is given when it names
             # no transport: the SDK's own.
             client = openai.DefaultAsyncHttpxClient()
         except Exception as error:
             return {**case, "refused": type(error).__name__, "asked": []}
-        return {**case, "refused": None, "asked": [taken(client, url) for url in urls]}
+        return {**case, "refused": None, "asked": [taken(client, url, given_to) for url in urls]}
 
 
 def main() -> None:
