@@ -306,8 +306,11 @@ reason:
 - **`User-Agent`** is `roomkit-providers/` and the version of the crate,
   where Python's SDK names itself (`AsyncAnthropic/Python` and its
   version). An extra header that names one replaces it, here as in Python.
-- **No time to the first token is measured**, where Python's provider
-  reports one to its host.
+- **No time to the first token is measured** by the provider, where
+  Python's reports one to its host. The Python package of this repository
+  records it over any provider by one rule (`guide/python.md`): for a whole
+  answer, the time the whole answer took, where Python's provider records
+  the first text or reasoning of the stream it reads inside `generate()`.
 - **Whether the endpoint is Anthropic's own**, which decides the check of
   tool names and whether a tool may be held unseen, is Python's comparison
   of the base URL, and also what the client dials: both must say so.

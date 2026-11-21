@@ -1,6 +1,12 @@
-"""A provider's failure as the native module raises it."""
+"""A provider's failure as the native module raises it, and as a caller
+catches it: RoomKit's own exception."""
 
 from __future__ import annotations
+
+from collections.abc import Iterator
+from contextlib import contextmanager
+
+from roomkit.providers.ai import ProviderError, ResponseSchemaError
 
 
 class ProviderFailure(Exception):
@@ -30,3 +36,28 @@ class ProviderFailure(Exception):
         self.context_overflow = context_overflow
         self.before_request = before_request
         self.schema_reason = schema_reason
+
+
+def _as_roomkit(failure: ProviderFailure) -> ProviderError:
+    """`failure` as RoomKit's own exception, with the same attributes."""
+    if failure.schema_reason is not None:
+        return ResponseSchemaError(
+            failure.args[0], reason=failure.schema_reason, provider=failure.provider
+        )
+    return ProviderError(
+        failure.args[0],
+        retryable=failure.retryable,
+        provider=failure.provider,
+        status_code=failure.status_code,
+        context_overflow=failure.context_overflow,
+        before_request=failure.before_request,
+    )
+
+
+@contextmanager
+def failing_as_roomkit() -> Iterator[None]:
+    """Raises a failure of the native module as RoomKit's exception."""
+    try:
+        yield
+    except ProviderFailure as failure:
+        raise _as_roomkit(failure) from None

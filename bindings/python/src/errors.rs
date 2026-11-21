@@ -8,11 +8,13 @@
 //! the package makes it the exception its caller catches.
 
 use std::error::Error as _;
+use std::panic::AssertUnwindSafe;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use roomkit_providers_client::Secrets;
 use roomkit_providers_llm::{ProviderError, ProviderErrorOptions, ResponseSchemaError};
 
 /// The most characters of a reader's words a failure repeats: a reader
@@ -69,11 +71,32 @@ impl Failure {
         Self::last(said, label, false)
     }
 
+    /// The failure of a provider that does not name itself as its vendor
+    /// states: what `RoomKit` records of it would be wrong, so it is not
+    /// built.
+    pub(crate) fn misnamed(label: &str) -> Self {
+        let said = "the provider cannot be built: it does not name itself as its vendor states";
+        Self::last(said.to_owned(), label, true)
+    }
+
     /// The failure of a stream whose reading stopped without saying how
     /// the stream ended: what came is no whole answer.
     pub(crate) fn unended(label: &str) -> Self {
         let said = "the provider's stream closed without its end".to_owned();
         Self::last(said, label, false)
+    }
+
+    /// The failure without `lent`, the key a host lent the one request
+    /// that failed, in any form a failure's text may hold it in. A provider
+    /// cleans its failures of that key itself; this holds for any provider,
+    /// and for what refuses a request before a provider sees it.
+    #[must_use]
+    pub(crate) fn without(mut self, lent: Option<&str>) -> Self {
+        if let Some(lent) = lent {
+            let lent = Secrets::of([lent.to_owned()]);
+            self.0.message = lent.clean(&self.0.message, usize::MAX);
+        }
+        self
     }
 
     /// The exception Python raises for it.
@@ -82,6 +105,22 @@ impl Failure {
         // A package whose error class cannot be reached still says what
         // failed.
         provider_error(py, &error).unwrap_or_else(|_| PyRuntimeError::new_err(error.to_string()))
+    }
+}
+
+/// `entry`, an entry into the native module that does not wait, its panic
+/// made the failure of the provider labelled `label`. A defect of the
+/// native code is a provider's failure wherever it shows: without this, a
+/// panic leaves an entry as an exception that is no `Exception`, which a
+/// caller's `except Exception` lets through.
+pub(crate) fn guarded<T>(
+    py: Python<'_>,
+    label: &str,
+    entry: impl FnOnce() -> PyResult<T>,
+) -> PyResult<T> {
+    match std::panic::catch_unwind(AssertUnwindSafe(entry)) {
+        Ok(given) => given,
+        Err(_) => Err(Failure::panicked(label).raised(py)),
     }
 }
 

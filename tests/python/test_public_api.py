@@ -5,6 +5,7 @@ fails here until ``make api-snapshot`` rewrites the snapshot in the same
 commit.
 """
 
+import ast
 import inspect
 import json
 import shutil
@@ -14,6 +15,7 @@ from pathlib import Path
 
 import api_signatures
 from api_signatures import Package
+from roomkit_providers import _native
 
 HERE = Path(__file__).resolve().parent
 PACKAGE = Package("roomkit_providers")
@@ -50,6 +52,49 @@ class SnapshotTests(unittest.TestCase):
                 change(snapshot)
                 path.write_text(json.dumps(snapshot), encoding="utf-8")
                 self.assertEqual(len(api_signatures.drift(directory, PACKAGE)), 1)
+
+
+class NativeStubTests(unittest.TestCase):
+    """The stub of the native module, held to the module: what a module
+    that is distributed holds, each class with its members, and no more."""
+
+    # What a module built for the tests holds beside, declared nowhere.
+    FOR_TESTS = frozenset(
+        {"_scripted", "_Scripted", "_released", "_handing_panics", "_handing_ends"}
+    )
+
+    @staticmethod
+    def declared() -> dict[str, set[str]]:
+        """Each name the stub declares, with the members of a class."""
+        stub = Path(_native.__file__).with_name("_native.pyi")
+        tree = ast.parse(stub.read_text(encoding="utf-8"))
+        defined = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+        return {
+            node.name: {
+                member.name for member in getattr(node, "body", []) if isinstance(member, defined)
+            }
+            if isinstance(node, ast.ClassDef)
+            else set()
+            for node in tree.body
+            if isinstance(node, defined)
+        }
+
+    def test_the_stub_declares_what_the_module_holds_and_no_more(self):
+        declared = self.declared()
+        held = {name for name in vars(_native) if not name.startswith("__")}
+        for_tests = self.FOR_TESTS if "_scripted" in held else frozenset()
+        self.assertEqual(held - for_tests, set(declared))
+        self.assertEqual(held & self.FOR_TESTS, for_tests)
+
+    def test_each_class_of_the_stub_has_the_members_the_module_gives_it(self):
+        for name, members in self.declared().items():
+            held = getattr(_native, name)
+            if not isinstance(held, type):
+                continue
+            with self.subTest(name=name):
+                given = {member for member in vars(held) if not member.startswith("__")}
+                given |= {"__call__"} & set(vars(held))
+                self.assertEqual(given, members)
 
 
 class DescribeTests(unittest.TestCase):

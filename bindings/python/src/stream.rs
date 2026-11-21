@@ -15,7 +15,7 @@ use tokio::sync::Mutex as TaskMutex;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
-use super::errors::Failure;
+use super::errors::{Failure, guarded};
 use super::fork::{self, Kept};
 use super::provider::{Held, request_of, written};
 use super::runtime;
@@ -40,18 +40,21 @@ type Feed = Pin<Box<dyn Stream<Item = Result<String, Failure>> + Send>>;
 
 /// The stream of `provider` answering the request `request_json` writes,
 /// owning both: each event as JSON. `api_key` is the credential of this one
-/// request. A request that does not read is its one failure.
+/// request, which no failure of the stream repeats. A request that does not
+/// read is its one failure.
 fn feed(provider: Held, request_json: String, api_key: Option<String>) -> Feed {
     Box::pin(items(
         move |out: Yielder<Result<String, Failure>>| async move {
+            let lent = api_key.clone();
             let request = match request_of(&request_json, api_key, provider.dyn_label()) {
                 Ok(request) => request,
-                Err(refused) => return out.give(Err(refused)).await,
+                Err(refused) => return out.give(Err(refused.without(lent.as_deref()))).await,
             };
             let mut events = provider.dyn_generate_structured_stream(&request);
             while let Some(event) = next(&mut events).await {
                 let event = event.map_err(Failure::from);
-                out.give(event.and_then(|event| written(&event, "the event")))
+                let event = event.and_then(|event| written(&event, "the event"));
+                out.give(event.map_err(|failure| failure.without(lent.as_deref())))
                     .await;
             }
         },
@@ -238,6 +241,41 @@ impl PythonStream {
                 "the stream was released",
             ));
         };
+        guarded(py, &reading.label, || Self::crossing(py, reading))
+    }
+
+    /// Private diagnostic: how many items were read ahead and wait for the
+    /// next crossing, the stream's end among them, or None while a crossing
+    /// is under way.
+    fn _ahead(&self) -> Option<usize> {
+        let inbox = self.reading.get()?.inbox.try_lock().ok()?;
+        Some(inbox.receiver.len())
+    }
+
+    /// Ends the stream: its reading stops, which drops its request and
+    /// closes its connection, and what was read ahead is given up.
+    fn close(&self, py: Python<'_>) -> PyResult<()> {
+        let Some(reading) = self.reading.get() else {
+            return Ok(());
+        };
+        guarded(py, &reading.label, || {
+            reading.closed.cancel();
+            drop(
+                reading
+                    .unbegun
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .take(),
+            );
+            Ok(())
+        })
+    }
+}
+
+impl PythonStream {
+    /// The awaitable of one crossing of `reading`, whose first begins the
+    /// reading.
+    fn crossing<'py>(py: Python<'py>, reading: &Reading) -> PyResult<Bound<'py, PyAny>> {
         let unbegun = reading
             .unbegun
             .lock()
@@ -256,29 +294,5 @@ impl PythonStream {
                 None => Ok(None),
             }
         })
-    }
-
-    /// Private diagnostic: how many items were read ahead and wait for the
-    /// next crossing, the stream's end among them, or None while a crossing
-    /// is under way.
-    fn _ahead(&self) -> Option<usize> {
-        let inbox = self.reading.get()?.inbox.try_lock().ok()?;
-        Some(inbox.receiver.len())
-    }
-
-    /// Ends the stream: its reading stops, which drops its request and
-    /// closes its connection, and what was read ahead is given up.
-    fn close(&self) {
-        let Some(reading) = self.reading.get() else {
-            return;
-        };
-        reading.closed.cancel();
-        drop(
-            reading
-                .unbegun
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .take(),
-        );
     }
 }

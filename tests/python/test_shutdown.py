@@ -342,9 +342,11 @@ class ForkTests(ChildProcess):
             import multiprocessing
             import warnings
 
+            import traceback
+
             import roomkit_providers._process
+            import roomkit_providers.llm._config
             import roomkit_providers.llm._provider
-            import roomkit_providers.llm.openai
             from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -362,28 +364,36 @@ class ForkTests(ChildProcess):
             def child(queue):
                 for module in (
                     roomkit_providers._process,
+                    roomkit_providers.llm._config,
                     roomkit_providers.llm._provider,
-                    roomkit_providers.llm.openai,
                 ):
                     module._native = Entered()
                 provider._native = Entered()
-                refused = []
+                refused, raised_in = [], []
                 for attempt in (
                     lambda: asyncio.run(ask(provider)),
                     lambda: asyncio.run(provider.list_models()),
                     lambda: asyncio.run(reads(provider.generate_structured_stream(HELLO))),
                     lambda: asyncio.run(reads(provider.generate_stream(HELLO))),
-                    lambda: OpenAI(OpenAIConfig(**local_config(fake.port))),
+                    lambda: OpenAI(config),
+                    # A configuration with a switch its model decides, and
+                    # one that states them all.
                     lambda: OpenAIConfig(api_key="placeholder-not-a-key", model="gpt-5.1"),
+                    lambda: OpenAIConfig(**local_config(fake.port), **STATED),
                 ):
                     try:
                         attempt()
                     except RuntimeError as error:
                         refused.append("forked" in str(error))
+                        frames = traceback.extract_tb(error.__traceback__)
+                        raised_in += [frame.name for frame in frames]
                     except BaseException as error:
                         refused.append(repr(error))
                     else:
                         refused.append("not refused")
+                # The refusal comes before anything is read: none is raised
+                # while a configuration is checked.
+                assert "model_post_init" not in raised_in, raised_in
                 # What a provider says of itself was read when it was built,
                 # and its catalogue when its class was defined; closing it
                 # does nothing, without failing.
@@ -392,6 +402,8 @@ class ForkTests(ChildProcess):
                 closed = asyncio.run(provider.close())
                 queue.put((refused, said, listed, closed))
 
+            STATED = {"use_max_completion_tokens": False, "supports_custom_temperature": True}
+            config = OpenAIConfig(**local_config(fake.port))
             answers(fake)
             assert asyncio.run(ask(provider)) == "Yes."
             context = multiprocessing.get_context("fork")
@@ -400,15 +412,53 @@ class ForkTests(ChildProcess):
             process.start()
             refused, said, listed, closed = queue.get(timeout=30)
             process.join(30)
-            assert refused == [True] * 6, refused
+            assert refused == [True] * 7, refused
             assert listed == len(OpenAI.available_models()) > 0, listed
             assert said == ("OpenAIAIProvider", "local-model", provider.supports_vision), said
             assert closed is None
-            # Its exit entered nothing either.
             assert process.exitcode == 0, process.exitcode
             print("refused in Python")
         """)
         self.assertIn("refused in Python", result.stdout)
+
+    def test_a_forked_child_s_exit_does_not_enter_the_native_module(self) -> None:
+        result = self.run_child("""
+            import os
+            import warnings
+
+            import roomkit_providers._process
+
+            # Forking a process with threads is the scenario under test.
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            fake = ThreadedFake()
+            provider = provider_at(fake)
+
+            class Entered:
+                # The native module, to a child that must not enter it: the
+                # child ends there, and its parent reads how it ended.
+                def __getattr__(self, name):
+                    os._exit(3)
+
+            answers(fake)
+            assert asyncio.run(ask(provider)) == "Yes."
+            pid = os.fork()
+            if pid == 0:
+                roomkit_providers._process._native = Entered()
+                # The interpreter's own exit, which runs the package's hook.
+                sys.exit(0)
+            _, status = os.waitpid(pid, 0)
+            assert os.waitstatus_to_exitcode(status) == 0, os.waitstatus_to_exitcode(status)
+            # The hook is what the child's exit ran: the parent's enters.
+            entered, native = [], roomkit_providers._process._native
+            roomkit_providers._process._native = type(
+                "Counting", (), {"_shutdown": lambda self: entered.append("shutdown")}
+            )()
+            roomkit_providers._process._leave()
+            roomkit_providers._process._native = native
+            assert entered == ["shutdown"], entered
+            print("the child's exit entered nothing")
+        """)
+        self.assertIn("the child's exit entered nothing", result.stdout)
 
     def test_a_child_forked_during_a_call_exits_without_waiting_for_it(self) -> None:
         result = self.run_child("""

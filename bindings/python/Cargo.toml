@@ -31,6 +31,9 @@ roomkit-providers-llm = { version = "0.1.0-alpha.1", path = "../../crates/roomki
 # replay of the recorded cases drives a provider through: a private function
 # of the native module, which sends to a loopback address only.
 roomkit-providers-openai = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-openai", features = ["replay"] }
+# The waits of a provider a replay drives, which every vendor's replay seam
+# gives: named here once, for all of them.
+roomkit-providers-client = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-client", features = ["replay"] }
 # The trait of the stream a provider's events come as.
 futures-core = { version = "0.3", default-features = false }
 # Stable CPython ABI.

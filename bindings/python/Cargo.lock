@@ -783,6 +783,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "futures-core",
  "pyo3",
+ "roomkit-providers-client",
  "roomkit-providers-llm",
  "roomkit-providers-openai",
  "serde",

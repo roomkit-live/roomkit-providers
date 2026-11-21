@@ -1,14 +1,14 @@
-//! The providers the module holds, one module each: a provider's part is
-//! its configuration, how it is built, and its catalogue. Everything a
-//! built provider does crosses through the one class of `provider`.
+//! The vendors the module holds, one module each. A vendor's part is its
+//! configuration, how its provider is built from it and the names `RoomKit`
+//! knows the provider by: what `vendor::Vendor` asks. Every entry Python
+//! calls, and everything a built provider does, is written once for all of
+//! them, in `vendor` and in `provider`.
 //!
-//! Adding a provider adds its module here, and its line in [`register`].
+//! Adding a provider adds its module here, and its line in [`VENDORS`].
 
-use pyo3::prelude::*;
+use super::vendor::Entries;
 
 mod openai;
 
-/// Adds every provider's functions to the native module.
-pub(crate) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
-    openai::register(module)
-}
+/// The entries of every vendor.
+pub(crate) static VENDORS: &[Entries] = &[Entries::of::<openai::OpenAi>()];

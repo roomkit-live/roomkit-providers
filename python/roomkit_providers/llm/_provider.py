@@ -2,19 +2,20 @@
 
 What RoomKit asks of a provider is translated here, once, for every provider
 the native module holds: a context becomes the contract's request, an answer
-RoomKit's models, a failure RoomKit's exception. A provider's own module
-adds its configuration, how it is built and its catalogue, and nothing of
-what follows.
+RoomKit's models, a failure RoomKit's exception. So is how a provider is
+built from its configuration, and what guards each entry into the native
+module. A provider's own module adds the members of its configuration and
+one class statement, and nothing of what follows.
 """
 
 from __future__ import annotations
 
 import time
-from collections.abc import AsyncIterator, Iterator
-from contextlib import contextmanager, suppress
-from typing import Annotated, ClassVar
+from collections.abc import AsyncIterator
+from contextlib import suppress
+from typing import Annotated, Any, ClassVar, Self
 
-from pydantic import Field, SecretStr, TypeAdapter
+from pydantic import BaseModel, Field, SecretStr, TypeAdapter
 from pydantic_core import PydanticSerializationError
 from roomkit.providers.ai import (
     API_KEY_METADATA_KEY,
@@ -23,7 +24,6 @@ from roomkit.providers.ai import (
     AIResponse,
     ModelInfo,
     ProviderError,
-    ResponseSchemaError,
     StreamDone,
     StreamEvent,
     StreamTextDelta,
@@ -34,10 +34,16 @@ from roomkit.providers.ai import (
 )
 
 from .. import _native, _process
-from ._failure import ProviderFailure
+from ._config import Config, Veiled
+from ._failure import failing_as_roomkit
 
 # The most characters of a refusal's words a failure repeats.
 _SAID_LIMIT = 500
+
+# The fewest characters of a key that is removed from a failure's words: a
+# shorter one would be found in ordinary words. And what stands in its place.
+_SECRET_MIN = 8
+_MARK = "[***]"
 
 # What crosses of a context: the members of the contract's request, but its
 # metadata. No provider reads anything of a context's metadata but the
@@ -81,32 +87,28 @@ def request_key(context: AIContext) -> str | None:
     return value if isinstance(value, str) and value else None
 
 
-def _as_roomkit(failure: ProviderFailure) -> ProviderError:
-    """`failure` as RoomKit's own exception, with the same attributes."""
-    if failure.schema_reason is not None:
-        return ResponseSchemaError(
-            failure.args[0], reason=failure.schema_reason, provider=failure.provider
-        )
-    return ProviderError(
-        failure.args[0],
-        retryable=failure.retryable,
-        provider=failure.provider,
-        status_code=failure.status_code,
-        context_overflow=failure.context_overflow,
-        before_request=failure.before_request,
-    )
+def _without(said: str, lent: str | None) -> str:
+    """`said` without `lent`, the key a host lent one request."""
+    return said.replace(lent, _MARK) if lent and len(lent) >= _SECRET_MIN else said
 
 
-@contextmanager
-def failing_as_roomkit() -> Iterator[None]:
-    """Raises a failure of the native module as RoomKit's exception."""
-    try:
-        yield
-    except ProviderFailure as failure:
-        raise _as_roomkit(failure) from None
+def _is_output(event: StreamEvent) -> bool:
+    """Whether `event` is the first a reader sees of an answer: text or
+    reasoning that is not empty. A signature alone, a redacted block and a
+    fragment of a call are none."""
+    if isinstance(event, StreamTextDelta):
+        return bool(event.text)
+    return isinstance(event, StreamThinkingDelta) and bool(event.thinking)
 
 
-class Provider(AIProvider):
+def _holds_output(response: AIResponse) -> bool:
+    """Whether a whole answer holds text or reasoning: one made of calls
+    alone, or of redacted reasoning, holds neither."""
+    parts = response.thinking_parts or ()
+    return bool(response.content or response.thinking or any(part.thinking for part in parts))
+
+
+class Provider[C: BaseModel](AIProvider):
     """A RoomKit provider over a provider the native module holds.
 
     Every answer RoomKit reads on a provider comes from the native provider:
@@ -114,17 +116,62 @@ class Provider(AIProvider):
     read once, when the provider is built. A generation crosses as the
     contract's JSON and comes back as RoomKit's models; a failure is
     RoomKit's ``ProviderError`` or ``ResponseSchemaError``; the time to the
-    first token is recorded as RoomKit's providers record it.
+    first token is recorded once, by one rule.
 
-    A provider's class gives its native provider to ``__init__`` and, where
-    it has a catalogue, holds it in ``_catalogue``.
+    A provider's class is one statement, which names its configuration, and
+    a docstring::
+
+        class Vendor(Provider[VendorConfig | RoomKitVendorConfig], config=VendorConfig):
+            ...
+
+    It writes no ``__init__``: the provider is built here, from its
+    configuration alone, and every entry into the native module goes through
+    this class.
     """
+
+    _configured_by: ClassVar[type[Config]]
+    """The provider's configuration, which names its vendor."""
 
     _catalogue: ClassVar[str | None] = None
     """The provider's curated catalogue, as a JSON list, read once when the
     class is defined: reading it later asks nothing of the native module."""
 
-    def __init__(self, native: _native._Provider) -> None:
+    def __init_subclass__(cls, *, config: type[Config] | None = None, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if config is None:
+            # A class derived from a provider's is that provider's.
+            if not hasattr(cls, "_configured_by"):
+                raise TypeError("a provider's class names its configuration (config=...)")
+            return
+        cls._configured_by = config
+        _process.enter()
+        with failing_as_roomkit():
+            cls._catalogue = _native.catalogue(config._vendor)
+
+    def __init__(self, config: C) -> None:
+        # From here on no frame holds the configuration as it shows itself.
+        config = Veiled(config, type(self)._configured_by)
+        if not config.taken():
+            raise TypeError(
+                "config must be the provider's own configuration, or RoomKit's of the same "
+                "provider: one derived from either belongs to another provider"
+            )
+        _process.enter()
+        with failing_as_roomkit():
+            native = config.native()
+        self._config = config.held()
+        self._hold(native)
+
+    @classmethod
+    def _over(cls, native: _native._Provider) -> Self:
+        """A provider over a native provider already built: for the tests of
+        the crossing, which script one."""
+        provider = cls.__new__(cls)
+        provider._hold(native)
+        return provider
+
+    def _hold(self, native: _native._Provider) -> None:
+        """Hold `native`, and what it says of itself."""
         self._native = native
         self._name = native.name
         # What the provider's failures carry as their ``provider``.
@@ -195,13 +242,13 @@ class Provider(AIProvider):
     def _request(self, context: AIContext) -> str:
         """`context` as the contract's request, in JSON. One that has no
         JSON form is refused as a provider refuses a request before it
-        sends it."""
+        sends it, in words that hold no key the context lends."""
         try:
             return context.model_dump_json(include=_REQUEST)
         except PydanticSerializationError as refused:
-            said = f"the request is refused: {refused}"[:_SAID_LIMIT]
+            said = _without(f"the request is refused: {refused}", request_key(context))
             raise ProviderError(
-                said, retryable=False, provider=self._label, before_request=True
+                said[:_SAID_LIMIT], retryable=False, provider=self._label, before_request=True
             ) from None
 
     async def generate(self, context: AIContext) -> AIResponse:
@@ -210,9 +257,13 @@ class Provider(AIProvider):
         started = time.monotonic()
         with failing_as_roomkit():
             answered = await self._native.generate(request, request_key(context))
-        # The answer came: the time to it is the time to its first token.
-        self._record_ttfb(started)
-        return AIResponse.model_validate_json(answered)
+        response = AIResponse.model_validate_json(answered)
+        # The time to the whole answer is the time to its first token, for
+        # an answer that holds text or reasoning: one of calls alone has
+        # none.
+        if _holds_output(response):
+            self._record_ttfb(started)
+        return response
 
     async def generate_stream(self, context: AIContext) -> AsyncIterator[str]:
         """Yield text deltas (thinking content filtered out)."""
@@ -228,7 +279,8 @@ class Provider(AIProvider):
         _process.start()
         stream = self._native.stream(request, request_key(context))
         # The time to the first token is recorded once, at the first text
-        # or reasoning, never at a call's fragment.
+        # or reasoning that is not empty: never at a signature alone, a
+        # redacted block or a call's fragment.
         started: float | None = time.monotonic()
         try:
             with failing_as_roomkit():
@@ -238,9 +290,7 @@ class Provider(AIProvider):
                     if crossed is None:
                         break
                     for event in _EVENTS.validate_json(crossed):
-                        if started is not None and isinstance(
-                            event, StreamTextDelta | StreamThinkingDelta
-                        ):
+                        if started is not None and _is_output(event):
                             self._record_ttfb(started)
                             started = None
                         yield event

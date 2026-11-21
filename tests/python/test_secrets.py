@@ -99,16 +99,69 @@ class RefusedConfigurationTests(unittest.TestCase):
         for secret in SECRETS:
             self.assertNotIn(secret, shown)
 
-    def test_the_search_finds_a_secret_a_frame_holds(self) -> None:
-        def raising(key: str) -> None:
+
+# Code of another file than this one, whose frames the search reads: a
+# function that fails holding a secret, one that fails of that failure, and
+# one that fails while it handles it.
+ELSEWHERE = """
+def holding(secret):
+    raise ValueError("refused")
+
+def caused():
+    try:
+        holding(SECRET)
+    except ValueError as refused:
+        raise RuntimeError("failed") from refused
+
+def while_handling():
+    try:
+        holding(SECRET)
+    except ValueError:
+        raise RuntimeError("failed") from None
+
+def chained():
+    try:
+        holding(SECRET)
+    except ValueError:
+        raise RuntimeError("failed")
+"""
+
+
+class SearchTests(unittest.TestCase):
+    """The search itself, held to what it says it reads: the locals of every
+    frame of a failure and of what caused it, this file's own left out."""
+
+    def failure(self, raising: str) -> BaseException:
+        elsewhere: dict[str, Any] = {"SECRET": KEY}
+        exec(compile(ELSEWHERE, "elsewhere.py", "exec"), elsewhere)  # noqa: S102
+        try:
+            elsewhere[raising]() if raising != "holding" else elsewhere[raising](KEY)
+        except (ValueError, RuntimeError) as failed:
+            return failed
+        self.fail("nothing failed")
+
+    def test_the_search_reads_the_locals_of_a_frame(self) -> None:
+        self.assertIn(KEY, written(self.failure("holding")))
+
+    def test_the_search_follows_what_a_failure_was_raised_from(self) -> None:
+        self.assertIn(KEY, written(self.failure("caused")))
+
+    def test_the_search_follows_what_a_failure_was_raised_while_handling(self) -> None:
+        self.assertIn(KEY, written(self.failure("chained")))
+
+    def test_the_search_follows_what_a_failure_set_aside(self) -> None:
+        # What `from None` sets aside is still what the failure came from:
+        # its frames are read too.
+        self.assertIn(KEY, written(self.failure("while_handling")))
+
+    def test_the_search_leaves_out_the_frames_of_this_file(self) -> None:
+        def holding(secret: str) -> None:
             raise ValueError("refused")
 
         try:
-            raising(KEY)
-        except ValueError as error:
-            caught = error
-        held = traceback.TracebackException.from_exception(caught, capture_locals=True)
-        self.assertIn(KEY, "".join(str(frame.locals) for frame in held.stack))
+            holding(KEY)
+        except ValueError as failed:
+            self.assertNotIn(KEY, written(failed))
 
 
 class FailingCallTests(unittest.IsolatedAsyncioTestCase):
@@ -143,7 +196,8 @@ class FailingCallTests(unittest.IsolatedAsyncioTestCase):
             return AIContext(messages=[AIMessage(role=role, content="Hello")], metadata=metadata)
 
         # The server repeats what it was sent, as some do.
-        echo = {"error": {"message": f"Bad key {KEY}, header {HEADER}", "type": KEY}}
+        said = f"Bad key {KEY}, header {HEADER}, key of the request {ONE_REQUEST_KEY}"
+        echo = {"error": {"message": said, "type": KEY}}
         refused = Whole(401, JSON, json.dumps(echo).encode())
         cases = {
             "a refusal that repeats the secrets": ([refused, refused], context()),

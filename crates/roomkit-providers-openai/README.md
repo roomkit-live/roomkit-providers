@@ -118,7 +118,9 @@ catalogue, with no request.
   - a secret shorter than 8 characters is not searched for: it would be
     found in ordinary words;
   - a secret a server itself sends back in another form (encoded again,
-    cut in pieces, in another case) cannot be recognised.
+    cut in pieces, in another case) cannot be recognised;
+  - a member of `extra_body` is no secret to a failure: a server that
+    repeats one in the message of its refusal is repeated.
 
   The `Debug` forms print none of them, and the provider logs none.
 - **What a failure repeats of an answer.** Only this, each on one line and
@@ -278,6 +280,11 @@ model listing. It differs on the others, each for a reason:
 - **An empty key** builds a provider that sends no `Authorization`, for a
   local server that asks for none, where Python's SDK refuses to build a
   client.
+- **No time to the first token is measured** by the provider, where
+  Python's reports one to its host. The Python package of this repository
+  records it over any provider by one rule (`guide/python.md`): there a
+  whole answer made of tool calls alone records none, where Python's
+  provider records one for every whole answer.
 - **`User-Agent`** is `roomkit-providers/` and the version of the crate,
   where Python's SDK names itself (`AsyncOpenAI/Python` and its version). A
   default header that names one replaces it, here as in Python.

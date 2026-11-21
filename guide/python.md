@@ -122,14 +122,37 @@ properties answer as RoomKit's provider does for the same configuration. A
 failure is RoomKit's `ProviderError` or `ResponseSchemaError`, with the same
 attributes.
 
-What RoomKit records of a provider does not change with it. `name` is
-`OpenAIAIProvider`, the name RoomKit's own provider goes by: the
-`ai_provider` RoomKit stores with an answer, and the `provider` its
-telemetry labels a turn with, stay what they were. The time to the first
-token is recorded as RoomKit's provider records it: the metric
-`roomkit.llm.ttfb_ms`, in `ms`, labelled with that name and the model,
-through the telemetry the channel gives its provider. A stream records it
-once, at its first text or reasoning, and never at a fragment of a call.
+What RoomKit records under a provider's `name` does not change with it.
+`name` is `OpenAIAIProvider`, the name RoomKit's own provider goes by: the
+`ai_provider` RoomKit stores with an answer, and the `provider` the metric
+of the first token is labelled with, stay what they were. One label does
+change: RoomKit labels the span of a generation, `llm.generate`, and an AI
+channel's `info`, with the name of the provider's class, which is `OpenAI`
+here.
+
+### The time to the first token
+
+Every provider of the package records it by one rule, as the metric
+`roomkit.llm.ttfb_ms`, in `ms`, labelled with the provider's `name` and the
+model, through the telemetry the channel gives its provider:
+
+- **a stream** records it once, at its first text or reasoning that is not
+  empty: never at a signature alone, a redacted block of reasoning, or a
+  fragment of a call;
+- **a whole answer** (`generate`) records it when the answer came, if the
+  answer holds text or reasoning. An answer made of calls alone records
+  nothing, and neither does a call that failed.
+
+Two of RoomKit's own providers record a whole answer otherwise:
+
+- RoomKit's OpenAI provider records it for every whole answer, one of tool
+  calls alone too: with this package such an answer no longer records
+  `roomkit.llm.ttfb_ms`. RoomKit's also records it as soon as the server
+  answered, when that answer is then refused: an error object answered with
+  a 200, a response schema the answer does not satisfy.
+- RoomKit's Anthropic provider reads a stream inside `generate()` and
+  records its first text or reasoning. Here the value of a whole answer is
+  the time the whole answer took.
 
 ## The configuration
 
@@ -168,7 +191,25 @@ they were stated.
 `repr` never shows the key, the value of a default header or of a member of
 `extra_body`, nor more of a base URL than its scheme, its host and its
 port: a path and a query may hold a gateway's token. RoomKit's own shows
-all but the key.
+all but the key. A refusal says what is refused and never shows the value
+given, where pydantic's shows it by default, and RoomKit's with it: a
+`ValidationError` here ends each line with `[type=...]` alone.
+
+A base URL Python's URL reader refuses (a bracket that holds no address, a
+character that reads as a delimiter of a URL) is refused when the
+configuration is built, as RoomKit's refuses it, in words that do not repeat
+the URL.
+
+What a configuration does not hide:
+
+- **A configuration pydantic refuses holds what it was given in pydantic's
+  own frame**, as RoomKit's does: a traceback written with its frames'
+  locals shows a key that was given as text. Give the key as a `SecretStr`
+  where tracebacks are written so.
+- **A member of `extra_body` is no secret to a failure.** A server that
+  repeats one in the message of its refusal is repeated: a failure's text is
+  cleaned of the key, of the key a context lends, of a default header's
+  value and of a base URL's user information.
 
 The provider reads its configuration once, when it is built. A value the
 provider cannot work with is refused then: a time below zero is a
@@ -252,11 +293,11 @@ between Rust and Python, not one each.
 
 | Exception | When |
 | --- | --- |
-| RoomKit's `ProviderError` (`roomkit.providers.ai.ProviderError`) | A call failed, a context was refused before it was sent, or a provider could not be built. Its attributes: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
+| RoomKit's `ProviderError` (`roomkit.providers.ai.ProviderError`) | A call failed, a context was refused before it was sent, a provider could not be built, or the native code stopped on a defect, wherever it did: in a call, while a provider or a configuration is built. Its attributes: `retryable`, `provider`, `status_code`, `context_overflow`, `before_request`. Its text is `error.args[0]`; `str()` leads it with the provider and the status: `openai (401): ...` |
 | RoomKit's `ResponseSchemaError` (`roomkit.providers.ai.ResponseSchemaError`) | A `ProviderError`: a response schema was set and no answer satisfying it can be returned. `reason` is `unsupported`, `refusal`, `truncated` or `invalid_json` |
 | `ValueError` | A configuration's value the provider cannot work with. A configuration pydantic refuses is its `ValidationError`, a `ValueError` too |
 | `TypeError` | A configuration that is not the provider's own: that of another provider, one derived from it |
-| `RuntimeError` | A provider used in a forked child, or a call once the interpreter is exiting. `close()` raises neither |
+| `RuntimeError` | A provider or a configuration used in a forked child, or a call once the interpreter is exiting. `close()` raises neither |
 
 ## What a RoomKit user sees differently
 
@@ -267,8 +308,13 @@ message, the type and the code of the server's error object, or what the
 server says under `detail`, not its whole body. Beside the wire:
 
 - **Another class name.** The class is `OpenAI`, where RoomKit's is
-  `OpenAIAIProvider`: `type(provider).__name__`, which an AI channel's
-  `info` shows, changes. The provider's `name` does not.
+  `OpenAIAIProvider`: `type(provider).__name__` changes, which an AI
+  channel's `info` shows and RoomKit labels the `llm.generate` span with.
+  The provider's `name` does not.
+- **A refused configuration says what is refused and never shows the value
+  given**, where RoomKit's `ValidationError` shows it, a key given as text
+  included: a line ends with `[type=missing]` here, with
+  `[type=missing, input_value={'api_key': '...'}, input_type=dict]` there.
 - **No `transport` parameter.** `OpenAI(config)` takes the configuration
   alone. The provider builds its own HTTP client: a host that gave RoomKit's
   provider a transport, to pin addresses or to answer a test, has no place
@@ -293,13 +339,18 @@ server says under `detail`, not its whole body. Beside the wire:
   NaN among a call's arguments is sent as `null`.
 - **A defect of the provider is a failure of the call.** A panic in the
   native code is RoomKit's `ProviderError`, final, never an answer cut
-  short: a stream that closes without its end fails.
+  short, and never an exception outside `Exception`: in a call, in a
+  stream's reading, while a provider or a configuration is built. A stream
+  that closes without its end fails.
+- **The key a context lends one request** (`metadata["api_key"]`) is in no
+  failure of that request, in any form its text may hold it in, as the
+  configuration's is in none. A key shorter than 8 characters is not
+  searched for.
 - **A response's `tasks` and `observations` stay empty**: the provider fills
   neither, as RoomKit's does not.
-- **The time to the first token of `generate`** is recorded when the call
-  gave an answer. RoomKit's records it as soon as the server answered, also
-  when that answer is then refused: an error object answered with a 200, a
-  response schema the answer does not satisfy.
+- **The time to the first token** is recorded by one rule for every
+  provider, which differs from RoomKit's own for a whole answer:
+  [above](#the-time-to-the-first-token).
 - **`list_models` fails with RoomKit's `ProviderError`**, where RoomKit's
   provider raises the openai SDK's error or a raw exception.
 - **`close()`** releases nothing by itself: the connections close when the
@@ -308,8 +359,14 @@ server says under `detail`, not its whole body. Beside the wire:
   `RuntimeError`, as [above](#cancellation-and-lifetime).
 - **Its own threads.** The provider runs its calls on four threads, looks
   names up on four more at most, and hands what the calls give to Python on
-  one, whatever the number of calls. It keeps an idle connection 5 seconds,
-  and 100 of them for a host at most, as RoomKit's client does.
+  one, whatever the number of calls. That one thread hands every call that
+  ended while it waited for the interpreter's lock under one hold of it;
+  where other Python threads keep the lock busy, the calls wait for it as
+  any Python thread does. A request takes again an idle connection for
+  5 seconds, as with RoomKit's client, and 100 are kept for a host at most;
+  one left idle is closed between 5 and 10 seconds after its last request.
+- **`User-Agent`** is `roomkit-providers/<version>`, where RoomKit's
+  provider sends the openai SDK's; a `default_headers` entry replaces it.
 - **The `openai` SDK is not needed.** The provider runs without RoomKit's
   `openai` extra.
 

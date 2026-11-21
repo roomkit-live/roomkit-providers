@@ -9,6 +9,12 @@
 //! the interpreter keep a list of references to release later, which is
 //! guarded by a lock a forked child could find taken.
 //!
+//! That thread hands every call that ended while it waited for the lock
+//! under one hold of it. A panic while one call is handed fails that call
+//! and no other: the thread goes on. Should the thread end all the same, a
+//! call made afterwards is refused at once, since nothing would ever
+//! complete it.
+//!
 //! A call is stopped by dropping its work, which drops its request and
 //! closes its connection: when the Python future it completes is cancelled,
 //! and when the interpreter exits (every call runs under the bridge's
@@ -24,6 +30,7 @@
 use std::future::Future;
 use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Condvar, LazyLock, Mutex, MutexGuard, OnceLock, PoisonError};
 use std::task::{Context, Poll};
@@ -83,6 +90,15 @@ fn shutting_down() -> PyErr {
 /// What a call is refused with when the bridge has no thread to run it on.
 fn no_threads() -> PyErr {
     PyRuntimeError::new_err("the provider bridge could not start its threads")
+}
+
+/// What a call is refused with once the thread that hands calls to Python
+/// has ended: nothing would complete the call.
+fn no_handing() -> PyErr {
+    PyRuntimeError::new_err(
+        "the provider bridge lost the thread that hands its calls to Python: no call can \
+         complete any more in this process",
+    )
 }
 
 /// The runtime the calls run on, built at the first call.
@@ -163,34 +179,57 @@ struct Completion {
     event_loop: Py<PyAny>,
     future: Py<PyAny>,
     outcome: Option<Outcome>,
+    /// The label of the provider the call was made on.
+    label: String,
     /// Released last, once Python holds what the call gave.
     ticket: Ticket,
 }
 
+/// Settles `future` on `event_loop` with what `outcome` makes, under the
+/// interpreter's lock.
+fn settle(py: Python<'_>, event_loop: &Py<PyAny>, future: &Py<PyAny>, outcome: Outcome) {
+    #[cfg(feature = "testing")]
+    testing::panic_if_asked();
+    let (value, error) = match outcome(py) {
+        Ok(value) => (value, py.None()),
+        Err(error) => (py.None(), error.into_value(py).into_any()),
+    };
+    if let Some(settle) = SETTLE.get(py) {
+        let settling = (settle, future, value, error);
+        // A loop that was closed takes nothing: what the call gave is
+        // dropped.
+        drop(
+            event_loop
+                .bind(py)
+                .call_method1(intern!(py, "call_soon_threadsafe"), settling),
+        );
+    }
+}
+
 impl Completion {
     /// Settles the call's future on its loop, under the interpreter's lock,
-    /// and lets go of the call's references there.
+    /// and lets go of the call's references there. A panic on the way is
+    /// the call's failure: the call fails as a provider's work that
+    /// panicked does, and the thread that hands the calls goes on.
     fn hand(self, py: Python<'_>) {
         let Self {
             event_loop,
             future,
             outcome,
+            label,
             ticket,
         } = self;
         if let Some(outcome) = outcome {
-            let (value, error) = match outcome(py) {
-                Ok(value) => (value, py.None()),
-                Err(error) => (py.None(), error.into_value(py).into_any()),
-            };
-            if let Some(settle) = SETTLE.get(py) {
-                let settling = (settle, &future, value, error);
-                // A loop that was closed takes nothing: what the call gave
-                // is dropped.
-                drop(
-                    event_loop
-                        .bind(py)
-                        .call_method1(intern!(py, "call_soon_threadsafe"), settling),
-                );
+            let handed = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                settle(py, &event_loop, &future, outcome);
+            }));
+            if handed.is_err() {
+                let failed: Outcome = Box::new(move |py| Err(Failure::panicked(&label).raised(py)));
+                // Should this panic too, the call is left unsettled: there
+                // is nothing more to try.
+                drop(std::panic::catch_unwind(AssertUnwindSafe(|| {
+                    settle(py, &event_loop, &future, failed);
+                })));
             }
         }
         drop((event_loop, future));
@@ -198,8 +237,21 @@ impl Completion {
     }
 }
 
+/// Whether the thread that hands completions to Python is running.
+static HANDING: AtomicBool = AtomicBool::new(false);
+
+/// Says the handing thread ended, however it ended.
+struct Handing;
+
+impl Drop for Handing {
+    fn drop(&mut self) {
+        HANDING.store(false, Ordering::Release);
+    }
+}
+
 /// The one thread that hands completions to Python.
 fn hand_over(completions: &Receiver<Completion>) {
+    let _handing = Handing;
     while let Ok(first) = completions.recv() {
         Python::attach(|py| {
             first.hand(py);
@@ -211,6 +263,10 @@ fn hand_over(completions: &Receiver<Completion>) {
                 }
             }
         });
+        #[cfg(feature = "testing")]
+        if testing::ends_now() {
+            return;
+        }
     }
 }
 
@@ -221,12 +277,20 @@ fn completions() -> PyResult<&'static Sender<Completion>> {
     let started = COMPLETIONS.get_or_init(|| {
         let (sender, receiver) = mpsc::channel();
         let handing = std::thread::Builder::new().name("roomkit-providers-python".to_owned());
-        handing
-            .spawn(move || hand_over(&receiver))
-            .ok()
-            .map(|_| sender)
+        HANDING.store(true, Ordering::Release);
+        let spawned = handing.spawn(move || hand_over(&receiver));
+        if spawned.is_err() {
+            HANDING.store(false, Ordering::Release);
+        }
+        spawned.ok().map(|_| sender)
     });
-    started.as_ref().ok_or_else(no_threads)
+    let completions = started.as_ref().ok_or_else(no_threads)?;
+    // A call made once the thread has ended would wait for good.
+    if HANDING.load(Ordering::Acquire) {
+        Ok(completions)
+    } else {
+        Err(no_handing())
+    }
 }
 
 /// The function that settles a call's future on its loop.
@@ -302,9 +366,12 @@ where
             Some(Some(Some(Err(_)))) if exiting.is_cancelled() => {
                 Some(Box::new(|_| Err(shutting_down())))
             }
-            Some(Some(None)) => Some(Box::new(
-                move |py| Err(Failure::panicked(&label).raised(py)),
-            )),
+            Some(Some(None)) => {
+                let label = label.clone();
+                Some(Box::new(
+                    move |py| Err(Failure::panicked(&label).raised(py)),
+                ))
+            }
             Some(Some(Some(Err(failure)))) => Some(Box::new(|py| Err(failure.raised(py)))),
             Some(Some(Some(Ok(given)))) => Some(Box::new(|py| given.into_py_any(py))),
         };
@@ -312,11 +379,16 @@ where
             event_loop,
             future: held,
             outcome,
+            label,
             ticket,
         };
         // The thread that hands completions over lives as long as the
-        // process: a completion is never left with this worker.
-        drop(completions.send(completion));
+        // process. Should it have ended, this worker hands its own call,
+        // under the interpreter's lock as that thread would: the call is
+        // never left unsettled, nor its references let go of off the lock.
+        if let Err(mpsc::SendError(unhanded)) = completions.send(completion) {
+            Python::attach(|py| unhanded.hand(py));
+        }
     }));
     Ok(future)
 }
@@ -347,6 +419,65 @@ fn _activity() -> usize {
         return 0;
     }
     activity().count
+}
+
+/// Private diagnostic: whether the thread that hands calls to Python is
+/// running. False before the first call, which starts it.
+#[pyfunction]
+fn _handing() -> bool {
+    HANDING.load(Ordering::Acquire)
+}
+
+/// What the tests of the bridge ask of it, in a module built for them: a
+/// panic while a call is handed to Python, and the end of the thread that
+/// hands them.
+#[cfg(feature = "testing")]
+mod testing {
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+    use pyo3::prelude::*;
+
+    /// How many of the next calls panic as they are handed to Python.
+    static PANICS: AtomicUsize = AtomicUsize::new(0);
+
+    /// Whether the handing thread ends once it has handed what it holds.
+    static ENDS: AtomicBool = AtomicBool::new(false);
+
+    /// Panics if a test asked for a panic of the next call handed.
+    #[expect(clippy::panic, reason = "the defect the tests of the bridge script")]
+    pub(super) fn panic_if_asked() {
+        let mut left = PANICS.load(Ordering::Acquire);
+        while left > 0 {
+            let fewer = left.saturating_sub(1);
+            match PANICS.compare_exchange(left, fewer, Ordering::AcqRel, Ordering::Acquire) {
+                Ok(_) => panic!("the bridge panics while it hands a call to Python"),
+                Err(now) => left = now,
+            }
+        }
+    }
+
+    /// Whether a test asked the handing thread to end.
+    pub(super) fn ends_now() -> bool {
+        ENDS.load(Ordering::Acquire)
+    }
+
+    /// The next `count` calls panic as they are handed to Python.
+    #[pyfunction]
+    fn _handing_panics(count: usize) {
+        PANICS.store(count, Ordering::Release);
+    }
+
+    /// The thread that hands calls to Python ends once it has handed the
+    /// next call that ends.
+    #[pyfunction]
+    fn _handing_ends() {
+        ENDS.store(true, Ordering::Release);
+    }
+
+    pub(super) fn install(module: &Bound<'_, PyModule>) -> PyResult<()> {
+        module.add_function(wrap_pyfunction!(_handing_panics, module)?)?;
+        module.add_function(wrap_pyfunction!(_handing_ends, module)?)
+    }
 }
 
 /// Private diagnostic: the threads the bridge runs its calls on, and the
@@ -389,6 +520,9 @@ pub(super) fn install(module: &Bound<'_, PyModule>) -> PyResult<()> {
     let py = module.py();
     module.add_function(wrap_pyfunction!(_activity, module)?)?;
     module.add_function(wrap_pyfunction!(_threads, module)?)?;
+    module.add_function(wrap_pyfunction!(_handing, module)?)?;
+    #[cfg(feature = "testing")]
+    testing::install(module)?;
     module.add_function(wrap_pyfunction!(_shutdown, module)?)?;
     module.add_class::<Stops>()?;
     let settle = wrap_pyfunction!(_settle, module)?;

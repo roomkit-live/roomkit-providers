@@ -11,6 +11,7 @@ import time
 import tomllib
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import roomkit_providers
 from fake_endpoint import (
@@ -43,9 +44,12 @@ from roomkit.providers.ai import (
 from roomkit.providers.openai import OpenAIAIProvider as RoomKitProvider
 from roomkit.providers.openai import OpenAIConfig as RoomKitConfig
 from roomkit.telemetry import MockTelemetryProvider
+from roomkit_providers import _native
+from roomkit_providers.llm import _config
 from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
 ROOT = Path(__file__).resolve().parents[2]
+FIXTURES = ROOT / "crates/roomkit-providers-openai/tests/fixtures"
 KEY = "placeholder-not-a-key"
 HELLO = AIContext(messages=[AIMessage(role="user", content="Hello")])
 
@@ -123,6 +127,30 @@ class ConfigTests(unittest.TestCase):
         for members in REFUSED:
             with self.subTest(members=members):
                 self.assertEqual(refusal(OpenAIConfig, members), refusal(RoomKitConfig, members))
+
+    def test_a_base_url_roomkit_s_configuration_refuses_is_refused_alike(self) -> None:
+        forms = json.loads((FIXTURES / "python_config_forms.json").read_text(encoding="utf-8"))
+        refused = [url["base_url"] for url in forms["endpoints"] if url["openai"] == "refused"]
+        self.assertEqual(len(refused), 4)
+        for base_url in refused:
+            members = {"api_key": KEY, "model": "gpt-4o", "base_url": base_url}
+            with self.subTest(base_url=base_url):
+                outcomes = []
+                for config in (OpenAIConfig, RoomKitConfig):
+                    with self.assertRaises(ValidationError) as failed:
+                        config(**members)
+                    errors = failed.exception.errors()
+                    outcomes.append([(error["loc"], error["type"]) for error in errors])
+                self.assertEqual(outcomes[0], outcomes[1])
+                # The refusal shows neither the URL nor the key.
+                with self.assertRaises(ValidationError) as failed:
+                    OpenAIConfig(**members)
+                self.assertNotIn(KEY, str(failed.exception))
+        taken = [url["base_url"] for url in forms["endpoints"] if url["openai"] != "refused"]
+        self.assertGreaterEqual(len(taken), 60)
+        for base_url in taken:
+            with self.subTest(base_url=base_url):
+                OpenAIConfig(api_key=KEY, model="gpt-4o", base_url=base_url)
 
     def test_a_positional_argument_is_refused(self) -> None:
         with self.assertRaises(TypeError):
@@ -213,6 +241,47 @@ class ProviderTests(unittest.TestCase):
                     (moved.model_name, moved.supports_vision, moved.context_window),
                     (own.model_name, own.supports_vision, own.context_window),
                 )
+
+    def test_every_member_of_roomkit_s_configuration_reaches_the_provider(self) -> None:
+        # Each member stated otherwise than its default: none is left behind
+        # when RoomKit's configuration is taken in place of this module's.
+        stated = {
+            "api_key": KEY,
+            "base_url": "http://127.0.0.1:9/v1",
+            "model": "local-model",
+            "max_tokens": 256,
+            "timeout": 12.5,
+            "connect_timeout": 2.5,
+            "max_retries": 3,
+            "include_stream_usage": False,
+            "use_max_completion_tokens": True,
+            "supports_custom_temperature": False,
+            "reasoning_effort": "low",
+            "default_headers": {"X-Team": "a"},
+            "extra_body": {"top_k": 4},
+            "supports_response_schema": False,
+            "supports_response_schema_with_tools": False,
+            "supports_reasoning_effort_with_tools": True,
+            "thinking_field": "reasoning_content",
+        }
+        self.assertEqual(set(stated), set(RoomKitConfig.model_fields))
+        defaults = RoomKitConfig(api_key="", model="m").model_dump()
+        for name, value in stated.items():
+            self.assertNotEqual(value, defaults[name], name)
+        crossed = []
+
+        def recording(vendor: str, config_json: str, api_key: object) -> object:
+            crossed.append((vendor, json.loads(config_json), api_key.get_secret_value()))
+            return build(vendor, config_json, api_key)
+
+        build = _native.provider
+        with mock.patch.object(_config._native, "provider", recording):
+            OpenAI(RoomKitConfig(**stated))
+            OpenAI(OpenAIConfig(**stated))
+        self.assertEqual(crossed[0], crossed[1])
+        vendor, members, key = crossed[0]
+        self.assertEqual((vendor, key), ("openai", KEY))
+        self.assertEqual(members, {**stated, "api_key": "**********"})
 
     def test_another_configuration_is_refused(self) -> None:
         class DerivedConfig(OpenAIConfig):
@@ -423,6 +492,20 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ProviderError):
             await provider.generate(HELLO)
         self.assertEqual(len(self.first_tokens()), 1)
+
+    async def test_a_whole_answer_of_calls_alone_records_no_first_token(self) -> None:
+        function = {"name": "lookup_order", "arguments": '{"number": "A-1"}'}
+        message = {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [{"id": "call_1", "type": "function", "function": function}],
+        }
+        body = json.loads(completion(""))
+        body["choices"] = [{"index": 0, "message": message, "finish_reason": "tool_calls"}]
+        self.fake.answer(Whole(200, JSON, json.dumps(body).encode()))
+        called = await self.provider().generate(HELLO)
+        self.assertEqual([call.name for call in called.tool_calls], ["lookup_order"])
+        self.assertEqual(self.first_tokens(), [])
 
     async def test_the_first_token_of_a_stream_is_its_first_text_or_reasoning(self) -> None:
         cases = [

@@ -81,8 +81,11 @@ nothing has been released yet.
   where it differs and why. A redirect is refused, the key appears in no
   failure, an answer past 4 MiB fails, a 200 whose body is JSON and no
   completion fails, carrying what the body says of it, and no key, base URL
-  or organization is read from the environment. An idle connection is kept
-  5 seconds, and 100 of them for a host at most.
+  or organization is read from the environment. A request takes again an
+  idle connection for 5 seconds, one left idle is closed between 5 and 10
+  seconds after its last request, and 100 are kept for a host at most. Every
+  request carries `User-Agent: roomkit-providers/<version>`, which a
+  `User-Agent` among `default_headers` replaces.
 - `roomkit-providers-openai`: a provider goes through the proxies its
   environment names, `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and
   `NO_PROXY`, read once, when it is built, as RoomKit's Python client reads
@@ -100,21 +103,23 @@ nothing has been released yet.
   a line or an event past 1 MiB and past 256 MiB in all, and one that stalls
   ends at the configuration's timeout. A stream that ends with neither a
   finish reason nor its end mark fails after what came, and hands no whole
-  call; a JSON error object in place of a stream fails as the status it
-  names; a byte order mark that starts a stream is ignored.
+  call; a finish reason that is an empty text says nothing, and is no stop;
+  a JSON error object in place of a stream fails as the status it names; a
+  byte order mark that starts a stream is ignored.
 - `roomkit-providers-openai`: `list_models`, the models the endpoint lists,
   each filled from the crate's catalogue where it knows the model.
 - `roomkit-providers-openai`: a request the server refuses fails as
   `the provider answered HTTP <status> (<type>, <code>): <message>`, from
-  the body's error object alone, or from the text a server words its
-  refusal with under `detail`. A body that is no JSON is not echoed. The
+  the body's error object alone, or from what a server words its refusal
+  with under `detail`: a text, or a list, of which each entry's `msg` and
+  the place its `loc` names are said. A body that is no JSON is not echoed. The
   failure says the context overflowed when the body says so, by its code or
   by its words.
 - `roomkit-providers-openai`: no failure's text repeats a secret of the
   configuration a server sends back (the key, a default header's value, a
-  base URL's user information), as it is or as the failure's own code
-  writes it again, nor a control character or a character that shows
-  nothing; a secret shorter than 8 characters is not searched for. The
+  base URL's user information), nor the key a host lends one request, as it
+  is or as the failure's own code writes it again, nor a control character
+  or a character that shows nothing; a secret shorter than 8 characters is not searched for. The
   README says what a failure repeats of an answer, and the bounds of a
   stream's calls.
 - `roomkit-providers-openai`: a base URL with user information is sent with
@@ -136,6 +141,9 @@ nothing has been released yet.
   is built, the one exit of failures and, for a provider's tests, the replay
   of its recorded wire cases and a fake of an endpoint or of a proxy, over
   plain HTTP or over TLS. A provider crate holds its wire and nothing else.
+  The failure of a generation leaves with its request, so that the key a
+  host lends one request is in no failure of any provider, and the replay
+  asks each generation again with a lent key that a refusal repeats.
 - `roomkit-providers-anthropic`: `AnthropicConfig`, what a provider for
   Anthropic's Messages API is configured with: the names, the defaults and
   the JSON form of `AnthropicConfig` in RoomKit's Python implementation, the
@@ -162,20 +170,29 @@ nothing has been released yet.
   (0.117): `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`,
   the Rust OpenAI provider behind a native extension. `OpenAI` is a RoomKit
   `AIProvider`, to give an `AIChannel` in place of RoomKit's own: it takes
-  an `AIContext`, gives RoomKit's models, raises RoomKit's `ProviderError`
-  and `ResponseSchemaError`, and records the time to the first token as
-  RoomKit's provider does, under the same name. A context's metadata does
+  an `AIContext`, gives RoomKit's models, and raises RoomKit's
+  `ProviderError` and `ResponseSchemaError`. A context's metadata does
   not cross to the provider, and the credential of one request crosses
-  apart. A context the contract refuses, or one with no JSON form, fails
-  before it is sent, with RoomKit's `ProviderError` under the provider's
-  label; so does a defect of the native code, and a stream that closes
-  without its end. A refused configuration leaves no secret in a
-  traceback's frames. The calls run on four threads of the package's own,
-  whatever their number. A child forked after its parent's first call is
-  refused in Python, before it enters the native code. Cancelling a call's
-  task, or closing a stream, closes its
+  apart, and is in no failure of that request. A context the contract
+  refuses, or one with no JSON form, fails before it is sent, with RoomKit's
+  `ProviderError` under the provider's label; so does a defect of the native
+  code, wherever it shows, and a stream that closes without its end. A
+  refused configuration leaves no secret in a traceback's frames, and a
+  configuration's refusal never shows the value refused. The calls run on
+  four threads of the package's own, whatever their number. A child forked
+  after its parent's first call is refused in Python, before it enters the
+  native code. Cancelling a call's task, or closing a stream, closes its
   connection. There is no `transport` parameter. The guide
   (`guide/python.md`) says how to switch and what differs.
+- `roomkit-providers`: the time to the first token is recorded under
+  RoomKit's name, `roomkit.llm.ttfb_ms`, by one rule for every provider: a
+  stream at its first text or reasoning that is not empty, a whole answer
+  when it came, if it holds text or reasoning. A whole answer of tool calls
+  alone records none, where RoomKit's OpenAI provider records one.
+- `roomkit-providers`: what a provider's module holds is the members of its
+  configuration and one class statement. How a provider is built, what
+  guards it, and every entry into the native module are written once for
+  every provider.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of

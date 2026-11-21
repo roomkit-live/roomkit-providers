@@ -4,32 +4,72 @@
 //! It is the contract's `MockAiProvider`, which answers from a list and
 //! keeps each request it was asked, with what the tests of the crossing
 //! need beside: a failure it raises, an answer that never comes and is seen
-//! to be dropped, and deferred tools it says it supports.
+//! to be dropped, deferred tools it says it supports, and the name and the
+//! label a test gives it.
+//!
+//! It is also a vendor of no vendor ([`VENDOR`]), so that what every
+//! vendor's entries do is tested with none: a script is its configuration,
+//! which may refuse to be built, or panic as it is.
 
+use std::collections::BTreeMap;
+use std::net::SocketAddr;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use roomkit_providers_client::ReplayWaits;
 use roomkit_providers_llm::{
     AiProvider, AiRequest, AiResponse, MockAiProvider, MockAiProviderOptions, ModelInfo,
     ProviderError, ProviderErrorOptions, ProviderStream, TextStream, Yielder, items, next,
     request_api_key,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::watch;
 
 use super::provider::{PythonProvider, written};
 use super::runtime;
+use super::vendor::{Entries, Vendor};
 
 /// What a scripted provider does, as its test writes it.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 #[expect(clippy::struct_excessive_bools, reason = "the mock's own switches")]
-struct Script {
+pub(crate) struct Script {
+    /// The key it is built with, as a configuration holds one, written
+    /// masked: none for a configuration that states no key.
+    #[serde(skip_serializing)]
+    api_key: Option<String>,
+    /// The name it goes by, and the label of its failures: the mock's own
+    /// when a script names none.
+    name: Option<String>,
+    label: Option<String>,
+    /// The model it says it reaches: the mock's own when a script names
+    /// none.
+    model: Option<String>,
+    /// Why it cannot be built, when it cannot.
+    refuses: Option<String>,
+    /// Whether building it panics.
+    panics_when_built: bool,
+    /// The key it must be built with, when a script says: it is refused
+    /// with another, or with none.
+    expects_key: Option<String>,
+    /// Whether it must be built with no key: it is refused with one.
+    expects_no_key: bool,
+    /// Members a configuration holds, which a scripted provider does
+    /// nothing with.
+    base_url: Option<String>,
+    headers: Option<BTreeMap<String, String>>,
+    /// A switch its vendor decides when a script leaves it out: on for a
+    /// model whose name starts with `decided`.
+    decided: Option<bool>,
     /// The whole responses it answers, round-robin.
     responses: Vec<AiResponse>,
     vision: bool,
     streaming: bool,
+    /// Whether it says it streams events: as it streams, when a script
+    /// does not say.
+    structured_streaming: Option<bool>,
     tool_call_delta_chunks: i64,
     response_schema: bool,
     response_schema_with_tools: bool,
@@ -45,7 +85,7 @@ struct Script {
 }
 
 /// A provider's failure, attribute by attribute.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Refusal {
     message: String,
@@ -87,9 +127,28 @@ impl Drop for Waiting {
     }
 }
 
+/// How many scripted providers were released: each counts once, when the
+/// last holder of it lets go.
+static RELEASED: AtomicUsize = AtomicUsize::new(0);
+
+/// Counts a scripted provider as released, once it is.
+#[derive(Debug)]
+struct Released;
+
+impl Drop for Released {
+    fn drop(&mut self) {
+        RELEASED.fetch_add(1, Ordering::AcqRel);
+    }
+}
+
 #[derive(Clone, Debug)]
-struct Scripted {
+pub(crate) struct Scripted {
     mock: MockAiProvider,
+    _released: Arc<Released>,
+    name: Option<String>,
+    label: String,
+    model: Option<String>,
+    structured_streaming: Option<bool>,
     deferred_tools: bool,
     failure: Option<ProviderError>,
     silent: bool,
@@ -111,6 +170,11 @@ impl Scripted {
         };
         Self {
             mock: MockAiProvider::new(options),
+            _released: Arc::new(Released),
+            name: script.name,
+            label: script.label.unwrap_or_default(),
+            model: script.model,
+            structured_streaming: script.structured_streaming,
             deferred_tools: script.deferred_tools,
             failure: script.failure.map(ProviderError::from),
             silent: script.silent,
@@ -147,11 +211,17 @@ fn stops(at: &str) -> ! {
 
 impl AiProvider for Scripted {
     fn name(&self) -> &str {
-        self.mock.name()
+        self.name.as_deref().unwrap_or_else(|| self.mock.name())
+    }
+
+    fn label(&self) -> &str {
+        &self.label
     }
 
     fn model_name(&self) -> &str {
-        self.mock.model_name()
+        self.model
+            .as_deref()
+            .unwrap_or_else(|| self.mock.model_name())
     }
 
     fn supports_vision(&self) -> bool {
@@ -172,7 +242,8 @@ impl AiProvider for Scripted {
     }
 
     fn supports_structured_streaming(&self) -> bool {
-        self.mock.supports_structured_streaming()
+        self.structured_streaming
+            .unwrap_or_else(|| self.mock.supports_structured_streaming())
     }
 
     fn supports_response_schema(&self) -> bool {
@@ -249,8 +320,9 @@ impl PythonScripted {
 #[pymethods]
 impl PythonScripted {
     /// The provider, as any provider crosses.
-    fn provider(&self) -> PythonProvider {
-        PythonProvider::holding(self.scripted.clone())
+    fn provider(&self, py: Python<'_>) -> PyResult<PythonProvider> {
+        let held = PythonProvider::holding(self.scripted.clone());
+        held.map_err(|failure| failure.raised(py))
     }
 
     /// The requests the provider was asked, in order, as a JSON list: each
@@ -279,6 +351,13 @@ impl PythonScripted {
     }
 }
 
+/// How many scripted providers were released since the module was loaded.
+/// It takes no lock: a forked child may ask.
+#[pyfunction]
+fn _released() -> usize {
+    RELEASED.load(Ordering::Acquire)
+}
+
 /// The scripted provider `script_json` writes.
 #[pyfunction]
 fn _scripted(script_json: &str) -> PyResult<PythonScripted> {
@@ -289,8 +368,88 @@ fn _scripted(script_json: &str) -> PyResult<PythonScripted> {
     })
 }
 
+/// A script read as a vendor reads its configuration: the switch it leaves
+/// out is decided from its model, on for a model whose name starts with
+/// `decided`. Reading one whose model's name starts with `panics` panics.
+#[derive(Debug, Serialize)]
+#[serde(transparent)]
+pub(crate) struct Configured(Script);
+
+impl<'de> Deserialize<'de> for Configured {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let mut script = Script::deserialize(deserializer)?;
+        let model = script.model.as_deref().unwrap_or_default();
+        if model.starts_with("panics") {
+            stops("as its configuration is read");
+        }
+        script.decided = script.decided.or(Some(model.starts_with("decided")));
+        Ok(Self(script))
+    }
+}
+
+/// The scripted provider as a vendor: its script is its configuration.
+#[derive(Debug)]
+pub(crate) struct ScriptedVendor;
+
+/// The label of a scripted provider built as a vendor's is.
+const LABEL: &str = "scripted";
+
+impl Vendor for ScriptedVendor {
+    type Config = Configured;
+    type Provider = Scripted;
+
+    const NAME: &'static str = "scripted";
+    const RECORDED_AS: &'static str = "MockAIProvider";
+    const LABEL: &'static str = LABEL;
+
+    fn keyed(mut config: Configured, key: Option<String>) -> Configured {
+        config.0.api_key = key;
+        config
+    }
+
+    fn built(Configured(mut config): Configured) -> Result<Scripted, ProviderError> {
+        if config.panics_when_built {
+            stops("as it is built");
+        }
+        let another = config
+            .expects_key
+            .as_ref()
+            .is_some_and(|expected| config.api_key.as_ref() != Some(expected));
+        let wrong_key = another || (config.expects_no_key && config.api_key.is_some());
+        let refused = if wrong_key {
+            Some("the key did not cross as it was given".to_owned())
+        } else {
+            config.refuses.take()
+        };
+        if let Some(refused) = refused {
+            let options = ProviderErrorOptions {
+                provider: LABEL.to_owned(),
+                before_request: true,
+                ..ProviderErrorOptions::default()
+            };
+            return Err(ProviderError::new(refused, options));
+        }
+        config.label.get_or_insert_with(|| LABEL.to_owned());
+        Ok(Scripted::new(config))
+    }
+
+    fn replaying(
+        _provider: Scripted,
+        _fake: SocketAddr,
+        _clock: f64,
+    ) -> Result<(Scripted, ReplayWaits), ProviderError> {
+        Err(ProviderError::from(
+            "a scripted provider has no wire to replay".to_owned(),
+        ))
+    }
+}
+
+/// The entries of the scripted provider, beside the vendors'.
+pub(crate) static VENDOR: Entries = Entries::of::<ScriptedVendor>();
+
 /// Adds the scripted provider to the native module.
 pub(crate) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(_scripted, module)?)?;
+    module.add_function(wrap_pyfunction!(_released, module)?)?;
     module.add_class::<PythonScripted>()
 }

@@ -104,7 +104,7 @@ def replaying(provider: OpenAI, fake: Fake) -> Any:
     config = provider._config
     key = config.api_key.get_secret_value()
     form = config.model_dump_json()
-    provider._native, waits = _native._openai_replaying(form, key, "127.0.0.1", fake.port, CLOCK)
+    provider._native, waits = _native._replaying("openai", form, key, "127.0.0.1", fake.port, CLOCK)
     return waits
 
 

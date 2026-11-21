@@ -225,7 +225,9 @@ fails when the catalogue of the crate says otherwise.
   - stops the SDK's clock, at the instant the fixture names;
   - counts the ids Python mints instead of drawing them;
   - takes none of the SDK's waits, and records each;
-  - leaves out the headers of the SDK and of the platform.
+  - leaves out the headers of the SDK and of the platform. The replay
+    requires the provider's own `User-Agent` in their place, unless the
+    case's configuration names one.
 
   It must write the same bytes twice. The fixture names the commit of
   RoomKit it ran against and whether its files were clean, when RoomKit was
@@ -298,13 +300,28 @@ its own: what a provider sends and reads stays in the provider crates.
 - **Written once for every provider.** What translates between RoomKit and
   the contract belongs to no vendor: `python/roomkit_providers/llm/_provider.py`
   (a context to the contract's request, an answer to RoomKit's models, a
-  failure to RoomKit's exception, the first-token metric) and, in the
-  binding, the one class that holds any provider of the contract as its
-  object-safe form, `DynAiProvider` (`src/provider.rs`, with `src/stream.rs`,
-  `src/runtime.rs`, `src/fork.rs` and `src/errors.rs`). A provider's own
-  part is its configuration, how it is built and its catalogue. Adding a
-  provider must change none of the shared files: `tests/python/test_generic.py`
-  fails when one of them holds a vendor's name.
+  failure to RoomKit's exception, the first-token metric, and how a
+  provider is built from its configuration), `llm/_config.py` (what every
+  configuration does) and, in the binding, the one class that holds any
+  provider of the contract as its object-safe form, `DynAiProvider`
+  (`src/provider.rs`, with `src/stream.rs`, `src/runtime.rs`, `src/fork.rs`
+  and `src/errors.rs`), and the entries Python calls for any vendor
+  (`src/vendor.rs`). A provider's own part is the members of its
+  configuration, one class statement, and one `impl Vendor` in the binding.
+  Adding a provider must change none of the shared files:
+  `tests/python/test_generic.py` lists them and fails when one of them
+  holds a vendor's name or reads the name of a class.
+- **What guards a provider is written once too**, so that no provider can
+  leave it out: a configuration held where no frame shows it while a
+  provider is built, and a `repr` that shows no secret; the key opened in
+  native code; the refusal of a forked child before every entry into the
+  native module; a failure of the native module raised as RoomKit's
+  exception; a panic in any entry, one that does not wait included, made
+  the provider's failure (`guarded`, in `src/errors.rs`); the key a host
+  lends one request removed from every failure of that request.
+- **One rule records the first token**, in `llm/_provider.py`: a stream at
+  its first text or reasoning that is not empty, a whole answer when it
+  came, if it holds text or reasoning. No provider has a rule of its own.
 - **What crosses is JSON text**, both ways, in the contract's forms: a
   request as one text, a whole answer as one text, a stream as the list of
   every item already received at each crossing. A stream is read on the
@@ -319,7 +336,11 @@ its own: what a provider sends and reads stays in the provider crates.
   its future: when its task is cancelled, when its stream is closed, and
   when the interpreter exits. A panic of its work is a failure of the call.
 - **One thread takes the interpreter's lock** (`src/runtime.rs`): the one
-  that hands the end of each call to Python. The four workers that run the
+  that hands the end of each call to Python, every call that ended while it
+  waited for the lock under one hold of it. A panic while a call is handed
+  fails that call and no other. Should the thread end, a call made
+  afterwards is refused at once, and a call under way is handed by the
+  thread that ran it. The four workers that run the
   calls hold no Python reference they could drop without the lock, and what
   a call fails with is made an exception under it. PyO3 otherwise keeps the
   references to release behind a lock of its own, which every entry into
@@ -341,7 +362,11 @@ its own: what a provider sends and reads stays in the provider crates.
 - **The shared part is tested with no vendor and no HTTP**
   (`tests/python/test_provider.py`), against a scripted provider: the
   contract's `MockAiProvider`, which the binding builds under its `testing`
-  feature (`src/testing.rs`). The wheel `scripts/check-python.py` builds
+  feature (`src/testing.rs`). It is also a vendor of no vendor, so that the
+  entries every vendor gets, and the two classes a provider's module
+  derives from, are tested with none. The same feature lets a test make the
+  bridge fail on purpose: a panic while a call is handed to Python, the end
+  of the thread that hands them. The wheel `scripts/check-python.py` builds
   carries it; a wheel that is distributed, and the source distribution, do
   not, which the check verifies, and those tests are skipped there, saying
   so.
@@ -354,12 +379,14 @@ its own: what a provider sends and reads stays in the provider crates.
   the Rust replay writes from its own list: after a change to
   `src/replay/named.rs`, run `make named-cases` and commit the file; a test
   of the crate fails while the two differ. The replay drives a provider
-  through a seam of the OpenAI crate, its `replay` feature, which sends to a
+  through a seam of its crate, its `replay` feature, which sends to a
   loopback address only, sets the clock a `retry-after` date is read against
   and keeps the waits between two tries instead of taking them. The seam is
-  a private function of the native module, for this replay, never for a
-  host. The cases whose fake stops answering under way stay with the Rust
-  replay, which moves its own clock.
+  one private function of the native module for every vendor, for this
+  replay, never for a host. The cases whose fake stops answering under way
+  stay with the Rust replay, which moves its own clock. The same test file
+  holds the replay to each comparison it makes: one thing of a replayed
+  case is made wrong, and the replay must say so.
 - **The public API snapshot.** `tests/python/public_api_names.json` and
   `public_api_signatures.json` hold every public name and each signature. A
   test fails while they differ from the code, a compatible addition
@@ -419,6 +446,8 @@ In Rust, in this order:
   named in the replay with its reason.
 - `crates/roomkit-providers-<vendor>`: the provider, which implements the
   contract's `AiProvider`, and its configuration, the JSON form of Python's.
+  A directory under `crates/` is a member of the workspace by itself: the
+  workspace's `Cargo.toml` changes only for a dependency the crate brings.
   It holds its wire and nothing else: how a request is written, how an
   answer and its events are read, how an error body is read, its
   catalogue. The HTTP client, the proxies and the certificate authorities
@@ -426,8 +455,9 @@ In Rust, in this order:
   answer, the base URLs refused when a provider is built and the exit of
   its failures are `roomkit-providers-client`'s, whose README says how a
   provider is written on it. The provider reads the key of one request
-  through the contract's `request_api_key`, and nothing from the
-  environment.
+  through the contract's `request_api_key`, the failure of a generation
+  leaves with its request (`Exit::leave_for`, `stream::leaving`), and
+  nothing is read from the environment.
 - **Its tests**, on the harness of `roomkit-providers-client` (its `harness`
   feature, a dev-dependency): the replay of every case of the fixture
   through `Replays` (`src/replay/`), the cases it answers otherwise named
@@ -436,7 +466,9 @@ In Rust, in this order:
   (`tests/python_<api>_cases.rs`, on `harness::shape`). Both counts of the
   replay are asserted. Then what no recorded case shows: a stream dropped
   or a call cancelled under way, a stream that stalls, the bounds, the key
-  of one request.
+  of one request. The replay itself holds the key of one request out of
+  every failure, with nothing to write (`Replays::key_refused` where the
+  wire words a refusal otherwise).
 - **Its `replay` feature**, which forwards to the client's, for the replay
   the Python tests run through the binding; a line of `make named-cases`
   for its `tests/fixtures/named_cases.json`.
@@ -448,31 +480,73 @@ In Rust, in this order:
   rule of RoomKit's and no wire (`fence` and `identifier`, for a text from
   outside a wire has no place for). Such a move is a change to what every
   provider shares, made and reviewed apart from the provider.
-- `bindings/python/src/vendors/<vendor>.rs`: the functions the package
-  calls, each registered in the module's `register`: one that builds the
-  provider from its configuration's JSON form and its key, apart, and gives
-  it as the binding's one provider class (`PythonProvider::holding`); one
-  that writes its catalogue; what its configuration needs of Rust.
-- `bindings/python/src/vendors/mod.rs`: the module, and its line in
-  `register`.
-- `bindings/python/Cargo.toml`: the crate, then
-  `python scripts/native-notices.py write` for the notices of what it
-  brings.
+- **Its name and its label.** The contract's defaults are not a
+  provider's: `name()` answers the Rust type's name and `label()` nothing.
+  The provider answers `name()` with the class name of RoomKit's own
+  provider (`OpenAIAIProvider`), which is what RoomKit records an answer
+  under, and `label()` with what its failures carry as their provider
+  (`openai`). The binding refuses to build a provider that answers either
+  otherwise.
+
+In the binding, a workspace of its own:
+
+- `bindings/python/src/vendors/<vendor>.rs`: one `impl Vendor`
+  (`src/vendor.rs`) and nothing Python calls: the provider's and the
+  configuration's types; `NAME`, the module's name; `RECORDED_AS` and
+  `LABEL`, what the provider must answer as its name and its label;
+  `keyed`, which puts the key into a configuration, and says what no key
+  means for a provider whose key is optional; `built`; and `replaying`, the
+  provider's replay seam. Every entry Python calls for a
+  vendor is written once, in `src/vendor.rs`, with what guards it: the key
+  opened in native code, a panic made the provider's failure, the name and
+  the label checked.
+- `bindings/python/src/vendors/mod.rs`: the module's line, and its line in
+  `VENDORS`.
+- `bindings/python/Cargo.toml`: the crate, with its `replay` feature; then
+  `bindings/python/Cargo.lock`, which cargo rewrites, and
+  `python scripts/native-notices.py write` for the notices of what the
+  crate brings (`python/roomkit_providers/licenses/native_dependencies.txt`,
+  and the wheel's license in `pyproject.toml` when a license is new).
 
 In Python:
 
-- `python/roomkit_providers/llm/<vendor>.py`: the configuration, a pydantic
-  model, and the provider's class, a subclass of `Provider`
-  (`llm/_provider.py`) whose `__init__` builds the native provider and whose
-  `_catalogue` names what writes its catalogue. Its `__all__` names both.
-- `python/roomkit_providers/_native.pyi`: the functions added to the native
-  module.
-- `tests/python/test_<vendor>.py`, and `make api-snapshot`.
+- `python/roomkit_providers/llm/<vendor>.py`: two class statements and a
+  docstring each, exported by its `__all__`.
+  - The configuration derives from `Config` (`llm/_config.py`) and states
+    its members, with the defaults and the checks of RoomKit's
+    configuration: its key among them, `api_key`, a `SecretStr`, optional
+    where RoomKit's is, and no such member for a provider that takes no
+    key. Its class statement names the vendor as the binding
+    does, RoomKit's configuration it stands for, and the switches the
+    provider decides from the model:
+    `class OpenAIConfig(Config, vendor="openai", stands_for=..., decided=(...))`.
+  - The provider derives from `Provider` (`llm/_provider.py`) and names its
+    configuration: `class OpenAI(Provider[...], config=OpenAIConfig)`. It
+    writes no `__init__`.
+
+  The module imports neither the native module nor `_process`, and defines
+  none of what every provider gets from the two classes: how a provider is
+  built, the veil that keeps a configuration out of a traceback's frames,
+  the `repr` that shows no secret, the refusal of a forked child, a failure
+  raised as RoomKit's exception. `tests/python/test_generic.py` fails for a
+  vendor's module that does.
+- `tests/python/test_<vendor>.py`: the provider through its public class,
+  against a local fake of its endpoint; and the replay of its recorded
+  cases through the package (`tests/python/test_replay.py`,
+  `replay_cases.py`), which reads the crate's `named_cases.json`.
+- `make api-snapshot`, which rewrites `tests/python/public_api_names.json`
+  and `public_api_signatures.json` for the two new names.
+
+`python/roomkit_providers/_native.pyi` does not change: a provider adds no
+entry to the native module.
 
 Then the README's and the guide's tables, and a line of the changelog.
 Nothing else: a provider that needs a change to the contract, to
-`llm/_provider.py` or to the binding's shared modules is a change to what
-every provider shares, made and reviewed as one.
+`llm/_provider.py`, `llm/_config.py`, `llm/_failure.py`, `_process.py` or to
+the binding's modules outside `vendors/` is a change to what every provider
+shares, made and reviewed as one. `tests/python/test_generic.py` lists the
+shared files and holds them to it: none names a vendor, however the name is
+written, and none reads the name of a class.
 
 ## Implementation boundaries
 
