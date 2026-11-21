@@ -25,6 +25,15 @@ from typing import Any
 from unittest import mock
 
 from pydantic import BaseModel, SecretStr, ValidationError
+from roomkit import (
+    AIChannel,
+    ChannelCategory,
+    InboundMessage,
+    RoomKit,
+    TextContent,
+    WebSocketChannel,
+)
+from roomkit.models import RetryPolicy
 from roomkit.providers.ai import (
     AIContext,
     AIImagePart,
@@ -1264,6 +1273,87 @@ class KeylessTests(unittest.IsolatedAsyncioTestCase):
             class OptionalPlainKeyConfig(Config, vendor="scripted"):
                 api_key: str | None = None
                 model: str = "mock"
+
+
+class CutStreamTests(unittest.IsolatedAsyncioTestCase):
+    """A call a stream handed before it was cut does not run: the stream's
+    failure is its last item, and RoomKit runs no call of a turn that
+    failed."""
+
+    CALL = AIToolCall(id="call_lookup", name="lookup_order", arguments={"number": "A-1"})
+
+    def cut(self) -> Provider:
+        """A provider whose stream writes a call, hands it whole, then is
+        cut before its end."""
+        response = AIResponse(content="", tool_calls=[self.CALL], finish_reason="tool_calls")
+        script = {
+            "streaming": True,
+            "tool_call_delta_chunks": 2,
+            "cut_after": 3,
+            "label": "scripted",
+        }
+        return scripted(response, **script)[0]
+
+    async def test_a_stream_that_is_cut_hands_what_came_then_fails(self) -> None:
+        given = []
+        with self.assertRaises(ProviderError) as failed:
+            async for event in self.cut().generate_structured_stream(HELLO):
+                given.append(event)
+        self.assertEqual(
+            [event.type for event in given], ["tool_call_delta", "tool_call_delta", "tool_call"]
+        )
+        self.assertFalse(given[-1].partial)
+        self.assertTrue(failed.exception.retryable)
+
+    async def asked_of_the_tool(self, provider: Provider) -> list[tuple[str, dict[str, Any]]]:
+        """What the tool's handler was asked in one turn of an AI channel
+        over `provider`, a user's message to its end."""
+        asked: list[tuple[str, dict[str, Any]]] = []
+
+        async def handle(name: str, arguments: dict[str, Any]) -> str:
+            asked.append((name, arguments))
+            return json.dumps({"status": "left this morning"})
+
+        async def row(_connection: str, _event: Any) -> None:
+            return None
+
+        lookup = AITool(
+            name="lookup_order",
+            description="Finds an order by its number.",
+            parameters={"type": "object", "properties": {"number": {"type": "string"}}},
+        )
+        kit = RoomKit()
+        self.addAsyncCleanup(kit.close)
+        assistant = AIChannel(
+            "assistant",
+            provider=provider,
+            tools=[lookup],
+            tool_handler=handle,
+            # A turn that failed is asked again once.
+            retry_policy=RetryPolicy(max_retries=1, base_delay_seconds=0.001),
+        )
+        user = WebSocketChannel("user")
+        user.register_connection("console", row, room_id="orders")
+        kit.register_channel(user)
+        kit.register_channel(assistant)
+        await kit.create_room(room_id="orders")
+        await kit.attach_channel("orders", "user")
+        await kit.attach_channel("orders", "assistant", category=ChannelCategory.INTELLIGENCE)
+        message = InboundMessage(
+            channel_id="user", sender_id="customer", content=TextContent(body="Where is A-1?")
+        )
+        async with asyncio.timeout(30):
+            await kit.process_inbound(message, room_id="orders")
+        return asked
+
+    async def test_a_call_of_a_stream_that_was_cut_is_not_run_by_an_ai_channel(self) -> None:
+        # The same call, from a stream that reached its end, runs.
+        called = AIResponse(content="", tool_calls=[self.CALL], finish_reason="tool_calls")
+        whole, _ = scripted(called, AIResponse(content="It left this morning."), streaming=True)
+        self.assertEqual(await self.asked_of_the_tool(whole), [("lookup_order", {"number": "A-1"})])
+        # Handed whole by a stream that then failed, it does not: the turn
+        # failed, and was asked again once, to the same end.
+        self.assertEqual(await self.asked_of_the_tool(self.cut()), [])
 
 
 if __name__ == "__main__":

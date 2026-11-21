@@ -89,21 +89,28 @@ nothing has been released yet.
 - `roomkit-providers-openai`: a provider goes through the proxies its
   environment names, `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and
   `NO_PROXY`, read once, when it is built, as RoomKit's Python client reads
-  them on a table of 109 environments; a proxy's credentials appear in no
-  failure. A SOCKS proxy is refused, and the system's proxy settings are
-  not read.
+  them on a table of 136 environments. A proxy's user and password are read
+  as that client reads them and given to the proxy apart from its address,
+  so that no character of theirs changes the host a request is sent to, and
+  they appear in no failure. A SOCKS proxy is refused, as is a proxy whose
+  name holds another sign than a letter, a digit, a hyphen, a dot or an
+  underscore, or one at a link-local IPv6 address with a zone; the system's
+  proxy settings are not read.
 - `roomkit-providers-openai`: a server's certificate is checked against the
   authorities `SSL_CERT_FILE` or `SSL_CERT_DIR` name, else against the
   system's, as RoomKit's Python client checks it; a system that keeps no
-  authority is given the public roots compiled in. A certificate that is
-  refused fails as `the provider's certificate is not trusted`.
+  authority is given the public roots compiled in, and one whose store is
+  there and does not read builds no provider (`the system's certificate
+  store at <path> cannot be read`). A certificate that is refused fails as
+  `the provider's certificate is not trusted`.
 - `roomkit-providers-openai`: the provider's streams,
   `generate_structured_stream` and `generate_stream`. A stream is pulled,
   and dropping it stops the request and closes its connection. It fails at
   a line or an event past 1 MiB and past 256 MiB in all, and one that stalls
   ends at the configuration's timeout. A stream that ends with neither a
   finish reason nor its end mark fails after what came, and hands no whole
-  call; a finish reason that is an empty text says nothing, and is no stop;
+  call; one whose body ends inside an event is read as one that ended
+  before that event; a finish reason that is an empty text says nothing, and is no stop;
   a JSON error object in place of a stream fails as the status it names; a
   byte order mark that starts a stream is ignored.
 - `roomkit-providers-openai`: `list_models`, the models the endpoint lists,
@@ -143,7 +150,15 @@ nothing has been released yet.
   plain HTTP or over TLS. A provider crate holds its wire and nothing else.
   The failure of a generation leaves with its request, so that the key a
   host lends one request is in no failure of any provider, and the replay
-  asks each generation again with a lent key that a refusal repeats.
+  asks each generation again with a lent key that a refusal repeats. A
+  provider gets the exit of its failures from its client (`Client::exit`),
+  which adds the credentials of the proxies it read, and makes a header of
+  its configuration with `configured_header`, whose value no `Debug` form
+  shows; the `Debug` form of a `Call` shows the origin of its URL, the
+  names of its headers and the size of its body. `Timeouts::new` is the
+  only way to make timeouts. A provider a test points at a fake, and one a
+  replay drives, go through no proxy of the environment. `catalogue` reads
+  a model catalogue and the page of a listing, once for every provider.
 - `roomkit-providers-anthropic`: `AnthropicConfig`, what a provider for
   Anthropic's Messages API is configured with: the names, the defaults and
   the JSON form of `AnthropicConfig` in RoomKit's Python implementation, the
@@ -154,9 +169,9 @@ nothing has been released yet.
   Messages API and the servers that speak it behind a base URL: whole
   answers (`generate`), streams (`generate_structured_stream`,
   `generate_stream`) and the model listing (`list_models`). It does as
-  `AnthropicAIProvider` of RoomKit's Python implementation on 300 of the 364
-  cases captured from it; its README names the 64 others, each with its
-  reason. It is written on `roomkit-providers-client`, as the OpenAI
+  `AnthropicAIProvider` of RoomKit's Python implementation on 309 of the 377
+  cases captured from it; its README says why it differs on the 68 others,
+  reason by reason. It is written on `roomkit-providers-client`, as the OpenAI
   provider is, with the same guarantees: a redirect is refused, no secret
   appears in a failure, every size a server controls is bounded, a stream
   that ends with neither a stop reason nor the event that ends its message

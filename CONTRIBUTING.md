@@ -79,7 +79,10 @@ especially boundaries, failures, cancellation and cleanup.
   `behind_a_proxy`); a Python test sets `os.environ` before it builds its
   provider. Any other test gives its client what an environment would name,
   and `scripts/no-network.sh` drops those variables of the machine, so that
-  a developer's proxy changes no test.
+  a developer's proxy changes no test. A provider a test points at a fake
+  goes there directly, whatever proxy the environment names
+  (`Client::pointed_at`, which a provider's `point_at` calls): a test names
+  its endpoint through `point_at`, never by a base URL alone.
 - A certificate a test needs is signed by an authority the test makes when
   it runs: with `rcgen` in Rust, with the `openssl` program in Python, whose
   tests are skipped, saying so, where the machine has none. No key is
@@ -177,7 +180,8 @@ make python-outside-text PYTHON=path/to/venv/bin/python
 from the environment: `make python-proxy-cases` rewrites
 `crates/roomkit-providers-client/tests/fixtures/python_proxy_cases.json`,
 which proxy the client of RoomKit's Python providers takes for each endpoint
-of a table of environments, or the exception it raises when it is built.
+of a table of environments, with the user and the password it gives that
+proxy, or the exception it raises when it is built.
 `PYTHON` needs RoomKit's `openai` extra; the script builds clients and sends
 nothing. A case the crate decides otherwise is named in the test, with the
 reason.
@@ -457,7 +461,12 @@ In Rust, in this order:
   provider is written on it. The provider reads the key of one request
   through the contract's `request_api_key`, the failure of a generation
   leaves with its request (`Exit::leave_for`, `stream::leaving`), and
-  nothing is read from the environment.
+  nothing is read from the environment. Its exit is the one its client
+  makes (`Client::exit`), and a provider that cannot be built leaves
+  through `Exit::unbuilt`. A header of its configuration is made with
+  `configured_header`, so that no `Debug` form shows its value. A vendor's
+  name that Clippy would take for an identifier joins `doc-valid-idents` in
+  `clippy.toml`.
 - **Its tests**, on the harness of `roomkit-providers-client` (its `harness`
   feature, a dev-dependency): the replay of every case of the fixture
   through `Replays` (`src/replay/`), the cases it answers otherwise named
@@ -468,17 +477,25 @@ In Rust, in this order:
   or a call cancelled under way, a stream that stalls, the bounds, the key
   of one request. The replay itself holds the key of one request out of
   every failure, with nothing to write (`Replays::key_refused` where the
-  wire words a refusal otherwise).
+  wire words a refusal otherwise). `harness::exit` is the exit of a test
+  that has no client; `Client::set_pace` and `Client::set_stream_limit` are
+  there under the `harness` feature alone.
 - **Its `replay` feature**, which forwards to the client's, for the replay
   the Python tests run through the binding; a line of `make named-cases`
   for its `tests/fixtures/named_cases.json`.
 - **An example** against a local server it starts itself, named for what it
   shows and for no other crate's example (two examples of one name collide
-  when the workspace is built), with its line in `make examples`.
+  when the workspace is built), with its lines in the `Makefile`: the
+  crate in the build of `make examples`, the example's run, and a target
+  for each script, named in `.PHONY`.
+- **Both lock files**: `Cargo.lock`, which cargo rewrites for the new
+  crate, and `bindings/python/Cargo.lock` once the binding depends on it.
 - What the provider needs that another has or would need is not copied: it
   moves to `roomkit-providers-client`, or to the contract when it is a
   rule of RoomKit's and no wire (`fence` and `identifier`, for a text from
-  outside a wire has no place for). Such a move is a change to what every
+  outside a wire has no place for). How a catalogue and the page of a
+  listing are read is the client's `catalogue`; a provider keeps its tags
+  and what it does of each. Such a move is a change to what every
   provider shares, made and reviewed apart from the provider.
 - **Its name and its label.** The contract's defaults are not a
   provider's: `name()` answers the Rust type's name and `label()` nothing.
@@ -533,7 +550,10 @@ In Python:
 - `tests/python/test_<vendor>.py`: the provider through its public class,
   against a local fake of its endpoint; and the replay of its recorded
   cases through the package (`tests/python/test_replay.py`,
-  `replay_cases.py`), which reads the crate's `named_cases.json`.
+  `replay_cases.py`), which reads the crate's `named_cases.json`. The
+  Python replay is test support written for the first provider: a second
+  one brings its fixture, its fake's answers and how its key is written in
+  a recorded header.
 - `make api-snapshot`, which rewrites `tests/python/public_api_names.json`
   and `public_api_signatures.json` for the two new names.
 

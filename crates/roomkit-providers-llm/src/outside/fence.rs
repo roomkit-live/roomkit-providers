@@ -29,13 +29,27 @@ use super::unicode;
 /// `</server instructions>` and `</serverinstructions>` close
 /// `server_instructions`.
 ///
+/// `tag` is a plain ASCII name, as every tag of `RoomKit` is: characters of
+/// the ASCII range that show, none of them a space. It is decided as
+/// Python decides it for such a tag, and for no other: a tag that ends with
+/// a combining mark, that starts with a space, or that holds a letter
+/// outside the tables may be left in `text` where Python neutralises it
+/// (the module says each). A debug build refuses such a tag.
+///
 /// For a provider crate: a text from outside the provider writes in a
 /// model's context where its wire has no place for it, a tool's result
 /// beside what it refers to, is set apart as this.
 #[doc(hidden)]
 #[must_use]
 pub fn fence(tag: &str, text: &str) -> String {
+    debug_assert!(is_plain(tag), "a tag is a plain ASCII name");
     format!("<{tag}>\n{}\n</{tag}>", without_tags(tag, text))
+}
+
+/// Whether `tag` is a plain ASCII name: not empty, of characters of the
+/// ASCII range that show, none of them a space.
+fn is_plain(tag: &str) -> bool {
+    !tag.is_empty() && tag.bytes().all(|byte| byte.is_ascii_graphic())
 }
 
 /// `text` with every closing and opening tag of `tag` neutralised, as

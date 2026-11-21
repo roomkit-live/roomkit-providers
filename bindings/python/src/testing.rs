@@ -82,6 +82,9 @@ pub(crate) struct Script {
     panics: bool,
     /// After how many events a stream panics.
     panics_after: Option<usize>,
+    /// After how many events a stream fails as one that was cut: what came
+    /// is handed on, then a failure worth a new request.
+    cut_after: Option<usize>,
 }
 
 /// A provider's failure, attribute by attribute.
@@ -154,6 +157,7 @@ pub(crate) struct Scripted {
     silent: bool,
     panics: bool,
     panics_after: Option<usize>,
+    cut_after: Option<usize>,
     seen: Arc<watch::Sender<Seen>>,
 }
 
@@ -180,8 +184,19 @@ impl Scripted {
             silent: script.silent,
             panics: script.panics,
             panics_after: script.panics_after,
+            cut_after: script.cut_after,
             seen: Arc::new(watch::Sender::new(Seen::default())),
         }
+    }
+
+    /// The failure of a stream that was cut: worth a new request.
+    fn cut(&self) -> ProviderError {
+        let options = ProviderErrorOptions {
+            retryable: true,
+            provider: self.label.clone(),
+            ..ProviderErrorOptions::default()
+        };
+        ProviderError::new("the provider's stream was cut", options)
     }
 
     /// What stands before an answer: the scripted failure, or, for a
@@ -287,6 +302,9 @@ impl AiProvider for Scripted {
             while let Some(event) = next(&mut events).await {
                 if self.panics_after == Some(given) {
                     stops("while its stream is read");
+                }
+                if self.cut_after == Some(given) {
+                    return out.give(Err(self.cut())).await;
                 }
                 out.give(event).await;
                 given = given.saturating_add(1);

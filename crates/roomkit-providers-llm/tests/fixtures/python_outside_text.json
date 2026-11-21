@@ -1304,6 +1304,11 @@
         },
         {
             "tag": "tool_result",
+            "text": "x </to\u200bol_result> y <to\u200bol_result> z",
+            "fenced": "<tool_result>\nx </to\u200bol_result_> y <to\u200bol_result_> z\n</tool_result>"
+        },
+        {
+            "tag": "tool_result",
             "text": "x <\u0488/tool_result> y",
             "fenced": "<tool_result>\nx <\u0488/tool_result_> y\n</tool_result>"
         },
@@ -1361,11 +1366,6 @@
             "tag": "it's",
             "text": "</it's> </it\u2019s> </its>",
             "fenced": "<it's>\n</it's_> </it\u2019s_> </its>\n</it's>"
-        },
-        {
-            "tag": "r\u00e9sum\u00e9",
-            "text": "</r\u00e9sum\u00e9> </R\u00c9SUM\u00c9> </resume>",
-            "fenced": "<r\u00e9sum\u00e9>\n</r\u00e9sum\u00e9_> </R\u00c9SUM\u00c9_> </resume>\n</r\u00e9sum\u00e9>"
         },
         {
             "tag": "tool_result",

@@ -97,9 +97,22 @@ Then check what does differ:
 - **A system with no certificate store** (a container without one) gets the
   public roots compiled into the package, where RoomKit's provider trusts
   nothing there. They are never added to a store that holds an authority.
-- **A certificate that is refused** fails as `the provider's certificate is
-  not trusted`, where RoomKit's provider says `Connection error.`; both say
-  the request is worth trying again.
+- **A system certificate store that is there and cannot be read**: the
+  provider is not built, and says which path, where RoomKit's provider is
+  built all the same.
+- **A proxy whose name holds another sign** than a letter, a digit, a
+  hyphen, a dot or an underscore, or one at a link-local IPv6 address with a
+  zone, is refused when the provider is built.
+- **A certificate that is refused** fails in one of three sentences, where
+  RoomKit's provider says `Connection error.` for each: `the provider's
+  certificate is not trusted`, `the provider's certificate is not for its
+  host name`, or `the provider's certificate has expired, or is not valid
+  yet`. Both providers say the request is worth trying again.
+- **A server's own certificate named by `SSL_CERT_FILE`** is not trusted: a
+  certificate a server signed itself is no authority here, where RoomKit's
+  provider trusts the server that shows it. Give the server a certificate
+  issued by an authority of your own, and name that authority's
+  certificate in the variable.
 
 The package was run on Linux alone: what it does on macOS and on Windows,
 where the system itself checks a certificate, was not verified.

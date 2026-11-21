@@ -110,3 +110,12 @@ fn a_text_of_brackets_and_slashes_is_read_in_one_pass() {
     let fenced = fence("server_instructions", &text);
     assert!(fenced.ends_with("</server_instructions_>\n</server_instructions>"));
 }
+
+// A tag is a plain ASCII name: for any other, what is neutralised is not
+// held to what Python neutralises, and a debug build says so.
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "a tag is a plain ASCII name")]
+fn a_tag_that_is_no_plain_name_is_refused_in_a_debug_build() {
+    let _fenced = fence(" x", "</ x>");
+}
