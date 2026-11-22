@@ -14,7 +14,7 @@ publish = false
 [workspace.dependencies]
 # RoomKit's Rust core: what a provider is, what it is asked and what it
 # answers. A build holds one of each of these crates, the provider's and
-# its host's: the revision is the one a host pins, the 0.2.0 release.
+# its host's: the revision is the one a host pins, the 0.3.0 release.
 roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
 roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
 roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
