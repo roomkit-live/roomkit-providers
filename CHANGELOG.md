@@ -36,6 +36,9 @@ nothing has been released yet.
   where it differs and what it does not guard: a name the client resolves
   again, a client behind a proxy, redirects, and a name when resolution is
   turned off.
+- `roomkit-providers-openai`: a conversation is rendered as Chat
+  Completions messages by the renderer of RoomKit's Rust core
+  (`roomkit_ai::chat_messages`), in place of the crate's own.
 - `roomkit-providers-openai`: `OpenAiConfig`, what a provider for OpenAI's
   Chat Completions is configured with: the names, the defaults and the JSON
   form of `OpenAIConfig` in RoomKit's Python implementation, the key written
