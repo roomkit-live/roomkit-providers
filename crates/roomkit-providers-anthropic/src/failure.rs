@@ -9,31 +9,46 @@
 //! error is made: there what was said is cleaned of the configuration's
 //! secrets, put on one line and bounded.
 
+use roomkit_ai::is_context_overflow_message;
 pub(crate) use roomkit_providers_client::failure::{Failure, past_mark};
-use roomkit_providers_client::failure::{Stated, one_line, own};
+use roomkit_providers_client::failure::{
+    MESSAGE_LIMIT, Stated, one_line, own, retryable_status, told,
+};
 use serde_json::Value;
 
 /// The failure of an answer whose status is neither a success nor a
-/// redirect: `the provider answered HTTP 401 (type): message`. Of the body
-/// it carries what Anthropic's error object says of itself and nothing
-/// else: its type and its message, read under `error`. A body of another
-/// shape, or that is no JSON, is not echoed: the text is then the status's
-/// reason. Whether the request overflowed the model's context is read from
-/// the whole body, echoed or not, by its words: Anthropic names no code
-/// for it.
+/// redirect. Its text is the message of Anthropic's error object, read
+/// under `error`, and nothing else: a host reads in it what the API says,
+/// from its first word (`messages.2.content.1: Invalid signature…`), and
+/// the status is the failure's own. A body that states no message is not
+/// echoed: the text is then `the provider answered HTTP 502: Bad Gateway`,
+/// the status and its reason, after the type when the body states one.
+/// Whether the request overflowed the model's context is read from the
+/// whole body, echoed or not, by its words: Anthropic names no code for it.
 pub(crate) fn status(status: u16, body: &[u8]) -> Failure {
     let parsed: Option<Value> = serde_json::from_slice(past_mark(body)).ok();
     let stated = |name: &str| {
         let stated = parsed.as_ref()?.get("error")?.get(name)?.as_str()?;
         Some(stated.to_owned()).filter(|stated| !one_line(stated).is_empty())
     };
-    let stated = Stated {
-        kind: stated("type"),
-        code: None,
-        message: stated("message"),
-        overflow: false,
+    let Some(message) = stated("message") else {
+        let stated = Stated {
+            kind: stated("type"),
+            code: None,
+            message: None,
+            overflow: false,
+        };
+        return Failure::refused(status, body, stated);
     };
-    Failure::refused(status, body, stated)
+    let said = vec![told(message, MESSAGE_LIMIT)];
+    let failure = Failure::said(said, retryable_status(status), Some(status));
+    // Everything the server said is read for an overflow, not only what is
+    // echoed.
+    if is_context_overflow_message(&String::from_utf8_lossy(body)) {
+        failure.overflowing()
+    } else {
+        failure
+    }
 }
 
 /// The failure of a streamed message that ended with neither a stop reason
@@ -121,10 +136,7 @@ mod tests {
             "error": {"type": "authentication_error", "message": "invalid x-api-key"},
             "request_id": "req_1",
         });
-        assert_eq!(
-            said(401, &object.to_string()),
-            "the provider answered HTTP 401 (authentication_error): invalid x-api-key"
-        );
+        assert_eq!(said(401, &object.to_string()), "invalid x-api-key");
         let page = "<html><body><h1>502 Bad Gateway</h1>nginx at 10.0.0.7</body></html>";
         assert_eq!(
             said(502, page),
@@ -137,10 +149,7 @@ mod tests {
         assert_eq!(said(529, ""), "the provider answered HTTP 529: no message");
         // A byte order mark before the body is no part of it.
         let marked = format!("\u{feff}{object}");
-        assert_eq!(
-            said(401, &marked),
-            "the provider answered HTTP 401 (authentication_error): invalid x-api-key"
-        );
+        assert_eq!(said(401, &marked), "invalid x-api-key");
     }
 
     // Source: src/tests.rs::stream_errors_retain_retryability_and_redact_the_active_key
@@ -151,10 +160,7 @@ mod tests {
             "message": "Wrong key: placeholder-not-a-key.",
         }});
         let error = refusal_of(401, echoed.to_string().as_bytes());
-        assert_eq!(
-            error.message,
-            "the provider answered HTTP 401 ([***]): Wrong key: [***]."
-        );
+        assert_eq!(error.message, "Wrong key: [***].");
         assert!(!format!("{error} {error:?}").contains("placeholder-not-a-key"));
         for (status, retryable) in [(400, false), (401, false), (408, true), (409, true)] {
             assert_eq!(refusal_of(status, b"{}").retryable, retryable, "{status}");

@@ -155,6 +155,13 @@ nothing has been released yet.
   the environment. The key of one request goes in that request's header
   alone. `make all` runs its example, `local_messages`, against a stand-in
   server on a local port.
+- `roomkit-providers-anthropic`: a request the server refuses fails with the
+  message of the API's error object as its whole text
+  (`messages.2.content.1: Invalid signature in thinking block`), its status
+  in `status_code`; a body that states no message is not echoed, and the
+  text is then the status and its reason.
+- A request that got no answer in time fails as `Request timed out.`, the
+  words of RoomKit's Python implementation.
 - `roomkit-providers`, the Python package (CPython 3.12 or newer, Linux
   x86_64, built from the repository), for RoomKit, which it depends on
   (0.117): `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`,

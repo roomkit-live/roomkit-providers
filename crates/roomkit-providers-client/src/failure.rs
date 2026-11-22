@@ -334,7 +334,7 @@ impl Failure {
     #[must_use]
     pub fn transport(error: &reqwest::Error) -> Self {
         let said = if error.is_timeout() {
-            "the provider did not answer in time"
+            "Request timed out."
         } else {
             match certificate_refused(error) {
                 Some(CertificateRefused::Untrusted) => "the provider's certificate is not trusted",

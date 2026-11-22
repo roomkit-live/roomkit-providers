@@ -249,11 +249,7 @@ async fn no_failure_repeats_the_value_of_an_extra_header() {
     let (_, streamed) = drained(provider.generate_structured_stream(&hello())).await;
     let listing = provider.list_models().await.unwrap_err();
     for error in [whole, streamed.unwrap(), listing] {
-        assert_eq!(
-            error.message,
-            "the provider answered HTTP 403 (permission_error): Tenant [***] may not send [***], \
-             nor [***]."
-        );
+        assert_eq!(error.message, "Tenant [***] may not send [***], nor [***].");
         let shown = format!("{error} {error:?}");
         assert!(!shown.contains("placeholder"), "{shown}");
     }
@@ -322,10 +318,7 @@ async fn a_key_of_the_request_in_white_space_goes_as_it_is_written() {
     let provider = pointed(elsewhere("local-model"), &fake);
     let lent = format!(" {read} ");
     let error = provider.generate(&lending(&lent)).await.unwrap_err();
-    assert_eq!(
-        error.message,
-        "the provider answered HTTP 401 (authentication_error): Wrong key: [***]."
-    );
+    assert_eq!(error.message, "Wrong key: [***].");
     assert!(!format!("{error} {error:?}").contains(read));
     provider.generate(&lending("   ")).await.unwrap();
     let keys: Vec<String> = fake

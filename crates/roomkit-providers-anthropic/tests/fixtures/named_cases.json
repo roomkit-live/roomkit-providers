@@ -710,7 +710,7 @@
         "retryable": false,
         "context_overflow": null,
         "says": {
-          "exactly": "the provider answered HTTP 400 (invalid_request_error): messages: at least one message is required"
+          "exactly": "messages: at least one message is required"
         }
       }
     },
@@ -728,7 +728,7 @@
         "retryable": false,
         "context_overflow": null,
         "says": {
-          "exactly": "the provider answered HTTP 401 (authentication_error): invalid x-api-key"
+          "exactly": "invalid x-api-key"
         }
       }
     },
@@ -908,7 +908,7 @@
         "retryable": false,
         "context_overflow": true,
         "says": {
-          "exactly": "the provider answered HTTP 400 (invalid_request_error): prompt is too long: 210000 tokens > 200000 maximum"
+          "exactly": "prompt is too long: 210000 tokens > 200000 maximum"
         }
       }
     },
@@ -926,7 +926,7 @@
         "retryable": false,
         "context_overflow": true,
         "says": {
-          "exactly": "the provider answered HTTP 400 (invalid_request_error): prompt is too long: 210000 tokens > 200000 maximum"
+          "exactly": "prompt is too long: 210000 tokens > 200000 maximum"
         }
       }
     },

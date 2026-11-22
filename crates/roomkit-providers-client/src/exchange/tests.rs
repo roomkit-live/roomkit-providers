@@ -49,7 +49,7 @@ async fn a_request_that_gets_no_answer_fails_at_the_read_timeout() {
     let error = left(&failed.unwrap_err());
     assert_eq!(
         (error.message.as_str(), error.retryable, error.status_code),
-        ("the provider did not answer in time", true, None)
+        ("Request timed out.", true, None)
     );
 }
 
@@ -95,7 +95,7 @@ async fn a_connection_that_does_not_open_fails_at_the_connect_timeout() {
     let error = left(&failed.unwrap_err());
     assert_eq!(
         (error.message.as_str(), error.retryable, error.status_code),
-        ("the provider did not answer in time", true, None)
+        ("Request timed out.", true, None)
     );
     drop((listener, filling));
 }

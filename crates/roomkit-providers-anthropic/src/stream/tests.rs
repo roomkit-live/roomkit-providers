@@ -168,7 +168,7 @@ async fn a_stream_that_stalls_ends_at_the_read_timeout() {
     let error = failed.unwrap().unwrap_err();
     assert_eq!(
         (error.message.as_str(), error.retryable, error.status_code),
-        ("the provider did not answer in time", true, None)
+        ("Request timed out.", true, None)
     );
     // The provider let go of the connection.
     closed(&fake).await;

@@ -773,10 +773,7 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             [seen.headers["x-api-key"] for seen in self.fake.seen], [ONE_REQUEST_KEY] * 2
         )
-        hidden = (
-            "the provider answered HTTP 401 (authentication_error): "
-            "invalid x-api-key [***], which is not [***]"
-        )
+        hidden = "invalid x-api-key [***], which is not [***]"
         for failed in (whole.exception, streamed.exception):
             self.assertEqual(failed.args, (hidden,))
             self.assertEqual(str(failed), f"anthropic (401): {hidden}")
@@ -1088,7 +1085,7 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
                     await provider.generate(HELLO)
                 with self.assertRaises(ProviderError) as streamed:
                     await anext(provider.generate_structured_stream(HELLO))
-                told = f"the provider answered HTTP {status} ({kind}): {words}"
+                told = words
                 for failed in (whole.exception, streamed.exception):
                     self.assertIs(type(failed), ProviderError)
                     self.assertEqual(failed.args, (told,))

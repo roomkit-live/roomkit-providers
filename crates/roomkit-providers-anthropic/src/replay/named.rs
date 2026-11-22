@@ -381,12 +381,7 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
          it is, and the failure says what its error object says. Python's message is the \
          body's text, its mark included.",
         OTHER_WORDS,
-        refused(
-            400,
-            false,
-            "the provider answered HTTP 400 (invalid_request_error): messages: at least one \
-             message is required",
-        ),
+        refused(400, false, "messages: at least one message is required"),
     ),
 ];
 
@@ -408,11 +403,7 @@ const ONLY_PYTHON: &[Entry] = &[
         "list_models_status_401",
         SDK_S_OWN,
         &["a AuthenticationError no provider reproduces"],
-        refused(
-            401,
-            false,
-            "the provider answered HTTP 401 (authentication_error): invalid x-api-key",
-        ),
+        refused(401, false, "invalid x-api-key"),
     ),
     (
         "list_models_connection_refused",
@@ -468,8 +459,7 @@ const STREAM_COUNT: &str = "Python fails on a count that is no whole number, or 
      the message leaves out. The count stays unknown, and the answer is given.";
 const NO_USAGE: &str = "Python's SDK fails on a message whose start or end tells no usage. The \
      counts stay unknown, and the answer is given.";
-const TOO_LONG: &str = "the provider answered HTTP 400 (invalid_request_error): prompt is too long: 210000 tokens > \
-     200000 maximum";
+const TOO_LONG: &str = "prompt is too long: 210000 tokens > 200000 maximum";
 const EVENT_LINE: &str = "An event is read by the type its data names: the reader of a stream's \
      events gives the data of each, not the line that names it. Python's SDK reads an event by \
      its event line.";

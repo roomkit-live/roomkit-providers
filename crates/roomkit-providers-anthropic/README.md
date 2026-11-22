@@ -218,11 +218,15 @@ A request the server refuses fails with its status, in these words:
 
 | The server answered | The failure says |
 | --- | --- |
-| `401` with `{"type": "error", "error": {"type": "authentication_error", "message": "invalid x-api-key"}}` | `the provider answered HTTP 401 (authentication_error): invalid x-api-key` |
+| `401` with `{"type": "error", "error": {"type": "authentication_error", "message": "invalid x-api-key"}}` | `invalid x-api-key` |
+| `400` with `{"type": "error", "error": {"type": "invalid_request_error", "message": "messages.2.content.1: Invalid signature in thinking block"}}` | `messages.2.content.1: Invalid signature in thinking block` |
 | `502` with an HTML page | `the provider answered HTTP 502: Bad Gateway` |
 | `500` with an empty body | `the provider answered HTTP 500: Internal Server Error` |
 
-The type and the message are read in the body's `error` object.
+The message is read in the body's `error` object, and is the whole text of
+the failure: a host reads in it what the API says, from its first word. A
+body that states no message is not echoed: the text is then the status and
+its reason.
 `status_code` holds the status, and `retryable` whether it is one a new
 request may get past (408, 409, 429, 500 and above). An error a stream
 tells, and an error object answered with a 200, carry the status their type
