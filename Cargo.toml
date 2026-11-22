@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*", "bindings/python-forms"]
+members = ["crates/*", "bindings/python-forms", "rust-examples"]
 
 [workspace.package]
 version = "0.1.0-alpha.1"
@@ -18,9 +18,18 @@ publish = false
 roomkit = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
 roomkit-ai = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
 roomkit-core = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
+# What the examples' agents run on beside a provider (rust-examples): the
+# SQLite store of the server examples and the MCP tools of one of them.
+roomkit-sqlite = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
+roomkit-mcp = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/python-forms" }
+# The WebSocket server of the server examples, and the client their checks
+# connect with (rust-examples).
+axum = { version = "0.8", default-features = false, features = ["http1", "query", "tokio", "ws"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+tokio-tungstenite = { version = "0.29", default-features = false, features = ["connect"] }
 futures-core = { version = "0.3", default-features = false }
 # An HTTP date a server's `retry-after` names.
 jiff = { version = "0.2", default-features = false, features = ["std"] }

@@ -3,6 +3,13 @@ all-features = true
 
 [advisories]
 yanked = "deny"
+# chrono, unmaintained with no safe version (RUSTSEC-2026-0543), comes only
+# through rmcp, the MCP SDK behind roomkit-mcp, which one example's agent
+# takes its tools from (rust-examples): no provider depends on it. Ignored
+# until rmcp leaves it, as RoomKit's Rust core ignores it.
+ignore = [
+    { id = "RUSTSEC-2026-0543", reason = "chrono, through rmcp only, in the examples; no safe version; until rmcp drops it" },
+]
 
 [licenses]
 # Unicode-3.0 covers the crates that hold or read Unicode data: the ICU crates
@@ -22,6 +29,9 @@ exceptions = [
     { crate = "untrusted", allow = ["ISC"] },
     # Constant-time comparisons, behind rustls.
     { crate = "subtle", allow = ["BSD-3-Clause"] },
+    # The router of axum, the WebSocket server of the server examples
+    # (rust-examples): no provider depends on it.
+    { crate = "matchit", allow = ["BSD-3-Clause"] },
     # The public web PKI roots a server is checked against where the system
     # keeps no authority of its own: certificate data.
     { crate = "webpki-roots", allow = ["CDLA-Permissive-2.0"] },

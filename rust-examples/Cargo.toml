@@ -1,0 +1,107 @@
+[package]
+name = "roomkit-providers-examples"
+description = "Runnable examples of RoomKit agents on these providers, each checking what it shows"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# What the examples share besides the RoomKit calls each one shows. A library
+# target compiles once for all of them, and each example imports what it uses.
+[lib]
+name = "shared"
+path = "shared/lib.rs"
+
+[dependencies]
+roomkit = { workspace = true }
+roomkit-ai = { workspace = true }
+# The providers the agents of the examples call.
+roomkit-providers-openai = { path = "../crates/roomkit-providers-openai" }
+roomkit-providers-anthropic = { path = "../crates/roomkit-providers-anthropic" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# The runtime of an example, and the fake of the OpenAI wire
+# (shared/openai.rs), a local HTTP server (`net`, `io-util`).
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "sync", "time", "net", "io-util"] }
+# The server the server examples run (shared/server.rs): its WebSocket
+# server, the socket's two directions and the error of a message over its
+# limit, and its store, on which the skills example (agent_skills.rs)
+# restarts as well. The server examples' checks connect with
+# tokio-tungstenite's client.
+axum = { workspace = true }
+futures-util = { workspace = true }
+roomkit-sqlite = { workspace = true }
+tokio-tungstenite = { workspace = true }
+
+# What the shared library does not use: the signal that stops a server
+# example when it serves, and the process the web chat's check reads its
+# page's script with (web_chat.rs, `node --check`).
+[dev-dependencies]
+# The MCP example's (mcp_tools.rs), which starts itself as its MCP server.
+roomkit-mcp = { workspace = true }
+tokio = { workspace = true, features = ["process", "signal"] }
+
+[lints]
+workspace = true
+
+# One file per example, run from the repository root with
+# `cargo run -p roomkit-providers-examples --example <name>`. `make examples`
+# runs every one of them, each against a local fake of its provider's wire.
+
+[[example]]
+name = "openai_agent"
+path = "openai_agent.rs"
+
+[[example]]
+name = "anthropic_agent"
+path = "anthropic_agent.rs"
+
+[[example]]
+name = "ai_response_schema"
+path = "ai_response_schema.rs"
+
+[[example]]
+name = "agent_fallback"
+path = "agent_fallback.rs"
+
+[[example]]
+name = "streamed_answer"
+path = "streamed_answer.rs"
+
+[[example]]
+name = "agent_tools"
+path = "agent_tools.rs"
+
+[[example]]
+name = "agent_tool_search"
+path = "agent_tool_search.rs"
+
+[[example]]
+name = "agent_tool_history"
+path = "agent_tool_history.rs"
+
+[[example]]
+name = "tool_call_intent"
+path = "tool_call_intent.rs"
+
+[[example]]
+name = "close_from_a_tool"
+path = "close_from_a_tool.rs"
+
+[[example]]
+name = "agent_skills"
+path = "agent_skills.rs"
+
+[[example]]
+name = "mcp_tools"
+path = "mcp_tools.rs"
+
+[[example]]
+name = "server_agent"
+path = "server_agent.rs"
+
+[[example]]
+name = "web_chat"
+path = "web_chat.rs"

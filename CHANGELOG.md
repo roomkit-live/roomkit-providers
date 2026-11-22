@@ -36,6 +36,15 @@ nothing has been released yet.
   where it differs and what it does not guard: a name the client resolves
   again, a client behind a proxy, redirects, and a name when resolution is
   turned off.
+- `rust-examples`: fourteen RoomKit agents on these providers, each a
+  program that checks what it shows against a local fake of its provider's
+  wire (`make examples` runs them): a first agent on `OpenAi` and on
+  `Anthropic`, a response schema, a fallback model, a streamed answer,
+  tools, skills, MCP tools, and an agent served over WebSocket. They are the
+  examples RoomKit's Rust core ran on its own providers, moved here with
+  what they share, since the core holds no provider any more. Five of them
+  ask a real model instead when `OPENAI_BASE_URL`, `OPENAI_API_KEY` and
+  `OPENAI_MODEL` are set.
 - `roomkit-providers-openai`: `DeepSeek`, `Kimi` and `MiniMax`, the
   providers of three vendors that speak Chat Completions with rules of their
   own, with `DeepSeekConfig`, `KimiConfig` and `MiniMaxConfig`: where a

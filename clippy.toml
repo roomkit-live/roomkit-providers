@@ -5,3 +5,7 @@ allow-indexing-slicing-in-tests = true
 allow-dbg-in-tests = true
 allow-print-in-tests = true
 doc-valid-idents = ["RoomKit", "PyO3", "OpenAI", "DeepSeek", "MiniMax", ".."]
+
+# RoomKit's own error, which the examples return as it is (rust-examples),
+# is 128 bytes: the threshold of RoomKit's Rust core.
+large-error-threshold = 136

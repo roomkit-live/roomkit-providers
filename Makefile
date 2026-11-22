@@ -66,12 +66,24 @@ test:
 # endpoint was handed to the proxy, and that the host NO_PROXY names was
 # reached directly. The crates forbid unsafe code, so no test sets a
 # variable of its own process: a child is given its environment instead.
+# The examples of RoomKit agents on these providers (rust-examples): every
+# file of the directory, so an example missing from its manifest fails the
+# gate. Each runs against a local fake of its provider's wire and checks
+# what it shows.
+AGENT_EXAMPLES := $(basename $(notdir $(wildcard rust-examples/*.rs)))
+
 # The examples are built first, outside the namespace that runs them.
 examples:
-	$(CARGO) build --locked -p roomkit-providers-openai -p roomkit-providers-anthropic --examples
+	$(CARGO) build --locked -p roomkit-providers-openai -p roomkit-providers-anthropic \
+		-p roomkit-providers-examples --examples
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example behind_a_proxy
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-anthropic --example local_messages
+	@for example in $(AGENT_EXAMPLES); do \
+		echo "== $$example"; \
+		$(NO_NETWORK) $(CARGO) run --quiet --locked --offline \
+			-p roomkit-providers-examples --example "$$example" || exit 1; \
+	done
 
 doc:
 	RUSTDOCFLAGS="-D warnings" $(CARGO) doc --workspace --no-deps --all-features --locked

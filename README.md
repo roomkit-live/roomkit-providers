@@ -109,6 +109,7 @@ provider.
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
 | `examples/roomkit_agent.py` | A RoomKit agent over the provider: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |
 | `examples/anthropic_agent.py` | The same agent over `Anthropic`: the model reasons, calls a tool, and the round goes back with its signed reasoning |
+| `rust-examples` | Fourteen RoomKit agents on these providers, in Rust, each a program that checks what it shows against a local fake of its provider's wire: a first agent on `OpenAi` and on `Anthropic`, a response schema, a fallback model, a streamed answer, tools and their search, history and intent, skills, MCP tools, and an agent served over WebSocket with its page. `shared/` holds what they share: the fake of the OpenAI wire, the server and its WebSocket channel. They come from RoomKit's Rust core, which holds no provider |
 | `benchmarks/crossing.py` | What a turn costs through a provider of the package (`--provider openai` or `anthropic`), and through RoomKit's own Python provider where its SDK is installed |
 | `benchmarks/footprint.py`, `benchmarks/fork_children.py` | The threads and the connections a busy provider holds, and how often a child forked under load hangs |
 | `guide/python.md` | The Python guide |
