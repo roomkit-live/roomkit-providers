@@ -38,9 +38,9 @@ CRATE_FILES: dict[str, tuple[str, ...]] = {
     "r-efi-6.0.0": ("AUTHORS",),
     # RoomKit's Rust core, taken from its repository: the license is at the
     # root of the workspace its crates are members of.
-    "roomkit-0.2.0": ("../../LICENSE",),
-    "roomkit-ai-0.2.0": ("../../LICENSE",),
-    "roomkit-core-0.2.0": ("../../LICENSE",),
+    "roomkit-0.3.0": ("../../LICENSE",),
+    "roomkit-ai-0.3.0": ("../../LICENSE",),
+    "roomkit-core-0.3.0": ("../../LICENSE",),
 }
 # Published without their license files; copied from the upstream repository
 # at the release tag each crate is built from (jni-rs v0.22.4, jni-sys

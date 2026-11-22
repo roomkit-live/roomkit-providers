@@ -16777,7 +16777,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
---- roomkit-0.2.0/../../LICENSE (MIT) ---
+--- roomkit-0.3.0/../../LICENSE (MIT) ---
 
 MIT License
 
@@ -16801,7 +16801,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
---- roomkit-ai-0.2.0/../../LICENSE (MIT) ---
+--- roomkit-ai-0.3.0/../../LICENSE (MIT) ---
 
 MIT License
 
@@ -16825,7 +16825,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
---- roomkit-core-0.2.0/../../LICENSE (MIT) ---
+--- roomkit-core-0.3.0/../../LICENSE (MIT) ---
 
 MIT License
 
