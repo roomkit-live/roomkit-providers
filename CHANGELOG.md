@@ -7,6 +7,12 @@ nothing has been released yet.
 
 ### Added
 
+- How an answer ended is told in the vocabulary of RoomKit's provider
+  contract, `FinishReason`, in Rust and in Python: each provider maps its
+  vendor's words (Anthropic's `end_turn` is `stop`, `tool_use` is
+  `tool_calls`, `max_tokens` is `length`), and a word it does not know is
+  no reason. `AiResponse::finish_reason` and `StreamDone::finish_reason`
+  are `Option<FinishReason>`, where they were text.
 - The providers are built on RoomKit's Rust core: what a provider is, the
   request it is asked (`AiContext`), the answer and the events it gives and
   its failure are `roomkit-ai`'s, at the revision the workspace names. This

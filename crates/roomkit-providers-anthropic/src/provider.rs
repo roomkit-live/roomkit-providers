@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use reqwest::header::HeaderMap;
 use roomkit_ai::{
-    AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
-    TextStream, checked_stream, listing,
+    AiContext, AiProvider, AiResponse, FinishReason, ModelInfo, ProviderError, ProviderStream,
+    StreamDone, TextStream, checked_stream, listing,
 };
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::request_api_key;
@@ -289,7 +289,7 @@ impl Anthropic {
 /// Why a constrained answer was withheld: the model refused (Python's
 /// `_refusal`).
 fn refusal(done: &StreamDone) -> Option<String> {
-    (done.finish_reason.as_deref() == Some("refusal")).then(|| "refusal".to_owned())
+    (done.finish_reason == Some(FinishReason::Refusal)).then(|| "refusal".to_owned())
 }
 
 impl Anthropic {

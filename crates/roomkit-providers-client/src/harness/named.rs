@@ -11,7 +11,7 @@
 
 use std::collections::BTreeMap;
 
-use roomkit_ai::{ProviderError, StreamDone, StreamEvent};
+use roomkit_ai::{FinishReason, ProviderError, StreamDone, StreamEvent};
 
 use super::{Fixture, Outcome, Replayed, Replays, text_of};
 
@@ -33,9 +33,9 @@ pub enum Does {
     /// the context overflowed, in these words.
     Fails(Option<u16>, bool, Option<bool>, Says),
     /// The call is answered, whole or as a stream that ends without a
-    /// failure: it says this text, stops for this reason, and counts this
-    /// usage.
-    Answers(&'static str, &'static str, &'static str),
+    /// failure: it says this text, stops for this reason, a word of the
+    /// contract, and counts this usage.
+    Answers(&'static str, FinishReason, &'static str),
     /// Nothing is asked: the contract, stricter than Python's on what a
     /// request holds, does not read the case's request, and says why.
     Unread(Says),
@@ -165,12 +165,12 @@ impl Instead {
             }
             (Does::Answers(text, finish, usage), None, Some(Outcome::Response(Ok(response)))) => {
                 response.content == text
-                    && response.finish_reason.as_deref() == Some(finish)
+                    && response.finish_reason == Some(finish)
                     && serde_json::to_string(&response.usage).unwrap() == usage
             }
             (Does::Answers(text, finish, usage), None, Some(Outcome::Events(events, None))) => {
                 let done = done_of(events);
-                let stopped = done.and_then(|done| done.finish_reason.as_deref());
+                let stopped = done.and_then(|done| done.finish_reason);
                 let counted = done.map(|done| serde_json::to_string(&done.usage).unwrap());
                 text_of(events) == text
                     && stopped == Some(finish)

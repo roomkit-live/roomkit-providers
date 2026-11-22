@@ -385,7 +385,7 @@ fn each_result_reads_as_the_contract_s_types_and_writes_back_unchanged() {
 #[test]
 fn each_failure_says_what_a_replay_reproduces_of_it() {
     let failures = fixture().each_failure_says_what_a_replay_reproduces(&SHAPE);
-    assert!(failures.all >= 123, "{} failures", failures.all);
+    assert!(failures.all >= 122, "{} failures", failures.all);
     assert!(
         failures.compared >= 46,
         "{} messages compared",

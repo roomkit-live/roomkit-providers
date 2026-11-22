@@ -89,6 +89,13 @@ the done event, with the usage and the model that answered.
   it fails, a failure worth a retry, and a call it brought is never handed
   whole, to run. A finish reason that is an empty text
   (`"finish_reason": ""`) says nothing: it is no reason, and no stop.
+- **How an answer ended is told in the contract's word** (`FinishReason`),
+  as Python tells it: `stop`, `length`, `content_filter` and `error` as
+  themselves, `tool_calls` and the older `function_call` as `tool_calls`.
+  A word the dialect does not hold, a server's own or one that is no text,
+  is no reason; the stream that said it is complete all the same. On the
+  Responses API, a response cut by its output cap, or cut with no reason
+  given, ends as `length`, and one a filter stopped as `content_filter`.
 - **An answer that ends inside an event was cut there.** The event an answer
   ends on, with no blank line after it, is read when its data is a whole
   JSON document, or the end mark, with or without a line end after its last

@@ -2,7 +2,7 @@
 //! whole.
 
 use roomkit::model::Metadata;
-use roomkit_ai::{AiContext, AiMessage, StreamDone};
+use roomkit_ai::{AiContext, AiMessage, FinishReason, StreamDone};
 use roomkit_providers_client::failure::{
     MESSAGE_LIMIT, described_status, names_transient, retryable_status, told,
 };
@@ -153,6 +153,17 @@ pub(super) fn body(value: &Value, namespace: Option<&str>) -> Result<Whole, Fail
     response(value)
 }
 
+/// Why an incomplete response stopped, in the contract's vocabulary (RFC
+/// §6.7): its output cap, as one that gives no reason; a filter's stop; and
+/// no reason for a word the contract does not hold.
+fn incomplete(reason: Option<&str>) -> Option<FinishReason> {
+    match reason {
+        Some("max_output_tokens") | None => Some(FinishReason::Length),
+        Some("content_filter") => Some(FinishReason::ContentFilter),
+        Some(_) => None,
+    }
+}
+
 /// Only a terminal response can release tool calls to the engine.
 pub(super) fn response(value: &Value) -> Result<Whole, Failure> {
     let status = value
@@ -209,21 +220,15 @@ pub(super) fn response(value: &Value) -> Result<Whole, Failure> {
         replay.push(item.clone());
     }
     let finish_reason = if status == "incomplete" {
-        match value
-            .pointer("/incomplete_details/reason")
-            .and_then(Value::as_str)
-        {
-            Some("max_output_tokens") => "max_tokens",
-            Some(reason) => reason,
-            None => "length",
-        }
+        let reason = value.pointer("/incomplete_details/reason");
+        incomplete(reason.and_then(Value::as_str))
     } else if calls.is_empty() {
-        "stop"
+        Some(FinishReason::Stop)
     } else {
-        "tool_calls"
+        Some(FinishReason::ToolCalls)
     };
     let mut done = StreamDone {
-        finish_reason: Some(finish_reason.to_owned()),
+        finish_reason,
         usage: usage(value.get("usage")),
         metadata: Metadata::new(),
     };

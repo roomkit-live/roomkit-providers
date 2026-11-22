@@ -4,6 +4,7 @@
 use roomkit::model::{Metadata, ToolCall};
 use roomkit_ai::{
     AiContentPart, AiContext, AiImagePart, AiMessage, AiRole, AiTextPart, AiThinkingPart,
+    FinishReason,
 };
 use roomkit_core::rules::transcript::{Message, Role};
 use serde_json::{Map, Value, json};
@@ -90,7 +91,7 @@ fn a_cut_reasoning_item_without_its_payload_is_not_replayed() {
     let response = json!({"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},
         "output":[{"type":"reasoning","id":"rs_1","summary":[]}]});
     let decoded = wire::response(&response).unwrap();
-    assert_eq!(decoded.done.finish_reason.as_deref(), Some("max_tokens"));
+    assert_eq!(decoded.done.finish_reason, Some(FinishReason::Length));
     assert_eq!(decoded.done.metadata[OUTPUT], json!([]));
 }
 

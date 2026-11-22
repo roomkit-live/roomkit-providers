@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use roomkit_ai::{AiProvider, StreamEvent};
+use roomkit_ai::{AiProvider, FinishReason, StreamEvent};
 use roomkit_providers_client::items::next;
 use roomkit_providers_client::stream::STREAM_LIMIT;
 use serde_json::json;
@@ -280,12 +280,20 @@ async fn a_stream_that_ends_with_a_finish_reason_or_with_its_end_mark_is_complet
     let said = chunk(&json!({"content": "Hello."})).to_string();
     let mark = "[DONE]".to_owned();
     for (events, finish_reason, calls) in [
-        (vec![said.clone(), finish("stop")], Some("stop"), 0),
+        (
+            vec![said.clone(), finish("stop")],
+            Some(FinishReason::Stop),
+            0,
+        ),
         (vec![said.clone(), mark.clone()], None, 0),
-        (vec![call(), finish("tool_calls")], Some("tool_calls"), 1),
+        (
+            vec![call(), finish("tool_calls")],
+            Some(FinishReason::ToolCalls),
+            1,
+        ),
         (vec![call(), mark], None, 1),
         // A finish reason that ends the answer in an event its end cuts.
-        (vec![said, finish("length")], Some("length"), 0),
+        (vec![said, finish("length")], Some(FinishReason::Length), 0),
     ] {
         let reply = stream_reply(vec![read_of(&events)], Ending::Ends);
         let (given, failure) = streamed(reply, &hello()).await;
@@ -293,7 +301,7 @@ async fn a_stream_that_ends_with_a_finish_reason_or_with_its_end_mark_is_complet
         let Some(StreamEvent::Done(done)) = given.last() else {
             panic!("{events:?}: no end in {given:?}");
         };
-        assert_eq!(done.finish_reason.as_deref(), finish_reason, "{events:?}");
+        assert_eq!(done.finish_reason, finish_reason, "{events:?}");
         let whole = given.iter().filter_map(|event| match event {
             StreamEvent::ToolCall(call) => Some(call.partial),
             StreamEvent::TextDelta(_)
@@ -304,6 +312,23 @@ async fn a_stream_that_ends_with_a_finish_reason_or_with_its_end_mark_is_complet
         });
         assert_eq!(whole.collect::<Vec<_>>(), vec![false; calls], "{events:?}");
     }
+}
+
+// A finish reason that is no text says the answer ended, in no word of the
+// dialect: the stream is complete and has no reason, as Python's
+// `chat_finish_reason` reads it (the case
+// `stream_finish_reason_that_is_no_text`).
+#[tokio::test]
+async fn a_finish_reason_that_is_no_text_ends_the_stream_with_no_reason() {
+    let said = chunk(&json!({"content": "Hello."})).to_string();
+    let ended = json!({"choices": [{"index": 0, "delta": {}, "finish_reason": 3}]}).to_string();
+    let reply = stream_reply(vec![read_of(&[said, ended])], Ending::Ends);
+    let (given, failure) = streamed(reply, &hello()).await;
+    assert!(failure.is_none(), "{failure:?}");
+    let Some(StreamEvent::Done(done)) = given.last() else {
+        panic!("no end in {given:?}");
+    };
+    assert_eq!(done.finish_reason, None);
 }
 
 // Python keeps a finish reason only when it is not empty: an empty one says
@@ -425,7 +450,7 @@ async fn a_stream_that_ends_inside_the_event_after_its_finish_reason_is_complete
             let Some(StreamEvent::Done(done)) = events.last() else {
                 panic!("cut at {at}: no end in {events:?}");
             };
-            assert_eq!(done.finish_reason.as_deref(), Some("stop"), "cut at {at}");
+            assert_eq!(done.finish_reason, Some(FinishReason::Stop), "cut at {at}");
             let read = counted && at >= whole;
             assert_eq!(
                 done.usage.is_empty(),

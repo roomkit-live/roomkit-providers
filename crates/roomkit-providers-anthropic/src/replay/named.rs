@@ -4,6 +4,7 @@
 //! entry states and in nothing else, and the provider sends as many
 //! requests and gives what the entry states.
 
+use roomkit_ai::FinishReason;
 use roomkit_providers_client::harness::named::{Does, Entry, Instead, Named, Says, fails};
 
 use super::fixture;
@@ -16,14 +17,14 @@ const COUNTED: &str = r#"{"input_tokens":12,"output_tokens":5}"#;
 
 /// An answer after one request, whole or streamed, that says `text`, stops
 /// for `finish` and counts this usage.
-const fn answers(text: &'static str, finish: &'static str, usage: &'static str) -> Instead {
+const fn answers(text: &'static str, finish: FinishReason, usage: &'static str) -> Instead {
     let does = Does::Answers(text, finish, usage);
     Instead { requests: 1, does }
 }
 
 /// The answer the cases of a usage give, with this usage.
 const fn counts(usage: &'static str) -> Instead {
-    answers(SAID, "end_turn", usage)
+    answers(SAID, FinishReason::Stop, usage)
 }
 
 /// A failure after one request with this status, in these words, that
@@ -135,13 +136,13 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
         "key_of_the_request_that_is_blank",
         KEY_AS_WRITTEN,
         &[r#"request 0: x-api-key is Some("")"#],
-        answers(SAID, "end_turn", COUNTED),
+        answers(SAID, FinishReason::Stop, COUNTED),
     ),
     (
         "key_of_the_request_in_white_space",
         KEY_AS_WRITTEN,
         &[r#"request 0: x-api-key is Some("placeholder-not-a-key-in-spaces")"#],
-        answers(SAID, "end_turn", COUNTED),
+        answers(SAID, FinishReason::Stop, COUNTED),
     ),
     (
         "usage_counts_written_as_text",
@@ -257,19 +258,19 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
         "stream_tool_call_whose_arguments_are_blank",
         CALL_ARGUMENTS,
         EVENTS_NOT_AN_ERROR,
-        answers("", "tool_use", COUNTED),
+        answers("", FinishReason::ToolCalls, COUNTED),
     ),
     (
         "stream_tool_call_whose_arguments_are_no_json",
         CALL_ARGUMENTS,
         EVENTS_NOT_AN_ERROR,
-        answers("", "tool_use", COUNTED),
+        answers("", FinishReason::ToolCalls, COUNTED),
     ),
     (
         "tool_call_whose_arguments_are_no_json",
         CALL_ARGUMENTS,
         A_RESPONSE_NOT_AN_ERROR,
-        answers("", "tool_use", COUNTED),
+        answers("", FinishReason::ToolCalls, COUNTED),
     ),
     (
         "stream_tool_calls_that_share_an_id_and_are_left_open",
@@ -277,7 +278,7 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
          told, whatever id an earlier call carried: here as a call the response cut. Python \
          tells its composition and never hands it.",
         OTHER_EVENTS,
-        answers("", "max_tokens", COUNTED),
+        answers("", FinishReason::Length, COUNTED),
     ),
     (
         "stream_tool_call_without_an_id",
@@ -285,7 +286,7 @@ const QUESTIONED_OTHERWISE: &[Entry] = &[
          Python hands a call whose block names no id twice, under two ids, and it would run \
          twice.",
         OTHER_EVENTS,
-        answers("", "tool_use", COUNTED),
+        answers("", FinishReason::ToolCalls, COUNTED),
     ),
     (
         "redirect_301",
@@ -592,7 +593,7 @@ const BY_ITS_OWN_RULE: &[Entry] = &[
         "stream_events_without_their_event_line",
         EVENT_LINE,
         EVENTS_NOT_AN_ERROR,
-        answers("Hello.", "end_turn", COUNTED),
+        answers("Hello.", FinishReason::Stop, COUNTED),
     ),
     (
         "stream_error_event_that_is_no_json",

@@ -14,14 +14,16 @@ publish = false
 [workspace.dependencies]
 # RoomKit's Rust core: what a provider is, what it is asked and what it
 # answers. A build holds one of each of these crates, the provider's and
-# its host's: the revision is the one a host pins, the 0.3.0 release.
-roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
-roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
-roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
+# its host's: the revision is the one a host pins. It is past the 0.3.0
+# release, whose contract ends a generation in a free word: this one ends
+# it in `FinishReason`, which no release holds yet.
+roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f499568980516accf7c06f6110bdb4c451342b7" }
+roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f499568980516accf7c06f6110bdb4c451342b7" }
+roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f499568980516accf7c06f6110bdb4c451342b7" }
 # What the examples' agents run on beside a provider (rust-examples): the
 # SQLite store of the server examples and the MCP tools of one of them.
-roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
-roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b7db678e9627f4e7ca5512d81b2ce9da1a816527" }
+roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f499568980516accf7c06f6110bdb4c451342b7" }
+roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f499568980516accf7c06f6110bdb4c451342b7" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/python-forms" }

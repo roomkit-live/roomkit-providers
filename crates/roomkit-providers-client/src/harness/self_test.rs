@@ -9,8 +9,8 @@
 //! another path, another key, a header it does not send.
 
 use roomkit_ai::{
-    ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions,
-    ResponseSchemaFailure, StreamEvent,
+    FinishReason, ProviderError, ProviderErrorOptions, ResponseSchemaError,
+    ResponseSchemaErrorOptions, ResponseSchemaFailure, StreamEvent,
 };
 
 use super::compare::differences;
@@ -353,7 +353,7 @@ pub const NAMED_ANSWER: [Wrong; 4] = [
         let Some(Outcome::Response(Ok(response))) = &mut r.outcome else {
             panic!("no response");
         };
-        response.finish_reason = Some("length".to_owned());
+        response.finish_reason = Some(FinishReason::Length);
     }),
     ("another body sent", OTHERWISE, |r| {
         r.seen[0].body = b"{}".to_vec();

@@ -1,7 +1,7 @@
 //! What the folding reads of a stream's events, one event after the other,
 //! with no request: its blocks, its calls and its bounds.
 
-use roomkit_ai::{ProviderError, ThinkingBlocks};
+use roomkit_ai::{FinishReason, ProviderError, ThinkingBlocks};
 use serde_json::json;
 
 use super::calls::{ARGUMENTS_LIMIT, CALLS_LIMIT, NAME_LIMIT};
@@ -314,7 +314,7 @@ fn what_the_provider_does_not_read_says_nothing() {
         panic!("unexpected events: {events:?}");
     };
     assert_eq!(text.text, "Read.");
-    assert_eq!(done.finish_reason.as_deref(), Some("end_turn"));
+    assert_eq!(done.finish_reason, Some(FinishReason::Stop));
 }
 
 // What the folding keeps of a stream is bounded: the calls of a message,

@@ -14,7 +14,7 @@ use std::fmt::Write as _;
 use std::future::poll_fn;
 use std::io::Write as _;
 
-use roomkit_ai::{AiContext, AiMessage, AiProvider, AiRole, StreamEvent};
+use roomkit_ai::{AiContext, AiMessage, AiProvider, AiRole, FinishReason, StreamEvent};
 use roomkit_providers_openai::{OpenAi, OpenAiConfig};
 use serde_json::{Value, json};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -155,7 +155,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if response.content != said || Value::Object(response.usage) != counted {
         return Err("the whole answer is not what the server said".into());
     }
-    if pieces != PIECES || finish_reason.as_deref() != Some("stop") {
+    if pieces != PIECES || finish_reason != Some(FinishReason::Stop) {
         return Err("the streamed answer is not what the server said".into());
     }
     Ok(())

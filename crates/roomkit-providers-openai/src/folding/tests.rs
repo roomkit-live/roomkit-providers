@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use roomkit_ai::{ProviderError, StreamEvent};
+use roomkit_ai::{FinishReason, ProviderError, StreamEvent};
 use serde_json::{Value, json};
 
 use super::Folding;
@@ -467,9 +467,9 @@ fn a_streamed_completion_s_call_fragments_fold_by_index() {
         ]
     );
     assert_eq!(
-        (done.finish_reason.as_deref(), Value::Object(done.usage)),
+        (done.finish_reason, Value::Object(done.usage)),
         (
-            Some("tool_calls"),
+            Some(FinishReason::ToolCalls),
             json!({"input_tokens": 9, "output_tokens": 4})
         )
     );
@@ -518,7 +518,7 @@ fn a_chunk_is_read_by_its_first_choice() {
     }
     assert_eq!(texts(&ready), ["first"]);
     let (_, done) = folding.finish().unwrap();
-    assert_eq!(done.finish_reason.as_deref(), Some("stop"));
+    assert_eq!(done.finish_reason, Some(FinishReason::Stop));
     assert_eq!(Value::Object(done.usage), json!({"input_tokens": 3}));
     assert_eq!(done.metadata.get("model"), Some(&json!("answering")));
 }
@@ -537,7 +537,6 @@ fn a_chunk_that_does_not_read_fails_the_stream() {
         json!({"choices": [{"delta": {"tool_calls": ["a"]}}]}),
         json!({"choices": [{"delta": {"content": 7}}]}),
         json!({"choices": [{"delta": {"content": ["a"]}}]}),
-        json!({"choices": [{"finish_reason": 3}]}),
         json!({"choices": [{"delta": {"tool_calls": [{"function": {"arguments": 7}}]}}]}),
         json!({"choices": [{"delta": {"tool_calls": [{"function": {"arguments": [1]}}]}}]}),
         json!({"choices": [{"delta": {"tool_calls": [{"index": "0"}]}}]}),

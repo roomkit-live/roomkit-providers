@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use roomkit_ai::{AiProvider, ProviderError, StreamEvent};
+use roomkit_ai::{AiProvider, FinishReason, ProviderError, StreamEvent};
 use roomkit_providers_client::ANSWER_LIMIT;
 use roomkit_providers_client::items::next;
 use roomkit_providers_client::stream::STREAM_LIMIT;
@@ -424,7 +424,7 @@ async fn a_stream_that_ends_inside_the_event_after_its_stop_reason_is_complete()
         let Some(StreamEvent::Done(done)) = events.last() else {
             panic!("cut at {at}: no end in {events:?}");
         };
-        assert_eq!(done.finish_reason.as_deref(), Some("end_turn"));
+        assert_eq!(done.finish_reason, Some(FinishReason::Stop));
         assert_eq!(done.usage["output_tokens"], 5, "cut at {at}");
     }
 }
@@ -459,11 +459,15 @@ async fn a_stream_that_ends_with_a_stop_reason_or_with_its_end_is_complete() {
     let cut = json!({"type": "message_delta", "delta": {"stop_reason": "max_tokens"}});
     let unsaid = json!({"type": "message_delta", "delta": {"stop_reason": null}});
     for (last, finish_reason, partial) in [
-        (vec![reason.clone()], Some("tool_use"), false),
-        (vec![reason, stop.clone()], Some("tool_use"), false),
+        (vec![reason.clone()], Some(FinishReason::ToolCalls), false),
+        (
+            vec![reason, stop.clone()],
+            Some(FinishReason::ToolCalls),
+            false,
+        ),
         (vec![stop.clone()], None, false),
         (vec![unsaid, stop], None, false),
-        (vec![cut], Some("max_tokens"), false),
+        (vec![cut], Some(FinishReason::Length), false),
     ] {
         let events = [&[start()][..], &open_call(0), &last].concat();
         let (given, failure) = streamed(stream_of(&events), &hello()).await;
@@ -471,7 +475,7 @@ async fn a_stream_that_ends_with_a_stop_reason_or_with_its_end_is_complete() {
         let Some(StreamEvent::Done(done)) = given.last() else {
             panic!("{last:?}: no end in {given:?}");
         };
-        assert_eq!(done.finish_reason.as_deref(), finish_reason, "{last:?}");
+        assert_eq!(done.finish_reason, finish_reason, "{last:?}");
         let calls = given.iter().filter_map(|event| match event {
             StreamEvent::ToolCall(call) => Some((call.id.as_str(), call.partial)),
             StreamEvent::TextDelta(_)

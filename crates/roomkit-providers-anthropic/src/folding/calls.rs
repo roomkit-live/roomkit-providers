@@ -11,7 +11,8 @@
 //! id, the name and the arguments of each.
 
 use roomkit_ai::{
-    AiToolCall, CallIds, StreamToolCall, StreamToolCallDelta, tool_arguments, unreadable_arguments,
+    AiToolCall, CallIds, FinishReason, StreamToolCall, StreamToolCallDelta, tool_arguments,
+    unreadable_arguments,
 };
 use roomkit_providers_client::ANSWER_LIMIT;
 use serde_json::Value;
@@ -143,7 +144,7 @@ impl Calls {
     /// read so.
     pub(super) fn left_open(
         self,
-        finish_reason: Option<&str>,
+        finish_reason: Option<FinishReason>,
     ) -> impl Iterator<Item = StreamToolCall> {
         let read = move |call: OpenCall| {
             AiToolCall::read(call.id, call.name, &call.arguments, finish_reason, true)

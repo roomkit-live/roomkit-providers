@@ -38,6 +38,7 @@ mod reasoning;
 #[cfg(test)]
 mod replay;
 mod request;
+mod stop_reasons;
 mod stream;
 #[cfg(test)]
 mod tests;

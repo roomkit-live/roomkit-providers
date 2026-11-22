@@ -1,7 +1,7 @@
 {
  "generator": "scripts/generate_anthropic_messages_cases.py",
  "roomkit_version": "0.117.0.dev0",
- "roomkit_commit": "ddb805bae34761ded35a5b89b0ba12aa8fa03b0e",
+ "roomkit_commit": "651ae82c198066cc771ad2fcfdc6995fdad25c99",
  "roomkit_dirty": false,
  "anthropic_version": "1.11.0",
  "pydantic_version": "2.13.5",
@@ -177,7 +177,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -299,7 +299,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -411,7 +411,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -582,7 +582,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -693,7 +693,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -805,7 +805,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -918,7 +918,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -1032,7 +1032,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -1146,7 +1146,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -1351,7 +1351,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -1530,7 +1530,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -1698,7 +1698,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -1810,7 +1810,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5,
@@ -1922,7 +1922,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5,
@@ -2047,7 +2047,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5,
@@ -2192,7 +2192,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -2314,7 +2314,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -2436,7 +2436,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -2750,7 +2750,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -2894,7 +2894,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -3062,7 +3062,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -3252,7 +3252,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -3542,7 +3542,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -3835,7 +3835,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -4259,7 +4259,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -4546,7 +4546,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -4749,7 +4749,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -4917,7 +4917,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -5106,7 +5106,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -5289,7 +5289,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -5539,7 +5539,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -5845,7 +5845,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -6138,7 +6138,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -6396,7 +6396,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -6659,7 +6659,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -6922,7 +6922,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7110,7 +7110,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7225,7 +7225,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7339,7 +7339,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7450,7 +7450,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7563,7 +7563,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7676,7 +7676,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7791,7 +7791,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -7902,7 +7902,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8021,7 +8021,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8139,7 +8139,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8254,7 +8254,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8370,7 +8370,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8487,7 +8487,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8603,7 +8603,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8721,7 +8721,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8838,7 +8838,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -8956,7 +8956,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9074,7 +9074,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9192,7 +9192,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9308,7 +9308,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9421,7 +9421,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9532,7 +9532,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9649,7 +9649,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9766,7 +9766,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -9885,7 +9885,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10000,7 +10000,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10121,7 +10121,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10236,7 +10236,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10351,7 +10351,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10466,7 +10466,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10580,7 +10580,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10694,7 +10694,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10808,7 +10808,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -10924,7 +10924,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11040,7 +11040,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11156,7 +11156,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11269,7 +11269,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11380,7 +11380,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11491,7 +11491,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11603,7 +11603,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11719,7 +11719,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11839,7 +11839,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -11960,7 +11960,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -12077,7 +12077,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -12199,7 +12199,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -12320,7 +12320,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -12441,7 +12441,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -12612,7 +12612,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -12741,7 +12741,7 @@
        "redacted": null
       }
      ],
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -12893,7 +12893,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -13131,7 +13131,7 @@
        "redacted": "cmVkYWN0ZWQtZGF0YQ=="
       }
      ],
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -13341,7 +13341,7 @@
        "redacted": null
       }
      ],
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -13657,7 +13657,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -13784,7 +13784,7 @@
        "redacted": null
       }
      ],
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -13901,7 +13901,7 @@
      "thinking": "They gre",
      "thinking_signature": null,
      "thinking_parts": [],
-     "finish_reason": "max_tokens",
+     "finish_reason": "length",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -14029,7 +14029,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "max_tokens",
+      "finish_reason": "length",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -14161,7 +14161,7 @@
        "redacted": null
       }
      ],
-     "finish_reason": "max_tokens",
+     "finish_reason": "length",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -14290,7 +14290,7 @@
        "redacted": null
       }
      ],
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 9,
@@ -14585,7 +14585,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -14939,7 +14939,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -15094,7 +15094,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -15270,7 +15270,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -15409,7 +15409,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -15551,7 +15551,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -15712,7 +15712,7 @@
        "redacted": null
       }
      ],
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -16297,8 +16297,8 @@
    "expected": {
     "error": {
      "class": "ResponseSchemaError",
-     "message": "the JSON answer was cut (max_tokens): raise max_tokens, or shorten the context",
-     "text": "anthropic: the JSON answer was cut (max_tokens): raise max_tokens, or shorten the context",
+     "message": "the JSON answer was cut (length): raise max_tokens, or shorten the context",
+     "text": "anthropic: the JSON answer was cut (length): raise max_tokens, or shorten the context",
      "before_request": false,
      "context_overflow": null,
      "provider": "anthropic",
@@ -16447,8 +16447,8 @@
    "expected": {
     "error": {
      "class": "ResponseSchemaError",
-     "message": "the JSON answer was cut (model_context_window_exceeded): raise max_tokens, or shorten the context",
-     "text": "anthropic: the JSON answer was cut (model_context_window_exceeded): raise max_tokens, or shorten the context",
+     "message": "the JSON answer was cut (length): raise max_tokens, or shorten the context",
+     "text": "anthropic: the JSON answer was cut (length): raise max_tokens, or shorten the context",
      "before_request": false,
      "context_overflow": null,
      "provider": "anthropic",
@@ -16806,7 +16806,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "tool_use",
+     "finish_reason": "tool_calls",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -17014,7 +17014,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -17417,7 +17417,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "max_tokens",
+     "finish_reason": "length",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -17584,7 +17584,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -18197,7 +18197,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -18313,7 +18313,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -18437,7 +18437,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -18552,7 +18552,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -18667,7 +18667,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -18783,7 +18783,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -18899,7 +18899,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -19088,7 +19088,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -19329,7 +19329,7 @@
        "thinking": null,
        "thinking_signature": null,
        "thinking_parts": null,
-       "finish_reason": "end_turn",
+       "finish_reason": "stop",
        "usage": {
         "input_tokens": 12,
         "output_tokens": 5
@@ -19421,7 +19421,7 @@
        "thinking": null,
        "thinking_signature": null,
        "thinking_parts": null,
-       "finish_reason": "end_turn",
+       "finish_reason": "stop",
        "usage": {
         "input_tokens": 12,
         "output_tokens": 5
@@ -19516,7 +19516,7 @@
        "thinking": null,
        "thinking_signature": null,
        "thinking_parts": null,
-       "finish_reason": "end_turn",
+       "finish_reason": "stop",
        "usage": {
         "input_tokens": 12,
         "output_tokens": 5
@@ -19612,7 +19612,7 @@
        "thinking": null,
        "thinking_signature": null,
        "thinking_parts": null,
-       "finish_reason": "end_turn",
+       "finish_reason": "stop",
        "usage": {
         "input_tokens": 12,
         "output_tokens": 5
@@ -19707,7 +19707,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -19834,7 +19834,7 @@
        },
        {
         "type": "done",
-        "finish_reason": "end_turn",
+        "finish_reason": "stop",
         "usage": {
          "input_tokens": 12,
          "output_tokens": 5
@@ -19937,7 +19937,7 @@
        },
        {
         "type": "done",
-        "finish_reason": "end_turn",
+        "finish_reason": "stop",
         "usage": {
          "input_tokens": 12,
          "output_tokens": 5
@@ -20037,7 +20037,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -20154,7 +20154,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -20270,7 +20270,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -20391,7 +20391,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -20506,7 +20506,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -20626,7 +20626,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -20740,7 +20740,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -20853,7 +20853,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -20967,7 +20967,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21080,7 +21080,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21193,7 +21193,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21307,7 +21307,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21420,7 +21420,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21535,7 +21535,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21649,7 +21649,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21763,7 +21763,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21877,7 +21877,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -21991,7 +21991,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -22106,7 +22106,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -22321,7 +22321,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -22433,7 +22433,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "stop_sequence",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -22545,7 +22545,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "pause_turn",
+     "finish_reason": null,
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -22657,7 +22657,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "max_tokens",
+     "finish_reason": "length",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -22769,7 +22769,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "model_context_window_exceeded",
+     "finish_reason": "length",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -23231,7 +23231,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "stop_sequence",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -23452,7 +23452,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -23565,7 +23565,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -23687,7 +23687,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -23802,7 +23802,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -23914,7 +23914,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 40,
       "output_tokens": 5,
@@ -24027,7 +24027,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -24138,7 +24138,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -24250,7 +24250,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 0,
       "output_tokens": 0
@@ -24361,7 +24361,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -24472,7 +24472,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -24702,7 +24702,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -24814,7 +24814,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -25398,7 +25398,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": -12,
       "output_tokens": -5
@@ -25510,7 +25510,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 1,
       "output_tokens": 5
@@ -25622,7 +25622,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5,
@@ -25982,7 +25982,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -31195,7 +31195,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -31602,7 +31602,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -31775,7 +31775,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -31947,7 +31947,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -32121,7 +32121,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -32293,7 +32293,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -32465,7 +32465,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -32637,7 +32637,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -32809,7 +32809,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -32981,7 +32981,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -33154,7 +33154,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -33327,7 +33327,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -33499,7 +33499,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -34367,7 +34367,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -34594,7 +34594,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -34753,7 +34753,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -34912,7 +34912,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -35245,7 +35245,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -35376,7 +35376,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -35708,7 +35708,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -35903,7 +35903,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -36176,7 +36176,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -36295,7 +36295,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -36725,7 +36725,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -36926,7 +36926,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -37053,7 +37053,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -37191,7 +37191,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -37315,7 +37315,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -37563,7 +37563,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -37716,7 +37716,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -37947,7 +37947,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -38111,7 +38111,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -39050,7 +39050,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -42651,7 +42651,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -43484,7 +43484,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -43827,7 +43827,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -44062,7 +44062,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -44253,7 +44253,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -44653,7 +44653,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -44854,7 +44854,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -45054,7 +45054,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -45254,7 +45254,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -45656,7 +45656,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -46032,7 +46032,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "max_tokens",
+      "finish_reason": "length",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -46222,7 +46222,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "max_tokens",
+      "finish_reason": "length",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -46422,7 +46422,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "max_tokens",
+      "finish_reason": "length",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -46621,7 +46621,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "model_context_window_exceeded",
+      "finish_reason": "length",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -47019,7 +47019,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -47219,7 +47219,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -47408,7 +47408,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -47781,7 +47781,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "max_tokens",
+     "finish_reason": "length",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -48014,7 +48014,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "max_tokens",
+      "finish_reason": "length",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -48245,7 +48245,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -48468,7 +48468,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "max_tokens",
+      "finish_reason": "length",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -48683,7 +48683,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -48887,7 +48887,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -49090,7 +49090,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -49283,7 +49283,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "tool_use",
+      "finish_reason": "tool_calls",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -50231,7 +50231,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -50373,7 +50373,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -50515,7 +50515,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -50676,7 +50676,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -50837,7 +50837,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -51003,7 +51003,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -51149,7 +51149,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -51316,7 +51316,7 @@
      },
      {
       "type": "done",
-      "finish_reason": "end_turn",
+      "finish_reason": "stop",
       "usage": {
        "input_tokens": 12,
        "output_tokens": 5
@@ -51477,7 +51477,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -53108,7 +53108,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -53239,7 +53239,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -53373,7 +53373,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -55283,7 +55283,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -55496,7 +55496,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -55678,7 +55678,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -55795,7 +55795,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "end_turn",
+     "finish_reason": "stop",
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5

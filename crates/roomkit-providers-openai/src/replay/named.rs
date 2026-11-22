@@ -4,6 +4,7 @@
 //! entry states and in nothing else, and the provider sends as many
 //! requests and gives what the entry states.
 
+use roomkit_ai::FinishReason;
 use roomkit_providers_client::harness::named::{Does, Entry, Instead, Named, Says, fails};
 
 use super::fixture;
@@ -11,14 +12,14 @@ use super::fixture;
 /// A whole answer after one request, the one the cases of a usage give,
 /// with this usage.
 const fn counts(usage: &'static str) -> Instead {
-    let does = Does::Answers("Hello there.", "stop", usage);
+    let does = Does::Answers("Hello there.", FinishReason::Stop, usage);
     Instead { requests: 1, does }
 }
 
 /// A stream after one request, which says this, stops for `stop` and
 /// counts this usage.
 const fn streams(text: &'static str, usage: &'static str) -> Instead {
-    let does = Does::Answers(text, "stop", usage);
+    let does = Does::Answers(text, FinishReason::Stop, usage);
     Instead { requests: 1, does }
 }
 

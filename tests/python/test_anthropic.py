@@ -666,7 +666,7 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(response, AIResponse)
         self.assertEqual(
             (response.content, response.finish_reason, response.usage),
-            ("Hello there.", "end_turn", {"input_tokens": 12, "output_tokens": 5}),
+            ("Hello there.", "stop", {"input_tokens": 12, "output_tokens": 5}),
         )
         self.assertEqual((response.tasks, response.observations, response.tool_calls), ([], [], []))
         (seen,) = self.fake.seen
@@ -695,13 +695,13 @@ class CallTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(told[0].usage, {"input_tokens": 12})
         self.assertEqual((told[1].thinking, told[1].signature), ("They greet me.", None))
         self.assertEqual((told[2].thinking, told[2].signature), ("", SIGNATURE))
-        self.assertEqual((told[3].text, told[4].finish_reason), ("Hello.", "end_turn"))
+        self.assertEqual((told[3].text, told[4].finish_reason), ("Hello.", "stop"))
         called = [event async for event in provider.generate_structured_stream(HELLO)]
         kinds = [StreamUsage, StreamToolCallDelta, StreamToolCallDelta, StreamToolCall, StreamDone]
         self.assertEqual([type(event) for event in called], kinds)
         self.assertEqual((called[3].id, called[3].arguments), ("toolu_1", {"number": "A-1"}))
         self.assertFalse(called[3].partial)
-        self.assertEqual(called[4].finish_reason, "tool_use")
+        self.assertEqual(called[4].finish_reason, "tool_calls")
         self.assertEqual([piece async for piece in provider.generate_stream(HELLO)], ["Hel", "lo."])
 
     async def test_a_base_url_that_names_the_path_of_the_api_is_asked_at_that_path(self) -> None:

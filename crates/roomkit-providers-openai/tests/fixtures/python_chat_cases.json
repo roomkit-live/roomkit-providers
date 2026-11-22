@@ -1,7 +1,7 @@
 {
  "generator": "scripts/generate_openai_chat_cases.py",
  "roomkit_version": "0.117.0.dev0",
- "roomkit_commit": "8e953bb965ffbcdddc95652eceafbc0ea4d5f033",
+ "roomkit_commit": "651ae82c198066cc771ad2fcfdc6995fdad25c99",
  "roomkit_dirty": false,
  "openai_version": "3.57.0",
  "pydantic_version": "2.13.5",
@@ -9490,7 +9490,7 @@
      "thinking": null,
      "thinking_signature": null,
      "thinking_parts": null,
-     "finish_reason": "",
+     "finish_reason": null,
      "usage": {
       "input_tokens": 12,
       "output_tokens": 5
@@ -41845,31 +41845,16 @@
      {
       "type": "text_delta",
       "text": "Hello."
+     },
+     {
+      "type": "done",
+      "finish_reason": null,
+      "usage": {},
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
      }
-    ],
-    "error": {
-     "class": "ProviderError",
-     "message": "1 validation error for StreamDone\nfinish_reason\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
-     "text": "openai: 1 validation error for StreamDone\nfinish_reason\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
-     "before_request": false,
-     "context_overflow": null,
-     "provider": "openai",
-     "retryable": false,
-     "status_code": null,
-     "raised_from": "ValidationError"
-    }
-   },
-   "compare": {
-    "exactly": [
-     "class",
-     "status_code",
-     "retryable",
-     "provider",
-     "context_overflow",
-     "before_request",
-     "events"
-    ],
-    "message": "python"
+    ]
    }
   },
   {

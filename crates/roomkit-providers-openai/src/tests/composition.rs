@@ -3,7 +3,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use roomkit_ai::{AiContext, ProviderError, StreamEvent};
+use roomkit_ai::{AiContext, FinishReason, ProviderError, StreamEvent};
 use serde_json::{Value, json};
 
 use super::support::{chunk, ending, events, streamed};
@@ -180,5 +180,5 @@ async fn a_cut_call_keeps_its_fragments_and_partial_arguments() {
     assert_eq!(delta.id, call.id);
     assert!(call.partial);
     assert_eq!(json!(call.arguments), json!({"raw": "{\"q\":"}));
-    assert_eq!(done.finish_reason.as_deref(), Some("length"));
+    assert_eq!(done.finish_reason, Some(FinishReason::Length));
 }

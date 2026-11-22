@@ -3,8 +3,8 @@
 
 use roomkit::model::Metadata;
 use roomkit_ai::{
-    AiResponse, AiThinkingPart, AiToolCall, ServedCall, StreamDone, StreamEvent, StreamTextDelta,
-    StreamThinkingDelta, StreamToolCall, StreamToolCallDelta, StreamUsage,
+    AiResponse, AiThinkingPart, AiToolCall, FinishReason, ServedCall, StreamDone, StreamEvent,
+    StreamTextDelta, StreamThinkingDelta, StreamToolCall, StreamToolCallDelta, StreamUsage,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -108,8 +108,9 @@ struct ResponseForm {
     thinking_signature: Option<String>,
     #[serde(default)]
     thinking_parts: Option<Vec<ThinkingForm>>,
+    /// A word of the contract, as Python's `AIResponse` takes no other.
     #[serde(default)]
-    finish_reason: Option<String>,
+    finish_reason: Option<FinishReason>,
     #[serde(default)]
     usage: Metadata,
     #[serde(default)]
@@ -237,7 +238,7 @@ enum EventForm {
     },
     Done {
         #[serde(default)]
-        finish_reason: Option<String>,
+        finish_reason: Option<FinishReason>,
         #[serde(default)]
         usage: Metadata,
         #[serde(default)]

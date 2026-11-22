@@ -4,10 +4,11 @@
 use roomkit::model::Metadata;
 use roomkit_ai::{
     AiContext, AiResponse, AiToolCall, CallGarbledOptions, CallIds, CallPartialOptions,
-    call_garbled, call_partial, check_schema_answer, tool_arguments,
+    FinishReason, call_garbled, call_partial, check_schema_answer, tool_arguments,
 };
 use serde_json::{Map, Value};
 
+use crate::dialect::chat_finish_reason;
 use crate::failure::{self, Failure, past_mark};
 use crate::think_tags::{extract_think_tags, field_reasoning, merge_thinking};
 use crate::vendor::Vendor;
@@ -63,7 +64,7 @@ pub(crate) fn read(
         }
         return Ok(response);
     };
-    let finish_reason = choice.get("finish_reason").and_then(Value::as_str);
+    let finish_reason = chat_finish_reason(choice.get("finish_reason").and_then(Value::as_str));
     let message = choice.get("message").filter(|message| message.is_object());
     let member = |name: &str| message.and_then(|message| message.get(name));
     let text = |name: &str| {
@@ -76,13 +77,14 @@ pub(crate) fn read(
     let field = field_reasoning(member("reasoning_content"), member("reasoning"));
     let refusal = text("refusal");
     if let Some(schema) = schema.filter(|_| calls.is_empty()) {
-        let filtered = (finish_reason == Some("content_filter")).then_some("content_filter");
+        let filtered = finish_reason == Some(FinishReason::ContentFilter);
+        let filtered = filtered.then_some("content_filter");
         let declined = refusal.or(filtered);
         check_schema_answer(&content, schema, provider, declined, finish_reason)?;
     }
     response.content = content;
     response.thinking = merge_thinking(thinking, field);
-    response.finish_reason = finish_reason.map(str::to_owned);
+    response.finish_reason = finish_reason;
     if let Some(refusal) = refusal {
         response
             .metadata
@@ -109,7 +111,7 @@ pub(crate) fn truthy(value: &Value) -> bool {
 /// id of its own, its arguments read as text or as an object, cut or not.
 /// An entry with no function is no call; a call with no name keeps an
 /// empty one, for the loop to refuse.
-fn tool_calls(entries: Option<&Value>, finish_reason: Option<&str>) -> Vec<AiToolCall> {
+fn tool_calls(entries: Option<&Value>, finish_reason: Option<FinishReason>) -> Vec<AiToolCall> {
     let entries = entries
         .and_then(Value::as_array)
         .map_or(&[][..], Vec::as_slice);

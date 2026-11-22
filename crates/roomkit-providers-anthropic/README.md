@@ -130,6 +130,12 @@ reason, the usage, the model that answered and the category of a refusal.
   A call whose block closed before the cut is part of what came, and is
   handed as it came; a call still open is never handed. The failure is the
   stream's last item: a host runs no call of a stream that failed.
+- **How a message ended is told in the contract's word** (`FinishReason`),
+  as Python tells it: `end_turn` and `stop_sequence` as `stop`, `tool_use`
+  as `tool_calls`, `max_tokens` and `model_context_window_exceeded` as
+  `length`, `refusal` as `refusal`. `pause_turn`, a turn the server paused,
+  is no reason, as is a word the provider does not know; the stream that
+  said it is complete all the same.
 - **An answer that ends inside an event was cut there.** The event an answer
   ends on, with no blank line after it, is read when its data is a whole
   JSON document, with or without a line end after its last line. When its

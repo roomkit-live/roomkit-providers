@@ -16,14 +16,15 @@
 
 use roomkit::model::Metadata;
 use roomkit_ai::{
-    StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta, StreamToolCallDelta, dumps,
-    read_tool_calls, stream_call_of,
+    FinishReason, StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta,
+    StreamToolCallDelta, dumps, read_tool_calls, stream_call_of,
 };
 use serde::Deserialize;
 use serde_json::Value;
 
 use crate::answer::{truthy, usage_of};
 use crate::call_slots::{ARGUMENTS_LIMIT, CallSlots, Fragment, FragmentId, RawCall};
+use crate::dialect::chat_finish_reason;
 use crate::failure::{self, Failure};
 use crate::think_tags::{Segment, ThinkTagParser, field_reasoning};
 use crate::vendor::Vendor;
@@ -75,7 +76,11 @@ fn fragment_id(id: Option<&Value>) -> FragmentId<'_> {
 #[derive(Debug)]
 pub(crate) struct Folding<'p> {
     calls: CallSlots,
-    finish_reason: Option<String>,
+    /// Whether a chunk said why the answer stopped.
+    finished: bool,
+    /// Why it stopped, in the contract's word (RFC §6.7): none for a reason
+    /// the dialect does not hold.
+    finish_reason: Option<FinishReason>,
     usage: Metadata,
     /// Sorts the text into reasoning and answer, a tag split across chunks
     /// included.
@@ -93,7 +98,7 @@ pub(crate) struct Folding<'p> {
 impl<'p> Folding<'p> {
     /// Whether a chunk said why the answer stopped.
     pub(crate) const fn has_finish_reason(&self) -> bool {
-        self.finish_reason.is_some()
+        self.finished
     }
 
     /// The folding of a stream asking the model `asked` on `vendor`'s
@@ -101,6 +106,7 @@ impl<'p> Folding<'p> {
     pub(crate) fn new(asked: &'p str, vendor: Vendor) -> Self {
         Self {
             calls: CallSlots::default(),
+            finished: false,
             finish_reason: None,
             usage: Metadata::new(),
             tags: ThinkTagParser::default(),
@@ -154,15 +160,11 @@ impl<'p> Folding<'p> {
     /// Reads the first choice of a chunk: Python reads no other.
     fn read_choice(&mut self, choice: &Value, ready: &mut Vec<StreamEvent>) -> Result<(), Failure> {
         // The last reason that says something is kept, as Python's `or`
-        // keeps it.
-        match choice.get("finish_reason").filter(|reason| truthy(reason)) {
-            Some(Value::String(reason)) => self.finish_reason = Some(reason.clone()),
-            Some(_) => {
-                return Err(Failure::unreadable(
-                    "the finish reason of a chunk is no text",
-                ));
-            }
-            None => {}
+        // keeps it, and read in the contract's word: one that is no text is
+        // no word of the dialect.
+        if let Some(reason) = choice.get("finish_reason").filter(|reason| truthy(reason)) {
+            self.finished = true;
+            self.finish_reason = chat_finish_reason(reason.as_str());
         }
         let Some(delta) = choice.get("delta").filter(|delta| delta.is_object()) else {
             return Ok(());
@@ -235,9 +237,9 @@ impl<'p> Folding<'p> {
     }
 
     /// The completion once its stream is over: its calls in the order they
-    /// came, each with the text of its arguments, and how it ended. Its end
-    /// names the model that answered, else the one asked, and keeps a
-    /// refusal.
+    /// came, each with the text of its arguments, and how it ended, in the
+    /// contract's word (RFC §6.7). Its end names the model that answered,
+    /// else the one asked, and keeps a refusal.
     ///
     /// # Errors
     ///
@@ -264,7 +266,7 @@ impl<'p> Folding<'p> {
 pub(crate) fn push_end(ready: &mut Vec<StreamEvent>, calls: Vec<RawCall>, done: StreamDone) {
     let raw = calls.into_iter();
     let raw = raw.map(|call| (call.id, call.name, call.arguments));
-    let calls = read_tool_calls(raw.collect(), done.finish_reason.as_deref());
+    let calls = read_tool_calls(raw.collect(), done.finish_reason);
     let calls = calls.iter().map(stream_call_of);
     ready.extend(calls.map(StreamEvent::ToolCall));
     ready.push(StreamEvent::Done(done));

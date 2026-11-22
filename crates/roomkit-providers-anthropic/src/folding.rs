@@ -32,6 +32,7 @@ use serde_json::Value;
 use self::calls::Calls;
 use self::usage::Usage;
 use crate::failure::{Failure, said_something};
+use crate::stop_reasons::finish_reason_of;
 
 #[cfg(test)]
 mod tests;
@@ -62,7 +63,8 @@ pub(crate) struct Folding<'p> {
     blocks: BTreeMap<u32, Kind>,
     /// The calls of the message, those whose block is open among them.
     calls: Calls,
-    finish_reason: Option<String>,
+    /// Why the message stopped, in Anthropic's word.
+    stop_reason: Option<String>,
     /// Why the safeguards declined a refused message.
     refusal: Option<String>,
     /// The model the message's start says answered.
@@ -104,7 +106,7 @@ impl<'p> Folding<'p> {
             stopped: false,
             blocks: BTreeMap::new(),
             calls: Calls::default(),
-            finish_reason: None,
+            stop_reason: None,
             refusal: None,
             model: None,
             usage: Usage::default(),
@@ -124,7 +126,7 @@ impl<'p> Folding<'p> {
     /// Whether the message is complete: it said why it stopped, or the
     /// event that ends it came.
     pub(crate) const fn is_complete(&self) -> bool {
-        self.stopped || self.finish_reason.is_some()
+        self.stopped || self.stop_reason.is_some()
     }
 
     /// Takes the event whose data is `data`, adding to `ready` what it
@@ -293,7 +295,7 @@ impl<'p> Folding<'p> {
             let said = held.and_then(Value::as_str).filter(|said| !said.is_empty());
             said.map(str::to_owned)
         };
-        self.finish_reason = said(delta.get("stop_reason"));
+        self.stop_reason = said(delta.get("stop_reason"));
         let details = delta.get("stop_details");
         self.refusal = said(details.and_then(|details| details.get("category")));
         self.usage.end(event.get("usage"));
@@ -303,8 +305,10 @@ impl<'p> Folding<'p> {
     /// Adds to `ready` the end of a message that is complete: the calls its
     /// stream left open, each read for how the message stopped, then its
     /// done event, which names the model that answered, else the one asked.
+    /// How it stopped is told in the contract's word (RFC §6.7).
     pub(crate) fn finish(self, ready: &mut Vec<StreamEvent>) {
-        let left_open = self.calls.left_open(self.finish_reason.as_deref());
+        let finish_reason = finish_reason_of(self.stop_reason.as_deref());
+        let left_open = self.calls.left_open(finish_reason);
         ready.extend(left_open.map(StreamEvent::ToolCall));
         let mut metadata = Metadata::new();
         let model = self.model.unwrap_or_else(|| self.asked.to_owned());
@@ -313,7 +317,7 @@ impl<'p> Folding<'p> {
             metadata.insert("refusal".to_owned(), refusal.into());
         }
         ready.push(StreamEvent::Done(StreamDone {
-            finish_reason: self.finish_reason,
+            finish_reason,
             usage: self.usage.whole(),
             metadata,
         }));

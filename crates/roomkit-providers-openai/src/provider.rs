@@ -7,8 +7,8 @@ use std::sync::atomic::AtomicBool;
 
 use reqwest::header::{AUTHORIZATION, HeaderMap};
 use roomkit_ai::{
-    AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
-    TextStream, checked_stream, listing,
+    AiContext, AiProvider, AiResponse, FinishReason, ModelInfo, ProviderError, ProviderStream,
+    StreamDone, TextStream, checked_stream, listing,
 };
 use roomkit_providers_client::catalogue;
 use roomkit_providers_client::endpoint::joined;
@@ -310,7 +310,8 @@ fn refusal(done: &StreamDone) -> Option<String> {
     if let Some(refused) = refused.filter(|refused| !refused.is_empty()) {
         return Some(refused.to_owned());
     }
-    (done.finish_reason.as_deref() == Some("content_filter")).then(|| "content_filter".to_owned())
+    let filtered = done.finish_reason == Some(FinishReason::ContentFilter);
+    filtered.then(|| "content_filter".to_owned())
 }
 
 impl OpenAi {

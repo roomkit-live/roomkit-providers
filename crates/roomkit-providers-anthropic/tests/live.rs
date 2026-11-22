@@ -3,7 +3,7 @@
 //! -- --ignored --test-threads=1`. `ANTHROPIC_MODEL` can select another model.
 use roomkit_ai::{
     AiContentPart, AiContext, AiMessage, AiMessageContent, AiProvider, AiRole, AiTextPart, AiTool,
-    AiToolCallPart, AiToolResultPart, StreamEvent,
+    AiToolCallPart, AiToolResultPart, FinishReason, StreamEvent,
 };
 use roomkit_providers_anthropic::{Anthropic, AnthropicConfig};
 use serde_json::json;
@@ -62,7 +62,7 @@ async fn live_text_stream_and_model_listing() {
         told.unwrap().usage["input_tokens"],
         done.usage["input_tokens"]
     );
-    assert_eq!(done.finish_reason.as_deref(), Some("end_turn"));
+    assert_eq!(done.finish_reason, Some(FinishReason::Stop));
     assert!(done.usage["input_tokens"].as_u64().unwrap() > 0);
     assert!(done.usage["output_tokens"].as_u64().unwrap() > 0);
 }
