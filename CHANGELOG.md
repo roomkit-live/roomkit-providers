@@ -208,6 +208,14 @@ nothing has been released yet.
   configuration and one class statement. How a provider is built, what
   guards it, and every entry into the native module are written once for
   every provider.
+- `roomkit-providers`: `roomkit_providers.llm.anthropic` holds `Anthropic`
+  and `AnthropicConfig`, the Rust Anthropic provider as a RoomKit
+  `AIProvider`, to give an `AIChannel` in place of RoomKit's own. It takes
+  RoomKit's `AnthropicConfig` too, sends the key a context lends one
+  request in that request alone, and replays through the package the cases
+  recorded on RoomKit's Python provider. It was added with no change to what
+  every provider shares. The guide says what differs for a host that
+  switches.
 - `roomkit-providers-http` depends on no HTTP client: it reads a host with
   the `url` crate, the parser `reqwest` reads a URL with.
 - `roomkit-providers-http` is licensed `MIT AND Unicode-3.0`: its list of

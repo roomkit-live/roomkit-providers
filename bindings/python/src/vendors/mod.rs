@@ -8,7 +8,11 @@
 
 use super::vendor::Entries;
 
+mod anthropic;
 mod openai;
 
 /// The entries of every vendor.
-pub(crate) static VENDORS: &[Entries] = &[Entries::of::<openai::OpenAi>()];
+pub(crate) static VENDORS: &[Entries] = &[
+    Entries::of::<anthropic::Anthropic>(),
+    Entries::of::<openai::OpenAi>(),
+];

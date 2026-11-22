@@ -41,7 +41,7 @@ MATURIN = tuple(
 # that lost its way to its local fake fails there, and reaches no service.
 NO_NETWORK = "scripts/no-network.sh"
 # The examples an installation runs, each checking what it shows.
-EXAMPLES = [("local_server.py",), ("roomkit_agent.py",)]
+EXAMPLES = [("local_server.py",), ("roomkit_agent.py",), ("anthropic_agent.py",)]
 # What builds the scripted provider into a wheel, beside the features
 # pyproject.toml names, which a command's own replace.
 TESTING = "pyo3/extension-module,testing"

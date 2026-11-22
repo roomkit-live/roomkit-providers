@@ -1,4 +1,29 @@
 {
+  "roomkit_providers.llm.anthropic.Anthropic": {
+    "__bases__": ["bases", "roomkit.providers.ai.base.AIProvider"],
+    "__init__": ["def", "config"],
+    "available_models": ["classmethod"],
+    "catalog_entry": ["def"],
+    "close": ["async def"],
+    "context_window": ["property"],
+    "generate": ["async def", "context"],
+    "generate_stream": ["async gen def", "context"],
+    "generate_structured_stream": ["async gen def", "context"],
+    "list_models": ["async def"],
+    "model_name": ["property"],
+    "name": ["property"],
+    "supports_deferred_tools": ["property"],
+    "supports_response_schema": ["property"],
+    "supports_response_schema_with_tools": ["property"],
+    "supports_streaming": ["property"],
+    "supports_structured_streaming": ["property"],
+    "supports_vision": ["property"]
+  },
+  "roomkit_providers.llm.anthropic.AnthropicConfig": {
+    "__bases__": ["bases", "pydantic.main.BaseModel"],
+    "__init__": ["def", "*", "api_key", "model", "max_tokens=1024", "timeout=60.0", "connect_timeout=5.0", "max_retries=0", "base_url=None", "extra_headers=None", "enable_prompt_caching=True", "use_adaptive_thinking=False", "supports_custom_temperature=True"],
+    "model_post_init": ["def", "context", "/"]
+  },
   "roomkit_providers.llm.openai.OpenAI": {
     "__bases__": ["bases", "roomkit.providers.ai.base.AIProvider"],
     "__init__": ["def", "config"],

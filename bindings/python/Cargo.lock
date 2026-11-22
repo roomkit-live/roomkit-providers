@@ -728,6 +728,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-anthropic"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "reqwest",
+ "roomkit-providers-client",
+ "roomkit-providers-llm",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "roomkit-providers-client"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -783,6 +794,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "futures-core",
  "pyo3",
+ "roomkit-providers-anthropic",
  "roomkit-providers-client",
  "roomkit-providers-llm",
  "roomkit-providers-openai",

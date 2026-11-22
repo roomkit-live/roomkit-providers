@@ -1,4 +1,8 @@
 {
+  "roomkit_providers.llm.anthropic": [
+    "Anthropic",
+    "AnthropicConfig"
+  ],
   "roomkit_providers.llm.openai": [
     "OpenAI",
     "OpenAIConfig"

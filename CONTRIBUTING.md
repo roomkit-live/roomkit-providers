@@ -375,11 +375,13 @@ its own: what a provider sends and reads stays in the provider crates.
   not, which the check verifies, and those tests are skipped there, saying
   so.
 - **A provider is tested against a local fake of its endpoint**
-  (`tests/python/fake_endpoint.py`), through its public class.
-  `tests/python/test_replay.py` replays the recorded wire cases through
-  `OpenAI`, and compares as the Rust replay does. The cases the provider
-  answers otherwise than Python are read from
-  `crates/roomkit-providers-openai/tests/fixtures/named_cases.json`, which
+  (`tests/python/fake_endpoint.py`, with each provider's answers in
+  `fake_<vendor>.py`), through its public class. The recorded wire cases of
+  each provider are replayed through its class (`tests/python/test_replay.py`
+  for `OpenAI`, `test_replay_<vendor>.py` for the others), on one harness
+  that names no vendor (`replay_cases.py`), which compares as the Rust
+  replay does. The cases a provider answers otherwise than Python are read
+  from its crate's `tests/fixtures/named_cases.json`, which
   the Rust replay writes from its own list: after a change to
   `src/replay/named.rs`, run `make named-cases` and commit the file; a test
   of the crate fails while the two differ. The replay drives a provider
@@ -548,12 +550,15 @@ In Python:
   raised as RoomKit's exception. `tests/python/test_generic.py` fails for a
   vendor's module that does.
 - `tests/python/test_<vendor>.py`: the provider through its public class,
-  against a local fake of its endpoint; and the replay of its recorded
-  cases through the package (`tests/python/test_replay.py`,
-  `replay_cases.py`), which reads the crate's `named_cases.json`. The
-  Python replay is test support written for the first provider: a second
-  one brings its fixture, its fake's answers and how its key is written in
-  a recorded header.
+  against a local fake of its endpoint, with what writes its answers in
+  `tests/python/fake_<vendor>.py`.
+- `tests/python/test_replay_<vendor>.py`: the replay of its recorded cases
+  through the package. It states what is the provider's own for the
+  harness (`replay_cases.Replays`: its vendor, its classes, its fixture, the
+  header its key goes in), its counts, the cases left to the Rust replay,
+  and the wrongs that hold the harness to what its cases alone show. The
+  harness itself is not edited.
+- An example beside the others, with its line in `scripts/check-python.py`.
 - `make api-snapshot`, which rewrites `tests/python/public_api_names.json`
   and `public_api_signatures.json` for the two new names.
 

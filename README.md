@@ -14,9 +14,9 @@ contract.
 > **Early development.** The contract crate is written: what a provider
 > implements, what it is asked and what it answers. So is the HTTP client
 > the providers are built on, and two providers, OpenAI's and Anthropic's:
-> whole answers, streams and the model listing. A Python package holds the
-> OpenAI provider behind a native extension, as a RoomKit provider; the
-> Anthropic provider is in Rust alone so far. Nothing is released. The
+> whole answers, streams and the model listing. A Python package holds both
+> behind a native extension, each as a RoomKit provider. Nothing is
+> released. The
 > [changelog](CHANGELOG.md) says what exists; the rest of this page says
 > where the project is going.
 
@@ -54,8 +54,9 @@ In this order:
    A provider is a RoomKit `AIProvider`, and what translates between RoomKit
    and the contract is written once for every provider ([Python](#python));
 4. a provider for Anthropic's Messages API,
-   `roomkit-providers-anthropic`: written in Rust, not released, and not in
-   the Python package yet. It replays the cases captured on RoomKit's Python
+   `roomkit-providers-anthropic`: written, not released, in Rust and in the
+   Python package, which it joined with no change to what every provider
+   shares there. It replays the cases captured on RoomKit's Python
    provider, and is written on the HTTP client the OpenAI provider is
    written on, `roomkit-providers-client`: a provider crate holds its wire
    and nothing else;
@@ -68,8 +69,9 @@ Items 5 and 6 are not started.
 
 ## Python
 
-The Python package holds the same OpenAI provider behind a native extension,
-for RoomKit on CPython 3.12 or newer. The provider is a RoomKit
+The Python package holds the same providers behind a native extension,
+OpenAI's and Anthropic's, for RoomKit on CPython 3.12 or newer. A provider
+is a RoomKit
 `AIProvider`: it takes an `AIContext`, gives RoomKit's models and raises
 RoomKit's `ProviderError`, and an AI channel takes it as it takes RoomKit's
 own:
@@ -103,11 +105,12 @@ provider.
 | `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy |
 | `crates/roomkit-providers-anthropic` | The Anthropic provider (`Anthropic`): whole answers, streams and the model listing on the Messages API, its configuration (`AnthropicConfig`), the wire cases it replays, and an example against a local server |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract, and the entries Python calls are written once for every vendor (`src/vendor.rs`); `src/vendors` holds each provider's own part, its configuration and how it is built |
-| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, and `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, a class statement each |
-| `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the criterion that adding a provider changes none of it; the replay of the recorded wire cases through `OpenAI`; a RoomKit agent over it; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
+| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, and `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, a class statement each |
+| `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the criterion that adding a provider changes none of it; the replay of each provider's recorded wire cases through its class; a RoomKit agent over each; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
 | `examples/roomkit_agent.py` | A RoomKit agent over the provider: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |
-| `benchmarks/crossing.py` | What a turn costs through the package's provider, and through RoomKit's own Python provider where its SDK is installed |
+| `examples/anthropic_agent.py` | The same agent over `Anthropic`: the model reasons, calls a tool, and the round goes back with its signed reasoning |
+| `benchmarks/crossing.py` | What a turn costs through a provider of the package (`--provider openai` or `anthropic`), and through RoomKit's own Python provider where its SDK is installed |
 | `benchmarks/footprint.py`, `benchmarks/fork_children.py` | The threads and the connections a busy provider holds, and how often a child forked under load hangs |
 | `guide/python.md` | The Python guide |
 | `scripts/check-python.py` | Builds a wheel and a source distribution, installs each beside RoomKit and runs the Python tests and the examples on it (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshot, `scripts/roomkit_env.py` names the RoomKit of the environment) |

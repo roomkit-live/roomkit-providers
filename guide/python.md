@@ -47,6 +47,8 @@ kit.register_channel(AIChannel("assistant", provider=OpenAI(config)))
 tool on the way and streams its answer, against a stand-in server it starts
 on a local port. `examples/local_server.py` asks the provider alone, as
 RoomKit asks one: a context in, RoomKit's models out.
+`examples/anthropic_agent.py` is the same agent over `Anthropic`: the model
+reasons, calls a tool, and the round goes back with its signed reasoning.
 
 ## One import per provider
 
@@ -57,9 +59,12 @@ provider's class, named for the vendor, and its configuration:
 | Module | Class | Configuration |
 | --- | --- | --- |
 | `roomkit_providers.llm.openai` | `OpenAI` | `OpenAIConfig` |
+| `roomkit_providers.llm.anthropic` | `Anthropic` | `AnthropicConfig` |
 
 `OpenAI` serves OpenAI's Chat Completions and the servers that speak it
-behind a base URL.
+behind a base URL; `Anthropic`, Anthropic's Messages API and the servers
+that speak it. What this guide says of `OpenAI` holds for `Anthropic`, with
+its own names; [Anthropic](#anthropic) says what is its own.
 
 ## Switching from RoomKit's own provider
 
@@ -382,6 +387,75 @@ server says under `detail`, not its whole body. Beside the wire:
   provider sends the openai SDK's; a `default_headers` entry replaces it.
 - **The `openai` SDK is not needed.** The provider runs without RoomKit's
   `openai` extra.
+
+## Anthropic
+
+```python
+# from roomkit.providers.anthropic import AnthropicAIProvider, AnthropicConfig
+from roomkit_providers.llm.anthropic import Anthropic, AnthropicConfig
+
+provider = Anthropic(AnthropicConfig(api_key=..., model=...))
+```
+
+`AnthropicConfig` has the fields, the defaults and the validation of
+RoomKit's `AnthropicConfig`, and `Anthropic` takes RoomKit's own too:
+
+```python
+AnthropicConfig(
+    *,
+    api_key,                             # required
+    model,                               # required
+    max_tokens=1024,
+    timeout=60.0,
+    connect_timeout=5.0,
+    max_retries=0,
+    base_url=None,                       # None is Anthropic's own endpoint
+    extra_headers=None,
+    enable_prompt_caching=True,
+    use_adaptive_thinking=False,         # unset: decided from the model
+    supports_custom_temperature=True,    # unset: decided from the model
+)
+```
+
+A base URL is kept as RoomKit's configuration keeps it: without the white
+space around it, the slashes that end it and a `/v1/messages` it ends with.
+`repr` shows neither the key, nor an extra header's value, nor more of the
+base URL than its scheme, its host and its port.
+
+What this guide says of `OpenAI` holds for `Anthropic`: the members of an
+`AIProvider`, what crosses of a context, streams, cancellation and lifetime,
+the errors, the environment read when the provider is built. `name` is
+`AnthropicAIProvider`, the name RoomKit's own provider goes by; the class
+is `Anthropic`. What is Anthropic's own:
+
+- **The key a context lends one request** (`metadata["api_key"]`) is sent,
+  in `x-api-key`, in place of the configuration's, for that request alone.
+  It is in no failure of that request. One HTTP client serves every key,
+  where RoomKit's provider keeps a client of its SDK for each of the last
+  eight keys.
+- **A request with no key at all**, none in the configuration, none lent
+  and no credential among the extra headers, fails before it is sent.
+- **Reasoning** comes back as RoomKit's thinking parts, each with its
+  signature, a redacted block as its opaque data, and goes back to the
+  model unchanged in the next round.
+- **Deferred tools.** `supports_deferred_tools` is the catalogue's answer
+  for the model on Anthropic's own endpoint, and false behind another base
+  URL.
+- **The time to the first token of a whole answer** is the time the whole
+  answer took: [above](#the-time-to-the-first-token).
+- **On the wire** the provider does as RoomKit's on 309 of the 377 cases
+  recorded from it, and says why it differs on each of the others: its
+  README,
+  [`crates/roomkit-providers-anthropic`](../crates/roomkit-providers-anthropic/README.md),
+  lists them. For a host the ones that show most: a redirect is not
+  followed; a stream that ends with neither a stop reason nor the event
+  that ends its message fails, a failure worth a new request, where
+  RoomKit's reads it as complete; `list_models` fails with RoomKit's
+  `ProviderError`, where RoomKit's raises its SDK's error; a failure's text
+  is the provider's own sentence, with the type and the message of the
+  server's error object.
+- **The `anthropic` SDK is not needed.** The provider runs without
+  RoomKit's `anthropic` extra.
 
 ## What is private
 

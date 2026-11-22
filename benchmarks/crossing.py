@@ -1,7 +1,7 @@
 """What a turn costs through the package's provider, and through RoomKit's
 own Python provider where its SDK is installed.
 
-A turn is asked of a local fake of the Chat Completions wire, which runs in a
+A turn is asked of a local fake of the provider's wire, which runs in a
 process of its own so that its work is not counted: a streamed answer of 500
 text deltas sent at once, and a whole answer. Two contexts are asked: 22 kB
 of text, and the same with tools and an image. Each variant's turns are
@@ -9,20 +9,28 @@ measured in rounds interleaved with the others', so that drift lands on all
 of them; the medians of the wall time and of the process's CPU time are
 reported, the binding's threads included.
 
-The variants, each given RoomKit's AIContext and giving RoomKit's models:
+`--provider` names the provider measured, `openai` unless it says
+`anthropic`. The variants, each given RoomKit's AIContext and giving
+RoomKit's models:
 
-  rust              this package's OpenAI: the Rust provider
-  roomkit           RoomKit's OpenAIAIProvider: the openai SDK, where it is
-                    installed
+  rust              this package's OpenAI or Anthropic: the Rust provider
+  roomkit           RoomKit's OpenAIAIProvider or AnthropicAIProvider: the
+                    vendor's SDK, where it is installed
+
+The fake speaks the wire a request's path names: Chat Completions, or
+Anthropic's Messages API. The Messages API is asked as a stream by both
+variants, for a whole answer too: its two turns read the same 500 deltas
+and differ in what the provider hands over, the events or the answer.
 
 Not a test, and not part of any gate. Build the native module optimized
 (`maturin develop --release`, which leaves it beside the package's sources),
 then run on idle cores:
 
     taskset -c 0-15 python benchmarks/crossing.py
+    taskset -c 0-15 python benchmarks/crossing.py --provider anthropic
 
 and, to compare with RoomKit's provider, from a RoomKit checkout whose
-environment has the openai SDK:
+environment has the provider's SDK:
 
     taskset -c 0-15 uv run --no-sync python ../roomkit-providers/benchmarks/crossing.py
 """
@@ -32,6 +40,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import base64
+import importlib
 import json
 import os
 import socket
@@ -49,16 +58,21 @@ ROUNDS = 6
 TURNS_PER_ROUND = 25
 WARM_UP = 5
 MODEL = "local-model"
+KEY = "placeholder-not-a-key"
 Turn = Callable[[], Awaitable[int]]
+# This package's provider, and what builds RoomKit's own.
+Pair = tuple[Any, Callable[[], Any]]
 
 
 # -- The fake of the wire, in a process of its own ------------------------------------
 
 
-def _event(payload: dict[str, Any] | str) -> bytes:
-    """One server-sent event as one chunk of the transfer."""
+def _event(payload: dict[str, Any] | str, name: str = "") -> bytes:
+    """One server-sent event as one chunk of the transfer, under its name
+    on a wire that names its events."""
     data = payload if isinstance(payload, str) else json.dumps(payload, separators=(",", ":"))
-    body = f"data: {data}\n\n".encode()
+    named = f"event: {name}\n" if name else ""
+    body = f"{named}data: {data}\n\n".encode()
     return b"%x\r\n%b\r\n" % (len(body), body)
 
 
@@ -69,8 +83,11 @@ def _delta(delta: dict[str, Any], finish: str | None = None) -> dict[str, Any]:
 
 WORDS = [f"word{at} " for at in range(DELTAS)]
 USAGE = {"prompt_tokens": 5000, "completion_tokens": DELTAS, "total_tokens": 5000 + DELTAS}
-STREAMED = (
+EVENT_STREAM = (
     b"HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ntransfer-encoding: chunked\r\n\r\n"
+)
+STREAMED = (
+    EVENT_STREAM
     + _event(_delta({"role": "assistant", "content": ""}))
     + b"".join(_event(_delta({"content": word})) for word in WORDS)
     + _event(_delta({}, "stop"))
@@ -92,15 +109,60 @@ WHOLE = b"HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: %
 )
 
 
+def _typed(payload: dict[str, Any]) -> bytes:
+    """One event of the Messages API, named by its type."""
+    return _event(payload, payload["type"])
+
+
+def _text_delta(text: str) -> dict[str, Any]:
+    delta = {"type": "text_delta", "text": text}
+    return {"type": "content_block_delta", "index": 0, "delta": delta}
+
+
+_STARTED = {
+    "id": "msg_1",
+    "type": "message",
+    "role": "assistant",
+    "model": MODEL,
+    "content": [],
+    "stop_reason": None,
+    "stop_sequence": None,
+    "usage": {
+        "input_tokens": 5000,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 1,
+    },
+}
+_TEXT = {"type": "text", "text": ""}
+_ENDED = {"stop_reason": "end_turn", "stop_sequence": None}
+# The one answer of the Messages API, which both variants ask as a stream.
+MESSAGE = (
+    EVENT_STREAM
+    + _typed({"type": "message_start", "message": _STARTED})
+    + _typed({"type": "content_block_start", "index": 0, "content_block": _TEXT})
+    + b"".join(_typed(_text_delta(word)) for word in WORDS)
+    + _typed({"type": "content_block_stop", "index": 0})
+    + _typed({"type": "message_delta", "delta": _ENDED, "usage": {"output_tokens": DELTAS}})
+    + _typed({"type": "message_stop"})
+    + b"0\r\n\r\n"
+)
+
+
 async def _serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-    """Answers each request of a connection: streamed when it asks so."""
+    """Answers each request of a connection in the wire its path names:
+    a message of the Messages API, else a completion, streamed when the
+    request asks so."""
     try:
         while True:
             head = (await reader.readuntil(b"\r\n\r\n")).decode("latin-1").lower()
             lengths = [line for line in head.split("\r\n") if line.startswith("content-length:")]
             length = int(lengths[0].partition(":")[2]) if lengths else 0
             asked = json.loads(await reader.readexactly(length)) if length else {}
-            writer.write(STREAMED if asked.get("stream") else WHOLE)
+            if head.split(" ", 2)[1].startswith("/v1/messages"):
+                writer.write(MESSAGE)
+            else:
+                writer.write(STREAMED if asked.get("stream") else WHOLE)
             await writer.drain()
     except (asyncio.IncompleteReadError, ConnectionError):
         pass
@@ -169,17 +231,50 @@ def tools_and_image_request() -> dict[str, Any]:
 # -- The variants ----------------------------------------------------------------------
 
 
-def variants_of(base_url: str, request: dict[str, Any]) -> dict[str, dict[str, Turn]]:
-    """The turns of this package's provider and, where the openai SDK is
-    installed, of RoomKit's own: both take RoomKit's context and give
-    RoomKit's models."""
-    from roomkit.providers.ai import AIContext, StreamTextDelta
+def openai_pair(address: str) -> Pair:
+    """This package's OpenAI, and what builds RoomKit's own, which needs the
+    openai SDK: both ask the fake's Chat Completions."""
     from roomkit.providers.openai import OpenAIAIProvider as RoomKitProvider
     from roomkit.providers.openai import OpenAIConfig as RoomKitConfig
     from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
+    settings = {"api_key": KEY, "model": MODEL, "base_url": f"{address}/v1"}
+    packaged = OpenAI(OpenAIConfig(**settings))
+    return packaged, lambda: RoomKitProvider(RoomKitConfig(**settings))
+
+
+def anthropic_pair(address: str) -> Pair:
+    """This package's Anthropic, and what builds RoomKit's own, which needs
+    the anthropic SDK: both ask the fake's Messages API."""
+    from roomkit.providers.anthropic import AnthropicAIProvider as RoomKitProvider
+    from roomkit.providers.anthropic import AnthropicConfig as RoomKitConfig
+    from roomkit_providers.llm.anthropic import Anthropic, AnthropicConfig
+
+    settings = {"api_key": KEY, "model": MODEL, "base_url": address}
+    packaged = Anthropic(AnthropicConfig(**settings))
+    return packaged, lambda: RoomKitProvider(RoomKitConfig(**settings))
+
+
+# The providers measured, each under the name of the SDK RoomKit's own runs on.
+PAIRS: dict[str, Callable[[str], Pair]] = {"openai": openai_pair, "anthropic": anthropic_pair}
+
+
+def installed(sdk: str) -> bool:
+    """Whether the SDK RoomKit's own provider runs on can be imported."""
+    try:
+        importlib.import_module(sdk)
+    except ImportError:
+        return False
+    return True
+
+
+def variants_of(vendor: str, address: str, request: dict[str, Any]) -> dict[str, dict[str, Turn]]:
+    """The turns of this package's provider and, where the vendor's SDK is
+    installed, of RoomKit's own: both take RoomKit's context and give
+    RoomKit's models."""
+    from roomkit.providers.ai import AIContext, StreamTextDelta
+
     context = AIContext.model_validate(request)
-    settings = {"api_key": "placeholder-not-a-key", "model": MODEL, "base_url": base_url}
 
     def turns(provider: Any) -> dict[str, Turn]:
         async def stream() -> int:
@@ -193,12 +288,10 @@ def variants_of(base_url: str, request: dict[str, Any]) -> dict[str, dict[str, T
 
         return {"stream": stream, "whole": whole}
 
-    variants = {"rust": turns(OpenAI(OpenAIConfig(**settings)))}
-    try:
-        import openai  # noqa: F401
-    except ImportError:
-        return variants
-    variants["roomkit"] = turns(RoomKitProvider(RoomKitConfig(**settings)))
+    packaged, roomkit = PAIRS[vendor](address)
+    variants = {"rust": turns(packaged)}
+    if installed(vendor):
+        variants["roomkit"] = turns(roomkit())
     return variants
 
 
@@ -239,12 +332,12 @@ async def compare(variants: dict[str, Turn], expected: int) -> dict[str, dict[st
     }
 
 
-async def run(base_url: str) -> dict[str, Any]:
+async def run(vendor: str, address: str) -> dict[str, Any]:
     contexts = {"text": text_request(), "tools and an image": tools_and_image_request()}
     expected = {"stream": DELTAS, "whole": len("".join(WORDS))}
-    results: dict[str, Any] = {"contexts": {}}
+    results: dict[str, Any] = {"provider": vendor, "sdk": installed(vendor), "contexts": {}}
     for label, request in contexts.items():
-        variants = variants_of(base_url, request)
+        variants = variants_of(vendor, address, request)
         measured = {"bytes": len(json.dumps(request))}
         for kind in ("stream", "whole"):
             turns = {name: turn[kind] for name, turn in variants.items()}
@@ -255,7 +348,10 @@ async def run(base_url: str) -> dict[str, Any]:
 
 def show(results: dict[str, Any]) -> None:
     turns = ROUNDS * TURNS_PER_ROUND
-    print(f"{DELTAS} deltas a streamed turn; {turns} turns a variant; medians, in ms")
+    vendor = results["provider"]
+    print(f"{vendor}: {DELTAS} deltas a streamed turn; {turns} turns a variant; medians, in ms")
+    if not results["sdk"]:
+        print(f"the {vendor} SDK is not installed: this package's provider is measured alone")
     for label, measured in results["contexts"].items():
         print(f"\ncontext: {label}, {measured['bytes']} bytes as JSON")
         for kind, title in (("stream", "streamed turn"), ("whole", "whole answer")):
@@ -301,7 +397,11 @@ def main() -> None:
     without_network()
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--serve", action="store_true", help="run the fake of the wire")
-    if parser.parse_args().serve:
+    parser.add_argument(
+        "--provider", choices=list(PAIRS), default="openai", help="the provider measured"
+    )
+    arguments = parser.parse_args()
+    if arguments.serve:
         asyncio.run(serve())
         return
     try:
@@ -317,7 +417,7 @@ def main() -> None:
     try:
         assert server.stdout is not None
         port = server.stdout.readline().split()[1]
-        results = asyncio.run(run(f"http://127.0.0.1:{port}/v1"))
+        results = asyncio.run(run(arguments.provider, f"http://127.0.0.1:{port}"))
     finally:
         server.terminate()
         server.wait()
