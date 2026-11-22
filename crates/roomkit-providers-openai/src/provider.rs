@@ -5,22 +5,23 @@ use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use reqwest::header::HeaderMap;
+use reqwest::header::{AUTHORIZATION, HeaderMap};
 use roomkit_ai::{
     AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
     TextStream, checked_stream, listing,
 };
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
-use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, tried_again};
+use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, TokenSource, tried_again};
 
 use self::build::{exit_of, headers_of, own_endpoint};
 use crate::answer;
-use crate::config::OpenAiConfig;
+use crate::config::{OpenAiApi, OpenAiConfig};
 use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint};
 use crate::failure::{self, Failure};
 use crate::models;
 use crate::request::Asked;
+use crate::responses;
 use crate::stream;
 
 mod build;
@@ -31,9 +32,6 @@ const NAME: &str = "openai";
 /// What the provider is called: the name of Python's class, which
 /// `AIProvider.name` answers.
 const CLASS_NAME: &str = "OpenAIAIProvider";
-
-/// The path of Chat Completions under a base URL.
-const CHAT_COMPLETIONS: &str = "/chat/completions";
 
 /// The path of the model listing under a base URL.
 const MODELS: &str = "/models";
@@ -112,7 +110,7 @@ const JSON: &str = "application/json";
 #[derive(Clone)]
 pub struct OpenAi {
     pub(crate) config: Arc<OpenAiConfig>,
-    /// Where a completion is asked.
+    /// Where a generation is asked: the path of the configured API.
     pub(crate) chat: reqwest::Url,
     /// Where the models are listed.
     pub(crate) models: reqwest::Url,
@@ -146,7 +144,7 @@ impl OpenAi {
 
     fn built(config: OpenAiConfig) -> Result<Self, Failure> {
         let base_url = config.base_url.as_deref().unwrap_or(OPENAI_BASE_URL);
-        let chat = joined(base_url, CHAT_COMPLETIONS)?;
+        let chat = joined(base_url, config.api.path())?;
         let models = joined(base_url, MODELS)?;
         let headers = headers_of(&config, &chat)?;
         let client = Client::new(Settings {
@@ -175,7 +173,20 @@ impl OpenAi {
             url: &self.chat,
             headers: &self.headers,
             body: Some(body),
+            token: self.token(),
         }
+    }
+
+    /// The host's source of the bearer a request carries, in place of the
+    /// key's: none when a configured header is the request's
+    /// `Authorization`, which replaces the key's bearer and a token's alike.
+    fn token(&self) -> Option<&dyn TokenSource> {
+        let configured = self.config.default_headers.iter().flatten();
+        let mut names = configured.map(|(name, _)| name.as_str());
+        if names.any(|name| name.eq_ignore_ascii_case(AUTHORIZATION.as_str())) {
+            return None;
+        }
+        self.config.token_source.as_deref()
     }
 
     /// The call that asks the models the endpoint lists.
@@ -184,6 +195,7 @@ impl OpenAi {
             url: &self.models,
             headers: &self.headers,
             body: None,
+            token: self.token(),
         }
     }
 
@@ -247,6 +259,16 @@ impl OpenAi {
         let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
         let (answer, json) = self.client.send(self.asking(&body)).await?;
         answer::read(&answer, json, request, &self.config.model, NAME)
+    }
+
+    /// One whole answer on the Responses API: its stream read to its end.
+    async fn streamed_whole(&self, request: &AiContext) -> Result<AiResponse, ProviderError> {
+        let events = self.generate_structured_stream(request);
+        let unended = || {
+            let failure = Failure::unreadable("the response ended before its done event");
+            self.exit.leave_for(request, &failure)
+        };
+        responses::whole(events).await?.ok_or_else(unended)
     }
 
     /// The models the endpoint lists, each by its id alone, as Python's
@@ -341,6 +363,9 @@ impl AiProvider for OpenAi {
     /// lends the request, which the provider does not send, is in no
     /// failure either.
     async fn generate(&self, request: &AiContext) -> Result<AiResponse, ProviderError> {
+        if self.config.api == OpenAiApi::Responses {
+            return self.streamed_whole(request).await;
+        }
         let answered = self.answer(request).await;
         answered.map_err(|failure| self.exit.leave_for(request, &failure))
     }

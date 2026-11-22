@@ -32,6 +32,7 @@ async fn a_replayed_client_reads_a_date_against_its_clock_and_keeps_its_waits() 
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     // A wait that was taken would outlive this.
     let answered = tokio::time::timeout(Duration::from_secs(20), client.send(call));

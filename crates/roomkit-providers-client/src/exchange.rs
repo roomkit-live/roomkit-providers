@@ -14,8 +14,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 
 use crate::client::Client;
+use crate::credential::TokenSource;
 use crate::endpoint::{has_user_information, shown_url};
-use crate::failure::Failure;
+use crate::failure::{Failure, Secrets};
 
 /// The most bytes of an answer read whole: a server that sends more fails
 /// the request.
@@ -79,6 +80,11 @@ pub struct Call<'a> {
     pub headers: &'a HeaderMap,
     /// The body of a `POST`, a JSON document; `None` for a `GET`.
     pub body: Option<&'a [u8]>,
+    /// The host's source of the bearer token the request carries, asked
+    /// before each of its tries: the token is the try's `Authorization`,
+    /// in place of one among `headers`, and nothing the answer says shows
+    /// it. `None` for a request that carries what its headers say.
+    pub token: Option<&'a dyn TokenSource>,
 }
 
 impl fmt::Debug for Call<'_> {
@@ -92,6 +98,7 @@ impl fmt::Debug for Call<'_> {
             .field("url", &shown_url(self.url.as_str()))
             .field("headers", &headers)
             .field("body_bytes", &self.body.map(<[u8]>::len))
+            .field("token", &self.token.is_some())
             .finish()
     }
 }
@@ -106,6 +113,65 @@ pub fn configured_header(name: &str, value: &str) -> Option<(HeaderName, HeaderV
     let mut value = HeaderValue::from_str(value).ok()?;
     value.set_sensitive(true);
     Some((name, value))
+}
+
+/// What an answer is shown without: the token its try was sent with, which
+/// a server may send back. It is removed from what the client hands on of
+/// the answer, so that no failure built from it, whoever builds it, holds
+/// the token. An answer that is no UTF-8 text is handed on as it came.
+#[derive(Clone, Default)]
+pub(crate) struct Hidden(Option<Secrets>);
+
+impl Hidden {
+    fn of(token: Option<&str>) -> Self {
+        Self(token.map(|token| Secrets::of([token.to_owned()])))
+    }
+
+    /// `text` without the token.
+    pub(crate) fn text(&self, text: String) -> String {
+        match &self.0 {
+            Some(token) => token.out_of(&text),
+            None => text,
+        }
+    }
+
+    /// `body` without the token.
+    pub(crate) fn bytes(&self, body: Vec<u8>) -> Vec<u8> {
+        match (&self.0, std::str::from_utf8(&body)) {
+            (Some(token), Ok(text)) => token.out_of(text).into_bytes(),
+            _ => body,
+        }
+    }
+}
+
+/// The head of an answer, and what the answer is shown without.
+pub(crate) struct Opened {
+    pub(crate) response: reqwest::Response,
+    pub(crate) hidden: Hidden,
+}
+
+/// The `Authorization` of a try whose call names a source of tokens: the
+/// token is the try's own, in place of one among the call's headers.
+enum Bearer {
+    /// The token, as a bearer.
+    Token(HeaderValue),
+    /// The source gave an empty token: the try carries no `Authorization`,
+    /// and never the one among the call's headers in its place.
+    Absent,
+}
+
+/// The `Authorization` of a try that carries `token`.
+fn bearer(token: &str) -> Result<Bearer, Failed> {
+    if token.is_empty() {
+        return Ok(Bearer::Absent);
+    }
+    let no_header = || {
+        let said = "the token of the host's source is no value of a header";
+        Failed::Final(Failure::before_request(said))
+    };
+    let mut bearer = HeaderValue::from_str(&format!("Bearer {token}")).map_err(|_| no_header())?;
+    bearer.set_sensitive(true);
+    Ok(Bearer::Token(bearer))
 }
 
 /// How a try ended without an answer.
@@ -147,11 +213,11 @@ impl Client {
 
     /// Sends `call` until the head of an answer comes or no try is left:
     /// the answer, its body still to read.
-    pub(crate) async fn open(&self, call: Call<'_>) -> Result<reqwest::Response, Failure> {
+    pub(crate) async fn open(&self, call: Call<'_>) -> Result<Opened, Failure> {
         let mut retries_taken = 0;
         loop {
             match self.head(call, retries_taken, false).await {
-                Ok(response) => return Ok(response),
+                Ok(opened) => return Ok(opened),
                 Err(failed) => self.again(failed, &mut retries_taken).await?,
             }
         }
@@ -187,9 +253,15 @@ impl Client {
     }
 
     /// The request of one try of `call`, with what the client writes of
-    /// its own beside the call's headers.
-    fn request(&self, call: Call<'_>) -> reqwest::RequestBuilder {
+    /// its own beside the call's headers, and `bearer`, the token of the
+    /// host's source for this try, as its `Authorization`.
+    fn request(&self, call: Call<'_>, bearer: Option<Bearer>) -> reqwest::RequestBuilder {
         let mut headers = call.headers.clone();
+        match bearer {
+            Some(Bearer::Token(bearer)) => drop(headers.insert(AUTHORIZATION, bearer)),
+            Some(Bearer::Absent) => drop(headers.remove(AUTHORIZATION)),
+            None => {}
+        }
         // A header of the provider's replaces the client's own. The name is
         // written on the request, not given to the HTTP client, which would
         // also send it to a proxy that opens a tunnel.
@@ -215,10 +287,10 @@ impl Client {
 
     /// One try, its answer read whole.
     async fn whole(&self, call: Call<'_>, retries_taken: u32) -> Result<(Vec<u8>, bool), Failed> {
-        let response = self.head(call, retries_taken, true).await?;
+        let Opened { response, hidden } = self.head(call, retries_taken, true).await?;
         let json = is_json(response.headers());
         match read_body(response).await {
-            Ok(body) => Ok((body, json)),
+            Ok(body) => Ok((hidden.bytes(body), json)),
             Err(Unread::Lost(error)) => Err(self.lost(&error, retries_taken)),
             Err(Unread::TooLong) => {
                 let said = format!("the provider's answer is longer than {ANSWER_LIMIT} bytes");
@@ -237,9 +309,20 @@ impl Client {
         call: Call<'_>,
         retries_taken: u32,
         whole: bool,
-    ) -> Result<reqwest::Response, Failed> {
+    ) -> Result<Opened, Failed> {
         let now = (self.pace.now)();
-        let response = match self.request(call).send().await {
+        // The host's source is asked before each try: a token it could not
+        // give ends the request, with no try left to take.
+        let token = match call.token {
+            Some(source) => {
+                let asked = source.token().await;
+                Some(asked.map_err(|error| Failed::Final(Failure::credential(error)))?)
+            }
+            None => None,
+        };
+        let hidden = Hidden::of(token.as_deref());
+        let bearer = token.as_deref().map(bearer).transpose()?;
+        let response = match self.request(call, bearer).send().await {
             Ok(response) => response,
             // A request that could not be built never left: it fails the
             // same however many times it is tried, so it is final.
@@ -251,7 +334,7 @@ impl Client {
         };
         let status = response.status();
         if status.is_success() {
-            return Ok(response);
+            return Ok(Opened { response, hidden });
         }
         let answered = response.headers();
         if self.left(retries_taken) && self.retry.should_retry(status, answered, now) {
@@ -270,7 +353,7 @@ impl Client {
         let failure = if status.is_redirection() {
             Failure::redirect(status.as_u16())
         } else {
-            (self.refused)(status.as_u16(), &body)
+            (self.refused)(status.as_u16(), &hidden.bytes(body))
         };
         Err(Failed::Final(failure))
     }

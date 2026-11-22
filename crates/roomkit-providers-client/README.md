@@ -396,6 +396,7 @@ impl Vendor {
             url: &self.messages,
             headers: &self.headers,
             body: Some(body),
+            token: None,
         };
         let answered = self.client.send(call).await;
         let read = answered.and_then(|(body, _json)| {
@@ -465,6 +466,16 @@ What the provider supplies:
   `entry`, `tagged`, `reasoning_floor`, and `listed` for the page of a model
   listing, each model read as the provider says
   (`roomkit-providers-openai/src/models.rs`).
+
+### A source of tokens
+
+`Call::token` names a host's source of bearer tokens (`TokenSource`). The
+client asks it before each try of the request and sends the token as the
+try's `Authorization`, in place of one among the call's headers; an empty
+token leaves the try without one. A source that gives no token ends the
+request before anything is sent. The token is removed from what the client
+hands on of the answer (a refusal's body, a whole answer, the data of each
+event), so that no failure built from it repeats the token.
 
 ### Failures
 

@@ -40,11 +40,13 @@ mod provider;
 #[cfg(test)]
 mod replay;
 mod request;
+mod responses;
 mod stream;
 mod think_tags;
 
-pub use config::OpenAiConfig;
+pub use config::{OpenAiApi, OpenAiConfig};
 pub use provider::OpenAi;
 #[cfg(feature = "replay")]
 #[doc(hidden)]
 pub use provider::ReplayWaits;
+pub use roomkit_providers_client::{TokenError, TokenFuture, TokenSource};

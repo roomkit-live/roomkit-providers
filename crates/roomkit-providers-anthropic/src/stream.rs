@@ -56,6 +56,7 @@ async fn read(
         url: &provider.messages,
         headers: &headers,
         body: Some(&body),
+        token: None,
     };
     let mut answer = provider.client.stream(call).await?;
     let mut folding = Folding::new(&provider.config.model);

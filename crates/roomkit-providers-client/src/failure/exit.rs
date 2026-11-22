@@ -248,6 +248,12 @@ impl Secrets {
         text
     }
 
+    /// `text` with none of the secrets in it, and nothing else changed:
+    /// for what is handed on to be read, not said in a failure.
+    pub(crate) fn out_of(&self, text: &str) -> String {
+        Self::removed(&Self::removed(text, &self.before), &self.after)
+    }
+
     /// Whether `text` needs no cleaning: it holds no secret, no control
     /// character and no character that shows nothing.
     fn is_free(&self, text: &str) -> bool {

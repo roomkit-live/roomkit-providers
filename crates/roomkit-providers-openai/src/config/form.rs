@@ -112,6 +112,9 @@ impl From<ConfigForm> for OpenAiConfig {
             supports_reasoning_effort_with_tools: form.supports_reasoning_effort_with_tools,
             thinking_field: form.thinking_field,
             vision: false,
+            token_source: None,
+            api: crate::OpenAiApi::default(),
+            tool_namespace: None,
         }
     }
 }

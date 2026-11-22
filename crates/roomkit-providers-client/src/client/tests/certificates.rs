@@ -51,6 +51,7 @@ async fn a_refused_certificate_is_a_connection_that_failed_and_says_why() {
             url: &url,
             headers: &headers,
             body: Some(b"{}"),
+            token: None,
         };
         let refused = left(&client.send(call).await.unwrap_err());
         let read = (
@@ -81,6 +82,7 @@ async fn a_server_the_client_s_authority_signed_is_reached() {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let (body, json) = client.send(call).await.unwrap();
     assert_eq!((body.as_slice(), json), (&b"trusted"[..], true));

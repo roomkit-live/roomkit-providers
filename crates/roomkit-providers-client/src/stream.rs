@@ -17,7 +17,7 @@ use crate::items::{Yielder, items, next};
 use serde_json::Value;
 
 use crate::client::Client;
-use crate::exchange::{ANSWER_LIMIT, Call, is_json};
+use crate::exchange::{ANSWER_LIMIT, Call, Hidden, Opened, is_json};
 use crate::failure::{Exit, Failure, past_mark};
 
 /// What a stream of events hands next.
@@ -37,6 +37,8 @@ pub type Item = Result<StreamEvent, ProviderError>;
 /// whether the answer was cut there.
 pub struct Streamed {
     response: reqwest::Response,
+    /// What the answer is shown without: the token it was asked with.
+    hidden: Hidden,
     events: Events,
     /// The events read and not given yet.
     ready: VecDeque<String>,
@@ -75,10 +77,11 @@ impl Client {
     /// The failure that ended the request, as [`send`](Self::send) gives
     /// it, but for an answer's length: a stream is bounded as it is read.
     pub async fn stream(&self, call: Call<'_>) -> Result<Streamed, Failure> {
-        let response = self.open(call).await?;
+        let Opened { response, hidden } = self.open(call).await?;
         let kept = is_json(response.headers()).then(Vec::new);
         Ok(Streamed {
             response,
+            hidden,
             events: Events::new(self.stream_limit()),
             ready: VecDeque::new(),
             unread: None,
@@ -109,7 +112,7 @@ impl Streamed {
         loop {
             if let Some(data) = self.ready.pop_front() {
                 self.given = true;
-                return Ok(Some(data));
+                return Ok(Some(self.hidden.text(data)));
             }
             // What the reader read before it failed was handed on first.
             if let Some(error) = self.unread.take() {
@@ -178,7 +181,7 @@ impl Streamed {
     /// read of the answer.
     #[must_use]
     pub fn unstreamed(self) -> Option<Value> {
-        let body = self.kept?;
+        let body = self.hidden.bytes(self.kept?);
         serde_json::from_slice(past_mark(&body)).ok()
     }
 }

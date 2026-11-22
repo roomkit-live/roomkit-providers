@@ -5,7 +5,7 @@ use reqwest::header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue};
 use roomkit_providers_client::endpoint::{has_user_information, talks_to_vendor};
 use roomkit_providers_client::{Client, Exit, Failure, configured_header};
 
-use super::{CHAT_COMPLETIONS, JSON, NAME};
+use super::{JSON, NAME};
 use crate::config::OpenAiConfig;
 use crate::endpoint::OPENAI_BASE_URL;
 
@@ -26,7 +26,7 @@ pub(super) fn exit_of(config: &OpenAiConfig, client: &Client, chat: &reqwest::Ur
 /// the URL the client dials is `OpenAI`'s as the client reads it.
 pub(super) fn own_endpoint(config: &OpenAiConfig, dialed: &reqwest::Url) -> bool {
     let base_url = config.base_url.as_deref();
-    talks_to_vendor(base_url, &[OPENAI_BASE_URL], dialed, CHAT_COMPLETIONS)
+    talks_to_vendor(base_url, &[OPENAI_BASE_URL], dialed, config.api.path())
 }
 
 /// The headers every request carries: what the provider writes, then the

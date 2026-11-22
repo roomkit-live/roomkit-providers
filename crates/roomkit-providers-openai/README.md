@@ -4,8 +4,8 @@ The OpenAI model provider of RoomKit Providers.
 
 **Early development.** The crate holds today:
 
-- `OpenAi`, a provider for OpenAI's Chat Completions and for the
-  servers that speak it behind a base URL. It answers a request whole
+- `OpenAi`, a provider for OpenAI's Chat Completions, for its Responses
+  API and for the servers that speak either behind a base URL. It answers a request whole
   (`generate`), as a stream of events (`generate_structured_stream`) or of
   text (`generate_stream`), and lists the models its endpoint serves
   (`list_models`);
@@ -96,6 +96,55 @@ the done event, with the usage and the model that answered.
   apart, since a whole last line may lack its own; the data can, since an
   event's data is a JSON object and no start of one is a JSON document. A
   character the answer's end cuts is part of the cut.
+
+## The Responses API
+
+`OpenAiConfig::api` chooses the HTTP API the provider speaks: Chat
+Completions by default, `OpenAiApi::Responses` for `POST <base
+URL>/responses`. The choice is explicit: no failure makes the provider try
+the other one.
+
+```rust
+use roomkit_providers_openai::{OpenAi, OpenAiApi, OpenAiConfig};
+
+fn provider() -> Result<OpenAi, roomkit_ai::ProviderError> {
+    OpenAi::new(OpenAiConfig {
+        api: OpenAiApi::Responses,
+        reasoning_effort: Some("medium".to_owned()),
+        ..OpenAiConfig::new("placeholder-not-a-key", "a-reasoning-model")
+    })
+}
+```
+
+- **A request is stateless**: `store` is false and no response id is sent.
+  The system prompt goes as `instructions`, the conversation as `input`.
+- **A request is always streamed**, and `generate` is its stream read to
+  its end. Text and reasoning come as they are written. A call is handed on
+  only by the terminal event of the answer: an answer that ends before it,
+  or fails, runs no tool.
+- **Inside one tool loop, an answer goes back as it came**: its output
+  items, the encrypted reasoning among them, are kept in the answer's
+  metadata and sent back with the tools' results, with the ids and the
+  arguments RoomKit gave the calls. What cannot go back as it came is
+  refused before any request.
+- **`tool_namespace`** declares the tools under one namespace, its name and
+  its description, and a call the server makes in another one fails the
+  answer.
+- **The reasoning effort** goes as `reasoning.effort`, as it is stated.
+
+RoomKit's Python implementation has no Responses API: this one is the
+Rust core's, and the wire cases do not cover it.
+
+## A source of tokens
+
+`OpenAiConfig::token_source` names where the bearer token of a request
+comes from, in place of `api_key`: an implementation of `TokenSource`, the
+host's. It is asked before each request and before each try of one. A
+source that gives no token fails the request before anything is sent, in
+the words of its `TokenError`; the key is never sent in a token's place.
+The token is removed from what the provider reads of the answer, so that no
+failure repeats it. An `Authorization` among `default_headers` replaces the
+token as it replaces the key, and the source is then not asked.
 
 ## The model listing
 
@@ -447,6 +496,9 @@ repository is built on. It needs no Python.
 - `vision` is this crate's: it states that the model takes images where the
   provider, which answers as Python's, would not say so. It is no part of
   the JSON form.
+- `api`, `tool_namespace` and `token_source` are this crate's too, with the
+  Responses API and the source of tokens: the JSON form holds none of them,
+  and a configuration read from it has their defaults.
 - `default_headers` are written sorted by name.
 - Input is stricter: a value pydantic would convert (`"30"` for a number,
   `1024.0` for an integer, `1` for a boolean) and an integer outside 32 bits

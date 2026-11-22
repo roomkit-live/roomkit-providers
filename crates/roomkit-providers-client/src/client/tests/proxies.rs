@@ -64,6 +64,7 @@ async fn failed(client: &Client, url: &str) -> ProviderError {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     left(&client.send(call).await.unwrap_err())
 }
@@ -340,6 +341,7 @@ async fn a_client_pointed_at_a_fake_leaves_its_proxy() {
             url,
             headers: &headers,
             body: Some(b"{}"),
+            token: None,
         };
         client.send(call).await.unwrap();
     };
@@ -390,6 +392,7 @@ async fn a_proxy_s_credentials_appear_in_no_failure_and_no_debug_form() {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let refused = exit.leave(&client.send(call).await.unwrap_err());
     assert_eq!(

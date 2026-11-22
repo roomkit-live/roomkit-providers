@@ -125,6 +125,7 @@ async fn a_child_asks_what_its_parent_tells_it() {
             url: &url,
             headers: &headers,
             body: Some(b"{}"),
+            token: None,
         };
         let exit = client.exit("test", [], no_headers, &url);
         let came = match client.send(call).await {

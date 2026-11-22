@@ -21,9 +21,11 @@ use roomkit_providers_client::stream::Item;
 use serde_json::Value;
 
 use crate::answer::truthy;
+use crate::config::OpenAiApi;
 use crate::failure::{self, Failure};
 use crate::folding::{Folding, push_end};
 use crate::provider::OpenAi;
+use crate::responses;
 
 /// The mark that ends a stream of chunks.
 const END_MARK: &str = "[DONE]";
@@ -33,7 +35,11 @@ const END_MARK: &str = "[DONE]";
 /// be let out once the contract checked the stream.
 pub(crate) fn events<'a>(provider: &'a OpenAi, request: &'a AiContext) -> ProviderStream<'a> {
     Box::pin(items(move |out: Yielder<Item>| async move {
-        if let Err(failure) = read(provider, request, &out).await {
+        let read = match provider.config.api {
+            OpenAiApi::ChatCompletions => read(provider, request, &out).await,
+            OpenAiApi::Responses => responses::read(provider, request, &out).await,
+        };
+        if let Err(failure) = read {
             out.give(Err(carried(failure))).await;
         }
     }))

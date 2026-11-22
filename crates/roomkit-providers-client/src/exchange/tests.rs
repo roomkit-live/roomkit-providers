@@ -30,6 +30,7 @@ async fn a_request_that_gets_no_answer_fails_at_the_read_timeout() {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let mut asked = std::pin::pin!(client.send(call));
     tokio::select! {
@@ -77,6 +78,7 @@ async fn a_connection_that_does_not_open_fails_at_the_connect_timeout() {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let mut asked = std::pin::pin!(client.send(call));
     // The connection begins, and waits.
@@ -116,12 +118,14 @@ async fn every_request_names_the_client_unless_a_header_of_the_provider_s_does()
         url: &url,
         headers: &own,
         body: Some(b"{}"),
+        token: None,
     };
     client.send(asked).await.unwrap();
     let mut streamed = client.stream(asked).await.unwrap();
     while streamed.next().await.unwrap().is_some() {}
     let listing = Call {
         body: None,
+        token: None,
         ..asked
     };
     client.send(listing).await.unwrap();
@@ -169,12 +173,14 @@ async fn the_user_information_of_a_url_takes_the_place_of_a_call_s_authorization
         url: &with_a_user,
         headers: &own,
         body: Some(b"{}"),
+        token: None,
     };
     client.send(asked).await.unwrap();
     let mut streamed = client.stream(asked).await.unwrap();
     while streamed.next().await.unwrap().is_some() {}
     let listing = Call {
         body: None,
+        token: None,
         ..asked
     };
     client.send(listing).await.unwrap();
@@ -210,16 +216,16 @@ fn the_debug_form_of_a_call_shows_no_user_information_header_value_or_body() {
         url: &url,
         headers: &headers,
         body: Some(body),
+        token: None,
     };
     let shown = format!("{call:?}");
-    let expected =
-        r#"Call { url: "https://llm.example:8443", headers: ["x-tenant"], body_bytes: Some(17) }"#;
+    let expected = r#"Call { url: "https://llm.example:8443", headers: ["x-tenant"], body_bytes: Some(17), token: false }"#;
     assert_eq!(shown, expected);
     for hidden in ["user", "placeholder", "hidden", &format!("{body:?}")] {
         assert!(!shown.contains(hidden), "{hidden} in {shown}");
     }
     let listing = Call { body: None, ..call };
-    assert!(format!("{listing:?}").ends_with("body_bytes: None }"));
+    assert!(format!("{listing:?}").ends_with("body_bytes: None, token: false }"));
 }
 
 // A host may put a credential in a header of any name: the value of a
@@ -240,6 +246,7 @@ fn the_value_of_a_configured_header_is_shown_by_no_debug_form() {
         url: &url,
         headers: &headers,
         body: None,
+        token: None,
     };
     let shown = format!("{value:?} {headers:?} {call:?}");
     assert!(shown.contains("x-tenant"), "{shown}");
@@ -276,6 +283,7 @@ async fn a_request_that_cannot_be_built_is_final() {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let error = left(&client.send(posted).await.unwrap_err());
     assert_eq!(
@@ -291,10 +299,12 @@ async fn a_request_that_cannot_be_built_is_final() {
         url: &url,
         headers: &headers,
         body: None,
+        token: None,
     };
     let listed = left(&client.send(asked).await.unwrap_err());
     assert_eq!((listed.retryable, listed.before_request), (false, true));
 }
 
 mod bounds;
+mod tokens;
 mod tries;

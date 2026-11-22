@@ -270,6 +270,7 @@ impl Anthropic {
             url: &self.models,
             headers: &headers,
             body: None,
+            token: None,
         };
         let (page, json) = self.client.send(call).await?;
         let page: Value = match serde_json::from_slice(past_mark(&page)) {

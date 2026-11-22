@@ -220,6 +220,12 @@ impl Failure {
         })
     }
 
+    /// The failure of a host's source that gave no token: final, nothing
+    /// was sent, in the source's own words, which hold no secret.
+    pub(crate) fn credential(error: crate::TokenError) -> Self {
+        Self::before_request(error.to_string())
+    }
+
     /// The failure of a request that could not be written as JSON: final,
     /// and nothing was sent.
     #[must_use]

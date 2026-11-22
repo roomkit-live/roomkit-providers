@@ -51,6 +51,7 @@ async fn a_body_lost_while_an_answer_is_read_whole_is_tried_again() {
             url: &url,
             headers: &headers,
             body: Some(b"{}"),
+            token: None,
         };
         let (body, json) = client.send(call).await.unwrap();
         assert_eq!(
@@ -75,6 +76,7 @@ async fn the_body_of_a_refused_stream_lost_while_it_is_read_is_not_tried_again()
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let error = left(&client.stream(call).await.unwrap_err());
     assert_eq!(
@@ -98,6 +100,7 @@ async fn a_stream_is_tried_again_until_the_head_of_its_answer_came() {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let mut streamed = client.stream(call).await.unwrap();
     assert_eq!(streamed.next().await.unwrap().as_deref(), Some("one"));
@@ -121,6 +124,7 @@ async fn the_wait_an_answer_asks_for_is_the_one_taken() {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     client.send(call).await.unwrap();
     assert_eq!(*waits.lock().unwrap(), [Duration::from_secs(3)]);

@@ -40,6 +40,7 @@
 
 pub mod catalogue;
 mod client;
+mod credential;
 pub mod endpoint;
 mod exchange;
 pub mod failure;
@@ -57,6 +58,7 @@ mod testing;
 pub use self::client::{Client, Settings, Timeouts};
 #[cfg(feature = "replay")]
 pub use self::client::{ReplayWaits, replayed_at};
+pub use self::credential::{TokenError, TokenFuture, TokenSource};
 pub use self::exchange::{ANSWER_LIMIT, Call, Pace, USER_AGENT, Wait, configured_header, is_json};
 pub use self::failure::{Exit, Failure, Secrets};
 pub use self::key::request_api_key;

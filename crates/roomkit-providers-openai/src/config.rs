@@ -4,9 +4,11 @@ mod form;
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::sync::Arc;
 use std::time::Duration;
 
 use roomkit::model::Metadata;
+use roomkit_providers_client::TokenSource;
 
 use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint, shown_url};
 
@@ -17,6 +19,27 @@ const MAX_COMPLETION_TOKEN_MODELS: [&str; 6] = ["gpt-4.1", "gpt-5", "gpt-6", "o1
 /// The models that take no temperature on `OpenAI`'s own endpoint (Python's
 /// `_FIXED_TEMPERATURE_MODEL_PREFIXES`).
 const FIXED_TEMPERATURE_MODELS: [&str; 5] = ["gpt-5", "gpt-6", "o1", "o3", "o4"];
+
+/// The HTTP API spoken by the provider. Selection is explicit; no fallback
+/// changes protocols or repeats a failed generation.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum OpenAiApi {
+    /// OpenAI-compatible Chat Completions, including local endpoints.
+    #[default]
+    ChatCompletions,
+    /// Stateless Responses with streamed text, function tools and reasoning replay.
+    Responses,
+}
+
+impl OpenAiApi {
+    pub(crate) fn path(self) -> &'static str {
+        match self {
+            Self::ChatCompletions => "/chat/completions",
+            Self::Responses => "/responses",
+        }
+    }
+}
 
 /// The endpoint a provider calls and how: Python's `OpenAIConfig(*, api_key,
 /// base_url=None, model, max_tokens=1024, timeout=30.0, connect_timeout=5.0,
@@ -89,7 +112,7 @@ const FIXED_TEMPERATURE_MODELS: [&str; 5] = ["gpt-5", "gpt-6", "o1", "o3", "o4"]
 /// information, path or query, which may carry credentials, nor a default
 /// header's value. Of the base URL it shows the origin the HTTP client
 /// dials for it, read as the client's own URL parser reads it.
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub struct OpenAiConfig {
     /// The key a request carries as its bearer token.
     pub api_key: String,
@@ -156,6 +179,15 @@ pub struct OpenAiConfig {
     /// provider's own answer, which is Python's. Python's configuration
     /// has no such member.
     pub vision: bool,
+    /// Where the bearer token comes from before each request, each try of
+    /// it under `max_retries` included, in place of `api_key`: a renewable
+    /// credential.
+    pub token_source: Option<Arc<dyn TokenSource>>,
+    /// The HTTP API spoken: Chat Completions by default.
+    pub api: OpenAiApi,
+    /// The namespace, its name and description, under which the Responses
+    /// API declares the tools.
+    pub tool_namespace: Option<(String, String)>,
 }
 
 impl OpenAiConfig {
@@ -181,6 +213,9 @@ impl OpenAiConfig {
             supports_reasoning_effort_with_tools: None,
             thinking_field: None,
             vision: false,
+            token_source: None,
+            api: OpenAiApi::default(),
+            tool_namespace: None,
         }
     }
 
@@ -208,9 +243,69 @@ impl OpenAiConfig {
     }
 }
 
+impl PartialEq for OpenAiConfig {
+    /// Member by member; two configurations have the same source of tokens
+    /// when they hold the same one, or none.
+    fn eq(&self, other: &Self) -> bool {
+        // Every member is named: one added later does not compile until it
+        // is compared here.
+        let Self {
+            api_key,
+            base_url,
+            model,
+            max_tokens,
+            timeout,
+            connect_timeout,
+            max_retries,
+            include_stream_usage,
+            use_max_completion_tokens,
+            supports_custom_temperature,
+            reasoning_effort,
+            default_headers,
+            extra_body,
+            supports_response_schema,
+            supports_response_schema_with_tools,
+            supports_reasoning_effort_with_tools,
+            thinking_field,
+            vision,
+            token_source,
+            api,
+            tool_namespace,
+        } = self;
+        let same_source = match (token_source, &other.token_source) {
+            (Some(one), Some(another)) => Arc::ptr_eq(one, another),
+            (None, None) => true,
+            (Some(_), None) | (None, Some(_)) => false,
+        };
+        same_source
+            && *api_key == other.api_key
+            && *base_url == other.base_url
+            && *model == other.model
+            && *max_tokens == other.max_tokens
+            && *timeout == other.timeout
+            && *connect_timeout == other.connect_timeout
+            && *max_retries == other.max_retries
+            && *include_stream_usage == other.include_stream_usage
+            && *use_max_completion_tokens == other.use_max_completion_tokens
+            && *supports_custom_temperature == other.supports_custom_temperature
+            && *reasoning_effort == other.reasoning_effort
+            && *default_headers == other.default_headers
+            && *extra_body == other.extra_body
+            && *supports_response_schema == other.supports_response_schema
+            && *supports_response_schema_with_tools == other.supports_response_schema_with_tools
+            && *supports_reasoning_effort_with_tools == other.supports_reasoning_effort_with_tools
+            && *thinking_field == other.thinking_field
+            && *vision == other.vision
+            && *api == other.api
+            && *tool_namespace == other.tool_namespace
+    }
+}
+
 impl fmt::Debug for OpenAiConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let api_key = if self.api_key.is_empty() {
+        let api_key = if self.token_source.is_some() {
+            "dynamic"
+        } else if self.api_key.is_empty() {
             "none"
         } else {
             "hidden"
@@ -228,7 +323,9 @@ impl fmt::Debug for OpenAiConfig {
             .field("timeout", &self.timeout)
             .field("connect_timeout", &self.connect_timeout)
             .field("max_retries", &self.max_retries)
+            .field("api", &self.api)
             .field("vision", &self.vision)
+            .field("tool_namespace", &self.tool_namespace)
             .field("thinking_field", &self.thinking_field)
             .field("reasoning_effort", &self.reasoning_effort)
             .field(

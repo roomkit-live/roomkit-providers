@@ -11,10 +11,13 @@
 mod answers;
 mod catalogue;
 mod composition;
+mod credentials;
 mod endpoints;
 mod failures;
 mod reasoning;
 mod requests;
+mod responses;
+pub(crate) mod room;
 mod streams;
 pub(crate) mod support;
 mod tries;

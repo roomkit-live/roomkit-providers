@@ -21,6 +21,7 @@ async fn asked(reply: Reply) -> Result<(Vec<u8>, bool), ProviderError> {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     let answered = client(usual(), 0).send(call).await;
     answered.map_err(|failure| left(&failure))
@@ -109,6 +110,7 @@ async fn a_request_says_what_its_body_is_unless_its_call_does() {
         url: &url,
         headers: &none,
         body: Some(b"{}"),
+        token: None,
     };
     client.send(posted).await.unwrap();
     let with_its_own = Call {
@@ -118,6 +120,7 @@ async fn a_request_says_what_its_body_is_unless_its_call_does() {
     client.send(with_its_own).await.unwrap();
     let listing = Call {
         body: None,
+        token: None,
         ..posted
     };
     client.send(listing).await.unwrap();

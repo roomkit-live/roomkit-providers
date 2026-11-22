@@ -219,6 +219,7 @@ fn the_debug_form_of_a_request_s_headers_shows_no_value_of_an_extra_header() {
             url: provider.endpoint(),
             headers: &headers,
             body: Some(b"{}"),
+            token: None,
         };
         let shown = format!("{headers:?} {call:?}");
         assert!(

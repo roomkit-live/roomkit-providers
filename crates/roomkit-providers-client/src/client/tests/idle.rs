@@ -75,6 +75,7 @@ impl Keeping {
                     url: &url,
                     headers: &headers,
                     body: None,
+                    token: None,
                 };
                 client.send(call).await.map(|_| ())
             })

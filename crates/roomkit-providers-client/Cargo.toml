@@ -70,6 +70,8 @@ serde = { workspace = true }
 # Python dict does, and a number is read as the float nearest to its digits,
 # as Python reads it: a provider writes a body and reads an answer so.
 serde_json = { workspace = true, features = ["float_roundtrip", "preserve_order"] }
+# The failure of a host's source of tokens, in words that hold no secret.
+thiserror = { workspace = true }
 # The wait between two tries of a request.
 tokio = { workspace = true, features = ["time"] }
 # The TLS of the harness's fake of an endpoint.

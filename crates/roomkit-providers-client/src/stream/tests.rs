@@ -32,6 +32,7 @@ async fn streamed(client: &crate::Client, fake: &Fake) -> Streamed {
         url: &url,
         headers: &headers,
         body: Some(b"{}"),
+        token: None,
     };
     client.stream(call).await.unwrap()
 }

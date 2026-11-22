@@ -105,6 +105,13 @@ nothing has been released yet.
 - `roomkit-providers-openai`: `supports_vision` answers as Python's
   provider; the configuration's `vision` states it where the provider would
   not.
+- `roomkit-providers-openai`: the Responses API, chosen with
+  `OpenAiConfig::api` (`OpenAiApi::Responses`): stateless requests, an
+  answer's reasoning items sent back inside one tool loop, and the tools
+  under a namespace with `tool_namespace`.
+- `roomkit-providers-openai`: `OpenAiConfig::token_source`, a host's source
+  of renewable bearer tokens (`TokenSource`), asked before each try of a
+  request, in place of the key.
 - `roomkit-providers-openai`: two examples, which `make all` runs:
   `local_server` asks a stand-in server on a local port once whole and once
   streamed, and `behind_a_proxy` asks through a stand-in proxy named by the

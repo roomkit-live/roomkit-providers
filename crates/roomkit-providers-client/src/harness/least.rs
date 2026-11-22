@@ -67,6 +67,7 @@ impl Least {
             url: &self.url,
             headers: &headers,
             body: Some(b"{}"),
+            token: None,
         };
         self.client.send(call).await.map(|_| ())
     }

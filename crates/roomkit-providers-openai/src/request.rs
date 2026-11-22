@@ -11,12 +11,13 @@ use roomkit_ai::{
 use serde_json::{Map, Value, json};
 
 use crate::config::OpenAiConfig;
+use crate::failure::Failure;
 use crate::messages::chat_messages;
 use crate::models::{
     CHAT_TOOLS_REFUSED, RESPONSES_ONLY, TOOLS_REASONING_EFFORT, TOOLS_REASONING_NONE,
     reasoning_floor, tagged,
 };
-use crate::names;
+use crate::{names, responses};
 
 /// What a request is written for: the configuration, and what the provider
 /// knows of the endpoint.
@@ -102,6 +103,42 @@ impl Asked<'_> {
         Ok(body)
     }
 
+    /// The body of the request on the Responses API, which is always
+    /// streamed; a member of the configuration's extra body replaces the
+    /// provider's own of the same name.
+    ///
+    /// # Errors
+    ///
+    /// What is refused before any request, in order: a response schema the
+    /// server does not take, an image that cannot be sent, an earlier
+    /// answer's output that cannot go back as it came, a tool namespace
+    /// that is no name, a tool name the vendor refuses.
+    pub(crate) fn responses_body(
+        &self,
+        request: &AiContext,
+    ) -> Result<Map<String, Value>, Failure> {
+        let schema = schema_for_generate(
+            request,
+            self.supports_response_schema(),
+            self.supports_response_schema_with_tools(),
+            self.provider,
+        )?;
+        let input = responses::input(&request.messages)?;
+        let mut body = responses::request(self.config, request, input, schema)?;
+        // The effort goes as it is stated: what a turn with tools takes was
+        // measured on Chat Completions.
+        if let Some(effort) = self.floored_effort(request) {
+            body.insert("reasoning".to_owned(), json!({ "effort": effort }));
+        }
+        if self.own_endpoint {
+            names::check(&request.tools, self.provider)?;
+        }
+        for (name, value) in self.config.extra_body.iter().flatten() {
+            body.insert(name.clone(), value.clone());
+        }
+        Ok(body)
+    }
+
     /// The config's answer when it gives one, else yes: `OpenAI`'s endpoint
     /// honours a `json_schema` response format.
     pub(crate) fn supports_response_schema(&self) -> bool {
@@ -142,17 +179,7 @@ impl Asked<'_> {
     /// catalogue knows it; then, on a turn with tools, what the endpoint
     /// accepts there.
     fn reasoning_effort(&self, request: &AiContext) -> Option<String> {
-        let stated = request.reasoning_effort.as_deref();
-        let effort = stated.or(self.config.reasoning_effort.as_deref());
-        // The budget, then the switch, then an effort of `none` state off.
-        let switch = match (request.thinking_budget, request.enable_thinking) {
-            (Some(budget), _) => Some(budget > 0),
-            (None, Some(enabled)) => Some(enabled),
-            (None, None) => (stated == Some("none")).then_some(false),
-        };
-        let off = switch == Some(false) || effort == Some("none");
-        let floor = reasoning_floor(self.entry).filter(|_| off);
-        let effort = floor.or(effort);
+        let effort = self.floored_effort(request);
         if request.tools.is_empty() {
             return effort.map(str::to_owned);
         }
@@ -169,6 +196,24 @@ impl Asked<'_> {
             self.warn_left_out(effort);
         }
         effort.filter(|_| says == Some(true)).map(str::to_owned)
+    }
+
+    /// The effort a request asks for before any rule of a turn with tools:
+    /// the request's over the configured one, and the model's least effort
+    /// where the request states off and the catalogue knows it (Python's
+    /// `_turn_effort`).
+    fn floored_effort<'a>(&'a self, request: &'a AiContext) -> Option<&'a str> {
+        let stated = request.reasoning_effort.as_deref();
+        let effort = stated.or(self.config.reasoning_effort.as_deref());
+        // The budget, then the switch, then an effort of `none` state off.
+        let switch = match (request.thinking_budget, request.enable_thinking) {
+            (Some(budget), _) => Some(budget > 0),
+            (None, Some(enabled)) => Some(enabled),
+            (None, None) => (stated == Some("none")).then_some(false),
+        };
+        let off = switch == Some(false) || effort == Some("none");
+        let floor = reasoning_floor(self.entry).filter(|_| off);
+        floor.or(effort)
     }
 
     /// Warns, once per provider, that a turn with tools left out `effort`.
