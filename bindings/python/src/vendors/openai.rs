@@ -22,6 +22,10 @@ impl Vendor for OpenAi {
 
     // The configuration always states a key, an empty one for a server
     // that asks for none: with none stated, nothing is sent in its place.
+    fn label(provider: &Self::Provider) -> &str {
+        provider.label()
+    }
+
     fn keyed(mut config: OpenAiConfig, key: Option<String>) -> OpenAiConfig {
         config.api_key = key.unwrap_or_default();
         config

@@ -59,6 +59,7 @@ SHARED_MODULES = {
     "python/roomkit_providers/llm/_config.py",
     "python/roomkit_providers/llm/_failure.py",
     "python/roomkit_providers/llm/_provider.py",
+    "bindings/python/src/dynamic.rs",
     "bindings/python/src/errors.rs",
     "bindings/python/src/fork.rs",
     "bindings/python/src/lib.rs",

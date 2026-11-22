@@ -1,11 +1,14 @@
 //! A request: Python's `AIContext`, its messages, their parts and its tools.
 
+use std::fmt;
+
 use roomkit::model::{Metadata, ToolCallOutcome};
 use roomkit_ai::{
     API_KEY_METADATA_KEY, AiContentPart, AiContext, AiImagePart, AiMessage, AiMessageContent,
     AiRole, AiTextPart, AiThinkingPart, AiTool, AiToolCallPart, AiToolResultPart, ToolResult,
     ToolResultPart,
 };
+use serde::de::{Error, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer};
 use serde_json::{Map, Value, json};
 
@@ -40,10 +43,14 @@ impl Form for AiContext {
     }
 }
 
-/// `metadata` with the credential it lends its generation masked.
+/// `metadata` with the credential it lends its generation masked, as
+/// Python writes it: a text that is not empty under the key's name. An
+/// empty text, or a value that is no text, is no credential and is written
+/// as it is.
 fn masked(metadata: &Metadata) -> Value {
+    let lent = |value: &Value| value.as_str().is_some_and(|key| !key.is_empty());
     let masked = metadata.iter().map(|(key, value)| {
-        let value = if key == API_KEY_METADATA_KEY {
+        let value = if key == API_KEY_METADATA_KEY && lent(value) {
             Value::String(MASK.to_owned())
         } else {
             value.clone()
@@ -212,24 +219,40 @@ impl From<MessageForm> for AiMessage {
     }
 }
 
-/// [`AiRole`] as it is read.
-#[derive(Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum RoleForm {
-    System,
-    User,
-    Assistant,
-    Tool,
-}
+/// [`AiRole`] as it is read: from its name, a text.
+struct RoleForm(AiRole);
 
 impl From<RoleForm> for AiRole {
     fn from(form: RoleForm) -> Self {
-        match form {
-            RoleForm::System => Self::System,
-            RoleForm::User => Self::User,
-            RoleForm::Assistant => Self::Assistant,
-            RoleForm::Tool => Self::Tool,
-        }
+        form.0
+    }
+}
+
+impl<'de> Deserialize<'de> for RoleForm {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_str(RoleVisitor)
+    }
+}
+
+struct RoleVisitor;
+
+impl Visitor<'_> for RoleVisitor {
+    type Value = RoleForm;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("one of the roles `system`, `user`, `assistant` and `tool`")
+    }
+
+    fn visit_str<E: Error>(self, name: &str) -> Result<RoleForm, E> {
+        let named = [
+            AiRole::System,
+            AiRole::User,
+            AiRole::Assistant,
+            AiRole::Tool,
+        ];
+        let found = named.into_iter().find(|named| role(*named) == name);
+        let found = found.ok_or_else(|| E::invalid_value(Unexpected::Str(name), &self))?;
+        Ok(RoleForm(found))
     }
 }
 

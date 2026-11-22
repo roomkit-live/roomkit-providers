@@ -49,10 +49,13 @@ pub(crate) trait Vendor: 'static {
     /// `RoomKit`'s own provider for the vendor.
     const RECORDED_AS: &'static str;
 
-    /// What the provider's failures carry as their provider: the label
-    /// its crate gives them, stated here for what the binding raises
-    /// itself.
+    /// What the provider's failures carry as their provider, which
+    /// [`label`](Self::label) must answer: what the binding raises itself
+    /// carries the same.
     const LABEL: &'static str;
+
+    /// The label `provider` gives its failures.
+    fn label(provider: &Self::Provider) -> &str;
 
     /// `config` with `key` as its key: the key crosses apart from the JSON
     /// form, which writes it masked. `None` is a configuration that states
@@ -114,11 +117,13 @@ fn config_of<V: Vendor>(json: &str) -> PyResult<V::Config> {
 }
 
 /// `provider` as Python holds it, once it names itself as its vendor
-/// states: the name `RoomKit` records is never left to a default.
+/// states: the name `RoomKit` records and the label of its failures are
+/// never left to a default.
 fn held<V: Vendor>(py: Python<'_>, provider: V::Provider) -> PyResult<PythonProvider> {
+    let labelled = V::label(&provider) == V::LABEL;
     let held = PythonProvider::holding(provider, V::LABEL);
     let held = held.map_err(|failure| failure.raised(py))?;
-    if held.name() == V::RECORDED_AS {
+    if labelled && held.name() == V::RECORDED_AS {
         Ok(held)
     } else {
         Err(Failure::misnamed(V::LABEL).raised(py))

@@ -432,6 +432,10 @@ impl Vendor for ScriptedVendor {
     const RECORDED_AS: &'static str = "MockAIProvider";
     const LABEL: &'static str = LABEL;
 
+    fn label(provider: &Scripted) -> &str {
+        &provider.label
+    }
+
     fn keyed(mut config: Configured, key: Option<String>) -> Configured {
         config.0.api_key = key;
         config

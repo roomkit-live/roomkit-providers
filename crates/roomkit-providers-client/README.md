@@ -522,9 +522,9 @@ use roomkit_providers_client::failure::carried;
 use roomkit_providers_client::stream::{Item, Streamed, leaving, text};
 use roomkit_providers_client::{Exit, Failure};
 use roomkit_ai::{
-    AiContext, ProviderStream, StreamDone, StreamEvent, StreamTextDelta, TextStream, Yielder,
-    items,
+    AiContext, ProviderStream, StreamDone, StreamEvent, StreamTextDelta, TextStream,
 };
+use roomkit_providers_client::items::{Yielder, items};
 
 /// Reads `answer`, handing its events to `out` as they come.
 async fn read(mut answer: Streamed, out: &Yielder<Item>) -> Result<(), Failure> {

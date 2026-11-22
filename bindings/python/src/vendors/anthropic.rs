@@ -52,6 +52,10 @@ impl Vendor for Anthropic {
     const RECORDED_AS: &'static str = "AnthropicAIProvider";
     const LABEL: &'static str = "anthropic";
 
+    fn label(provider: &Self::Provider) -> &str {
+        provider.label()
+    }
+
     // The configuration always states a key: with none stated, nothing is
     // sent in its place.
     fn keyed(mut config: Kept, key: Option<String>) -> Kept {
