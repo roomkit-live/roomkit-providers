@@ -6,8 +6,9 @@ stream read by read at the recorded bytes. What the provider sent and gave
 is what the Rust provider sends and gives: for a case the Rust replay holds
 as Python, what Python did; for a case it names, what its entry states.
 
-Left to the Rust replay, which moves its own clock: the cases whose answer
-stops under way, and the timeouts each request is given, which no server
+A case whose fake goes silent is given a short timeout in place of its
+configuration's, which ends the silence. Left to the Rust replay, which
+moves its own clock: the timeouts each request is given, which no server
 sees.
 """
 
@@ -16,8 +17,8 @@ from __future__ import annotations
 import unittest
 
 from replay_cases import (
-    LEFT_TO_RUST,
     NEVER_ANSWERED,
+    SILENT_UNDER_WAY,
     Replays,
     cases_set_apart,
     every_case,
@@ -42,12 +43,10 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             counts,
             {
-                ("generate", "as Python"): 185,
+                ("generate", "as Python"): 187,
                 ("generate", "named"): 24,
-                ("generate", "left to Rust"): 2,
-                ("generate_structured_stream", "as Python"): 98,
+                ("generate_structured_stream", "as Python"): 99,
                 ("generate_structured_stream", "named"): 20,
-                ("generate_structured_stream", "left to Rust"): 1,
                 ("generate_stream", "as Python"): 4,
                 ("list_models", "as Python"): 5,
                 ("list_models", "named"): 5,
@@ -55,20 +54,20 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
         )
 
     def test_the_cases_set_apart_are_those_whose_fake_goes_silent(self) -> None:
-        """A case is left to the Rust replay, or given a short timeout, for
-        what its exchanges are, not by its name: these are the ones."""
+        """A case is given a short timeout, and which one, for what its
+        exchanges are, not by its name: these are the ones."""
         self.assertEqual(
             cases_set_apart(OPENAI),
             {
+                # The fake never answers their one request.
+                NEVER_ANSWERED: {"timeout", "stream_timeout"},
                 # The fake stops answering after it answered something, or
                 # before a try that is answered.
-                LEFT_TO_RUST: {
+                SILENT_UNDER_WAY: {
                     "retry_of_a_timeout",
                     "answer_timed_out_midway_on_every_try",
                     "stream_read_timeout_after_an_event",
                 },
-                # The fake never answers their one request.
-                NEVER_ANSWERED: {"timeout", "stream_timeout"},
             },
         )
 
@@ -87,6 +86,11 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
 
     async def refuses(self, name: str, word: str, wrong=None, **where) -> None:
         self.assertIn(word, await made_wrong(OPENAI, name, wrong, **where), name)
+
+    async def stands(self, name: str, changed) -> None:
+        """What the replay must not refuse: the case `name` stands as stated
+        once `changed` put in place one thing a replay of it may give."""
+        self.assertEqual(await made_wrong(OPENAI, name, changed), "", name)
 
     async def test_a_request_that_is_not_python_s(self) -> None:
         def another_body(replayed):
@@ -116,9 +120,6 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
         def no_request(replayed):
             replayed.seen.clear()
 
-        def served_in_one_read(replayed):
-            replayed.seen[0].reads = 1
-
         await self.refuses("plain_answer", "its body", another_body)
         await self.refuses("plain_answer", "authorization", another_key)
         await self.refuses("plain_answer", "which Python does not send", a_header_more)
@@ -128,7 +129,39 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
         await self.refuses("plain_answer", "request 0: POST /v1/chat", another_path)
         await self.refuses("plain_answer", "request 0: PUT /v1/chat/completions", another_method)
         await self.refuses("plain_answer", "0 requests sent", no_request)
-        await self.refuses("stream", "served in 1 reads", served_in_one_read)
+
+    async def test_an_answer_that_is_not_served_in_the_recorded_reads(self) -> None:
+        """A provider that fails on a read leaves its answer, which the fake
+        may still be writing: the fake saw the client leave or wrote every
+        read, as the two happened to fall, and neither is a difference. Of a
+        try that did not fail, it saw one thing."""
+
+        def seen_as(left: bool, reads: int):
+            def seen(replayed):
+                replayed.seen[0].left = left
+                replayed.seen[0].reads = reads
+
+            return seen
+
+        # A stream of seven reads the provider answers from.
+        await self.refuses("stream", "served in 1 reads", seen_as(False, 1))
+        left = "left after 6 reads of 7, by a try that did not fail"
+        await self.refuses("stream", left, seen_as(True, 6))
+        # A stream of three reads the provider fails on at the second.
+        failed = "stream_choices_that_are_no_list"
+        await self.stands(failed, seen_as(False, 3))
+        await self.stands(failed, seen_as(True, 2))
+        await self.refuses(failed, "served in 2 reads", seen_as(False, 2))
+        await self.refuses(failed, "left with a read to write after 3", seen_as(True, 3))
+        # A named case too: the provider fails where Python answers.
+        named = "stream_call_index_that_is_a_text"
+        await self.stands(named, seen_as(False, 3))
+        await self.stands(named, seen_as(True, 2))
+        otherwise = "it differs from Python otherwise than its entry states"
+        await self.refuses(named, otherwise, seen_as(False, 2))
+        # A try the call asks again after failed, whatever the call gives
+        # in the end.
+        await self.stands("answer_lost_midway_then_whole", seen_as(True, 0))
 
     async def test_a_header_python_leaves_out_and_the_provider_sends(self) -> None:
         cases = {case["name"]: case for case in OPENAI.fixture()["cases"]}

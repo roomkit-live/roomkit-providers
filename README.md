@@ -34,8 +34,9 @@ contract.
 - **The host stays in control.** Endpoints, credentials, timeouts and limits
   are explicit host configuration. A provider writes no credential into a
   log, a `Debug` form or a result, and removes from an error's text a
-  credential of 8 characters or more that a server sends back, as it is or
-  as the error's own code writes it again; its README states the limits.
+  credential of 8 characters or more that a server sends back, as it is, as
+  a URL writes it or as the error's own code writes it again; its README
+  states the limits.
 
 Section numbers in the code and its documentation (`RFC §6.7`) refer to the
 [RoomKit RFC](https://github.com/roomkit-live/roomkit-specs).

@@ -22,6 +22,7 @@
 use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
+use std::ops::Range;
 
 use roomkit_providers_llm::{
     AiRequest, ProviderError, ProviderErrorOptions, ResponseSchemaError,
@@ -91,6 +92,68 @@ fn written_forms(text: &str) -> Vec<String> {
     ]
 }
 
+/// The byte the start of `text` writes as a URL does, a percent sign and two
+/// hexadecimal digits in either case, and what follows it.
+fn byte_of_a_url(text: &str) -> Option<(u8, &str)> {
+    let mut digits = text.strip_prefix('%')?.chars();
+    let high = digits.next()?.to_digit(16)?;
+    let low = digits.next()?.to_digit(16)?;
+    Some((u8::try_from(high * 16 + low).ok()?, digits.as_str()))
+}
+
+/// What follows `c` at the start of `text`, written as it is and written as
+/// a URL may write it, each of its bytes a percent sign and two digits.
+fn after(text: &str, c: char) -> [Option<&str>; 2] {
+    let mut bytes = [0; 4];
+    let mut as_a_url_writes_it = c.encode_utf8(&mut bytes).bytes();
+    let escaped = as_a_url_writes_it.try_fold(text, |rest, byte| {
+        let (written, rest) = byte_of_a_url(rest)?;
+        (written == byte).then_some(rest)
+    });
+    [text.strip_prefix(c), escaped]
+}
+
+/// How many bytes at the start of `text` write `secret` as a URL may: each
+/// character as it is or escaped, whichever characters the writer chose to
+/// escape. A percent sign of the secret reads both ways, so every reading
+/// is followed, and the longest one counts.
+fn written_as_a_url(text: &str, secret: &str) -> Option<usize> {
+    let mut readings = vec![text];
+    for c in secret.chars() {
+        let mut next: Vec<&str> = Vec::new();
+        for rest in readings.iter().flat_map(|rest| after(rest, c)).flatten() {
+            if !next.iter().any(|known| known.len() == rest.len()) {
+                next.push(rest);
+            }
+        }
+        if next.is_empty() {
+            return None;
+        }
+        readings = next;
+    }
+    let shortest_rest = readings.iter().map(|rest| rest.len()).min()?;
+    Some(text.len() - shortest_rest)
+}
+
+/// Where `text` first holds `secret`: as it is, or as a URL writes it.
+fn held(text: &str, secret: &str) -> Option<Range<usize>> {
+    if let Some(start) = text.find(secret) {
+        return Some(start..start + secret.len());
+    }
+    // Only a text with a percent sign holds a secret another way, and only
+    // where the secret's first character is, as it is or escaped.
+    if !text.contains('%') {
+        return None;
+    }
+    let first = secret.chars().next()?;
+    let may_start = |c: char| c == first || c == '%';
+    let starts = text.char_indices().filter(|(_, c)| may_start(*c));
+    starts.map(|(start, _)| start).find_map(|start| {
+        let length = written_as_a_url(text.get(start..)?, secret)?;
+        Some(start..start + length)
+    })
+}
+
 /// The secrets of a configuration: what no failure's text may repeat.
 #[derive(Clone, Default)]
 pub struct Secrets {
@@ -109,7 +172,8 @@ impl fmt::Debug for Secrets {
 
 impl Secrets {
     /// The secrets among `texts`: each of [`SECRET_MIN`] characters or
-    /// more, in every form a failure's text may hold it in.
+    /// more, in every form the code that builds a failure may write it in.
+    /// A text is searched for each form as it is and as a URL writes it.
     pub fn of(texts: impl IntoIterator<Item = String>) -> Self {
         Self::default().with(texts)
     }
@@ -140,13 +204,14 @@ impl Secrets {
         Self { before, after }
     }
 
-    /// `text` with none of `secrets` in it. Removing one may bring the
-    /// pieces of another together, so the text is searched until none is
-    /// found; it gets shorter each time, which ends the search.
+    /// `text` with none of `secrets` in it, as it is or as a URL writes it.
+    /// Removing one may bring the pieces of another together, so the text
+    /// is searched until none is found; it gets shorter each time, which
+    /// ends the search.
     fn removed(text: &str, secrets: &[String]) -> String {
         let mut text = text.to_owned();
-        while let Some(secret) = secrets.iter().find(|secret| text.contains(secret.as_str())) {
-            text = text.replace(secret.as_str(), MARK);
+        while let Some(held) = secrets.iter().find_map(|secret| held(&text, secret)) {
+            text.replace_range(held, MARK);
         }
         text
     }

@@ -13,18 +13,33 @@ What these tests hold: no shared file names a vendor, however the name is
 written, nor reads the name of a class; a vendor's module of the package is
 imports and class statements of the documented shape, a configuration's
 members with their rules and a provider with nothing of its own, so that it
-overrides nothing shared and changes nothing shared as it is imported.
+overrides nothing shared and changes nothing shared as it is imported:
 
-What they do not hold: a branch of the shared part on what a provider says
-of itself when it runs (the start of its name, the length of its label)
-names no vendor and reads no class's name, so no search finds it. That is
-for the review of a change to a shared file, and for each provider's own
-tests, which run on the same shared code.
+- it imports names from a short list, and no module whole: the two shared
+  classes, names of `typing` and of pydantic, RoomKit's configuration of
+  the same provider;
+- its classes derive from the two shared classes alone, with the keywords
+  those take;
+- no member and no rule has a name the shared class defines;
+- a vendor's module of the binding reads no environment.
+
+What they do not hold, because no search finds it:
+
+- a branch of the shared part on what a provider says of itself when it
+  runs (the start of its name, the length of its label), which names no
+  vendor and reads no class's name;
+- what a member's rule does when it runs with what Python gives every
+  function and with what the names it may import lead to;
+- what a vendor's module of the binding does beside building its provider.
+
+Those are for the review of a change, and for each provider's own tests,
+which run on the same shared code.
 """
 
 from __future__ import annotations
 
 import ast
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -72,6 +87,20 @@ WRITTEN_ONCE = {
 }
 # How a class's name is read: no shared module reads one.
 NAMES_OF_A_CLASS = {"__name__", "__qualname__", "__module__", "__class__"}
+
+# The two classes a vendor's own derive from, each by the shared module that
+# defines it, and the keywords each takes in a class statement.
+SHARED_CLASSES = {"Config": "_config", "Provider": "_provider"}
+OF_A_CONFIGURATION = {"vendor", "stands_for", "decided"}
+OF_A_PROVIDER = {"config"}
+# Where else a vendor's module of the package imports names from: for its
+# members' types, and RoomKit's configuration of the same provider, a name
+# that ends as one.
+FOR_THE_MEMBERS = {"__future__", "typing", "pydantic"}
+ROOMKIT = "roomkit"
+A_CONFIGURATION = "Config"
+# How Rust reads the environment, at run time or as it compiles.
+ENVIRONMENT = re.compile(r"\b(?:option_)?env\b")
 
 
 def kinds() -> list[Path]:
@@ -160,6 +189,92 @@ def _is_a_member_s_rule(node: ast.AST) -> bool:
     return sorted(decorators) == ["classmethod", "field_validator"]
 
 
+def imported_beyond_the_list(tree: ast.AST) -> list[str]:
+    """What `tree`, a vendor's module, imports that it may not, wherever
+    the import is written. A module imported whole is a handle on all it
+    holds, so every import is of names, from the short list."""
+    beyond = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            beyond += [f"import {alias.name}" for alias in node.names]
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        module = node.module or ""
+        for alias in node.names:
+            if node.level:
+                allowed = node.level == 1 and SHARED_CLASSES.get(alias.name) == module
+            elif module.split(".")[0] == ROOMKIT:
+                allowed = alias.name.endswith(A_CONFIGURATION)
+            else:
+                allowed = module in FOR_THE_MEMBERS and alias.name != "*"
+            if not allowed:
+                beyond.append(f"from {'.' * node.level}{module} import {alias.name}")
+    return beyond
+
+
+def kind_of(node: ast.ClassDef) -> str | None:
+    """What `node`, a class statement of a vendor's module, is by its bases
+    and its keywords: a configuration, which derives from the shared one
+    alone; a provider, which derives from the shared one alone, over its
+    configurations; or neither. A first base from elsewhere would make the
+    shared class's methods another's."""
+    keywords = {keyword.arg for keyword in node.keywords}
+    if len(node.bases) != 1:
+        return None
+    (base,) = node.bases
+    if isinstance(base, ast.Name) and base.id == "Config":
+        stated = "vendor" in keywords and keywords <= OF_A_CONFIGURATION
+        return "configuration" if stated else None
+    over = base.value if isinstance(base, ast.Subscript) else None
+    if isinstance(over, ast.Name) and over.id == "Provider":
+        return "provider" if keywords == OF_A_PROVIDER else None
+    return None
+
+
+def defined_in(node: ast.ClassDef) -> set[str]:
+    """The names the body of `node` defines: its methods, and what it
+    assigns or annotates."""
+    names = set()
+    for part in node.body:
+        if isinstance(part, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            names.add(part.name)
+        elif isinstance(part, ast.AnnAssign | ast.Assign):
+            targets = [part.target] if isinstance(part, ast.AnnAssign) else part.targets
+            names |= {target.id for target in targets if isinstance(target, ast.Name)}
+    return names
+
+
+def defined_by_the_shared_classes(kind: Path) -> dict[str, set[str]]:
+    """What each shared class of `kind` defines, by the class's name."""
+    defined = {}
+    for name, module in SHARED_CLASSES.items():
+        tree = ast.parse((kind / f"{module}.py").read_text(encoding="utf-8"))
+        classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
+        (shared,) = [node for node in classes if node.name == name]
+        defined[name] = defined_in(shared)
+    return defined
+
+
+def taken_from_the_shared_class(tree: ast.Module, defined: dict[str, set[str]]) -> list[str]:
+    """The names a class of `tree`, a vendor's module, defines that the
+    shared class it derives from defines too: each would replace what is
+    written once."""
+    taken = []
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for base in node.bases:
+            over = base.value if isinstance(base, ast.Subscript) else base
+            shared = defined.get(getattr(over, "id", ""), set())
+            taken += [f"{node.name}.{name}" for name in sorted(defined_in(node) & shared)]
+    return taken
+
+
+def reading_the_environment(text: str) -> list[str]:
+    """The lines of `text`, a Rust module, that read the environment."""
+    return [line.strip() for line in text.splitlines() if ENVIRONMENT.search(line)]
+
+
 class GenericTests(unittest.TestCase):
     def test_the_package_and_the_binding_hold_the_same_vendors(self) -> None:
         self.assertEqual(set(package_modules()), set(binding_modules()))
@@ -232,7 +347,9 @@ class GenericTests(unittest.TestCase):
     def test_a_vendor_s_module_is_imports_and_class_statements(self) -> None:
         """Nothing runs when a vendor's module is imported but its imports
         and its class statements: it changes nothing of the shared part.
-        Of that part it imports the two classes its own derive from."""
+        Of that part it imports the two classes its own derive from, and
+        beyond it names from a short list: no module whole, which would be
+        a handle on the shared part, and nothing that reads the process."""
         for vendor, module in sorted(package_modules().items()):
             with self.subTest(vendor=vendor):
                 tree = ast.parse(module.read_text(encoding="utf-8"))
@@ -253,6 +370,7 @@ class GenericTests(unittest.TestCase):
                     for alias in node.names
                 }
                 self.assertEqual(shared, {"_config.Config", "_provider.Provider"})
+                self.assertEqual(imported_beyond_the_list(tree), [])
 
     def test_a_vendor_s_classes_hold_a_class_statement_s_worth(self) -> None:
         """A vendor's provider is a class statement and a docstring: it
@@ -262,23 +380,39 @@ class GenericTests(unittest.TestCase):
         for vendor, module in sorted(package_modules().items()):
             tree = ast.parse(module.read_text(encoding="utf-8"))
             classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
-            said = {keyword.arg for node in classes for keyword in node.keywords}
-            self.assertEqual({"vendor", "config"} - said, set(), vendor)
+            kinds_held = sorted(str(kind_of(node)) for node in classes)
+            self.assertEqual(kinds_held, ["configuration", "provider"], vendor)
             for node in classes:
                 with self.subTest(vendor=vendor, name=node.name):
-                    keywords = {keyword.arg for keyword in node.keywords}
                     body = [part for part in node.body if not _is_docstring(part)]
-                    if "config" in keywords:
+                    if kind_of(node) == "provider":
                         self.assertEqual([type(part).__name__ for part in body], [])
-                    elif "vendor" in keywords:
+                    else:
                         others = [
                             getattr(part, "name", type(part).__name__)
                             for part in body
                             if not (isinstance(part, ast.AnnAssign) or _is_a_member_s_rule(part))
                         ]
                         self.assertEqual(others, [])
-                    else:
-                        self.fail("a vendor's class is its configuration or its provider")
+
+    def test_a_vendor_s_class_takes_no_name_of_the_shared_class(self) -> None:
+        """A member or a rule named as something the shared class defines
+        would replace it: what decides a switch, what hides a value."""
+        for vendor, module in sorted(package_modules().items()):
+            with self.subTest(vendor=vendor):
+                defined = defined_by_the_shared_classes(module.parent)
+                self.assertGreater(min(len(names) for names in defined.values()), 5)
+                tree = ast.parse(module.read_text(encoding="utf-8"))
+                self.assertEqual(taken_from_the_shared_class(tree, defined), [])
+
+    def test_a_vendor_s_module_of_the_binding_reads_no_environment(self) -> None:
+        """A provider is built from its configuration and from the key it
+        is given: a key or an endpoint read from the environment would be a
+        configuration nobody stated."""
+        for module in sorted((BINDING / "vendors").rglob("*.rs")):
+            with self.subTest(module=module.name):
+                text = module.read_text(encoding="utf-8")
+                self.assertEqual(reading_the_environment(text), [])
 
     def test_a_vendor_s_module_enters_the_native_module_nowhere(self) -> None:
         """What guards an entry into the native module is written once: a
@@ -304,6 +438,147 @@ class GenericTests(unittest.TestCase):
                 # Nothing Python calls is declared there.
                 self.assertNotIn("pyo3", text)
                 self.assertNotIn("catch_unwind", text)
+
+
+# A vendor's module of the package in the documented shape, and the lines of
+# one of the binding: what each check is silent on.
+SAMPLE = '''"""A sample."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from pydantic import SecretStr, field_validator
+from roomkit.providers.sample import SampleConfig as RoomKitSampleConfig
+
+from ._config import Config
+from ._provider import Provider
+
+__all__ = ["Sample", "SampleConfig"]
+
+
+class SampleConfig(Config, vendor="sample", stands_for=RoomKitSampleConfig, decided=()):
+    """A configuration."""
+
+    api_key: SecretStr
+    base_url: str | None = None
+    extra_body: dict[str, Any] | None = None
+
+    @field_validator("base_url")
+    @classmethod
+    def _as_given(cls, value: str | None) -> str | None:
+        return value
+
+
+class Sample(Provider[SampleConfig | RoomKitSampleConfig], config=SampleConfig):
+    """A provider."""
+'''
+SAMPLE_OF_THE_BINDING = """
+    // The environment's proxies are the client's to read.
+    fn keyed(config: Self::Config, key: Option<String>) -> Result<Self::Provider, Failure> {
+        Sample::new(config, key)
+    }
+"""
+DEFINED = {"Config": {"_decide", "model_config", "model_post_init"}, "Provider": {"generate"}}
+PROVIDER = "class Sample(Provider[SampleConfig | RoomKitSampleConfig], config=SampleConfig):"
+CONFIGURATION = "class SampleConfig(Config, vendor="
+RULE = "    def _as_given(cls, value: str | None) -> str | None:\n"
+
+
+class ChecksBiteTests(unittest.TestCase):
+    """Each check on a sample: silent on the documented shape, and finding
+    each way out of it that a vendor's module was seen to take."""
+
+    def written(self, old: str, new: str) -> ast.Module:
+        """The sample with `new` where it holds `old`."""
+        self.assertEqual(SAMPLE.count(old), 1, old)
+        return ast.parse(SAMPLE.replace(old, new))
+
+    def test_the_documented_shape_passes_each_check(self) -> None:
+        tree = ast.parse(SAMPLE)
+        classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
+        self.assertEqual(imported_beyond_the_list(tree), [])
+        self.assertEqual([kind_of(node) for node in classes], ["configuration", "provider"])
+        self.assertEqual(taken_from_the_shared_class(tree, DEFINED), [])
+        self.assertEqual(reading_the_environment(SAMPLE_OF_THE_BINDING), [])
+
+    def test_an_import_beyond_the_list_is_found(self) -> None:
+        shared = "from ._config import Config\n"
+        at_the_top = [
+            # The shared module whole, or a name of it that is no class of
+            # the two: a handle to change the shared part through.
+            "import package.kind._provider",
+            "from . import _provider",
+            "from package.kind import _provider",
+            "from ._provider import _request",
+            # What reads the process.
+            "import os",
+            "from os import environ",
+            # A name of RoomKit that is no configuration.
+            "from roomkit.providers.sample import SampleProvider",
+            "from pydantic import *",
+        ]
+        for found in at_the_top:
+            with self.subTest(found=found):
+                tree = self.written(shared, f"{found}\n{shared}")
+                self.assertEqual(imported_beyond_the_list(tree), [found])
+        for found in ["import os", "from os import environ"]:
+            with self.subTest(found=found, inside="a rule"):
+                tree = self.written(RULE, f"{RULE}        {found}\n")
+                self.assertEqual(imported_beyond_the_list(tree), [found])
+
+    def test_a_class_of_another_shape_is_found(self) -> None:
+        others = {
+            # A first base from elsewhere: `generate` would be that class's.
+            PROVIDER: PROVIDER.replace("(Provider[", "(RoomKitSampleProvider, Provider["),
+            CONFIGURATION: "class SampleConfig(Config, RoomKitSampleConfig, vendor=",
+            "config=SampleConfig):": "config=SampleConfig, metaclass=Other):",
+            "decided=()": "decided=(), **more",
+            "(Provider[SampleConfig | RoomKitSampleConfig], ": "(Provider, ",
+            "class Sample(Provider[": "class Sample(Other[",
+            "class SampleConfig(Config, ": "class SampleConfig(Other, ",
+            'vendor="sample", ': "",
+        }
+        for old, new in others.items():
+            with self.subTest(new=new):
+                tree = self.written(old, new)
+                classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
+                self.assertIn(None, [kind_of(node) for node in classes])
+
+    def test_a_name_of_the_shared_class_is_found(self) -> None:
+        taken = {
+            # A member's rule of the allowed shape, named as what decides
+            # the switches.
+            "SampleConfig._decide": ("def _as_given(", "def _decide("),
+            "SampleConfig.model_config": (
+                "    api_key: SecretStr\n",
+                "    api_key: SecretStr\n    model_config: dict[str, Any] = {}\n",
+            ),
+            "SampleConfig.model_post_init": ("def _as_given(", "def model_post_init("),
+            "Sample.generate": (
+                '    """A provider."""\n',
+                '    """A provider."""\n\n    generate = None\n',
+            ),
+        }
+        for found, (old, new) in taken.items():
+            with self.subTest(found=found):
+                tree = self.written(old, new)
+                self.assertEqual(taken_from_the_shared_class(tree, DEFINED), [found])
+
+    def test_a_read_of_the_environment_is_found(self) -> None:
+        built = "Sample::new(config, key)"
+        reads = [
+            'Sample::new(config, key.or_else(|| std::env::var("SAMPLE_API_KEY").ok()))',
+            'Sample::new(config, key.or_else(|| env::var("SAMPLE_API_KEY").ok()))',
+            'Sample::new(config, std::env::var_os("SAMPLE_API_KEY").map(read))',
+            'Sample::new(config, option_env!("SAMPLE_API_KEY").map(str::to_owned))',
+            'Sample::new(config, Some(env!("SAMPLE_API_KEY").to_owned()))',
+        ]
+        for read in reads:
+            with self.subTest(read=read):
+                written = SAMPLE_OF_THE_BINDING.replace(built, read)
+                self.assertEqual(reading_the_environment(written), [read])
+        self.assertEqual(reading_the_environment("use std::env;"), ["use std::env;"])
 
 
 if __name__ == "__main__":

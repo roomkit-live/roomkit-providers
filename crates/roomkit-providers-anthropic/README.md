@@ -165,7 +165,8 @@ listing.
   brings for itself, the value of each extra header (and, where the value
   names a scheme such as `Bearer`, what follows it), and the user
   information of the base URL. Each is replaced by `[***]`, in every form
-  the code that builds a failure writes it in. A secret shorter than 8
+  the code that builds a failure writes it in and as a URL writes it,
+  whichever characters are percent-encoded. A secret shorter than 8
   characters is not searched for, and one a server itself sends back in
   another form cannot be recognised. The `Debug` forms print none of them,
   and the provider logs none.

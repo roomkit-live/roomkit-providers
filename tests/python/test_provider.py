@@ -23,6 +23,7 @@ import weakref
 from types import SimpleNamespace
 from typing import Any
 from unittest import mock
+from urllib import parse
 
 from pydantic import BaseModel, SecretStr, ValidationError
 from roomkit import (
@@ -854,6 +855,23 @@ class LentKeyTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(failed.args[0], "Incorrect key provided: [***]. Check it.")
             self.assertEqual(failed.status_code, 401)
 
+    async def test_a_key_a_server_repeats_as_a_url_writes_it_is_hidden(self) -> None:
+        """Whatever the key holds: a quote and a backslash, which a URL
+        never writes as they are, and a hyphen, which one writer escapes and
+        another does not."""
+        key = 'placeholder-"of"\\one request'
+        lent = AIContext(messages=HELLO.messages, metadata={"api_key": key})
+        for written in (
+            parse.quote(key, safe=""),
+            parse.quote(key, safe="").lower(),
+            parse.quote(key, safe=" -").replace("-", "%2D", 1),
+        ):
+            with self.subTest(written=written):
+                self.assertNotEqual(written, key)
+                provider = self.refusing(f"Incorrect key provided: {written}. Check it.")
+                for failed in await self.failures(provider, lent):
+                    self.assertEqual(failed.args[0], "Incorrect key provided: [***]. Check it.")
+
     async def test_a_failure_keeps_the_words_of_a_request_that_lent_no_key(self) -> None:
         said = f"Incorrect key provided: {ONE_REQUEST_KEY}. Check it."
         for failed in await self.failures(self.refusing(said), HELLO):
@@ -1169,6 +1187,12 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
                 _native._handing_ends()
                 answered = await asyncio.wait_for(asyncio.gather(*pending), 60)
                 said = {json.loads(answer)["content"] for answer in answered}
+                # The answers are here before the thread that handed the
+                # last one has let go of its call, and before it has ended.
+                loop = asyncio.get_running_loop()
+                deadline = loop.time() + 30
+                while (_native._handing() or _native._activity()) and loop.time() < deadline:
+                    await asyncio.sleep(0.001)
                 print("settled:", len(answered), said, "handing:", _native._handing())
 
             asyncio.run(main())

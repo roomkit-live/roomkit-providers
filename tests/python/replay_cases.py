@@ -74,12 +74,20 @@ UNREAD = "the request is refused: "
 ENDINGS = {"the stream ends": "ends", "the connection is lost": "lost"}
 
 # How a case whose fake goes silent is set apart (`set_apart`).
-LEFT_TO_RUST, NEVER_ANSWERED = "left to Rust", "never answered"
+NEVER_ANSWERED, SILENT_UNDER_WAY = "never answered", "silent under way"
 
-# The timeout, in seconds, a case whose fake never answers is given in place
-# of its configuration's: nothing but the timeout ends it, however long
-# anything takes.
-SHORT_TIMEOUT = 0.05
+# The timeout, in seconds, a case set apart is given in place of its
+# configuration's, which ends each silence of its fake.
+#
+# - Where the fake never answers, nothing but the timeout ends the case,
+#   however long anything takes.
+# - Where it goes silent under way, the timeout is also the longest the
+#   provider waits for each read the fake does send: one that passed first
+#   would end the case otherwise than recorded. So it is many times what a
+#   read takes to come on a busy machine (one came 100 ms late on a
+#   processor shared with thirty-two busy processes, none 250 ms late), and
+#   each silence of these cases costs the test that long.
+SHORT_TIMEOUTS = {NEVER_ANSWERED: 0.05, SILENT_UNDER_WAY: 1.0}
 
 
 @dataclass(frozen=True)
@@ -134,24 +142,23 @@ def set_apart(case: dict[str, Any]) -> str | None:
     """How `case` is set apart, for what its exchanges are, not by its name:
     None where the fake answers every exchange to its end.
 
-    A case whose one request is never answered is given a short timeout
-    (`NEVER_ANSWERED`). One whose fake stops answering after it answered
-    something, or before a try that is answered, is left to the Rust replay
-    (`LEFT_TO_RUST`): the provider's timeout ends the silence, and what was
-    sent before must be read first. The Rust replay lets that time pass on a
-    clock it moves; here the configuration's timeout would have to pass, or
-    a shorter one race what was sent."""
+    The provider's timeout ends each silence. The Rust replay lets that
+    time pass on a clock it moves; here it passes, so the case is given a
+    short timeout in place of its configuration's (`SHORT_TIMEOUTS`): one
+    for a case whose one request is never answered (`NEVER_ANSWERED`),
+    another for a case whose fake stops answering after it answered
+    something, or before a try that is answered (`SILENT_UNDER_WAY`)."""
     exchanges = [exchange for turn in turns(case) for exchange in turn["exchanges"]]
     silences = [goes_silent(exchange) for exchange in exchanges]
     if not any(silences):
         return None
     never = silences == [True] and exchanges[0]["response"].get("failure")
-    return NEVER_ANSWERED if never else LEFT_TO_RUST
+    return NEVER_ANSWERED if never else SILENT_UNDER_WAY
 
 
 def cases_set_apart(replays: Replays) -> dict[str, set[str]]:
     """The cases of the provider's fixture that are set apart, by how."""
-    apart: dict[str, set[str]] = {LEFT_TO_RUST: set(), NEVER_ANSWERED: set()}
+    apart: dict[str, set[str]] = {NEVER_ANSWERED: set(), SILENT_UNDER_WAY: set()}
     for case in replays.fixture()["cases"]:
         how = set_apart(case)
         if how is not None:
@@ -295,7 +302,7 @@ async def replay(
     provider, each answered with its own exchanges.
 
     `read_timeout` replaces the configuration's timeout, for a case whose
-    fake never answers: nothing else ends it."""
+    fake goes silent: nothing else ends a silence."""
     config = dict(case["config"])
     if read_timeout is not None:
         config["timeout"] = read_timeout
@@ -357,11 +364,49 @@ def _requests_differ(turn: dict[str, Any], key: str, called: Called, found: list
         _headers_differ(at, seen, sent, (key, called.request_key), found)
         recorded = exchange["response"].get("chunks")
         reads = sum(1 for chunk in recorded or [] if chunk_bytes(chunk))
-        if seen.reads != reads:
+        # A try fails where its call asks again after it, or ends in a
+        # failure after the last.
+        failed = at + 1 < len(called.seen) or called.error is not None
+        _reads_differ(at, seen, reads, failed, found)
+
+
+def _reads_differ(at: int, seen: Seen, recorded: int, failed: bool, found: list[str]) -> None:
+    """Where the answer to request `at` was not served in the `recorded`
+    reads, or was left by a try that did not fail: `failed` says whether the
+    try of that request did.
+
+    A provider that fails on a read closes its connection, and the fake may
+    still be writing the reads after it: which of the two is first is no
+    difference from Python. So the fake says what it saw (`Seen.reads`,
+    `Seen.left`), and each thing it may have seen is held to its own rule.
+
+    - The client stayed until the reads were written: they are the recorded
+      ones, exactly.
+    - The client left before: it read less than the answer, which a try that
+      failed may do and no other, and the reads written until then are fewer
+      than the recorded ones.
+
+    A provider ends a stream it answers from at the stream's own end mark,
+    as Python does, and reads nothing a case records after it. No case
+    records more than one read there, and that one is written whichever
+    side is first: its client leaves once it has the read before."""
+    if not seen.left:
+        if seen.reads != recorded:
             found.append(
                 f"request {at}: its answer was served in {seen.reads} reads, "
-                f"where the case records {reads}"
+                f"where the case records {recorded}"
             )
+        return
+    if not failed:
+        found.append(
+            f"request {at}: its answer was left after {seen.reads} reads of {recorded}, "
+            f"by a try that did not fail"
+        )
+    if seen.reads >= recorded:
+        found.append(
+            f"request {at}: its answer was left with a read to write after {seen.reads}, "
+            f"where the case records {recorded}"
+        )
 
 
 def _keyed(value: str, keys: tuple[str, str | None]) -> str:
@@ -653,21 +698,17 @@ def judged(
 async def every_case(replays: Replays) -> tuple[dict[tuple[str, str], int], list[str]]:
     """Replays every case of the provider's fixture, one after the other on
     one fake. Gives how many cases of each call stand each way (as Python,
-    named and as their entry states, or left to the Rust replay), and what
-    is wrong, case by case: a difference from Python of a case that is not
-    named, a named case that replays as Python, or one that does not differ
-    or do as its entry states."""
+    or named and as their entry states), and what is wrong, case by case: a
+    difference from Python of a case that is not named, a named case that
+    replays as Python, or one that does not differ or do as its entry
+    states."""
     cases, stated = replays.fixture()["cases"], replays.named()
     counts: Counter[tuple[str, str]] = Counter()
     wrong = []
     async with Fake() as fake:
         for case in cases:
             name, call = case["name"], case["call"]
-            apart = set_apart(case)
-            if apart == LEFT_TO_RUST:
-                counts[call, LEFT_TO_RUST] += 1
-                continue
-            short = SHORT_TIMEOUT if apart == NEVER_ANSWERED else None
+            short = SHORT_TIMEOUTS.get(set_apart(case))
             replayed = await replay(replays, case, fake, read_timeout=short)
             as_python, told = judged(replays, case, stated.get(name), replayed)
             if told:

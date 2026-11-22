@@ -519,6 +519,17 @@ In the binding, a workspace of its own:
   vendor is written once, in `src/vendor.rs`, with what guards it: the key
   opened in native code, a panic made the provider's failure, the name and
   the label checked.
+- **The configuration's type** (`Vendor::Config`) is the crate's own where
+  the crate reads what Python's configuration holds as it is
+  (`vendors/openai.rs`). It is a wrapper type of the module where Python's
+  configuration keeps a value already transformed, as RoomKit's does, and
+  the crate's configuration would transform it again as it reads it: the
+  wrapper reads the crate's configuration and puts that value back in the
+  form the crate transforms into what Python kept. `Kept`, in
+  `vendors/anthropic.rs`, does it for a base URL, which both sides keep
+  without the path of the API it ended with: a URL that named the path
+  twice would otherwise lose it twice. The wrapper is the module's own;
+  the shared part reads a configuration through it and does not change.
 - `bindings/python/src/vendors/mod.rs`: the module's line, and its line in
   `VENDORS`.
 - `bindings/python/Cargo.toml`: the crate, with its `replay` feature; then
@@ -547,17 +558,23 @@ In Python:
   none of what every provider gets from the two classes: how a provider is
   built, the veil that keeps a configuration out of a traceback's frames,
   the `repr` that shows no secret, the refusal of a forked child, a failure
-  raised as RoomKit's exception. `tests/python/test_generic.py` fails for a
-  vendor's module that does.
+  raised as RoomKit's exception. It imports names and no module whole: the
+  two shared classes, names of `typing` and of pydantic, RoomKit's
+  configuration. Its classes have no other base, and no member or rule
+  named as something the shared class defines. The module of the binding
+  reads no environment. `tests/python/test_generic.py` fails for a vendor's
+  module that does otherwise, and says in its docstring what no search of
+  the kind can find.
 - `tests/python/test_<vendor>.py`: the provider through its public class,
   against a local fake of its endpoint, with what writes its answers in
   `tests/python/fake_<vendor>.py`.
 - `tests/python/test_replay_<vendor>.py`: the replay of its recorded cases
   through the package. It states what is the provider's own for the
   harness (`replay_cases.Replays`: its vendor, its classes, its fixture, the
-  header its key goes in), its counts, the cases left to the Rust replay,
-  and the wrongs that hold the harness to what its cases alone show. The
-  harness itself is not edited.
+  header its key goes in), its counts, the cases whose fake goes silent,
+  which the harness gives a short timeout, and the wrongs that hold the
+  harness to what its cases alone show. Every case of the fixture is
+  replayed. The harness itself is not edited.
 - An example beside the others, with its line in `scripts/check-python.py`.
 - `make api-snapshot`, which rewrites `tests/python/public_api_names.json`
   and `public_api_signatures.json` for the two new names.

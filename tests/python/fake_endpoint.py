@@ -89,8 +89,14 @@ class Seen:
     # Every header line, in the order sent, its name in lower case.
     lines: list[tuple[str, str]]
     body: bytes
-    # How many reads its answer was written in: none for one sent whole.
+    # How many reads of its answer were written, each counted once it is
+    # written: none for an answer sent whole.
     reads: int = 0
+    # Whether its client left before the reads of its answer were all
+    # written. A client that leaves while they are being written is seen
+    # leaving or not, as the two happen to fall; one that stays until the
+    # last is written never is.
+    left: bool = False
 
 
 @dataclass
@@ -240,14 +246,13 @@ class Fake:
             await writer.drain()
             return
         head.append("transfer-encoding: chunked\r\n\r\n")
-        writer.write("\r\n".join(head).encode())
-        await writer.drain()
-        for read in filter(None, reply.reads):
-            if reply.step is not None and seen.reads:
-                await reply.step()
-            seen.reads += 1
-            writer.write(b"%x\r\n%b\r\n" % (len(read), read))
-            await writer.drain()
+        try:
+            await _write_reads(writer, "\r\n".join(head).encode(), reply, seen)
+        except ConnectionError:
+            seen.left = True
+            raise
+        # The reads written, the client has the answer: one that leaves
+        # before the transfer is ended has left nothing of it.
         if reply.then == "ends":
             writer.write(b"0\r\n\r\n")
             await writer.drain()
@@ -264,6 +269,21 @@ class Fake:
         except ConnectionError:
             pass
         await self._closed.tell()
+
+
+async def _write_reads(writer: asyncio.StreamWriter, head: bytes, reply: Reads, seen: Seen) -> None:
+    """Writes the head of an answer sent read by read, then each read as
+    one chunk of the transfer, flushed before the next and counted in `seen`
+    once it is written. It fails as the connection does where the client
+    left before the last read was written."""
+    writer.write(head)
+    await writer.drain()
+    for read in filter(None, reply.reads):
+        if reply.step is not None and seen.reads:
+            await reply.step()
+        writer.write(b"%x\r\n%b\r\n" % (len(read), read))
+        await writer.drain()
+        seen.reads += 1
 
 
 async def _carry(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, port: int) -> None:

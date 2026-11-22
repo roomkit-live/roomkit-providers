@@ -170,7 +170,9 @@ Two of RoomKit's own providers record a whole answer otherwise:
   a 200, a response schema the answer does not satisfy.
 - RoomKit's Anthropic provider reads a stream inside `generate()` and
   records its first text or reasoning. Here the value of a whole answer is
-  the time the whole answer took.
+  the time the whole answer took. RoomKit's has so recorded it for a
+  `generate()` that then fails, after its first text: with this package
+  such a call records nothing.
 
 ## The configuration
 
@@ -220,10 +222,19 @@ the URL.
 
 What a configuration does not hide:
 
-- **A configuration pydantic refuses holds what it was given in pydantic's
-  own frame**, as RoomKit's does: a traceback written with its frames'
-  locals shows a key that was given as text. Give the key as a `SecretStr`
-  where tracebacks are written so.
+- **A configuration its class refuses leaves what it was given in the
+  frames of that refusal**: in pydantic's own, as RoomKit's does, and in
+  the package's own `__init__` too. A traceback written with its frames'
+  locals (`capture_locals`) shows it all there: a key given as text, the
+  value of a header, a base URL with its password, a member of
+  `extra_body`. A key given as a `SecretStr` is not shown; nothing covers
+  the others. Where a configuration is built from such values, do not
+  write a traceback's locals. A configuration the provider refuses as it is
+  built, and a call that fails, leave none of them in a frame.
+- **`model_dump()` and `model_dump_json()` show** the value of a header, a
+  member of `extra_body` and the base URL whole, its password with it, as
+  RoomKit's configuration does. They mask the key alone. `repr` is the form
+  that hides the others.
 - **A member of `extra_body` is no secret to a failure.** A server that
   repeats one in the message of its refusal is repeated: a failure's text is
   cleaned of the key, of the key a context lends, of a default header's
@@ -443,7 +454,11 @@ is `Anthropic`. What is Anthropic's own:
   for the model on Anthropic's own endpoint, and false behind another base
   URL.
 - **The time to the first token of a whole answer** is the time the whole
-  answer took: [above](#the-time-to-the-first-token).
+  answer took, and a call that failed records none:
+  [above](#the-time-to-the-first-token).
+- **An empty or blank base URL** is refused when the provider is built,
+  with a `ProviderError`. RoomKit's reads it as Anthropic's own endpoint:
+  leave `base_url` out for that one.
 - **On the wire** the provider does as RoomKit's on 309 of the 377 cases
   recorded from it, and says why it differs on each of the others: its
   README,

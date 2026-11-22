@@ -7,8 +7,9 @@ sent and gave is what the Rust provider sends and gives: for a case the Rust
 replay holds as Python, what Python did; for a case it names, what its entry
 states.
 
-Left to the Rust replay, which moves its own clock: the cases whose answer
-stops under way, and the timeouts each request is given, which no server
+A case whose fake goes silent is given a short timeout in place of its
+configuration's, which ends the silence. Left to the Rust replay, which
+moves its own clock: the timeouts each request is given, which no server
 sees.
 """
 
@@ -18,8 +19,8 @@ import unittest
 
 from fake_endpoint import Fake, Seen
 from replay_cases import (
-    LEFT_TO_RUST,
     NEVER_ANSWERED,
+    SILENT_UNDER_WAY,
     Replays,
     cases_set_apart,
     differences,
@@ -46,12 +47,10 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             counts,
             {
-                ("generate", "as Python"): 211,
+                ("generate", "as Python"): 212,
                 ("generate", "named"): 36,
-                ("generate", "left to Rust"): 1,
-                ("generate_structured_stream", "as Python"): 82,
+                ("generate_structured_stream", "as Python"): 83,
                 ("generate_structured_stream", "named"): 22,
-                ("generate_structured_stream", "left to Rust"): 1,
                 ("generate_stream", "as Python"): 5,
                 ("generate_stream", "named"): 1,
                 ("list_models", "as Python"): 9,
@@ -60,16 +59,16 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
         )
 
     def test_the_cases_set_apart_are_those_whose_fake_goes_silent(self) -> None:
-        """A case is left to the Rust replay, or given a short timeout, for
-        what its exchanges are, not by its name: these are the ones."""
+        """A case is given a short timeout, and which one, for what its
+        exchanges are, not by its name: these are the ones."""
         self.assertEqual(
             cases_set_apart(ANTHROPIC),
             {
-                # The fake stops answering after it answered something, or
-                # before a try that is answered.
-                LEFT_TO_RUST: {"retry_of_a_timeout", "stream_read_timeout_after_an_event"},
                 # The fake never answers their one request.
                 NEVER_ANSWERED: {"timeout", "stream_timeout"},
+                # The fake stops answering after it answered something, or
+                # before a try that is answered.
+                SILENT_UNDER_WAY: {"retry_of_a_timeout", "stream_read_timeout_after_an_event"},
             },
         )
 
@@ -83,13 +82,18 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
     """The replay held to what it compares of what the cases of this fixture
     alone show: the key a request carries for itself, the calls made before
     a case's own, whether the provider holds a tool unseen, a request the
-    contract does not read, and a listing. A case is replayed, found to be
-    as stated, then one thing is made wrong, and the replay must say so.
-    What the cases of any fixture show is held the same way in
-    ``test_replay``."""
+    contract does not read, a listing, and a whole answer served read by
+    read. A case is replayed, found to be as stated, then one thing is made
+    wrong, and the replay must say so. What the cases of any fixture show is
+    held the same way in ``test_replay``."""
 
     async def refuses(self, name: str, word: str, wrong=None, **where) -> None:
         self.assertIn(word, await made_wrong(ANTHROPIC, name, wrong, **where), name)
+
+    async def stands(self, name: str, changed) -> None:
+        """What the replay must not refuse: the case `name` stands as stated
+        once `changed` put in place one thing a replay of it may give."""
+        self.assertEqual(await made_wrong(ANTHROPIC, name, changed), "", name)
 
     async def test_a_key_that_is_not_the_one_its_request_carries(self) -> None:
         def the_configuration_s(replayed):
@@ -207,6 +211,34 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
         await self.refuses(role, otherwise, read)
         # A request that is read, held to the entry of one that is not.
         await self.refuses("plain_answer", "named, and it replays as Python", entry_of=role)
+
+    async def test_an_answer_that_is_not_served_in_the_recorded_reads(self) -> None:
+        """Anthropic answers a whole call read by read as it answers a
+        stream, so a call tried again ends on such an answer: each try is
+        held to its own end."""
+
+        def seen_as(left: bool, reads: int, request: int = 0):
+            def seen(replayed):
+                replayed.seen[request].left = left
+                replayed.seen[request].reads = reads
+
+            return seen
+
+        # A whole answer of six reads.
+        left = "left after 5 reads of 6, by a try that did not fail"
+        await self.refuses("plain_answer", f"request 0: its answer was {left}", seen_as(True, 5))
+        await self.refuses("plain_answer", "served in 5 reads", seen_as(False, 5))
+        # The same answer to the second try of a call: that try did not
+        # fail, though the call asked again before it.
+        again = "retry_that_succeeds"
+        await self.refuses(again, f"request 1: its answer was {left}", seen_as(True, 5, request=1))
+        # A stream of five reads the provider fails on at the second: the
+        # fake saw the client leave or wrote every read, as the two fell.
+        failed = "stream_delta_before_the_message_starts"
+        await self.stands(failed, seen_as(False, 5))
+        await self.stands(failed, seen_as(True, 2))
+        await self.refuses(failed, "served in 4 reads", seen_as(False, 4))
+        await self.refuses(failed, "left with a read to write after 5", seen_as(True, 5))
 
     async def test_a_listing_or_a_text_that_is_not_python_s(self) -> None:
         def a_model_less(replayed):

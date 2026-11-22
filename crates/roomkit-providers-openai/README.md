@@ -122,13 +122,15 @@ catalogue, with no request.
   as the server sent it and as the code that builds a failure writes it
   again, with its quotes, its backslashes and its other characters escaped:
   as a JSON string, as a reader quotes a text it refuses, and as the
-  contract quotes a value. A character that shows nothing is dropped from a
-  failure's text before the secrets are looked for, so one put inside a
-  secret does not hide it. Two limits:
+  contract quotes a value. It is found as a URL writes it too, a character
+  as it is or as a percent sign and two hexadecimal digits, whichever
+  characters the server wrote so. A character that shows nothing is dropped
+  from a failure's text before the secrets are looked for, so one put
+  inside a secret does not hide it. Two limits:
   - a secret shorter than 8 characters is not searched for: it would be
     found in ordinary words;
-  - a secret a server itself sends back in another form (encoded again,
-    cut in pieces, in another case) cannot be recognised;
+  - a secret a server itself sends back in another form (encoded another
+    way, cut in pieces, in another case) cannot be recognised;
   - a member of `extra_body` is no secret to a failure: a server that
     repeats one in the message of its refusal is repeated.
 
