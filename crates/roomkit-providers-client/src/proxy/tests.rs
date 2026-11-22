@@ -260,6 +260,25 @@ fn an_environment_that_does_not_read_is_refused_in_words_that_repeat_nothing_of_
 }
 
 // The `Debug` form of the proxies says how many they are, and shows no URL.
+// An address written short in an entry that is a pattern (`http://127.1`)
+// names one host, and exempts the endpoint that dials it however the
+// endpoint writes it, as an entry written without a scheme does.
+#[test]
+fn an_address_written_short_in_a_pattern_exempts_the_address_it_stands_for() {
+    let variables = [
+        ("HTTP_PROXY", "http://proxy.example:3128"),
+        ("NO_PROXY", "http://127.1"),
+    ];
+    let variables = variables.map(|(name, value)| (name.to_owned(), value.to_owned()));
+    let proxies = Proxies::read(variables).unwrap();
+    for exempted in ["http://127.1/v1", "http://127.0.0.1/v1"] {
+        let endpoint = reqwest::Url::parse(exempted).unwrap();
+        assert!(proxies.for_url(&endpoint).is_none(), "{exempted}");
+    }
+    let another = reqwest::Url::parse("http://127.0.0.2/v1").unwrap();
+    assert!(proxies.for_url(&another).is_some());
+}
+
 #[test]
 fn the_debug_form_of_the_proxies_shows_no_url() {
     let proxy = "http://user:placeholder-not-a-password@proxy.example:3128";

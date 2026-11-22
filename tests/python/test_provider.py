@@ -383,6 +383,10 @@ class AnswersTests(unittest.TestCase):
         self.assertEqual(request_key(context(api_key=SecretStr(ONE_REQUEST_KEY))), ONE_REQUEST_KEY)
         for none in (context(), context(api_key=""), context(api_key=7), context(key="other")):
             self.assertIsNone(request_key(none))
+        # It is read in the context's own metadata, and nowhere else.
+        said = AIMessage(role="user", content="Hello", metadata={"api_key": ONE_REQUEST_KEY})
+        elsewhere = AIContext(messages=[said], system_prompt=f"api_key={ONE_REQUEST_KEY}")
+        self.assertIsNone(request_key(elsewhere))
 
 
 class CrossingTests(unittest.IsolatedAsyncioTestCase):
@@ -954,6 +958,19 @@ class ConstructionTests(unittest.TestCase):
         self.assertIn("base_url='https://llm.example'", said)
         self.assertIn("headers={'X-Team-Token': '**********'}", said)
 
+    def test_no_key_crosses_to_decide_a_switch(self) -> None:
+        asked = []
+
+        def recording(vendor: str, config_json: str) -> str:
+            asked.append((vendor, json.loads(config_json)))
+            return decide(vendor, config_json)
+
+        decide = _native.config_form
+        with mock.patch.object(_config._native, "config_form", recording):
+            ScriptedConfig(api_key=KEY, model="decided-model", base_url="http://127.0.0.1:9")
+        members = {"api_key": "", "model": "decided-model", "base_url": "http://127.0.0.1:9"}
+        self.assertEqual(asked, [("scripted", members)])
+
     def test_a_switch_left_unset_is_decided_by_the_provider_s_own_rule(self) -> None:
         decided = [
             ScriptedConfig(api_key=KEY, model=model, **stated).decided
@@ -1138,6 +1155,27 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("handing: False", result.stdout)
         self.assertEqual(result.stdout.count("refused: True"), 3, result.stdout)
         self.assertIn("under way: ended", result.stdout)
+        self.assertIn("exited with 0", result.stdout)
+
+    def test_calls_left_with_the_handing_thread_when_it_ends_still_settle(self) -> None:
+        result = run_child("""
+            async def main():
+                provider, _ = scripted(responses=[{"content": "Yes."}])
+                assert (await provider.generate(HELLO)).content == "Yes."
+                # Four hundred calls end while this thread holds the
+                # interpreter: their ends wait with the handing thread,
+                # which hands some, then ends.
+                pending = [provider._native.generate(HELLO_JSON, None) for _ in range(400)]
+                _native._handing_ends()
+                answered = await asyncio.wait_for(asyncio.gather(*pending), 60)
+                said = {json.loads(answer)["content"] for answer in answered}
+                print("settled:", len(answered), said, "handing:", _native._handing())
+
+            asyncio.run(main())
+            print("exited with", _native._activity())
+        """)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("settled: 400 {'Yes.'} handing: False", result.stdout)
         self.assertIn("exited with 0", result.stdout)
 
     def test_a_forked_child_leaves_what_it_inherited_as_it_is(self) -> None:

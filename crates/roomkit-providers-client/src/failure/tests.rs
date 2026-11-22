@@ -147,6 +147,8 @@ fn what_was_told_is_cleaned_and_bounded_and_the_provider_s_own_words_are_not() {
     let wordy = vec![told("y".repeat(4 * MESSAGE_LIMIT), 4 * MESSAGE_LIMIT)];
     let wordy = left(&test_exit(), &Failure::said(wordy, false, None));
     assert_eq!(wordy.message, "y".repeat(MESSAGE_LIMIT));
+    // The bound itself, which a host's logs and stores are sized for.
+    assert_eq!(wordy.message.chars().count(), 500);
     // A failure says that the context overflowed only once told so.
     assert_eq!(error.context_overflow, None);
     let overflowing = left(&test_exit(), &worded("too long").overflowing());

@@ -11,9 +11,10 @@
 //!
 //! That thread hands every call that ended while it waited for the lock
 //! under one hold of it. A panic while one call is handed fails that call
-//! and no other: the thread goes on. Should the thread end all the same, a
-//! call made afterwards is refused at once, since nothing would ever
-//! complete it.
+//! and no other: the thread goes on. Should the thread end all the same, it
+//! hands what was left with it, a call that ends afterwards is handed by
+//! the worker that ran it, and a call made afterwards is refused at once,
+//! since nothing would ever complete it.
 //!
 //! A call is stopped by dropping its work, which drops its request and
 //! closes its connection: when the Python future it completes is cancelled,
@@ -249,6 +250,11 @@ impl Drop for Handing {
     }
 }
 
+/// Whether the handing thread takes no more: a worker holds this while it
+/// leaves a call's end with the thread, so that none is left there after
+/// the thread looked for the last time.
+static CLOSED: Mutex<bool> = Mutex::new(false);
+
 /// The one thread that hands completions to Python.
 fn hand_over(completions: &Receiver<Completion>) {
     let _handing = Handing;
@@ -265,9 +271,33 @@ fn hand_over(completions: &Receiver<Completion>) {
         });
         #[cfg(feature = "testing")]
         if testing::ends_now() {
-            return;
+            break;
         }
     }
+    // The thread takes no more, then hands what was left with it: no call
+    // waits for good on a thread that ended. A call that ends afterwards is
+    // handed by the worker that ran it.
+    *CLOSED.lock().unwrap_or_else(PoisonError::into_inner) = true;
+    Python::attach(|py| {
+        while let Ok(left) = completions.try_recv() {
+            left.hand(py);
+        }
+    });
+}
+
+/// Leaves `completion` with the handing thread, or gives it back once that
+/// thread takes no more.
+fn left_with(
+    completions: &Sender<Completion>,
+    completion: Completion,
+) -> Result<(), Box<Completion>> {
+    let closed = CLOSED.lock().unwrap_or_else(PoisonError::into_inner);
+    if *closed {
+        return Err(Box::new(completion));
+    }
+    completions
+        .send(completion)
+        .map_err(|mpsc::SendError(unhanded)| Box::new(unhanded))
 }
 
 /// Where a worker leaves the end of a call, for the thread that hands it
@@ -383,10 +413,11 @@ where
             ticket,
         };
         // The thread that hands completions over lives as long as the
-        // process. Should it have ended, this worker hands its own call,
-        // under the interpreter's lock as that thread would: the call is
-        // never left unsettled, nor its references let go of off the lock.
-        if let Err(mpsc::SendError(unhanded)) = completions.send(completion) {
+        // process. Should it take no more, this worker hands its own call,
+        // under the interpreter's lock as that thread would; what was left
+        // with the thread before, the thread handed as it ended. So no call
+        // is left unsettled, nor its references let go of off the lock.
+        if let Err(unhanded) = left_with(completions, completion) {
             Python::attach(|py| unhanded.hand(py));
         }
     }));

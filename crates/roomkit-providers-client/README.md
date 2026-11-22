@@ -177,13 +177,21 @@ Where the client differs from Python's:
   sign alike: it would end the host at a backslash, decode one after a
   percent sign, and send around a proxy whose name holds a quote.
 - **A proxy at a link-local IPv6 address with a zone is refused**
-  (`http://[fe80::1%25eth0]:3128`), which Python's client takes.
+  (`http://[fe80::1%25eth0]:3128`), which Python's client takes. So is such
+  an address among the entries of `NO_PROXY` (`fe80::1%eth0`).
+- **A proxy's name that IDNA 2008 forbids and UTS 46 maps** (a full-width
+  letter) is read here, as the name it maps to, where Python's client
+  refuses it when it is built.
+- **A proxy at an address of five numbers** (`http://1.2.3.4.5:80`), and one
+  whose name holds a Punycode label that does not decode, are refused when
+  the provider is built, where Python's client takes them as names.
 - **An address of `NO_PROXY` is compared with the address the client
   dials**, where Python compares it with the text of the URL: `::1` exempts
   `http://[0:0:0:0:0:0:0:1]/` and `127.0.0.1` exempts `http://127.1/` here,
   and neither does with Python's client. An address written short is the
-  address it stands for: `127.1` exempts `http://127.1/`, as with Python's
-  client, and `http://127.0.0.1/` too, which Python's client sends through
+  address it stands for, in hexadecimal too: `127.1` exempts
+  `http://127.1/`, as with Python's client, and `0x7f.1` or `127.1` exempt
+  `http://127.0.0.1/` too, which Python's client sends through
   the proxy.
 
 ### Certificate authorities

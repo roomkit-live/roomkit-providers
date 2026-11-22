@@ -301,7 +301,8 @@ between Rust and Python, not one each.
   use a provider: the threads that carry the calls are not copied. The
   package refuses it in Python, with a `RuntimeError`, before it enters the
   native code: a call, a stream, a listing, a new provider or a new
-  configuration. What a provider it inherited says of itself still
+  configuration, and the first import of a provider's module, whose class
+  statement reads the catalogue. What a provider it inherited says of itself still
   answers, and so does the catalogue (`available_models()`); `close()` does
   nothing, and the child's exit waits for nothing.
   Make the first call after forking, or use the `spawn` or `forkserver`
@@ -315,7 +316,7 @@ between Rust and Python, not one each.
 | RoomKit's `ResponseSchemaError` (`roomkit.providers.ai.ResponseSchemaError`) | A `ProviderError`: a response schema was set and no answer satisfying it can be returned. `reason` is `unsupported`, `refusal`, `truncated` or `invalid_json` |
 | `ValueError` | A configuration's value the provider cannot work with. A configuration pydantic refuses is its `ValidationError`, a `ValueError` too |
 | `TypeError` | A configuration that is not the provider's own: that of another provider, one derived from it |
-| `RuntimeError` | A provider or a configuration used in a forked child, or a call once the interpreter is exiting. `close()` raises neither |
+| `RuntimeError` | A provider or a configuration used in a forked child, a call once the interpreter is exiting, or a call once the package lost the thread that hands its calls to Python (a defect, after which no call can complete in that process). `close()` raises neither |
 
 ## What a RoomKit user sees differently
 

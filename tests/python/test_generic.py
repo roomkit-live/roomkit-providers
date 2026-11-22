@@ -8,6 +8,18 @@ tests of the shared part. A vendor is known by its module, in the package
 and in the binding, which hold the same ones. A vendor's module states what
 is its own and enters the native module nowhere: every entry is the shared
 part's, with what guards it.
+
+What these tests hold: no shared file names a vendor, however the name is
+written, nor reads the name of a class; a vendor's module of the package is
+imports and class statements of the documented shape, a configuration's
+members with their rules and a provider with nothing of its own, so that it
+overrides nothing shared and changes nothing shared as it is imported.
+
+What they do not hold: a branch of the shared part on what a provider says
+of itself when it runs (the start of its name, the length of its label)
+names no vendor and reads no class's name, so no search finds it. That is
+for the review of a change to a shared file, and for each provider's own
+tests, which run on the same shared code.
 """
 
 from __future__ import annotations
@@ -121,6 +133,33 @@ def imports(path: Path) -> set[str]:
     return found
 
 
+def _is_docstring(node: ast.AST) -> bool:
+    value = getattr(node, "value", None)
+    return isinstance(node, ast.Expr) and isinstance(getattr(value, "value", None), str)
+
+
+def _assigns(node: ast.AST, name: str) -> bool:
+    """Whether `node` assigns to the one name `name`, a list of texts."""
+    if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.List)):
+        return False
+    targets = [target.id for target in node.targets if isinstance(target, ast.Name)]
+    return targets == [name] and all(isinstance(item, ast.Constant) for item in node.value.elts)
+
+
+def _is_a_member_s_rule(node: ast.AST) -> bool:
+    """Whether `node` is the rule of a configuration's member: a function
+    of a private name that pydantic's `field_validator` decorates."""
+    if not isinstance(node, ast.FunctionDef) or not node.name.startswith("_"):
+        return False
+    if node.name.startswith("__"):
+        return False
+    decorators = [
+        getattr(getattr(decorator, "func", decorator), "id", None)
+        for decorator in node.decorator_list
+    ]
+    return sorted(decorators) == ["classmethod", "field_validator"]
+
+
 class GenericTests(unittest.TestCase):
     def test_the_package_and_the_binding_hold_the_same_vendors(self) -> None:
         self.assertEqual(set(package_modules()), set(binding_modules()))
@@ -189,6 +228,57 @@ class GenericTests(unittest.TestCase):
                 if isinstance(node, ast.Attribute) and node.attr in NAMES_OF_A_CLASS
             ]
         self.assertEqual(read, [])
+
+    def test_a_vendor_s_module_is_imports_and_class_statements(self) -> None:
+        """Nothing runs when a vendor's module is imported but its imports
+        and its class statements: it changes nothing of the shared part.
+        Of that part it imports the two classes its own derive from."""
+        for vendor, module in sorted(package_modules().items()):
+            with self.subTest(vendor=vendor):
+                tree = ast.parse(module.read_text(encoding="utf-8"))
+                others = [
+                    type(node).__name__
+                    for node in tree.body
+                    if not (
+                        isinstance(node, ast.Import | ast.ImportFrom | ast.ClassDef)
+                        or _is_docstring(node)
+                        or _assigns(node, "__all__")
+                    )
+                ]
+                self.assertEqual(others, [])
+                shared = {
+                    f"{node.module}.{alias.name}"
+                    for node in tree.body
+                    if isinstance(node, ast.ImportFrom) and node.level
+                    for alias in node.names
+                }
+                self.assertEqual(shared, {"_config.Config", "_provider.Provider"})
+
+    def test_a_vendor_s_classes_hold_a_class_statement_s_worth(self) -> None:
+        """A vendor's provider is a class statement and a docstring: it
+        defines no method, so it overrides none. Its configuration states
+        its members, and the rules of a member that RoomKit's configuration
+        has: nothing else."""
+        for vendor, module in sorted(package_modules().items()):
+            tree = ast.parse(module.read_text(encoding="utf-8"))
+            classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
+            said = {keyword.arg for node in classes for keyword in node.keywords}
+            self.assertEqual({"vendor", "config"} - said, set(), vendor)
+            for node in classes:
+                with self.subTest(vendor=vendor, name=node.name):
+                    keywords = {keyword.arg for keyword in node.keywords}
+                    body = [part for part in node.body if not _is_docstring(part)]
+                    if "config" in keywords:
+                        self.assertEqual([type(part).__name__ for part in body], [])
+                    elif "vendor" in keywords:
+                        others = [
+                            getattr(part, "name", type(part).__name__)
+                            for part in body
+                            if not (isinstance(part, ast.AnnAssign) or _is_a_member_s_rule(part))
+                        ]
+                        self.assertEqual(others, [])
+                    else:
+                        self.fail("a vendor's class is its configuration or its provider")
 
     def test_a_vendor_s_module_enters_the_native_module_nowhere(self) -> None:
         """What guards an entry into the native module is written once: a
