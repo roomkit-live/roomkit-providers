@@ -135,23 +135,54 @@ fn written_as_a_url(text: &str, secret: &str) -> Option<usize> {
     Some(text.len() - shortest_rest)
 }
 
-/// Where `text` first holds `secret`: as it is, or as a URL writes it.
-fn held(text: &str, secret: &str) -> Option<Range<usize>> {
-    if let Some(start) = text.find(secret) {
+/// Where `text` first holds `secret`, read from its start: as it is, or, in
+/// a text with a percent sign (`escapes`), as a URL writes it. Only a text
+/// with a percent sign holds a secret that other way, and only where the
+/// secret's first character is, as it is or escaped.
+fn held(text: &str, secret: &str, escapes: bool) -> Option<Range<usize>> {
+    if !escapes {
+        let start = text.find(secret)?;
         return Some(start..start + secret.len());
-    }
-    // Only a text with a percent sign holds a secret another way, and only
-    // where the secret's first character is, as it is or escaped.
-    if !text.contains('%') {
-        return None;
     }
     let first = secret.chars().next()?;
     let may_start = |c: char| c == first || c == '%';
     let starts = text.char_indices().filter(|(_, c)| may_start(*c));
     starts.map(|(start, _)| start).find_map(|start| {
-        let length = written_as_a_url(text.get(start..)?, secret)?;
+        let rest = text.get(start..)?;
+        let length = if rest.starts_with(secret) {
+            secret.len()
+        } else {
+            written_as_a_url(rest, secret)?
+        };
         Some(start..start + length)
     })
+}
+
+/// `text` with the mark in every place it holds `secret` at, or `None` for
+/// a text that holds it nowhere. The text is read once, from its start to
+/// its end, however many places there are: a server chooses how often its
+/// answer repeats a key.
+fn without(text: &str, secret: &str) -> Option<String> {
+    if secret.is_empty() {
+        return None;
+    }
+    // Asked once for the whole text, not once for each place.
+    let escapes = text.contains('%');
+    let mut cleaned = String::new();
+    let mut rest = text;
+    let mut found = false;
+    while let Some(place) = held(rest, secret, escapes) {
+        // A place starts and ends where characters do. Were it not so,
+        // nothing of the text is shown.
+        let (Some(kept), Some(after)) = (rest.get(..place.start), rest.get(place.end..)) else {
+            return Some(MARK.to_owned());
+        };
+        cleaned.push_str(kept);
+        cleaned.push_str(MARK);
+        rest = after;
+        found = true;
+    }
+    found.then(|| cleaned + rest)
 }
 
 /// The secrets of a configuration: what no failure's text may repeat.
@@ -205,13 +236,14 @@ impl Secrets {
     }
 
     /// `text` with none of `secrets` in it, as it is or as a URL writes it.
-    /// Removing one may bring the pieces of another together, so the text
-    /// is searched until none is found; it gets shorter each time, which
-    /// ends the search.
+    /// Each pass marks every place one secret is held at, in one reading of
+    /// the text. Removing one may bring the pieces of another together, so
+    /// the passes go on until none is found; the text gets shorter each
+    /// time, which ends the search.
     fn removed(text: &str, secrets: &[String]) -> String {
         let mut text = text.to_owned();
-        while let Some(held) = secrets.iter().find_map(|secret| held(&text, secret)) {
-            text.replace_range(held, MARK);
+        while let Some(cleaned) = secrets.iter().find_map(|secret| without(&text, secret)) {
+            text = cleaned;
         }
         text
     }

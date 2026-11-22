@@ -19,6 +19,38 @@ fn cleaned(exit: &Exit, said: &str) -> String {
     exit.leave(&Failure::said(said, false, None)).message
 }
 
+// Every place a text holds a secret at is marked, whichever way each one is
+// written.
+#[test]
+fn a_secret_is_removed_from_every_place_a_text_holds_it_at() {
+    let secret = r#"pa"ss\word of a key"#;
+    let exit = Exit::new("test", Secrets::of([secret.to_owned()]));
+    let said = format!("one {secret}, two pa%22ss%5Cword%20of%20a%20key, three {secret}.");
+    assert_eq!(cleaned(&exit, &said), "one [***], two [***], three [***].");
+    // With no percent sign in the text, too.
+    let said = format!("one {secret}, two {secret}.");
+    assert_eq!(cleaned(&exit, &said), "one [***], two [***].");
+}
+
+// A server chooses how often its answer repeats a key. The text is read
+// once however many places hold it: read again from its start for each
+// place, these few megabytes would take minutes, where they take a moment.
+#[test]
+fn a_text_that_repeats_a_secret_is_read_once() {
+    let secret = "12345678";
+    let exit = Exit::new("test", Secrets::of([secret.to_owned()]));
+    let repeated = [(secret.to_owned(), 400_000), ("%312345678".to_owned(), 100_000)];
+    for (written, times) in repeated {
+        let said = format!("{written};").repeat(times);
+        let started = std::time::Instant::now();
+        let cleaned = cleaned(&exit, &said);
+        let took = started.elapsed();
+        assert!(cleaned.starts_with("[***];[***];"), "{written}");
+        assert!(!cleaned.contains(secret), "{written}");
+        assert!(took < std::time::Duration::from_secs(10), "{written}: {took:?}");
+    }
+}
+
 // A text of the configuration is a secret from 8 characters: a shorter one
 // would be found in ordinary words, and is left.
 #[test]
