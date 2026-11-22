@@ -7,6 +7,13 @@
 //! - [`OpenAiConfig`]: what the provider is configured with, the
 //!   `OpenAIConfig` of `RoomKit`'s Python implementation: the same names,
 //!   the same defaults and the same JSON form.
+//! - [`DeepSeek`], [`Kimi`] and [`MiniMax`]: the providers of three vendors
+//!   that speak Chat Completions with rules of their own (RFC §6.4, §6.7),
+//!   each with its configuration: where a round's earlier reasoning goes
+//!   back, how a reasoning setting is sent, the tool names the vendor
+//!   takes. Each is the choice of its vendor's rules, on the vendor's API
+//!   or behind a base URL; [`OpenAi`] sends no reasoning back unless its
+//!   configuration names the field.
 //!
 //! A stream is pulled: nothing is sent before it is polled, and dropping it
 //! stops the request and closes its connection. Every size a server
@@ -28,13 +35,17 @@
 mod answer;
 mod call_slots;
 mod config;
+mod deepseek;
+mod dialect;
 mod endpoint;
 mod failure;
 mod folding;
-mod messages;
+mod kimi;
+mod minimax;
 mod models;
 mod names;
 mod provider;
+mod reasoning;
 #[cfg(test)]
 mod replay;
 mod request;
@@ -43,8 +54,12 @@ mod stream;
 #[cfg(test)]
 mod tests;
 mod think_tags;
+mod vendor;
 
 pub use config::{OpenAiApi, OpenAiConfig};
+pub use deepseek::{DeepSeek, DeepSeekConfig};
+pub use kimi::{Kimi, KimiConfig};
+pub use minimax::{MiniMax, MiniMaxConfig};
 pub use provider::OpenAi;
 #[cfg(feature = "replay")]
 #[doc(hidden)]

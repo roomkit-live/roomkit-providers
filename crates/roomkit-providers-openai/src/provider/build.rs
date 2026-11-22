@@ -1,32 +1,39 @@
 //! What a provider is built from: what every request carries, whether it
-//! talks to `OpenAI`'s own endpoint, and where its failures leave.
+//! talks to its vendor's own endpoint, and where its failures leave.
 
 use reqwest::header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue};
 use roomkit_providers_client::endpoint::{has_user_information, talks_to_vendor};
 use roomkit_providers_client::{Client, Exit, Failure, configured_header};
 
-use super::{JSON, NAME};
+use super::JSON;
 use crate::config::OpenAiConfig;
-use crate::endpoint::OPENAI_BASE_URL;
+use crate::vendor::Vendor;
 
-/// Where the failures of the provider of `config` leave, made by its
-/// `client`. They repeat nothing of the key, of the value of each default
-/// header and of its credentials when it names a scheme before them, of the
-/// user information of the base URL, as written and as it reads, nor of
-/// what the client alone knows: the `Authorization` it writes from that
-/// user information, and the credentials of a proxy.
-pub(super) fn exit_of(config: &OpenAiConfig, client: &Client, chat: &reqwest::Url) -> Exit {
+/// Where the failures of `vendor`'s provider of `config` leave, made by its
+/// `client`, under the name Python's `_provider_name` gives it. They repeat
+/// nothing of the key, of the value of each default header and of its
+/// credentials when it names a scheme before them, of the user information
+/// of the base URL, as written and as it reads, nor of what the client
+/// alone knows: the `Authorization` it writes from that user information,
+/// and the credentials of a proxy.
+pub(super) fn exit_of(
+    config: &OpenAiConfig,
+    vendor: Vendor,
+    client: &Client,
+    chat: &reqwest::Url,
+) -> Exit {
     let headers = config.default_headers.iter().flatten();
     let headers = headers.map(|(_, value)| value.as_str());
-    client.exit(NAME, [config.api_key.clone()], headers, chat)
+    let name = vendor.provider();
+    client.exit(name, [config.api_key.clone()], headers, chat)
 }
 
-/// Whether the provider talks to `OpenAI`'s own endpoint, whose models and
-/// rules it knows: the base URL is `OpenAI`'s as Python compares it, and
-/// the URL the client dials is `OpenAI`'s as the client reads it.
-pub(super) fn own_endpoint(config: &OpenAiConfig, dialed: &reqwest::Url) -> bool {
+/// Whether the provider talks to `vendor`'s own endpoint, whose models and
+/// rules it knows: the base URL is the vendor's as Python compares it, and
+/// the URL the client dials is the vendor's as the client reads it.
+pub(super) fn own_endpoint(config: &OpenAiConfig, vendor: Vendor, dialed: &reqwest::Url) -> bool {
     let base_url = config.base_url.as_deref();
-    talks_to_vendor(base_url, &[OPENAI_BASE_URL], dialed, config.api.path())
+    talks_to_vendor(base_url, vendor.base_urls(), dialed, config.api.path())
 }
 
 /// The headers every request carries: what the provider writes, then the

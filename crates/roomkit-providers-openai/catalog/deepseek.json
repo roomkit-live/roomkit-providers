@@ -1,0 +1,54 @@
+{
+ "generator": "scripts/generate_openai_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "deepseek-v4-pro",
+   "display_name": "DeepSeek V4 Pro",
+   "context_window": 1048576,
+   "supports_vision": false,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 1.32,
+    "output_per_million": 3.96,
+    "cache_read_per_million": 0.044,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-14"
+   }
+  },
+  {
+   "id": "deepseek-v4-flash",
+   "display_name": "DeepSeek V4 Flash",
+   "context_window": 1048576,
+   "supports_vision": false,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 0.44,
+    "output_per_million": 1.32,
+    "cache_read_per_million": 0.014,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-14"
+   }
+  }
+ ]
+}

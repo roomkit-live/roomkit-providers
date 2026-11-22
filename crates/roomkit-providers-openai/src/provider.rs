@@ -1,5 +1,5 @@
 //! The provider: `OpenAI`'s Chat Completions, and the servers that speak
-//! it behind a base URL.
+//! it behind a base URL, a vendor's with rules of its own among them.
 
 use std::fmt;
 use std::sync::Arc;
@@ -10,6 +10,7 @@ use roomkit_ai::{
     AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
     TextStream, checked_stream, listing,
 };
+use roomkit_providers_client::catalogue;
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
 use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, TokenSource, tried_again};
@@ -17,21 +18,15 @@ use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, TokenSour
 use self::build::{exit_of, headers_of, own_endpoint};
 use crate::answer;
 use crate::config::{OpenAiApi, OpenAiConfig};
-use crate::endpoint::{OPENAI_BASE_URL, is_openai_endpoint};
+use crate::endpoint::OPENAI_BASE_URL;
 use crate::failure::{self, Failure};
 use crate::models;
 use crate::request::Asked;
 use crate::responses;
 use crate::stream;
+use crate::vendor::Vendor;
 
 mod build;
-
-/// The provider's name in its failures: Python's `_provider_name`.
-const NAME: &str = "openai";
-
-/// What the provider is called: the name of Python's class, which
-/// `AIProvider.name` answers.
-const CLASS_NAME: &str = "OpenAIAIProvider";
 
 /// The path of the model listing under a base URL.
 const MODELS: &str = "/models";
@@ -118,6 +113,10 @@ pub struct OpenAi {
     /// The client every request is sent with: its tries, its timeouts and
     /// the bounds of what it reads.
     pub(crate) client: Client,
+    /// The vendor whose rules it applies: `OpenAI`'s, or those of a
+    /// vendor's own provider.
+    vendor: Vendor,
+    /// Whether it talks to its vendor's own endpoint.
     own_endpoint: bool,
     left_out_warned: Arc<AtomicBool>,
     /// Where every failure leaves, cleaned of the configuration's secrets:
@@ -138,11 +137,16 @@ impl OpenAi {
     /// is neither `http` nor `https`, or whose `SSL_CERT_FILE` names a file
     /// that holds no certificate; or a client that could not be built.
     pub fn new(config: OpenAiConfig) -> Result<Self, ProviderError> {
-        // A provider that cannot be built says why in its own words.
-        Self::built(config).map_err(|failure| Exit::unbuilt(NAME, &failure))
+        Self::for_vendor(config, Vendor::OpenAi)
     }
 
-    fn built(config: OpenAiConfig) -> Result<Self, Failure> {
+    /// The provider for `config`, applying `vendor`'s rules.
+    pub(crate) fn for_vendor(config: OpenAiConfig, vendor: Vendor) -> Result<Self, ProviderError> {
+        // A provider that cannot be built says why in its own words.
+        Self::built(config, vendor).map_err(|failure| Exit::unbuilt(vendor.provider(), &failure))
+    }
+
+    fn built(config: OpenAiConfig, vendor: Vendor) -> Result<Self, Failure> {
         let base_url = config.base_url.as_deref().unwrap_or(OPENAI_BASE_URL);
         let chat = joined(base_url, config.api.path())?;
         let models = joined(base_url, MODELS)?;
@@ -154,9 +158,10 @@ impl OpenAi {
             refused: failure::status,
             tried_again: tried_again!("roomkit::providers::openai"),
         })?;
-        let exit = exit_of(&config, &client, &chat);
+        let exit = exit_of(&config, vendor, &client, &chat);
         Ok(Self {
-            own_endpoint: own_endpoint(&config, &chat),
+            vendor,
+            own_endpoint: own_endpoint(&config, vendor, &chat),
             config: Arc::new(config),
             chat,
             models,
@@ -241,12 +246,27 @@ impl OpenAi {
         Ok((self, waits))
     }
 
+    /// The vendor whose rules the provider applies.
+    pub(crate) fn vendor(&self) -> Vendor {
+        self.vendor
+    }
+
+    /// The configured model's entry in the vendor's catalogue, wherever its
+    /// endpoint: a vendor's provider reads its own catalogue whatever the
+    /// URL, as Python's `catalog_entry`.
+    fn vendor_entry(&self) -> Option<&'static ModelInfo> {
+        catalogue::entry(self.vendor.models(), &self.config.model)
+    }
+
     /// What a request is written for.
     pub(crate) fn asked(&self) -> Asked<'_> {
+        let official = self.vendor == Vendor::OpenAi && self.own_endpoint;
         Asked {
             config: &self.config,
-            provider: NAME,
-            entry: models::entry(&self.config.model).filter(|_| self.own_endpoint),
+            vendor: self.vendor,
+            provider: self.vendor.provider(),
+            entry: models::entry(&self.config.model).filter(|_| official),
+            vendor_entry: self.vendor_entry(),
             own_endpoint: self.own_endpoint,
             left_out_warned: &self.left_out_warned,
         }
@@ -258,7 +278,7 @@ impl OpenAi {
         let body = self.asked().body(request, false)?;
         let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
         let (answer, json) = self.client.send(self.asking(&body)).await?;
-        answer::read(&answer, json, request, &self.config.model, NAME)
+        answer::read(&answer, json, request, &self.config.model, self.vendor)
     }
 
     /// One whole answer on the Responses API: its stream read to its end.
@@ -297,13 +317,16 @@ impl OpenAi {
     /// The name the provider's failures carry: Python's `provider`.
     #[must_use]
     pub fn label(&self) -> &'static str {
-        NAME
+        self.vendor.provider()
     }
 }
 
 impl AiProvider for OpenAi {
+    /// What the provider is called: the name of Python's class, which
+    /// `AIProvider.name` answers, or the name a vendor's provider gives
+    /// itself.
     fn name(&self) -> &'static str {
-        CLASS_NAME
+        self.vendor.name()
     }
 
     fn model_name(&self) -> &str {
@@ -315,21 +338,25 @@ impl AiProvider for OpenAi {
     /// endpoint; for a model it does not know, yes behind a base URL, where
     /// the server decides what its model reads, and on `OpenAI`'s own
     /// endpoint by how the model's name starts. The configuration's
-    /// `vision` states it where none of these does: `true` answers yes.
+    /// `vision` states it where none of these does: `true` answers yes. A
+    /// vendor's provider answers by its own catalogue and its own rule.
     fn supports_vision(&self) -> bool {
         if self.config.vision {
             return true;
         }
-        let stated = models::entry(&self.config.model).and_then(|entry| entry.supports_vision);
-        stated.unwrap_or_else(|| {
-            !is_openai_endpoint(self.config.base_url.as_deref())
-                || models::sees_images_by_its_name(&self.config.model)
-        })
+        let base_url = self.config.base_url.as_deref();
+        let entry = self.vendor_entry();
+        self.vendor.sees_images(entry, &self.config.model, base_url)
     }
 
     /// `OpenAI`'s curated catalogue, Python's.
     fn available_models() -> Vec<ModelInfo> {
         models::models().to_vec()
+    }
+
+    /// The configured model's entry in its vendor's catalogue.
+    fn catalog_entry(&self) -> Option<ModelInfo> {
+        self.vendor_entry().cloned()
     }
 
     fn supports_response_schema(&self) -> bool {
@@ -348,7 +375,7 @@ impl AiProvider for OpenAi {
     async fn list_models(&self) -> Result<Vec<ModelInfo>, ProviderError> {
         let live = self.live_models().await;
         let live = live.map_err(|failure| self.exit.leave(&failure))?;
-        Ok(listing(live, models::models()))
+        Ok(listing(live, self.vendor.models()))
     }
 
     fn supports_streaming(&self) -> bool {
@@ -385,7 +412,8 @@ impl AiProvider for OpenAi {
     /// before its done event, which its failure replaces. A failure leaves
     /// with `request`, as that of [`generate`](AiProvider::generate).
     fn generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
-        let checked = checked_stream(stream::events(self, request), request, NAME, refusal);
+        let events = stream::events(self, request);
+        let checked = checked_stream(events, request, self.vendor.provider(), refusal);
         roomkit_providers_client::stream::leaving(checked, &self.exit, request)
     }
 }
@@ -402,6 +430,7 @@ impl fmt::Debug for OpenAi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("OpenAi")
             .field("config", &self.config)
+            .field("vendor", &self.vendor)
             .field("own_endpoint", &self.own_endpoint)
             .field("timeouts", &self.client.timeouts())
             .finish_non_exhaustive()

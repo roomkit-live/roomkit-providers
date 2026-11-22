@@ -3,13 +3,13 @@
 
 use roomkit_ai::{
     AiContentPart, AiContext, AiImagePart, AiMessage, AiRole, AiTextPart, AiThinkingPart,
-    AiToolCallPart, AiToolResultPart, ToolResult, ToolResultPart,
+    AiToolCallPart,
 };
 use serde_json::{Value, json};
 
 use super::support::{KEY, body_sent, elsewhere, hello};
 use crate::OpenAiConfig;
-use crate::messages::chat_messages;
+use crate::dialect::OPENAI_CHAT;
 
 // Source: src/wire.rs::tests::no_cap_is_sent_when_none_is_set
 #[tokio::test]
@@ -110,10 +110,14 @@ fn call_row() -> Value {
     json!({"id": "c1", "type": "function", "function": {"name": "lookup", "arguments": "{}"}})
 }
 
-/// `messages` as the endpoint reads them, no field named for a model's
-/// earlier reasoning.
+/// `messages` as `OpenAI`'s endpoint reads them, no field named for a
+/// model's earlier reasoning.
 fn rendered(messages: &[AiMessage]) -> Value {
-    Value::Array(chat_messages(messages, None, None, "openai").unwrap())
+    let request = AiContext {
+        messages: messages.to_vec(),
+        ..AiContext::default()
+    };
+    Value::Array(OPENAI_CHAT.messages(&request, "openai").unwrap())
 }
 
 // Source: src/request.rs::tests::a_round_sends_its_text_and_its_calls_and_no_reasoning
@@ -139,70 +143,6 @@ fn a_round_sends_its_text_and_its_calls_and_no_reasoning() {
     }
 }
 
-// Source: roomkit-ai tests/chat_messages.rs::a_call_wins_over_results_and_keeps_python_argument_text
-#[test]
-fn a_call_wins_over_results_and_keeps_python_argument_text() {
-    let mut call = AiToolCallPart::new("c1", "lookup");
-    call.arguments.insert("q".to_owned(), json!("café"));
-    call.arguments.insert("n".to_owned(), json!(42));
-    for role in [AiRole::Assistant, AiRole::Tool] {
-        let message = AiMessage::new(
-            role,
-            vec![
-                AiContentPart::Thinking(AiThinkingPart::new("hidden")),
-                AiContentPart::Text(AiTextPart::new("looking")),
-                AiContentPart::ToolCall(call.clone()),
-                AiContentPart::ToolResult(AiToolResultPart::new("c1", "lookup", "done")),
-            ],
-        );
-        assert_eq!(
-            rendered(&[message]),
-            json!([{"role": "assistant", "content": "looking", "tool_calls": [{
-                "id": "c1",
-                "type": "function",
-                "function": {"name": "lookup", "arguments": "{\"q\": \"caf\\u00e9\", \"n\": 42}"},
-            }]}]),
-            "{role:?}"
-        );
-    }
-}
-
-// Source: roomkit-ai tests/chat_messages.rs::messages_keep_image_positions_and_errors_name_the_caller
-#[test]
-fn messages_keep_image_positions_and_errors_name_the_caller() {
-    let image = AiContentPart::Image(AiImagePart {
-        url: "data:;base64,YQ".to_owned(),
-        mime_type: Some("image/png".to_owned()),
-    });
-    let message = AiMessage::new(
-        AiRole::User,
-        vec![
-            AiContentPart::Text(AiTextPart::new("a")),
-            image,
-            AiContentPart::Text(AiTextPart::new("b")),
-        ],
-    );
-    assert_eq!(
-        Value::Array(chat_messages(&[message], None, None, "app").unwrap()),
-        json!([{"role": "user", "content": [
-            {"type": "text", "text": "a"},
-            {"type": "image_url", "image_url": {"url": "data:image/png;base64,YQ=="}},
-            {"type": "text", "text": "b"},
-        ]}])
-    );
-    let bad = AiMessage::new(
-        AiRole::User,
-        vec![AiContentPart::Image(AiImagePart::new("data:broken"))],
-    );
-    let error = chat_messages(&[bad], None, None, "app").unwrap_err();
-    assert_eq!(error.provider, "app");
-    assert!(!error.retryable);
-    assert_eq!(
-        error.message,
-        "invalid image part: data URI carries no payload"
-    );
-}
-
 // Source: src/request.rs::tests::uri_is_rebuilt_for_a_data_uri_and_untouched_for_a_url
 #[test]
 fn uri_is_rebuilt_for_a_data_uri_and_untouched_for_a_url() {
@@ -226,69 +166,4 @@ fn uri_is_rebuilt_for_a_data_uri_and_untouched_for_a_url() {
             json!("https://example.com/a.png"),
         ]
     );
-}
-
-// Source: roomkit-ai tests/chat_messages.rs::images_from_tool_results_follow_all_the_tool_rows
-#[test]
-fn images_from_tool_results_follow_all_the_tool_rows() {
-    let content = ToolResult::Parts(vec![
-        ToolResultPart::Text(AiTextPart::new("found")),
-        ToolResultPart::Image(AiImagePart::new("https://example.org/image.png")),
-    ]);
-    let message = AiMessage::new(
-        AiRole::Tool,
-        vec![
-            AiContentPart::ToolResult(AiToolResultPart::new("c2", "second", content)),
-            AiContentPart::ToolResult(AiToolResultPart::new("c1", "first", "done")),
-        ],
-    );
-    // An empty system prompt is none: no system message leads.
-    assert_eq!(
-        Value::Array(chat_messages(&[message], Some(""), None, "app").unwrap()),
-        json!([
-            {"role": "tool", "content": "found", "tool_call_id": "c2"},
-            {"role": "tool", "content": "done", "tool_call_id": "c1"},
-            {"role": "user", "content": [
-                {"type": "image_url", "image_url": {"url": "https://example.org/image.png"}},
-            ]},
-        ])
-    );
-}
-
-/// What an assistant message that reasoned `thinking`, and called a tool
-/// when `calls`, carries under `reasoning` where the configuration names
-/// `named` for a model's earlier reasoning.
-fn reasoning_field(named: Option<&str>, thinking: &str, calls: bool) -> Option<Value> {
-    let mut parts = vec![AiContentPart::Thinking(AiThinkingPart::new(thinking))];
-    if calls {
-        parts.push(call_part());
-    }
-    let message = AiMessage::new(AiRole::Assistant, parts);
-    let rows = chat_messages(&[message], None, named, "openai").unwrap();
-    rows[0].get("reasoning").cloned()
-}
-
-// Source: src/dialect.rs::tests::a_named_field_carries_reasoning_and_leaves_a_round_that_did_not_reason_without_it
-#[test]
-fn a_named_field_carries_reasoning_and_leaves_a_round_that_did_not_reason_without_it() {
-    let named = Some("reasoning");
-    assert_eq!(reasoning_field(named, "why", true), Some(json!("why")));
-    assert_eq!(reasoning_field(named, "why", false), Some(json!("why")));
-    assert_eq!(reasoning_field(named, "", true), None);
-    // No field named sends no reasoning, under any name: the row is the
-    // one of a message that said the same and did not reason.
-    for calls in [true, false] {
-        let rows = |thinking: Option<&str>| {
-            let thinking = thinking.map(|said| AiContentPart::Thinking(AiThinkingPart::new(said)));
-            let said = AiContentPart::Text(AiTextPart::new("Done."));
-            let parts = thinking
-                .into_iter()
-                .chain([said])
-                .chain(calls.then(call_part));
-            let message = AiMessage::new(AiRole::Assistant, parts.collect::<Vec<_>>());
-            chat_messages(&[message], None, None, "openai").unwrap()
-        };
-        assert_eq!(rows(Some("why")), rows(None), "{calls}");
-        assert_eq!(reasoning_field(None, "why", calls), None);
-    }
 }

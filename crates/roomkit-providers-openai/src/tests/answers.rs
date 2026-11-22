@@ -17,7 +17,8 @@ use crate::{OpenAi, OpenAiConfig};
 /// failure as it leaves the provider.
 fn read(body: &Value) -> Result<AiResponse, ProviderError> {
     let body = body.to_string();
-    let read = crate::answer::read(body.as_bytes(), true, &hello(), "asked-model", "openai");
+    let vendor = crate::vendor::Vendor::OpenAi;
+    let read = crate::answer::read(body.as_bytes(), true, &hello(), "asked-model", vendor);
     read.map_err(|failure| test_exit().leave(&failure))
 }
 

@@ -10,9 +10,11 @@ use serde_json::{Map, Value};
 
 use crate::failure::{self, Failure, past_mark};
 use crate::think_tags::{extract_think_tags, field_reasoning, merge_thinking};
+use crate::vendor::Vendor;
 
 /// The response of a 2xx answer: `body` as it came, `json` whether the
-/// server said it is JSON, for `request` asked of the model `asked`.
+/// server said it is JSON, for `request` asked of the model `asked` on
+/// `vendor`'s provider.
 ///
 /// # Errors
 ///
@@ -24,8 +26,9 @@ pub(crate) fn read(
     json: bool,
     request: &AiContext,
     asked: &str,
-    provider: &str,
+    vendor: Vendor,
 ) -> Result<AiResponse, Failure> {
+    let provider = vendor.provider();
     if !json {
         return Err(failure::no_completion(None));
     }
@@ -43,7 +46,10 @@ pub(crate) fn read(
     let Some(Value::Array(choices)) = completion.get("choices") else {
         return Err(no_completion());
     };
-    let usage = completion.get("usage").map(usage_of).unwrap_or_default();
+    let usage = completion.get("usage");
+    let usage = usage
+        .map(|usage| usage_of(usage, vendor))
+        .unwrap_or_default();
     // The model that answered, as the answer names it, else the one asked.
     let model = completion.get("model").filter(|model| truthy(model));
     let mut response = AiResponse::new("");
@@ -174,8 +180,14 @@ fn count(value: Option<&Value>) -> Option<u64> {
 
 /// A server's usage as the contract's counters (Python's `_usage_from`):
 /// the prompt's tokens without its cache reads and its cache writes, which
-/// are counted apart; a counter the server leaves out stays unknown.
-pub(crate) fn usage_of(raw: &Value) -> Metadata {
+/// are counted apart; a counter the server leaves out stays unknown. A
+/// vendor that reports its cache hits as DeepSeek does is read as such
+/// where the usage carries them.
+pub(crate) fn usage_of(raw: &Value, vendor: Vendor) -> Metadata {
+    let hit = count(raw.get("prompt_cache_hit_tokens"));
+    if let Some(hit) = hit.filter(|_| vendor.reads_cache_hits()) {
+        return cache_hits_usage(raw, hit);
+    }
     let prompt = count(raw.get("prompt_tokens"));
     let completion = count(raw.get("completion_tokens"));
     let details = raw.get("prompt_tokens_details");
@@ -200,6 +212,34 @@ pub(crate) fn usage_of(raw: &Value) -> Metadata {
     if written > 0 {
         usage.insert("cache_creation_input_tokens".to_owned(), written.into());
     }
+    with_reasoning(usage, raw)
+}
+
+/// The usage of a server that reports `hit` cache hits as DeepSeek does
+/// (Python's `DeepSeekAIProvider._usage_from`): its misses are the input,
+/// its hits the cache read, a miss count it leaves out the prompt less the
+/// hits; a count it leaves out, and a miss count with no prompt to derive
+/// it from, stay unknown.
+fn cache_hits_usage(raw: &Value, hit: u64) -> Metadata {
+    let prompt = count(raw.get("prompt_tokens"));
+    let miss = count(raw.get("prompt_cache_miss_tokens"));
+    let miss = miss.or_else(|| prompt.map(|prompt| prompt.saturating_sub(hit)));
+    let mut usage = Map::new();
+    if let Some(miss) = miss {
+        usage.insert("input_tokens".to_owned(), miss.into());
+    }
+    if let Some(completion) = count(raw.get("completion_tokens")) {
+        usage.insert("output_tokens".to_owned(), completion.into());
+    }
+    if hit > 0 {
+        usage.insert("cache_read_input_tokens".to_owned(), hit.into());
+    }
+    with_reasoning(usage, raw)
+}
+
+/// `usage` with the reasoning tokens `raw` details, a part of the output,
+/// when they are not 0.
+fn with_reasoning(mut usage: Metadata, raw: &Value) -> Metadata {
     let reasoning = raw.get("completion_tokens_details");
     let reasoning = count(reasoning.and_then(|details| details.get("reasoning_tokens")));
     if let Some(reasoning) = reasoning.filter(|reasoning| *reasoning > 0) {

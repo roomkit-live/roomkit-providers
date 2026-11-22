@@ -11,9 +11,10 @@ use super::Folding;
 use crate::call_slots::RawCall;
 use crate::failure::Failure;
 use crate::failure::test_exit;
+use crate::vendor::Vendor;
 
 fn folding() -> Folding<'static> {
-    Folding::new("asked-model")
+    Folding::new("asked-model", Vendor::OpenAi)
 }
 
 /// `failure` as it leaves a provider whose key is the placeholder.

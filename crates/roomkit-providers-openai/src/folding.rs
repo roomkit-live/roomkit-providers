@@ -26,6 +26,7 @@ use crate::answer::{truthy, usage_of};
 use crate::call_slots::{ARGUMENTS_LIMIT, CallSlots, Fragment, FragmentId, RawCall};
 use crate::failure::{self, Failure};
 use crate::think_tags::{Segment, ThinkTagParser, field_reasoning};
+use crate::vendor::Vendor;
 
 /// A fragment of a call, which the call's `index` names across chunks.
 #[derive(Debug, Deserialize)]
@@ -85,6 +86,8 @@ pub(crate) struct Folding<'p> {
     model: Option<Value>,
     /// The model the request asked for.
     asked: &'p str,
+    /// The vendor whose usage the chunks report.
+    vendor: Vendor,
 }
 
 impl<'p> Folding<'p> {
@@ -93,8 +96,9 @@ impl<'p> Folding<'p> {
         self.finish_reason.is_some()
     }
 
-    /// The folding of a stream asking the model `asked`.
-    pub(crate) fn new(asked: &'p str) -> Self {
+    /// The folding of a stream asking the model `asked` on `vendor`'s
+    /// provider.
+    pub(crate) fn new(asked: &'p str, vendor: Vendor) -> Self {
         Self {
             calls: CallSlots::default(),
             finish_reason: None,
@@ -103,6 +107,7 @@ impl<'p> Folding<'p> {
             refusal: String::new(),
             model: None,
             asked,
+            vendor,
         }
     }
 
@@ -130,7 +135,7 @@ impl<'p> Folding<'p> {
         }
         let usage = chunk.get("usage");
         if let Some(usage) = usage.filter(|usage| usage.is_object() || truthy(usage)) {
-            self.usage = usage_of(usage);
+            self.usage = usage_of(usage, self.vendor);
         }
         let first = match chunk.get("choices") {
             Some(Value::Array(choices)) => choices.first(),

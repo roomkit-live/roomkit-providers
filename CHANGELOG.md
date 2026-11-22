@@ -36,6 +36,14 @@ nothing has been released yet.
   where it differs and what it does not guard: a name the client resolves
   again, a client behind a proxy, redirects, and a name when resolution is
   turned off.
+- `roomkit-providers-openai`: `DeepSeek`, `Kimi` and `MiniMax`, the
+  providers of three vendors that speak Chat Completions with rules of their
+  own, with `DeepSeekConfig`, `KimiConfig` and `MiniMaxConfig`: where a
+  round's earlier reasoning goes back, how a reasoning setting is sent, the
+  tool names the vendor's own endpoint takes, whether a response schema is
+  taken, and DeepSeek's cache hits in the usage. They are the providers of
+  RoomKit's Rust core for these vendors, on this crate's client; the wire
+  cases do not cover them yet.
 - `roomkit-providers-openai`: a conversation is rendered as Chat
   Completions messages by the renderer of RoomKit's Rust core
   (`roomkit_ai::chat_messages`), in place of the crate's own.

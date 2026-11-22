@@ -13,6 +13,9 @@ The OpenAI model provider of RoomKit Providers.
   `OpenAIConfig` of RoomKit's Python implementation: the same names, the same
   defaults, and the JSON it gives with `model_dump(mode="json")`, read and
   written;
+- `DeepSeek`, `Kimi` and `MiniMax`, the providers of three vendors that
+  speak Chat Completions with rules of their own, each with its
+  configuration (see [Three vendors on the same wire](#three-vendors-on-the-same-wire));
 - the wire cases the provider is held to
   (`tests/fixtures/python_chat_cases.json`): what RoomKit's Python provider
   sends and reads on Chat Completions and on the model listing, case by
@@ -134,6 +137,56 @@ fn provider() -> Result<OpenAi, roomkit_ai::ProviderError> {
 
 RoomKit's Python implementation has no Responses API: this one is the
 Rust core's, and the wire cases do not cover it.
+
+## Three vendors on the same wire
+
+`DeepSeek`, `Kimi` and `MiniMax` are the providers of RoomKit's Python
+implementation for these vendors (`DeepSeekAIProvider`, `KimiAIProvider`,
+`MiniMaxAIProvider`). Each is `OpenAi` with its vendor's rules: every
+request and answer is Chat Completions', read and bounded as `OpenAi`'s
+are. Its configuration (`DeepSeekConfig`, `KimiConfig`, `MiniMaxConfig`)
+has `OpenAiConfig`'s members with its vendor's endpoint and defaults.
+
+```rust
+use roomkit_providers_openai::{Kimi, KimiConfig};
+
+fn provider() -> Result<Kimi, roomkit_ai::ProviderError> {
+    // On Kimi's own API; `base_url` points at a server serving its weights.
+    Kimi::new(KimiConfig::new("placeholder-not-a-key", "kimi-k3"))
+}
+```
+
+What a vendor's provider does that `OpenAi` does not:
+
+| | DeepSeek | Kimi | MiniMax |
+| --- | --- | --- | --- |
+| A round's earlier reasoning goes back in | `reasoning_content`, on every round that called tools, empty for one that did not reason | `reasoning_content`, on every round that called tools, a single space for one that did not reason | `reasoning_content`, on a round that reasoned |
+| A reasoning setting goes as | a `thinking` object, its effort nested in it, never a top-level `reasoning_effort` | `reasoning_effort`, the nearest of `low`, `high`, `max` on a model of its catalogue | `reasoning_effort`, the nearest of `low` to `max` on a model of its catalogue; `thinking: {"type": "disabled"}` on M3 for a turn that states off |
+| On a turn with tools, the setting | is sent | is sent | is sent |
+| Tool names on its own endpoint | `[A-Za-z0-9_-]{1,128}` | `[a-zA-Z_][a-zA-Z0-9_-]{0,127}` | not checked |
+| A response schema, unless the configuration says | refused before the request | taken | refused before the request |
+| Token bound by default | 1024, as `max_tokens` | none; one that is set goes as `max_completion_tokens` | none; one that is set goes as `max_completion_tokens` |
+| Temperature by default | sent | not sent | not sent |
+| Usage | cache hits read from `prompt_cache_hit_tokens`, not billed as input | as `OpenAi` | as `OpenAi` |
+
+- **A model the vendor's catalogue does not name** is sent what the turn
+  states as it is, and reads images when it is served behind another base
+  URL, where the server decides. DeepSeek's provider reads such a model's
+  name as `OpenAi` does.
+- **A turn that states off** (a thinking budget of 0, `enable_thinking`
+  false, or an effort of `none`) is sent the least its model takes: `low`
+  on the models of Kimi's catalogue and on MiniMax-M3.1-Flash, which cannot
+  stop reasoning. DeepSeek and MiniMax-M3 are sent
+  `thinking: {"type": "disabled"}`.
+- **A failure names its vendor** (`deepseek`, `kimi`, `minimax`), and
+  `list_models` fills what its vendor's catalogue knows of a model.
+- **`thinking_field` and `supports_reasoning_effort_with_tools` are
+  refused** when the provider is built: the vendor's own rule decides both.
+- A vendor's provider speaks Chat Completions only, with the
+  configuration's key: it has no `api`, no `token_source` and no `vision`.
+
+The wire cases do not cover these three providers yet: they are held to
+the tests of RoomKit's Rust core for them, which name Python's.
 
 ## A source of tokens
 

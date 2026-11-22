@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Write OpenAI's model catalogue of RoomKit's Python, for the OpenAI crate.
+"""Write the model catalogues of RoomKit's Python, for the OpenAI crate.
 
-The crate's provider reads from it what OpenAI's own endpoint takes of each
-model: whether Chat Completions serves it, whether it takes function tools
-there, what reasoning effort a turn with tools carries, and the least effort
-it takes. The file is each model of ``roomkit.providers.openai.models.MODELS``
-dumped with ``model_dump(mode="json")``, read by the contract's ``ModelInfo``.
+One file for OpenAI and one for each vendor the crate serves on the same
+wire: DeepSeek, Kimi and MiniMax. A provider reads from its vendor's file
+what the vendor's own endpoint takes of each model: for OpenAI, whether Chat
+Completions serves it, whether it takes function tools there and what
+reasoning effort a turn with tools carries; for every vendor, the least
+effort a model takes and whether it reads images. A file is each model of
+the vendor's ``MODELS`` dumped with ``model_dump(mode="json")``, read by the
+contract's ``ModelInfo``.
 
 Run it with a Python interpreter that has ``roomkit`` installed
 (``make python-openai-catalogue``).
@@ -17,24 +20,38 @@ import json
 from pathlib import Path
 
 import roomkit
-from roomkit.providers.openai.models import MODELS
+from roomkit.providers.deepseek.models import MODELS as DEEPSEEK
+from roomkit.providers.kimi.models import MODELS as KIMI
+from roomkit.providers.minimax.models import MODELS as MINIMAX
+from roomkit.providers.openai.models import MODELS as OPENAI
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-CATALOGUE = REPOSITORY / "crates/roomkit-providers-openai/catalog/models.json"
+CATALOGUES = REPOSITORY / "crates/roomkit-providers-openai/catalog"
+
+# The file of each vendor's catalogue. OpenAI's keeps the name it had when
+# it was the crate's only one.
+FILES = {
+    "models.json": OPENAI,
+    "deepseek.json": DEEPSEEK,
+    "kimi.json": KIMI,
+    "minimax.json": MINIMAX,
+}
 
 
 def main() -> None:
-    catalogue = {
-        "generator": "scripts/generate_openai_catalogue.py",
-        "roomkit_version": roomkit.__version__,
-        "models": [model.model_dump(mode="json") for model in MODELS],
-    }
-    CATALOGUE.parent.mkdir(parents=True, exist_ok=True)
-    CATALOGUE.write_text(json.dumps(catalogue, indent=1) + "\n", encoding="utf-8")
-    print(
-        f"Wrote {CATALOGUE.relative_to(REPOSITORY)}: {len(MODELS)} models, "
-        f"from roomkit {roomkit.__version__}"
-    )
+    CATALOGUES.mkdir(parents=True, exist_ok=True)
+    for name, models in FILES.items():
+        catalogue = {
+            "generator": "scripts/generate_openai_catalogue.py",
+            "roomkit_version": roomkit.__version__,
+            "models": [model.model_dump(mode="json") for model in models],
+        }
+        written = CATALOGUES / name
+        written.write_text(json.dumps(catalogue, indent=1) + "\n", encoding="utf-8")
+        print(
+            f"Wrote {written.relative_to(REPOSITORY)}: {len(models)} models, "
+            f"from roomkit {roomkit.__version__}"
+        )
 
 
 if __name__ == "__main__":

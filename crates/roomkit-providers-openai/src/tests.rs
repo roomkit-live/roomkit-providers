@@ -22,4 +22,5 @@ pub(crate) mod room;
 mod streams;
 pub(crate) mod support;
 mod tries;
+mod vendors;
 mod warnings;

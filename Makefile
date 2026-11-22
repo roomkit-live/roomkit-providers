@@ -149,8 +149,8 @@ python-proxy-cases:
 python-openai-config:
 	$(PYTHON) scripts/generate_openai_config_forms.py
 
-# Rewrites the catalogue of OpenAI's models the provider reads, from
-# RoomKit's Python.
+# Rewrites the catalogues of the models the OpenAI crate's providers read,
+# OpenAI's and each vendor's, from RoomKit's Python.
 python-openai-catalogue:
 	$(PYTHON) scripts/generate_openai_catalogue.py
 

@@ -1,0 +1,81 @@
+{
+ "generator": "scripts/generate_openai_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "kimi-k3.1-pro",
+   "display_name": "Kimi K3.1 Pro",
+   "context_window": 1048576,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking",
+    "reasoning_floor_low"
+   ],
+   "pricing": {
+    "input_per_million": 2.0,
+    "output_per_million": 10.0,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": 2.0,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-11-04"
+   }
+  },
+  {
+   "id": "kimi-k3.1-pro-highspeed",
+   "display_name": "Kimi K3.1 Pro Highspeed",
+   "context_window": 1048576,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking",
+    "reasoning_floor_low"
+   ],
+   "pricing": {
+    "input_per_million": 4.0,
+    "output_per_million": 20.0,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": 4.0,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-11-04"
+   }
+  },
+  {
+   "id": "kimi-k3",
+   "display_name": "Kimi K3",
+   "context_window": 1048576,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking",
+    "reasoning_floor_low"
+   ],
+   "pricing": {
+    "input_per_million": 3.0,
+    "output_per_million": 15.0,
+    "cache_read_per_million": 0.3,
+    "cache_write_per_million": 3.0,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-11-04"
+   }
+  }
+ ]
+}

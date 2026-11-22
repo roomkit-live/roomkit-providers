@@ -66,7 +66,7 @@ async fn read(provider: &OpenAi, request: &AiContext, out: &Yielder<Item>) -> Re
     let body = provider.asked().body(request, true)?;
     let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
     let mut answer = provider.client.stream(provider.asking(&body)).await?;
-    let mut folding = Folding::new(&provider.config.model);
+    let mut folding = Folding::new(&provider.config.model, provider.vendor());
     let (mut chunks, mut marked, mut ready) = (0_usize, false, Vec::new());
     while let Some(data) = answer.next().await? {
         if data.starts_with(END_MARK) {

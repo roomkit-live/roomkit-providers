@@ -16,7 +16,7 @@ use roomkit::{
     AttachChannelOptions, ConversationStore, CreateRoomOptions, EventFilter, HookExecution,
     HookOptions, HookTrigger, InboundResult, ProcessInboundOptions, RoomKit, RoomKitOptions,
 };
-use roomkit_ai::{AiChannel, AiChannelOptions};
+use roomkit_ai::{AiChannel, AiChannelOptions, AiProvider};
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
@@ -97,12 +97,25 @@ impl Room {
         adjust: impl FnOnce(OpenAiConfig) -> OpenAiConfig,
         equip: impl FnOnce(AiChannelOptions) -> AiChannelOptions,
     ) -> Self {
+        let provider = |url: &str| {
+            let config = adjust(OpenAiConfig {
+                base_url: Some(url.to_owned()),
+                ..OpenAiConfig::new(api_key, "fake-model")
+            });
+            OpenAi::new(config).unwrap()
+        };
+        Self::with_provider(replies, provider, equip).await
+    }
+
+    /// The room, its agent the provider `provider` makes for the fake's
+    /// base URL, and its channel's options adjusted by `equip`.
+    pub(crate) async fn with_provider<P: AiProvider + 'static>(
+        replies: Vec<Reply>,
+        provider: impl FnOnce(&str) -> P,
+        equip: impl FnOnce(AiChannelOptions) -> AiChannelOptions,
+    ) -> Self {
         let fake = Fake::serving(replies).await;
-        let config = adjust(OpenAiConfig {
-            base_url: Some(format!("http://{}/v1", fake.address)),
-            ..OpenAiConfig::new(api_key, "fake-model")
-        });
-        let provider = OpenAi::new(config).unwrap();
+        let provider = provider(&format!("http://{}/v1", fake.address));
         let kit = kit_with_environment(
             RoomKitOptions::default(),
             SequentialEnvironment::new(Timestamp::from_unix_millis(1_792_677_780_000).unwrap()),

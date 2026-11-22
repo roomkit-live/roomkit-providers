@@ -1,6 +1,7 @@
-//! `OpenAI`'s model catalogue: Python's (`catalog/models.json`, written by
+//! The model catalogues: Python's, one for `OpenAI` and one for each vendor
+//! served on the same wire (`catalog/`, written by
 //! `scripts/generate_openai_catalogue.py`), and what the provider reads of
-//! a model's entry on `OpenAI`'s own endpoint.
+//! a model's entry on its vendor's own endpoint.
 
 use std::sync::LazyLock;
 
@@ -9,7 +10,7 @@ use roomkit_providers_client::catalogue;
 pub(crate) use roomkit_providers_client::catalogue::{reasoning_floor, tagged};
 use serde_json::Value;
 
-const CATALOGUE: &str = include_str!("../catalog/models.json");
+use crate::vendor::Vendor;
 
 /// The tag of a model Chat Completions does not serve.
 pub(crate) const RESPONSES_ONLY: &str = "responses_only";
@@ -20,19 +21,50 @@ pub(crate) const TOOLS_REASONING_NONE: &str = "tools_reasoning_none";
 /// The tag of a model that keeps its reasoning effort beside function tools.
 pub(crate) const TOOLS_REASONING_EFFORT: &str = "tools_reasoning_effort";
 
-static MODELS: LazyLock<Vec<ModelInfo>> = LazyLock::new(|| read().unwrap_or_default());
+/// The embedded catalogue of each vendor, as the script wrote it.
+const fn written(vendor: Vendor) -> &'static str {
+    match vendor {
+        Vendor::OpenAi => include_str!("../catalog/models.json"),
+        Vendor::DeepSeek { .. } => include_str!("../catalog/deepseek.json"),
+        Vendor::Kimi => include_str!("../catalog/kimi.json"),
+        Vendor::MiniMax => include_str!("../catalog/minimax.json"),
+    }
+}
 
-/// The embedded catalogue, read whole.
-fn read() -> serde_json::Result<Vec<ModelInfo>> {
-    catalogue::read(CATALOGUE)
+/// The embedded catalogue of `vendor`, read whole.
+fn read(vendor: Vendor) -> serde_json::Result<Vec<ModelInfo>> {
+    catalogue::read(written(vendor))
+}
+
+/// A vendor's catalogue, read once.
+type Catalogue = LazyLock<Vec<ModelInfo>>;
+
+static OPENAI: Catalogue = LazyLock::new(|| read(Vendor::OpenAi).unwrap_or_default());
+static DEEPSEEK: Catalogue = LazyLock::new(|| read(DEEPSEEK_VENDOR).unwrap_or_default());
+static KIMI: Catalogue = LazyLock::new(|| read(Vendor::Kimi).unwrap_or_default());
+static MINIMAX: Catalogue = LazyLock::new(|| read(Vendor::MiniMax).unwrap_or_default());
+
+/// DeepSeek, whatever its configuration states: its catalogue is one.
+const DEEPSEEK_VENDOR: Vendor = Vendor::DeepSeek {
+    enable_thinking: None,
+};
+
+/// The curated catalogue of `vendor`, in Python's order.
+pub(crate) fn of(vendor: Vendor) -> &'static [ModelInfo] {
+    match vendor {
+        Vendor::OpenAi => &OPENAI,
+        Vendor::DeepSeek { .. } => &DEEPSEEK,
+        Vendor::Kimi => &KIMI,
+        Vendor::MiniMax => &MINIMAX,
+    }
 }
 
 /// `OpenAI`'s curated catalogue.
 pub(crate) fn models() -> &'static [ModelInfo] {
-    &MODELS
+    of(Vendor::OpenAi)
 }
 
-/// The catalogue's entry for `model`.
+/// The entry of `OpenAI`'s catalogue for `model`.
 pub(crate) fn entry(model: &str) -> Option<&'static ModelInfo> {
     catalogue::entry(models(), model)
 }
@@ -46,7 +78,8 @@ pub(crate) fn listed(page: &[u8]) -> Option<Vec<ModelInfo>> {
 }
 
 /// How the names of the models that take images start, for a model the
-/// catalogue does not carry (Python's `_VISION_PREFIXES`).
+/// catalogue does not carry (Python's `_VISION_PREFIXES`), which DeepSeek's
+/// provider inherits.
 const VISION_PREFIXES: [&str; 8] = [
     "gpt-5",
     "gpt-4o",
@@ -58,8 +91,8 @@ const VISION_PREFIXES: [&str; 8] = [
     "o4",
 ];
 
-/// Whether `model`, which the catalogue does not carry, takes images on
-/// `OpenAI`'s own endpoint, by how its name starts.
+/// Whether `model`, which its vendor's catalogue does not carry, takes
+/// images, by how its name starts.
 pub(crate) fn sees_images_by_its_name(model: &str) -> bool {
     VISION_PREFIXES
         .iter()
@@ -72,7 +105,7 @@ mod tests {
 
     #[test]
     fn the_catalogue_reads_whole_and_names_what_the_provider_reads() {
-        let whole = read().unwrap();
+        let whole = read(Vendor::OpenAi).unwrap();
         assert_eq!(whole.len(), models().len());
         assert!(whole.len() >= 26);
         let entry = |model: &str| entry(model);
@@ -87,5 +120,19 @@ mod tests {
         assert_eq!(reasoning_floor(entry("o3")), Some("low"));
         assert_eq!(reasoning_floor(entry("gpt-4o")), None);
         assert_eq!(reasoning_floor(entry("no-such-model")), None);
+    }
+
+    // An empty catalogue would quietly lift a vendor's floors and what it
+    // says of images: each embedded copy reads whole.
+    #[test]
+    fn each_vendor_s_catalogue_reads_whole_with_its_floors() {
+        let floor = |vendor: Vendor, model: &str| {
+            assert_eq!(read(vendor).unwrap().len(), of(vendor).len());
+            reasoning_floor(catalogue::entry(of(vendor), model))
+        };
+        assert_eq!(floor(DEEPSEEK_VENDOR, "deepseek-v4-pro"), None);
+        assert_eq!(floor(Vendor::Kimi, "kimi-k3"), Some("low"));
+        assert_eq!(floor(Vendor::MiniMax, "MiniMax-M3.1-Flash"), Some("low"));
+        assert_eq!(floor(Vendor::MiniMax, "MiniMax-M3"), Some("none"));
     }
 }
