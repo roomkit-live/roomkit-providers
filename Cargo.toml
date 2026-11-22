@@ -15,13 +15,13 @@ publish = false
 # RoomKit's Rust core: what a provider is, what it is asked and what it
 # answers. A build holds one of each of these crates, the provider's and
 # its host's: the revision is the one a host pins, the 0.2.0 release.
-roomkit = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
-roomkit-ai = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
-roomkit-core = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
+roomkit = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4c51283a28aa961a2fc104788b50c5192c6b3924" }
+roomkit-ai = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4c51283a28aa961a2fc104788b50c5192c6b3924" }
+roomkit-core = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4c51283a28aa961a2fc104788b50c5192c6b3924" }
 # What the examples' agents run on beside a provider (rust-examples): the
 # SQLite store of the server examples and the MCP tools of one of them.
-roomkit-sqlite = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
-roomkit-mcp = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
+roomkit-sqlite = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4c51283a28aa961a2fc104788b50c5192c6b3924" }
+roomkit-mcp = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4c51283a28aa961a2fc104788b50c5192c6b3924" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/python-forms" }
