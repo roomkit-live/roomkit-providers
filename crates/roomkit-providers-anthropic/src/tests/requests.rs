@@ -2,8 +2,8 @@
 //! blocks, its cache marks and its tools.
 
 use roomkit_ai::{
-    AiContentPart, AiContext, AiImagePart, AiMessage, AiRole, AiThinkingPart, AiTool,
-    AiToolResultPart, StreamToolCallDelta, ToolResult, ToolResultPart,
+    AiContentPart, AiContext, AiImagePart, AiMessage, AiRole, AiTextPart, AiThinkingPart, AiTool,
+    AiToolCallPart, AiToolResultPart, StreamToolCallDelta, ToolResult, ToolResultPart,
 };
 use serde_json::{Value, json};
 
@@ -136,6 +136,111 @@ fn signed_and_redacted_blocks_replay_but_unsigned_blocks_do_not() {
         json!([
             {"type": "thinking", "thinking": "signed", "signature": "S"},
             {"type": "redacted_thinking", "data": "opaque"},
+        ])
+    );
+}
+
+/// A call of `name` under `id`, as a round carries it.
+fn calling(id: &str, name: &str) -> AiContentPart {
+    AiContentPart::ToolCall(AiToolCallPart::new(id, name))
+}
+
+/// The message of the results `results` gives, each `(call id, tool, text)`.
+fn results(results: &[(&str, &str, &str)]) -> AiMessage {
+    let part = |(id, name, text): &(&str, &str, &str)| {
+        AiContentPart::ToolResult(AiToolResultPart::new(*id, *name, *text))
+    };
+    AiMessage::new(AiRole::Tool, results.iter().map(part).collect::<Vec<_>>())
+}
+
+/// What the Messages API is sent of `messages`, without the cache marks.
+fn rendered(messages: Vec<AiMessage>) -> Value {
+    let request = AiContext {
+        messages,
+        ..AiContext::default()
+    };
+    body_of(unmarked("claude-opus-5-5"), &request)["messages"].take()
+}
+
+// The shared conformance scenario
+// `reasoning/signed-blocks-and-tool-results-replay-in-order` (RFC §6.4): the
+// request its second generation is asked, and the `chat_messages` it expects
+// of the `anthropic` rendering.
+#[test]
+fn signed_and_redacted_blocks_replay_in_order_beside_calls_and_tool_results() {
+    let thought = |thinking: &str, signature: &str| {
+        AiContentPart::Thinking(AiThinkingPart {
+            signature: Some(signature.to_owned()),
+            ..AiThinkingPart::new(thinking)
+        })
+    };
+    let redacted = AiContentPart::Thinking(AiThinkingPart {
+        redacted: Some("RRR".to_owned()),
+        ..AiThinkingPart::new("")
+    });
+    let round = vec![
+        thought("Weather first.", "S0"),
+        calling("c1", "get_weather"),
+        redacted,
+        thought("Now the time.", "S3"),
+        calling("c2", "get_time"),
+    ];
+    let wire = rendered(vec![
+        AiMessage::new(AiRole::User, "go"),
+        AiMessage::new(AiRole::Assistant, round),
+        results(&[("c1", "get_weather", "sunny"), ("c2", "get_time", "noon")]),
+    ]);
+    assert_eq!(
+        wire,
+        json!([
+            {"role": "user", "content": "go"},
+            {"role": "assistant", "content": [
+                {"type": "thinking", "thinking": "Weather first.", "signature": "S0"},
+                {"type": "tool_use", "id": "c1", "name": "get_weather", "input": {}},
+                {"type": "redacted_thinking", "data": "RRR"},
+                {"type": "thinking", "thinking": "Now the time.", "signature": "S3"},
+                {"type": "tool_use", "id": "c2", "name": "get_time", "input": {}},
+            ]},
+            {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": "c1", "content": "sunny"},
+                {"type": "tool_result", "tool_use_id": "c2", "content": "noon"},
+            ]},
+        ])
+    );
+}
+
+// The shared conformance scenario
+// `reasoning/a-block-without-a-signature-is-not-replayed` (RFC §6.4): the
+// request its third generation is asked, and the `chat_messages` it expects
+// of the `anthropic` rendering.
+#[test]
+fn a_block_without_a_signature_is_not_replayed_and_its_round_keeps_text_and_calls() {
+    let first = vec![
+        AiContentPart::Thinking(AiThinkingPart::new("WHY.")),
+        AiContentPart::Text(AiTextPart::new("Let me look.")),
+        calling("c1", "get_weather"),
+    ];
+    let wire = rendered(vec![
+        AiMessage::new(AiRole::User, "go"),
+        AiMessage::new(AiRole::Assistant, first),
+        results(&[("c1", "get_weather", "sunny")]),
+        AiMessage::new(AiRole::Assistant, vec![calling("c2", "get_weather")]),
+        results(&[("c2", "get_weather", "sunny")]),
+    ]);
+    let weather =
+        |id: &str| json!({"type": "tool_use", "id": id, "name": "get_weather", "input": {}});
+    let sunny = |id: &str| json!({"type": "tool_result", "tool_use_id": id, "content": "sunny"});
+    assert_eq!(
+        wire,
+        json!([
+            {"role": "user", "content": "go"},
+            {"role": "assistant", "content": [
+                {"type": "text", "text": "Let me look."},
+                weather("c1"),
+            ]},
+            {"role": "user", "content": [sunny("c1")]},
+            {"role": "assistant", "content": [weather("c2")]},
+            {"role": "user", "content": [sunny("c2")]},
         ])
     );
 }
