@@ -38,6 +38,8 @@ pub mod fake;
 mod least;
 mod lent;
 pub mod named;
+mod python_float;
+pub(crate) mod python_repr;
 pub mod self_test;
 pub mod shape;
 pub mod tls;
@@ -51,10 +53,11 @@ use std::sync::{Arc, Mutex};
 use std::task::Poll;
 use std::time::Duration;
 
-use roomkit_providers_llm::{
-    API_KEY_METADATA_KEY, AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, StreamEvent,
-    next,
+use crate::items::next;
+use roomkit_ai::{
+    API_KEY_METADATA_KEY, AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, StreamEvent,
 };
+use roomkit_providers_python_forms::Form;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -175,14 +178,14 @@ impl Case {
     /// The request of the case, with the key it carries for itself where
     /// its JSON form holds a mask.
     #[must_use]
-    pub fn asked(&self) -> AiRequest {
+    pub fn asked(&self) -> AiContext {
         self.read_request().unwrap()
     }
 
     /// As [`asked`](Self::asked), or why the contract does not read the
     /// request: it is stricter than Python's on what a request holds.
-    fn read_request(&self) -> serde_json::Result<AiRequest> {
-        let mut request: AiRequest = serde_json::from_value(self.request.clone())?;
+    fn read_request(&self) -> serde_json::Result<AiContext> {
+        let mut request = AiContext::read(self.request.clone())?;
         if let Some(key) = &self.request_api_key {
             let key = key.clone();
             request
@@ -301,6 +304,10 @@ struct Compare {
 
 /// What the call of a case gave.
 #[derive(Debug)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "one outcome a replayed case, held for a test: an answer is the large one"
+)]
 pub enum Outcome {
     /// `generate`: the response, or the failure.
     Response(Result<AiResponse, ProviderError>),

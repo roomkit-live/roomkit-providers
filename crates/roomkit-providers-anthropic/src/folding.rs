@@ -25,9 +25,8 @@ mod usage;
 
 use std::collections::BTreeMap;
 
-use roomkit_providers_llm::{
-    Metadata, StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta, StreamUsage,
-};
+use roomkit::model::Metadata;
+use roomkit_ai::{StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta, StreamUsage};
 use serde_json::Value;
 
 use self::calls::Calls;

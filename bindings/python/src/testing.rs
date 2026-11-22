@@ -18,13 +18,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use roomkit_providers_client::ReplayWaits;
-use roomkit_providers_llm::{
-    AiProvider, AiRequest, AiResponse, MockAiProvider, MockAiProviderOptions, ModelInfo,
-    ProviderError, ProviderErrorOptions, ProviderStream, TextStream, Yielder, items, next,
-    request_api_key,
+use roomkit_ai::{
+    AiContext, AiProvider, AiResponse, MockAiProvider, MockAiProviderOptions, ModelInfo,
+    ProviderError, ProviderErrorOptions, ProviderStream, TextStream,
 };
+use roomkit_providers_client::ReplayWaits;
+use roomkit_providers_client::items::{Yielder, items, next};
+use roomkit_providers_client::request_api_key;
+use roomkit_providers_python_forms::{As, Form};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tokio::sync::watch;
 
 use super::provider::{PythonProvider, written};
@@ -64,7 +67,7 @@ pub(crate) struct Script {
     /// model whose name starts with `decided`.
     decided: Option<bool>,
     /// The whole responses it answers, round-robin.
-    responses: Vec<AiResponse>,
+    responses: Vec<As<AiResponse>>,
     vision: bool,
     streaming: bool,
     /// Whether it says it streams events: as it streams, when a script
@@ -164,7 +167,13 @@ pub(crate) struct Scripted {
 impl Scripted {
     fn new(script: Script) -> Self {
         let options = MockAiProviderOptions {
-            ai_responses: Some(script.responses),
+            ai_responses: Some(
+                script
+                    .responses
+                    .into_iter()
+                    .map(|As(response)| response)
+                    .collect(),
+            ),
             vision: script.vision,
             streaming: script.streaming,
             tool_call_delta_chunks: script.tool_call_delta_chunks,
@@ -229,10 +238,6 @@ impl AiProvider for Scripted {
         self.name.as_deref().unwrap_or_else(|| self.mock.name())
     }
 
-    fn label(&self) -> &str {
-        &self.label
-    }
-
     fn model_name(&self) -> &str {
         self.model
             .as_deref()
@@ -273,12 +278,12 @@ impl AiProvider for Scripted {
         self.deferred_tools
     }
 
-    async fn generate(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
+    async fn generate(&self, request: &AiContext) -> Result<AiResponse, ProviderError> {
         self.before_answering().await?;
         self.mock.generate(request).await
     }
 
-    fn generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a> {
+    fn generate_stream<'a>(&'a self, request: &'a AiContext) -> TextStream<'a> {
         Box::pin(items(
             move |out: Yielder<Result<String, ProviderError>>| async move {
                 if let Err(failure) = self.before_answering().await {
@@ -292,7 +297,7 @@ impl AiProvider for Scripted {
         ))
     }
 
-    fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
+    fn generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
         Box::pin(items(move |out: Yielder<_>| async move {
             if let Err(failure) = self.before_answering().await {
                 return out.give(Err(failure)).await;
@@ -339,14 +344,21 @@ impl PythonScripted {
 impl PythonScripted {
     /// The provider, as any provider crosses.
     fn provider(&self, py: Python<'_>) -> PyResult<PythonProvider> {
-        let held = PythonProvider::holding(self.scripted.clone());
+        let held = PythonProvider::holding(self.scripted.clone(), &self.scripted.label);
         held.map_err(|failure| failure.raised(py))
     }
 
     /// The requests the provider was asked, in order, as a JSON list: each
     /// as the contract writes it, its credential masked.
     fn asked_json(&self, py: Python<'_>) -> PyResult<String> {
-        let asked = written(&self.scripted.mock.calls(), "the requests");
+        let asked: Vec<Value> = self
+            .scripted
+            .mock
+            .calls()
+            .iter()
+            .map(Form::written)
+            .collect();
+        let asked = written(&asked, "the requests");
         asked.map_err(|failure| failure.raised(py))
     }
 
@@ -354,7 +366,7 @@ impl PythonScripted {
     /// a provider reads it: None for a request that carried none.
     fn keys(&self) -> Vec<Option<String>> {
         let asked = self.scripted.mock.calls();
-        let key = |request: &AiRequest| request_api_key(request).map(str::to_owned);
+        let key = |request: &AiContext| request_api_key(request).map(str::to_owned);
         asked.iter().map(key).collect()
     }
 

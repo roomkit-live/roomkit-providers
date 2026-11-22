@@ -17,8 +17,8 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use roomkit_ai::{ProviderError, is_context_overflow_message};
 use roomkit_providers_http::{CertificateRefused, SseError, certificate_refused};
-use roomkit_providers_llm::{ProviderError, is_context_overflow_message};
 use serde_json::Value;
 
 pub use self::exit::{Exit, MARK, SECRET_MIN, Secrets, carried, one_line};

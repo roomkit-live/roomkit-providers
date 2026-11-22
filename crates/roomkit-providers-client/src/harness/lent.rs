@@ -13,7 +13,7 @@
 
 use std::sync::Arc;
 
-use roomkit_providers_llm::{API_KEY_METADATA_KEY, ProviderError};
+use roomkit_ai::{API_KEY_METADATA_KEY, ProviderError};
 
 use super::fake::{Door, Fake};
 use super::{Case, Replays, drained};

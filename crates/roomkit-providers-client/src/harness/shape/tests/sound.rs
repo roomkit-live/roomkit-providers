@@ -1,11 +1,12 @@
 //! A small fixture every check accepts, of a vendor that is none: one case
 //! at least for each thing a check reads of a fixture.
 
-use roomkit_providers_llm::{
-    AiRequest, AiResponse, AiToolCall, ModelInfo, ProviderError, ProviderErrorOptions,
+use roomkit_ai::{
+    AiContext, AiResponse, AiToolCall, ModelInfo, ProviderError, ProviderErrorOptions,
     ResponseSchemaError, ResponseSchemaErrorOptions, ResponseSchemaFailure, StreamDone,
     StreamEvent, StreamTextDelta,
 };
+use roomkit_providers_python_forms::Form;
 use serde_json::{Value, json};
 
 /// The label of the fixture's provider.
@@ -89,7 +90,7 @@ fn case(name: &str, kind: &str, call: &str, exchanges: &Value, expected: &Value)
         "kinds": [kind],
         "call": call,
         "config": {"api_key": KEY, "base_url": BASE_URL, "timeout": 60.0, "connect_timeout": 5.0},
-        "request": serde_json::to_value(AiRequest::default()).unwrap(),
+        "request": AiContext::default().written(),
         "exchanges": exchanges,
         "expected": expected,
     })
@@ -97,7 +98,7 @@ fn case(name: &str, kind: &str, call: &str, exchanges: &Value, expected: &Value)
 
 /// What Python gave of a case that answers `content`.
 fn response(content: &str) -> Value {
-    json!({"response": serde_json::to_value(AiResponse::new(content)).unwrap()})
+    json!({"response": AiResponse::new(content).written()})
 }
 
 /// A `generate` case named `name` of the kind `kind` that asks once and
@@ -189,7 +190,7 @@ fn answers() -> Vec<Value> {
         StreamEvent::TextDelta(StreamTextDelta::new("Yes.")),
         StreamEvent::Done(StreamDone::default()),
     ];
-    let events = json!({"events": serde_json::to_value(events).unwrap()});
+    let events = json!({"events": events.iter().map(Form::written).collect::<Value>()});
     // `data: é`, then a blank line: the first read ends inside the letter.
     let cut = json!([{"hex": "646174613a20c3"}, {"hex": "a90a0a"}]);
     let cut = json!([exchange(posted("/answers"), reads(&cut, "the stream ends"))]);
@@ -235,7 +236,7 @@ fn of_their_own() -> Vec<Value> {
     let mut minted = answered("minted", "minted");
     let mut called = AiResponse::new("");
     called.tool_calls.push(AiToolCall::new(MINTED, "lookup"));
-    minted["expected"]["response"] = serde_json::to_value(called).unwrap();
+    minted["expected"]["response"] = called.written();
     minted["minted_call_ids"] = json!([MINTED]);
     let mut to_decide = answered("to_decide", "answer");
     to_decide["questioned"] = "A difference to decide: the answer is kept.".into();
@@ -304,7 +305,7 @@ fn failures() -> Vec<Value> {
         &cut,
         &compared(&["events"], "transport"),
     );
-    lost["expected"]["events"] = serde_json::to_value(events).unwrap();
+    lost["expected"]["events"] = events.iter().map(Form::written).collect::<Value>();
     let no_answer =
         |failure: &str| json!([exchange(posted("/answers"), json!({"failure": failure}))]);
     let mut late = error("no answer came", None, true);

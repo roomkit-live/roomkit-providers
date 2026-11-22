@@ -2,10 +2,8 @@ CARGO ?= cargo
 MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' Cargo.toml).0
 DENY_FLAGS ?=
 # The interpreter of the generated files: one with RoomKit's Python package
-# installed for python-forms, python-public-urls, python-proxy-cases,
-# python-outside-text, outside-text-tables and the python-openai and
-# python-anthropic targets, the Python version RoomKit is tested with for
-# printable-table and outside-text-tables.
+# installed for python-public-urls, python-proxy-cases and the python-openai
+# and python-anthropic targets.
 # For python-check, python-wheel and api-snapshot, the interpreter the
 # package is built for and tested on: CPython 3.12 or newer.
 PYTHON ?= python3
@@ -21,16 +19,16 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	scripts/native-notices.py scripts/artifact_files.py scripts/api-snapshot.py \
 	scripts/roomkit_env.py scripts/wheel_paths.py
 
-.PHONY: all fmt fmt-check clippy no-network-test test examples doc deny check-contract-deps \
+.PHONY: all fmt fmt-check clippy no-network-test test examples doc deny \
 	msrv msrv-toolchain hooks \
-	python-forms python-public-urls python-proxy-cases python-openai-config \
+	python-public-urls python-proxy-cases python-openai-config \
 	python-openai-chat-cases \
 	python-openai-catalogue \
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
-	printable-table outside-text-tables python-outside-text named-cases \
+	named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
-all: fmt-check clippy no-network-test test examples doc deny check-contract-deps
+all: fmt-check clippy no-network-test test examples doc deny
 
 fmt:
 	$(CARGO) fmt --all
@@ -84,9 +82,6 @@ deny:
 	}
 	$(CARGO) deny $(DENY_FLAGS) check
 
-check-contract-deps:
-	CARGO="$(CARGO)" bash scripts/check-contract-deps.sh
-
 msrv:
 	$(CARGO) +$(MSRV) check --workspace --all-targets --all-features --locked
 
@@ -136,12 +131,6 @@ python-msrv:
 # that changes the public surface rewrites it.
 api-snapshot:
 	MATURIN="$(MATURIN)" $(PYTHON) scripts/api-snapshot.py
-
-# Rewrites the fixtures of what RoomKit's Python gives: the JSON forms of its
-# models and the decisions of its call rules. The tests only read the
-# fixtures: `make all` needs no Python.
-python-forms:
-	$(PYTHON) scripts/generate_python_forms.py
 
 # Rewrites the fixture of what RoomKit's Python decides of a table of URLs,
 # and the license file of the Unicode data the fixture's list of characters
@@ -195,21 +184,3 @@ named-cases:
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-anthropic/tests/fixtures/named_cases.json) \
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-anthropic --lib the_named_cases_file
 
-# Rewrites the table of the characters Python's `repr` writes as they are,
-# from the Unicode data of PYTHON, the Python version RoomKit is tested with,
-# and the license file of that data.
-printable-table:
-	$(PYTHON) scripts/generate_printable_ranges.py
-
-# Rewrites the tables the contract reads a text from outside with (`fence`,
-# `identifier`): what each character reads as in a tag, the classes of
-# characters, and canonical composition, from RoomKit's Python and the
-# Unicode data of PYTHON, the Python version RoomKit is tested with, and the
-# license file of that data.
-outside-text-tables:
-	$(PYTHON) scripts/generate_outside_text_tables.py
-
-# Rewrites the fixture of what RoomKit's Python `fence` and `identifier` make
-# of a table of texts and names, which the contract's tests compare with.
-python-outside-text:
-	$(PYTHON) scripts/generate_python_outside_text.py

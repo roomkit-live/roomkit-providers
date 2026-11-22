@@ -1,9 +1,10 @@
 //! A whole answer, folded from the events of its stream: Python's
 //! `generate`, which reads the stream every call gives.
 
-use roomkit_providers_llm::{
-    AiResponse, ProviderError, ProviderStream, StreamEvent, ThinkingBlocks, next, tool_call_of,
+use roomkit_ai::{
+    AiResponse, ProviderError, ProviderStream, StreamEvent, ThinkingBlocks, tool_call_of,
 };
+use roomkit_providers_client::items::next;
 
 /// The response `events` stand for: its text, all its reasoning with the
 /// last signature and each block to send back, its calls, and how it ended.

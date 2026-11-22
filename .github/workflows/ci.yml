@@ -35,7 +35,7 @@ jobs:
             sudo sysctl -w "$restriction=0"
           fi
           make no-network-test
-      - run: make fmt-check clippy test doc check-contract-deps
+      - run: make fmt-check clippy test doc
 
   python:
     name: Python ${{ matrix.python }} wheel and source distribution

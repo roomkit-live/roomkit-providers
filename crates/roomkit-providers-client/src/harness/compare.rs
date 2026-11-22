@@ -3,7 +3,8 @@
 use std::collections::BTreeMap;
 use std::error::Error as _;
 
-use roomkit_providers_llm::{ProviderError, ResponseSchemaError};
+use roomkit_ai::{ProviderError, ResponseSchemaError};
+use roomkit_providers_python_forms::Form;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -300,7 +301,13 @@ pub(super) fn differences(case: &Case, replayed: &Replayed) -> Vec<String> {
     match &replayed.outcome {
         Some(Outcome::Response(Ok(response))) => {
             let expected = expected.response.as_ref();
-            result_differs(case, "the response", expected, response, &mut found);
+            result_differs(
+                case,
+                "the response",
+                expected,
+                &response.written(),
+                &mut found,
+            );
             end_differs(case, None, &mut found);
         }
         Some(Outcome::Models(Ok(models))) => {
@@ -314,7 +321,8 @@ pub(super) fn differences(case: &Case, replayed: &Replayed) -> Vec<String> {
         // What a stream gave before it failed is compared too.
         Some(Outcome::Events(events, error)) => {
             let expected = list(&expected.events);
-            result_differs(case, "the events", expected.as_ref(), events, &mut found);
+            let events: Vec<Value> = events.iter().map(Form::written).collect();
+            result_differs(case, "the events", expected.as_ref(), &events, &mut found);
             end_differs(case, error.as_ref(), &mut found);
         }
         Some(Outcome::Text(text, error)) => {

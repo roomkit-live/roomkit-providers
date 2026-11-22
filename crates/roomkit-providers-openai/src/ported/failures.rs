@@ -3,7 +3,7 @@
 
 use std::net::SocketAddr;
 
-use roomkit_providers_llm::{AiProvider, AiRequest, ProviderError};
+use roomkit_ai::{AiContext, AiProvider, ProviderError};
 use serde_json::json;
 use tokio::net::TcpSocket;
 
@@ -111,7 +111,7 @@ async fn the_api_key_an_error_answer_echoes_reaches_no_failure() {
 #[tokio::test]
 async fn the_key_a_request_lends_reaches_no_failure() {
     const LENT: &str = "placeholder-lent-key";
-    let lending = AiRequest {
+    let lending = AiContext {
         metadata: [("api_key".to_owned(), LENT.into())].into_iter().collect(),
         ..hello()
     };

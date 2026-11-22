@@ -4,10 +4,9 @@
 
 use std::net::SocketAddr;
 
+use crate::items::{Yielder, items};
 use reqwest::header::HeaderMap;
-use roomkit_providers_llm::{
-    AiProvider, AiRequest, AiResponse, ProviderError, ProviderStream, TextStream, Yielder, items,
-};
+use roomkit_ai::{AiContext, AiProvider, AiResponse, ProviderError, ProviderStream, TextStream};
 use serde_json::Value;
 
 use super::Replays;
@@ -41,7 +40,7 @@ pub(crate) struct Least {
     leaves: String,
     /// A request that brings no key: what a provider that leaves without
     /// its request leaves with.
-    no_request: AiRequest,
+    no_request: AiContext,
 }
 
 /// The failure of a refusal, in what its error object says for a message.
@@ -73,7 +72,7 @@ impl Least {
     }
 
     /// The request a generation that answers `request` leaves with.
-    fn left_with<'a>(&'a self, request: &'a AiRequest) -> &'a AiRequest {
+    fn left_with<'a>(&'a self, request: &'a AiContext) -> &'a AiContext {
         if self.leaves == WITHOUT_ITS_REQUEST {
             &self.no_request
         } else {
@@ -87,17 +86,17 @@ impl AiProvider for Least {
         "least"
     }
 
-    async fn generate(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
+    async fn generate(&self, request: &AiContext) -> Result<AiResponse, ProviderError> {
         let asked = self.asked().await;
         let left = |failure| self.exit.leave_for(self.left_with(request), &failure);
         asked.map(|()| AiResponse::new("")).map_err(left)
     }
 
-    fn generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a> {
+    fn generate_stream<'a>(&'a self, request: &'a AiContext) -> TextStream<'a> {
         text(self.generate_structured_stream(request))
     }
 
-    fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
+    fn generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
         let events = Box::pin(items(move |out: Yielder<Item>| async move {
             if let Err(failure) = self.asked().await {
                 out.give(Err(carried(failure))).await;
@@ -121,7 +120,7 @@ impl Replays for Least {
             client: Client::built(stating, Proxies::default(), no_authority()).unwrap(),
             exit: Exit::new("least", Secrets::of([KEY.to_owned()])),
             leaves,
-            no_request: AiRequest::default(),
+            no_request: AiContext::default(),
         })
     }
 

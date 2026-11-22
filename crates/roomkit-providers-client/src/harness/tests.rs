@@ -5,7 +5,8 @@
 //! one that replays as Python, and a named one that differs or does
 //! otherwise than its entry states.
 
-use roomkit_providers_llm::{AiRequest, AiResponse};
+use roomkit_ai::{AiContext, AiResponse};
+use roomkit_providers_python_forms::Form;
 use serde_json::{Value, json};
 
 use super::least::{KEY, Least, URL, WITH_ITS_REQUEST};
@@ -42,9 +43,9 @@ fn case(name: &str, status: u16) -> Value {
         "name": name,
         "call": "generate",
         "config": {"api_key": KEY, "leaves": WITH_ITS_REQUEST},
-        "request": serde_json::to_value(AiRequest::default()).unwrap(),
+        "request": AiContext::default().written(),
         "exchanges": [{"request": sent, "response": answered}],
-        "expected": {"response": serde_json::to_value(AiResponse::new("")).unwrap()},
+        "expected": {"response": AiResponse::new("").written()},
     })
 }
 

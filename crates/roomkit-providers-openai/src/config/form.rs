@@ -5,7 +5,8 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use roomkit_providers_llm::{Metadata, ObjectOnly};
+use roomkit::model::Metadata;
+use roomkit_providers_client::ObjectOnly;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 

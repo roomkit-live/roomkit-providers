@@ -32,7 +32,8 @@
 //! local fake of an endpoint (`harness`). Its `replay` feature is the seam
 //! a replay outside a provider crate's tests drives a provider through.
 //!
-//! It depends on neither Python nor `RoomKit`. The crate's README says how
+//! It depends on `RoomKit`'s Rust core for what a provider is asked and
+//! answers, and on no Python. The crate's README says how
 //! a provider crate is written on it.
 
 #![forbid(unsafe_code)]
@@ -44,6 +45,9 @@ mod exchange;
 pub mod failure;
 #[cfg(any(test, feature = "harness"))]
 pub mod harness;
+pub mod items;
+mod key;
+mod object_only;
 mod proxy;
 pub mod retry;
 pub mod stream;
@@ -55,6 +59,8 @@ pub use self::client::{Client, Settings, Timeouts};
 pub use self::client::{ReplayWaits, replayed_at};
 pub use self::exchange::{ANSWER_LIMIT, Call, Pace, USER_AGENT, Wait, configured_header, is_json};
 pub use self::failure::{Exit, Failure, Secrets};
+pub use self::key::request_api_key;
+pub use self::object_only::ObjectOnly;
 
 // What `tried_again!` logs with, in the crate that calls it.
 #[doc(hidden)]

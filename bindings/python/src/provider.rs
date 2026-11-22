@@ -12,19 +12,19 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use roomkit_providers_llm::{
-    API_KEY_METADATA_KEY, AiProvider, AiRequest, DynAiProvider, ProviderError,
-};
+use roomkit_ai::{API_KEY_METADATA_KEY, AiContext, AiProvider, ProviderError};
+use roomkit_providers_python_forms::Form;
 use serde::Serialize;
 use serde_json::Value;
 
+use super::dynamic::AnyProvider;
 use super::errors::{Failure, guarded};
 use super::fork::Kept;
 use super::runtime;
 use super::stream::PythonStream;
 
 /// A provider of the contract, whichever its type.
-pub(crate) type Held = Arc<dyn DynAiProvider>;
+pub(crate) type Held = Arc<dyn AnyProvider>;
 
 /// `value` as JSON text.
 pub(crate) fn written<T: Serialize>(value: &T, what: &str) -> Result<String, Failure> {
@@ -42,9 +42,9 @@ pub(crate) fn request_of(
     json: &str,
     api_key: Option<String>,
     label: &str,
-) -> Result<AiRequest, Failure> {
-    let mut request: AiRequest =
-        serde_json::from_str(json).map_err(|error| Failure::refused(&error.to_string(), label))?;
+) -> Result<AiContext, Failure> {
+    let read = serde_json::from_str(json).and_then(AiContext::read);
+    let mut request = read.map_err(|error| Failure::refused(&error.to_string(), label))?;
     if let Some(key) = api_key {
         request
             .metadata
@@ -76,12 +76,12 @@ struct Said {
 }
 
 impl Said {
-    fn of(provider: &Held) -> Result<Self, Failure> {
+    fn of(provider: &Held, label: &str) -> Result<Self, Failure> {
         let entry = provider.dyn_catalog_entry();
         let entry = entry.map(|entry| written(&entry, "the catalogue's entry"));
         Ok(Self {
             name: provider.dyn_name().to_owned(),
-            label: provider.dyn_label().to_owned(),
+            label: label.to_owned(),
             model_name: provider.dyn_model_name().to_owned(),
             supports_vision: provider.dyn_supports_vision(),
             supports_streaming: provider.dyn_supports_streaming(),
@@ -102,10 +102,11 @@ pub(crate) struct PythonProvider {
 }
 
 impl PythonProvider {
-    /// `provider` as Python holds it, with what it says of itself.
-    pub(crate) fn holding(provider: impl AiProvider) -> Result<Self, Failure> {
+    /// `provider` as Python holds it, with what it says of itself, and
+    /// `label`, the name its vendor states its failures carry.
+    pub(crate) fn holding(provider: impl AiProvider, label: &str) -> Result<Self, Failure> {
         let provider: Held = Arc::new(provider);
-        let said = Said::of(&provider)?;
+        let said = Said::of(&provider, label)?;
         Ok(Self {
             provider: Kept::new(provider),
             said,
@@ -222,12 +223,13 @@ impl PythonProvider {
         let label = self.label();
         guarded(py, label, || {
             let provider = Arc::clone(self.held()?);
+            let labelled = label.to_owned();
             runtime::call(py, label, async move {
                 let lent = api_key.clone();
                 let answered = async {
-                    let request = request_of(&request_json, api_key, provider.dyn_label())?;
+                    let request = request_of(&request_json, api_key, &labelled)?;
                     let response = provider.dyn_generate(&request).await?;
-                    written(&response, "the response")
+                    written(&response.written(), "the response")
                 };
                 let answered: Result<String, Failure> = answered.await;
                 answered.map_err(|failure| failure.without(lent.as_deref()))
@@ -246,7 +248,12 @@ impl PythonProvider {
         api_key: Option<String>,
     ) -> PyResult<PythonStream> {
         guarded(py, self.label(), || {
-            PythonStream::of(Arc::clone(self.held()?), request_json, api_key)
+            PythonStream::of(
+                Arc::clone(self.held()?),
+                self.label(),
+                request_json,
+                api_key,
+            )
         })
     }
 

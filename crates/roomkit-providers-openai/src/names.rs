@@ -3,7 +3,7 @@
 //! before anything is sent, naming the tool and the rule, as Python's
 //! provider checks them.
 
-use roomkit_providers_llm::{AiTool, ProviderError, ProviderErrorOptions};
+use roomkit_ai::{AiTool, ProviderError, ProviderErrorOptions};
 
 /// The names `OpenAI`'s endpoint accepts, written as Python's pattern is.
 const RULE: &str = "[A-Za-z0-9_-]{1,128}";

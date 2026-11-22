@@ -1,7 +1,7 @@
 //! What the folding reads of a stream's events, one event after the other,
 //! with no request: its blocks, its calls and its bounds.
 
-use roomkit_providers_llm::{ProviderError, ThinkingBlocks};
+use roomkit_ai::{ProviderError, ThinkingBlocks};
 use serde_json::json;
 
 use super::calls::{ARGUMENTS_LIMIT, CALLS_LIMIT, NAME_LIMIT};

@@ -3,9 +3,10 @@
 
 use std::time::Duration;
 
+use roomkit_ai::{AiProvider, ProviderError, StreamEvent};
 use roomkit_providers_client::ANSWER_LIMIT;
+use roomkit_providers_client::items::next;
 use roomkit_providers_client::stream::STREAM_LIMIT;
-use roomkit_providers_llm::{AiProvider, ProviderError, StreamEvent, next};
 use serde_json::{Value, json};
 
 use crate::AnthropicConfig;
@@ -43,7 +44,7 @@ async fn closed(fake: &Fake) {
 }
 
 /// The next piece of text of `stream`, past the events that are none.
-async fn next_text(stream: &mut roomkit_providers_llm::ProviderStream<'_>) -> Option<String> {
+async fn next_text(stream: &mut roomkit_ai::ProviderStream<'_>) -> Option<String> {
     while let Some(item) = next(stream).await {
         if let Ok(StreamEvent::TextDelta(delta)) = item {
             return Some(delta.text);

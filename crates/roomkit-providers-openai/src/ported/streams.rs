@@ -3,7 +3,8 @@
 
 use std::sync::Arc;
 
-use roomkit_providers_llm::{AiProvider, AiRequest, ResponseSchemaFailure, StreamEvent, next};
+use roomkit_ai::{AiContext, AiProvider, ResponseSchemaFailure, StreamEvent};
+use roomkit_providers_client::items::next;
 use serde_json::{Value, json};
 use tokio::sync::Notify;
 
@@ -114,7 +115,7 @@ async fn entries_with_no_function_are_no_tool_round_streamed() {
         "required": ["label"],
         "additionalProperties": false,
     });
-    let request = AiRequest {
+    let request = AiContext {
         response_schema: schema.as_object().cloned(),
         ..hello()
     };

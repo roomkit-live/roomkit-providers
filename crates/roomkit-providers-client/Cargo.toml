@@ -24,9 +24,9 @@ replay = []
 # the cases a provider names. It panics where a test fails: never for a
 # host.
 harness = [
-    "dep:futures-core",
     "dep:rcgen",
-    "dep:serde",
+    "dep:roomkit-providers-python-forms",
+    "serde/derive",
     "dep:tokio-rustls",
     "rustls/ring",
     "rustls/std",
@@ -40,14 +40,16 @@ harness = [
 ]
 
 [dependencies]
-# The contract: the failure a provider answers with, the events of a stream,
-# and, for the harness, what a provider is asked and gives.
-roomkit-providers-llm = { workspace = true }
+# RoomKit's core: what a provider is asked, the events of a stream and the
+# failure it answers with; and how Python writes a text, which a secret is
+# searched for as.
+roomkit-ai = { workspace = true }
+roomkit-core = { workspace = true }
 # The TLS configuration the client is built with, and the bounded reader of
 # a stream's events.
 roomkit-providers-http = { workspace = true }
-# The stream of a provider's items, which the harness reads.
-futures-core = { workspace = true, optional = true }
+# The stream a provider's events come as.
+futures-core = { workspace = true }
 # An HTTP date a server's `retry-after` names.
 jiff = { workspace = true }
 # The authority a test makes for itself, and the certificates it signs for
@@ -58,9 +60,16 @@ reqwest = { workspace = true, features = ["rustls-no-provider"] }
 # The TLS configuration the HTTP client is given, by its type; and, for the
 # harness, the TLS of a fake.
 rustls = { workspace = true }
-# The fixture of recorded cases, which the harness reads.
-serde = { workspace = true, features = ["derive"], optional = true }
-serde_json = { workspace = true }
+# The JSON form a recorded case holds a request and its result in, which
+# the harness reads and compares.
+roomkit-providers-python-forms = { workspace = true, optional = true }
+# The reader a provider's configuration is read through; and, with its
+# derives, the fixture of recorded cases, which the harness reads.
+serde = { workspace = true }
+# A JSON object keeps its members in the order they were written, as a
+# Python dict does, and a number is read as the float nearest to its digits,
+# as Python reads it: a provider writes a body and reads an answer so.
+serde_json = { workspace = true, features = ["float_roundtrip", "preserve_order"] }
 # The wait between two tries of a request.
 tokio = { workspace = true, features = ["time"] }
 # The TLS of the harness's fake of an endpoint.
@@ -81,6 +90,7 @@ reqwest = { workspace = true, features = ["gzip"] }
 # the client against the harness's fake.
 futures-core = { workspace = true }
 rcgen = { workspace = true }
+roomkit-providers-python-forms = { workspace = true }
 rustls = { workspace = true, features = ["ring", "std", "tls12"] }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt", "net", "io-util", "sync", "test-util"] }

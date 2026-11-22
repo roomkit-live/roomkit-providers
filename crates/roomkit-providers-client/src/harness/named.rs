@@ -11,7 +11,7 @@
 
 use std::collections::BTreeMap;
 
-use roomkit_providers_llm::{ProviderError, StreamDone, StreamEvent};
+use roomkit_ai::{ProviderError, StreamDone, StreamEvent};
 
 use super::{Fixture, Outcome, Replayed, Replays, text_of};
 

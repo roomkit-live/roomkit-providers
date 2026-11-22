@@ -3,8 +3,8 @@
 
 use std::error::Error as _;
 
-use roomkit_providers_llm::{
-    AiMessage, AiProvider, AiRequest, AiResponse, AiRole, AiTool, ProviderError,
+use roomkit_ai::{
+    AiContext, AiMessage, AiProvider, AiResponse, AiRole, AiTool, ProviderError,
     ResponseSchemaError, ResponseSchemaFailure, StreamEvent,
 };
 use serde_json::{Value, json};
@@ -34,10 +34,10 @@ pub(crate) fn elsewhere(model: &str) -> OpenAiConfig {
 }
 
 /// A request of one user message.
-pub(crate) fn hello() -> AiRequest {
-    AiRequest {
+pub(crate) fn hello() -> AiContext {
+    AiContext {
         messages: vec![AiMessage::new(AiRole::User, "Hi")],
-        ..AiRequest::default()
+        ..AiContext::default()
     }
 }
 
@@ -47,8 +47,8 @@ pub(crate) fn tool(name: &str) -> AiTool {
 }
 
 /// [`hello`], declaring one tool.
-pub(crate) fn hello_with_a_tool() -> AiRequest {
-    AiRequest {
+pub(crate) fn hello_with_a_tool() -> AiContext {
+    AiContext {
         tools: vec![tool("lookup")],
         ..hello()
     }
@@ -91,7 +91,7 @@ pub(crate) fn body_of(fake: &Fake, at: usize) -> Value {
 }
 
 /// The body the provider of `config` sends for `request`.
-pub(crate) async fn body_sent(config: OpenAiConfig, request: &AiRequest) -> Value {
+pub(crate) async fn body_sent(config: OpenAiConfig, request: &AiContext) -> Value {
     let fake = Fake::serving(vec![saying("ok")]).await;
     pointed(config, &fake).generate(request).await.unwrap();
     body_of(&fake, 0)
@@ -99,7 +99,7 @@ pub(crate) async fn body_sent(config: OpenAiConfig, request: &AiRequest) -> Valu
 
 /// The failure of `request`, which the provider of `config` refuses before
 /// it sends anything.
-pub(crate) async fn refused(config: OpenAiConfig, request: &AiRequest) -> ProviderError {
+pub(crate) async fn refused(config: OpenAiConfig, request: &AiContext) -> ProviderError {
     let fake = Fake::serving(vec![saying("never")]).await;
     let error = pointed(config, &fake).generate(request).await.unwrap_err();
     assert!(fake.seen().is_empty(), "nothing is sent");
@@ -108,7 +108,7 @@ pub(crate) async fn refused(config: OpenAiConfig, request: &AiRequest) -> Provid
 
 /// What `generate` gives of `request` where a server behind a base URL
 /// answers with `reply`.
-pub(crate) async fn asked(reply: Reply, request: &AiRequest) -> Result<AiResponse, ProviderError> {
+pub(crate) async fn asked(reply: Reply, request: &AiContext) -> Result<AiResponse, ProviderError> {
     let fake = Fake::serving(vec![reply]).await;
     pointed(elsewhere("local-model"), &fake)
         .generate(request)
@@ -152,7 +152,7 @@ pub(crate) fn ending(finish_reason: &str, prompt: u64, completion: u64) -> [Valu
 /// that ended them.
 pub(crate) async fn streamed(
     reply: Reply,
-    request: &AiRequest,
+    request: &AiContext,
 ) -> (Vec<StreamEvent>, Option<ProviderError>) {
     let fake = Fake::serving(vec![reply]).await;
     let provider = pointed(elsewhere("local-model"), &fake);

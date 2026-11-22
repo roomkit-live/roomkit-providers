@@ -3,11 +3,11 @@
 //! result of a call and a block of reasoning each become the block the
 //! Messages API reads.
 
-use roomkit_providers_llm::{
+use roomkit_ai::{
     AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRole, AiThinkingPart,
-    AiToolResultPart, ProviderError, ToolResult, ToolResultPart, fence, identifier,
-    image_part_base64,
+    AiToolResultPart, ProviderError, ToolResult, ToolResultPart, image_part_base64,
 };
+use roomkit_core::rules::transcript::{fence, identifier};
 use serde_json::{Value, json};
 
 use super::cache::put;
@@ -95,7 +95,7 @@ fn image(part: &AiImagePart, provider: &str) -> Result<Value, ProviderError> {
 /// follows the message's results ([`beside_references`]).
 fn tool_result(part: &AiToolResultPart, provider: &str) -> Result<Value, ProviderError> {
     let content = if part.references.is_empty() {
-        result_content(&part.result, provider)?
+        result_content(part, provider)?
     } else {
         let reference = |name: &String| json!({"type": "tool_reference", "tool_name": name});
         part.references.iter().map(reference).collect()
@@ -113,9 +113,11 @@ fn tool_result(part: &AiToolResultPart, provider: &str) -> Result<Value, Provide
 
 /// What a tool returned, as the content of a `tool_result`: a text as it
 /// is, parts as text and image blocks.
-fn result_content(result: &ToolResult, provider: &str) -> Result<Value, ProviderError> {
-    let parts = match result {
+fn result_content(part: &AiToolResultPart, provider: &str) -> Result<Value, ProviderError> {
+    let parts = match &part.result {
         ToolResult::Text(text) => return Ok(text.as_str().into()),
+        // A JSON value, which a Rust host may hand: as its text.
+        ToolResult::Json(_) => return Ok(part.as_text().into()),
         ToolResult::Parts(parts) => parts,
     };
     let blocks = parts.iter().map(|part| match part {
@@ -137,7 +139,7 @@ fn beside_references(part: &AiToolResultPart, provider: &str) -> Result<Vec<Valu
     }
     let label = format!("[Result of {}]", identifier(&part.name, "tool"));
     let text = |text: String| json!({"type": "text", "text": text});
-    Ok(match result_content(&part.result, provider)? {
+    Ok(match result_content(part, provider)? {
         Value::String(body) if !body.is_empty() => {
             vec![text(format!("{label}\n{}", fence(RESULT_TAG, &body)))]
         }

@@ -5,7 +5,7 @@
 
 use std::error::Error as _;
 
-use roomkit_providers_llm::{
+use roomkit_ai::{
     ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions,
     ResponseSchemaFailure,
 };
@@ -39,7 +39,10 @@ fn a_secret_is_removed_from_every_place_a_text_holds_it_at() {
 fn a_text_that_repeats_a_secret_is_read_once() {
     let secret = "12345678";
     let exit = Exit::new("test", Secrets::of([secret.to_owned()]));
-    let repeated = [(secret.to_owned(), 400_000), ("%312345678".to_owned(), 100_000)];
+    let repeated = [
+        (secret.to_owned(), 400_000),
+        ("%312345678".to_owned(), 100_000),
+    ];
     for (written, times) in repeated {
         let said = format!("{written};").repeat(times);
         let started = std::time::Instant::now();
@@ -47,7 +50,10 @@ fn a_text_that_repeats_a_secret_is_read_once() {
         let took = started.elapsed();
         assert!(cleaned.starts_with("[***];[***];"), "{written}");
         assert!(!cleaned.contains(secret), "{written}");
-        assert!(took < std::time::Duration::from_secs(10), "{written}: {took:?}");
+        assert!(
+            took < std::time::Duration::from_secs(10),
+            "{written}: {took:?}"
+        );
     }
 }
 

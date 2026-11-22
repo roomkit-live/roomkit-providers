@@ -2,7 +2,7 @@
 //! `chat_messages`, with `OpenAI`'s own rendering and the field a
 //! configuration names for a model's earlier reasoning.
 
-use roomkit_providers_llm::{
+use roomkit_ai::{
     AiContentPart, AiImagePart, AiMessage, AiMessageContent, AiRole, AiToolCallPart,
     AiToolResultPart, ProviderError, dumps, image_part_uri,
 };

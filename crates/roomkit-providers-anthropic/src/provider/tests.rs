@@ -5,8 +5,8 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+use roomkit_ai::{AiContext, AiProvider};
 use roomkit_providers_client::{Call, USER_AGENT};
-use roomkit_providers_llm::{AiProvider, AiRequest};
 use serde_json::json;
 
 use crate::ported::support::{KEY, elsewhere, hello, official, pointed, saying};
@@ -32,7 +32,7 @@ fn with_headers(config: AnthropicConfig, headers: &[(&str, &str)]) -> AnthropicC
 }
 
 /// [`hello`], carrying `key` as the key of the request.
-fn lending(key: &str) -> AiRequest {
+fn lending(key: &str) -> AiContext {
     let mut request = hello();
     request.metadata.insert("api_key".to_owned(), key.into());
     request

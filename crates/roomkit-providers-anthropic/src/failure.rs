@@ -100,7 +100,7 @@ pub(crate) fn test_exit() -> roomkit_providers_client::Exit {
 
 #[cfg(test)]
 mod tests {
-    use roomkit_providers_llm::ProviderError;
+    use roomkit_ai::ProviderError;
     use serde_json::json;
 
     use super::*;

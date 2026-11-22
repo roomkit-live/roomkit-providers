@@ -5,7 +5,7 @@
 //! does not carry is sent the turn's effort on Anthropic's levels, and
 //! nothing where the turn states off.
 
-use roomkit_providers_llm::{AiRequest, ModelInfo};
+use roomkit_ai::{AiContext, ModelInfo};
 use serde_json::{Value, json};
 
 use crate::config::AnthropicConfig;
@@ -29,7 +29,7 @@ const OFF_BLOCKS: [(&str, &str); 2] = [
 /// `thinking_switch`): its budget first, 0 or below off and above 0 on,
 /// then its switch, then an effort of `none`, which states off. `None` when
 /// nothing states it.
-fn switch(request: &AiRequest) -> Option<bool> {
+fn switch(request: &AiContext) -> Option<bool> {
     match (request.thinking_budget, request.enable_thinking) {
         (Some(budget), _) => Some(budget > 0),
         (None, Some(enabled)) => Some(enabled),
@@ -53,7 +53,7 @@ pub(crate) struct Sampling {
 /// is left out is sent the block its `entry` declares.
 pub(crate) fn sampling(
     config: &AnthropicConfig,
-    request: &AiRequest,
+    request: &AiContext,
     entry: Option<&ModelInfo>,
 ) -> Sampling {
     let switch = switch(request);
@@ -85,7 +85,7 @@ pub(crate) fn sampling(
 /// `minimal` as `low`; the model's lowest level where the turn states off
 /// and the model cannot stop reasoning; none for a model that refuses the
 /// parameter, and for an effort outside Anthropic's scale.
-pub(crate) fn effort(request: &AiRequest, entry: Option<&ModelInfo>) -> Option<&'static str> {
+pub(crate) fn effort(request: &AiContext, entry: Option<&ModelInfo>) -> Option<&'static str> {
     if tagged(entry, EFFORT_REFUSED) {
         return None;
     }
@@ -115,10 +115,10 @@ mod tests {
     use super::*;
     use crate::models::{entry, models};
 
-    fn asking(effort: &str) -> AiRequest {
-        AiRequest {
+    fn asking(effort: &str) -> AiContext {
+        AiContext {
             reasoning_effort: Some(effort.to_owned()),
-            ..AiRequest::default()
+            ..AiContext::default()
         }
     }
 
@@ -144,12 +144,12 @@ mod tests {
     }
 
     /// A turn that states this budget, this switch and this effort.
-    fn turn(budget: Option<i64>, enabled: Option<bool>, effort: Option<&str>) -> AiRequest {
-        AiRequest {
+    fn turn(budget: Option<i64>, enabled: Option<bool>, effort: Option<&str>) -> AiContext {
+        AiContext {
             thinking_budget: budget,
             enable_thinking: enabled,
             reasoning_effort: effort.map(str::to_owned),
-            ..AiRequest::default()
+            ..AiContext::default()
         }
     }
 
@@ -182,7 +182,7 @@ mod tests {
                 use_adaptive_thinking: Some(false),
                 ..adaptive.clone()
             };
-            let sent = |config: &AnthropicConfig, turn: &AiRequest| {
+            let sent = |config: &AnthropicConfig, turn: &AiContext| {
                 sampling(config, turn, entry(model)).thinking
             };
             for config in [&adaptive, &budgeted] {
@@ -220,11 +220,11 @@ mod tests {
     #[test]
     fn the_budget_outranks_the_switch_and_the_switch_the_effort() {
         let request =
-            |budget: Option<i64>, enabled: Option<bool>, effort: Option<&str>| AiRequest {
+            |budget: Option<i64>, enabled: Option<bool>, effort: Option<&str>| AiContext {
                 thinking_budget: budget,
                 enable_thinking: enabled,
                 reasoning_effort: effort.map(str::to_owned),
-                ..AiRequest::default()
+                ..AiContext::default()
             };
         assert_eq!(switch(&request(Some(0), Some(true), None)), Some(false));
         assert_eq!(switch(&request(Some(-1), None, None)), Some(false));

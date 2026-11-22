@@ -14,6 +14,7 @@
 
 use pyo3::prelude::*;
 
+mod dynamic;
 mod errors;
 mod fork;
 mod provider;

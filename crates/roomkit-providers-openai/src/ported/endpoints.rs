@@ -2,7 +2,7 @@
 //! base URL it accepts, `OpenAI`'s own endpoint however it is written, and
 //! what its `Debug` form shows.
 
-use roomkit_providers_llm::{AiProvider, AiRequest, ProviderError};
+use roomkit_ai::{AiContext, AiProvider, ProviderError};
 use serde_json::{Value, json};
 
 use super::support::{KEY, body_sent, hello, hello_with_a_tool, pointed, saying, tool};
@@ -127,7 +127,7 @@ fn the_provider_s_debug_form_hides_the_api_key_and_the_base_url_s_credentials() 
 async fn refuses(base_url: &str, name: &str) -> bool {
     let fake = Fake::serving(vec![saying("ok")]).await;
     let provider = pointed(at(Some(base_url), "gpt-4o"), &fake);
-    let request = AiRequest {
+    let request = AiContext {
         tools: vec![tool(name)],
         ..hello()
     };

@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use roomkit_providers_llm::{ProviderError, StreamEvent};
+use roomkit_ai::{ProviderError, StreamEvent};
 use serde_json::{Value, json};
 
 use super::Folding;

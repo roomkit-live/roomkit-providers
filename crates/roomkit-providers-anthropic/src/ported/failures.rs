@@ -1,7 +1,7 @@
 //! How a failure reads: the status an error names, whether it is retried,
 //! and what its text may hold.
 
-use roomkit_providers_llm::{AiProvider, AiRequest};
+use roomkit_ai::{AiContext, AiProvider};
 use serde_json::{Value, json};
 
 use super::support::{KEY, elsewhere, hello, pointed, start, stream_of, streamed};
@@ -82,7 +82,7 @@ async fn stream_errors_retain_retryability_and_hide_the_key_of_the_request_too()
         let reply = || Reply::json(status, body.to_string());
         let fake = Fake::serving(vec![reply(), reply()]).await;
         let provider = pointed(elsewhere("local-model"), &fake);
-        let request = AiRequest {
+        let request = AiContext {
             metadata: [("api_key".to_owned(), Value::from(LENT))]
                 .into_iter()
                 .collect(),

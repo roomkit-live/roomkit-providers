@@ -26,12 +26,12 @@ use std::process::Command;
 use std::time::Duration;
 
 use reqwest::header::HeaderMap;
+use roomkit_ai::ProviderError;
 use roomkit_providers_client::failure::Stated;
 use roomkit_providers_client::harness::fake::{Fake, Reply};
 use roomkit_providers_client::harness::tls::Authority;
 use roomkit_providers_client::retry::{Past, Rule};
 use roomkit_providers_client::{Call, Client, Exit, Failure, Settings, Timeouts};
-use roomkit_providers_llm::ProviderError;
 use serde_json::{Value, json};
 
 /// The test a child runs.

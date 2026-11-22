@@ -3,7 +3,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use roomkit_providers_llm::{AiRequest, ProviderError, StreamEvent};
+use roomkit_ai::{AiContext, ProviderError, StreamEvent};
 use serde_json::{Value, json};
 
 use super::support::{chunk, ending, events, streamed};
@@ -12,7 +12,7 @@ const CASES: &str = include_str!("composition_cases.json");
 
 /// The events `chunks` stream, each event or its failure.
 async fn read(chunks: &[Value]) -> Vec<Result<StreamEvent, ProviderError>> {
-    let (events, failure) = streamed(events(chunks), &AiRequest::default()).await;
+    let (events, failure) = streamed(events(chunks), &AiContext::default()).await;
     let events = events.into_iter().map(Ok);
     events.chain(failure.map(Err)).collect()
 }

@@ -2,7 +2,8 @@
 //! strictly, where the fixture comes from, and each request as the contract
 //! reads it.
 
-use roomkit_providers_llm::AiRequest;
+use roomkit_ai::AiContext;
+use roomkit_providers_python_forms::Form;
 use serde_json::json;
 
 use super::super::Says::{Holding, Only};
@@ -183,7 +184,7 @@ pub(super) const REQUESTS: &[Wrong] = &[
     (
         "a request the contract reads, listed as one it does not",
         |f| {
-            let read = serde_json::to_value(AiRequest::default()).unwrap();
+            let read = AiContext::default().written();
             case(f, "unread")["request"] = read;
         },
         Holding("left: []\n right: [\"unread\"]"),

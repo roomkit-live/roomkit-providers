@@ -4,8 +4,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use roomkit_ai::AiProvider;
 use roomkit_providers_client::Pace;
-use roomkit_providers_llm::AiProvider;
 
 use super::support::{elsewhere, pointed};
 use crate::AnthropicConfig;

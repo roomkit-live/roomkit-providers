@@ -2,7 +2,8 @@
 //! generation with its request passes it, and one that leaves without it,
 //! or whose failure shows nothing of the refusal, does not.
 
-use roomkit_providers_llm::AiRequest;
+use roomkit_ai::AiContext;
+use roomkit_providers_python_forms::Form;
 use serde_json::{Value, json};
 
 use super::kept_out;
@@ -16,7 +17,7 @@ use crate::harness::{Fixture, replayed_or_named};
 /// A fixture of one case for each generation, whose provider leaves as
 /// `leaves` says.
 fn fixture(leaves: &str) -> Fixture {
-    let request = serde_json::to_value(AiRequest::default()).unwrap();
+    let request = AiContext::default().written();
     let case = |call: &str| {
         json!({
             "name": call,

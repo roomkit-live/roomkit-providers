@@ -1,8 +1,8 @@
 //! What a request carries: its thinking, its effort and its schema, its
 //! blocks, its cache marks and its tools.
 
-use roomkit_providers_llm::{
-    AiContentPart, AiImagePart, AiMessage, AiRequest, AiRole, AiThinkingPart, AiTool,
+use roomkit_ai::{
+    AiContentPart, AiContext, AiImagePart, AiMessage, AiRole, AiThinkingPart, AiTool,
     AiToolResultPart, StreamToolCallDelta, ToolResult, ToolResultPart,
 };
 use serde_json::{Value, json};
@@ -57,7 +57,7 @@ fn schema_and_effort_share_output_config_without_erasing_tools() {
         "required": ["city"],
         "additionalProperties": false,
     });
-    let request = AiRequest {
+    let request = AiContext {
         reasoning_effort: Some("minimal".to_owned()),
         response_schema: schema.as_object().cloned(),
         tools: vec![tool("lookup")],
@@ -83,12 +83,12 @@ fn images_and_failed_tool_results_keep_their_native_blocks() {
     let shown = ToolResult::Parts(vec![ToolResultPart::Image(image.clone())]);
     let mut result = AiToolResultPart::new("c1", "screen", shown);
     result.is_error = true;
-    let request = AiRequest {
+    let request = AiContext {
         messages: vec![
             AiMessage::new(AiRole::User, vec![AiContentPart::Image(image)]),
             AiMessage::new(AiRole::Tool, vec![AiContentPart::ToolResult(result)]),
         ],
-        ..AiRequest::default()
+        ..AiContext::default()
     };
     let wire = &body_of(unmarked("claude-opus-5-5"), &request)["messages"];
     let expected = json!({
@@ -123,12 +123,12 @@ fn signed_and_redacted_blocks_replay_but_unsigned_blocks_do_not() {
         },
     ];
     let parts = unsigned.into_iter().chain([signed, redacted]);
-    let request = AiRequest {
+    let request = AiContext {
         messages: vec![AiMessage::new(
             AiRole::Assistant,
             parts.map(AiContentPart::Thinking).collect::<Vec<_>>(),
         )],
-        ..AiRequest::default()
+        ..AiContext::default()
     };
     let wire = &body_of(unmarked("claude-opus-5-5"), &request)["messages"];
     assert_eq!(
@@ -187,10 +187,10 @@ fn references_stay_alone_and_results_follow_every_tool_result() {
     let results = [referenced, ordinary].map(AiContentPart::ToolResult);
     let mut held = tool("lookup");
     held.defer_loading = true;
-    let request = AiRequest {
+    let request = AiContext {
         messages: vec![AiMessage::new(AiRole::Tool, results.to_vec())],
         tools: vec![tool("find_tools"), held],
-        ..AiRequest::default()
+        ..AiContext::default()
     };
     let body = body_of(unmarked("claude-sonnet-4-6"), &request);
     let blocks = body["messages"][0]["content"].as_array().unwrap();

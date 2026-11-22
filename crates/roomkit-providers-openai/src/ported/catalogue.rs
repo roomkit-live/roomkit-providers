@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
-use roomkit_providers_llm::{AiProvider, Date};
+use roomkit_ai::{AiProvider, Date};
 use serde_json::Value;
 
 use super::support::official;

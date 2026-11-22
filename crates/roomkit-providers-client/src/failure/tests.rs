@@ -1,9 +1,8 @@
 //! How the failures every provider words alike read once they left, and
 //! what the exit does of a failure a provider words itself.
 
-use roomkit_providers_llm::{
-    API_KEY_METADATA_KEY, AiRequest, ProviderError, ProviderErrorOptions, repr,
-};
+use crate::harness::python_repr::repr;
+use roomkit_ai::{API_KEY_METADATA_KEY, AiContext, ProviderError, ProviderErrorOptions};
 use serde_json::{Value, json};
 
 use super::*;
@@ -193,8 +192,8 @@ fn the_failure_of_a_provider_that_is_not_built_leaves_in_its_own_words_alone() {
 }
 
 /// A request that brings `key` for itself.
-fn lending(key: &str) -> AiRequest {
-    let mut request = AiRequest::default();
+fn lending(key: &str) -> AiContext {
+    let mut request = AiContext::default();
     let lent = (API_KEY_METADATA_KEY.to_owned(), key.into());
     request.metadata.extend([lent]);
     request
@@ -215,7 +214,7 @@ fn the_key_a_request_brings_is_removed_beside_the_configuration_s() {
     );
     let as_it_was = format!("the server refused the placeholder-not-a-key: [***] then {lent}.");
     assert_eq!(left(&exit, &worded(&echoed)).message, as_it_was);
-    for no_key in [AiRequest::default(), lending("")] {
+    for no_key in [AiContext::default(), lending("")] {
         let error = exit.leave_for(&no_key, &worded(&echoed));
         assert_eq!(error.message, as_it_was);
     }

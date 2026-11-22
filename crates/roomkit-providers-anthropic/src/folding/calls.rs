@@ -10,10 +10,10 @@
 //! What is kept of the calls is bounded: how many a message makes, and the
 //! id, the name and the arguments of each.
 
-use roomkit_providers_client::ANSWER_LIMIT;
-use roomkit_providers_llm::{
+use roomkit_ai::{
     AiToolCall, CallIds, StreamToolCall, StreamToolCallDelta, tool_arguments, unreadable_arguments,
 };
+use roomkit_providers_client::ANSWER_LIMIT;
 use serde_json::Value;
 
 use super::unreadable;

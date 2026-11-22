@@ -1,9 +1,8 @@
 //! What the provider reads of a whole answer: its calls, its usage, its
 //! reasoning, and an answer constrained by a response schema.
 
-use roomkit_providers_llm::{
-    AiProvider, AiRequest, AiResponse, Metadata, ProviderError, ResponseSchemaFailure,
-};
+use roomkit::model::Metadata;
+use roomkit_ai::{AiContext, AiProvider, AiResponse, ProviderError, ResponseSchemaFailure};
 use serde_json::{Map, Value, json};
 
 use super::support::{
@@ -250,8 +249,8 @@ fn verdict() -> Map<String, Value> {
 }
 
 /// A question under the verdict's schema.
-fn asking() -> AiRequest {
-    AiRequest {
+fn asking() -> AiContext {
+    AiContext {
         response_schema: Some(verdict()),
         ..hello()
     }

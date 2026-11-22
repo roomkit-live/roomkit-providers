@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use reqwest::header::HeaderMap;
-use roomkit_providers_llm::ProviderError;
+use roomkit_ai::ProviderError;
 use serde_json::Value;
 
 use crate::failure::{Stated, past_mark};

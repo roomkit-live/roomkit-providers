@@ -4,9 +4,9 @@
 
 use std::sync::LazyLock;
 
+use roomkit_ai::ModelInfo;
 use roomkit_providers_client::catalogue;
 pub(crate) use roomkit_providers_client::catalogue::{reasoning_floor, tagged};
-use roomkit_providers_llm::ModelInfo;
 use serde_json::Value;
 
 const CATALOGUE: &str = include_str!("../catalog/models.json");

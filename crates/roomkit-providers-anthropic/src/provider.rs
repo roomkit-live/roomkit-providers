@@ -6,14 +6,15 @@ use std::fmt;
 use std::sync::Arc;
 
 use reqwest::header::HeaderMap;
+use roomkit_ai::{
+    AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
+    TextStream, checked_stream, listing,
+};
 use roomkit_providers_client::endpoint::joined;
+use roomkit_providers_client::request_api_key;
 use roomkit_providers_client::retry::{Past, Rule};
 use roomkit_providers_client::stream::{leaving, text};
 use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, tried_again};
-use roomkit_providers_llm::{
-    AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
-    TextStream, checked_stream, listing, request_api_key,
-};
 use serde_json::Value;
 
 use self::build::{Carried, KEY_HEADER, exit_of, headers_of, key_value, own_endpoint};
@@ -64,7 +65,7 @@ const JSON: &str = "application/json";
 /// A request is sent to the base URL of the [configuration](AnthropicConfig),
 /// Anthropic's own when it names none, with the configuration's key in its
 /// `x-api-key` header, or the key the request carries for itself
-/// ([`API_KEY_METADATA_KEY`](roomkit_providers_llm::API_KEY_METADATA_KEY)).
+/// ([`API_KEY_METADATA_KEY`](roomkit_ai::API_KEY_METADATA_KEY)).
 ///
 /// # Streams
 ///
@@ -187,7 +188,7 @@ impl Anthropic {
     ///
     /// The failure of a request that has no key to carry, and of a key
     /// that cannot go in a header.
-    pub(crate) fn headers_of(&self, request: &AiRequest) -> Result<Cow<'_, HeaderMap>, Failure> {
+    pub(crate) fn headers_of(&self, request: &AiContext) -> Result<Cow<'_, HeaderMap>, Failure> {
         let lent = request_api_key(request).filter(|_| !self.key_replaced);
         let Some(key) = lent else {
             return self.keyed_headers();
@@ -290,13 +291,17 @@ fn refusal(done: &StreamDone) -> Option<String> {
     (done.finish_reason.as_deref() == Some("refusal")).then(|| "refusal".to_owned())
 }
 
+impl Anthropic {
+    /// The name the provider's failures carry: Python's `provider`.
+    #[must_use]
+    pub fn label(&self) -> &'static str {
+        LABEL
+    }
+}
+
 impl AiProvider for Anthropic {
     fn name(&self) -> &'static str {
         CLASS_NAME
-    }
-
-    fn label(&self) -> &'static str {
-        LABEL
     }
 
     fn model_name(&self) -> &str {
@@ -352,14 +357,14 @@ impl AiProvider for Anthropic {
     /// One whole answer, folded from
     /// [`generate_structured_stream`](AiProvider::generate_structured_stream):
     /// nothing of an answer that failed under way is given.
-    async fn generate(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
+    async fn generate(&self, request: &AiContext) -> Result<AiResponse, ProviderError> {
         whole::response(self.generate_structured_stream(request)).await
     }
 
     /// The text of
     /// [`generate_structured_stream`](AiProvider::generate_structured_stream),
     /// as it comes: its reasoning, its calls and its end are left out.
-    fn generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a> {
+    fn generate_stream<'a>(&'a self, request: &'a AiContext) -> TextStream<'a> {
         text(self.generate_structured_stream(request))
     }
 
@@ -369,7 +374,7 @@ impl AiProvider for Anthropic {
     /// constrained by a response schema is checked before its done event,
     /// which its failure replaces. A failure leaves with `request`, whose
     /// own key it does not repeat.
-    fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
+    fn generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
         let checked = checked_stream(stream::events(self, request), request, LABEL, refusal);
         leaving(checked, &self.exit, request)
     }

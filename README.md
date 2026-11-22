@@ -8,12 +8,11 @@
 
 RoomKit Providers is where the clients of model services live for the
 [RoomKit](https://github.com/roomkit-live/roomkit) ecosystem: one
-implementation per service, written once in Rust, behind a provider-neutral
-contract.
+implementation per service, written once in Rust, for RoomKit's Rust core
+and, behind a Python binding, for RoomKit's Python.
 
-> **Early development.** The contract crate is written: what a provider
-> implements, what it is asked and what it answers. So is the HTTP client
-> the providers are built on, and two providers, OpenAI's and Anthropic's:
+> **Early development.** The HTTP client the providers are built on is
+> written, and two providers, OpenAI's and Anthropic's:
 > whole answers, streams and the model listing. A Python package holds both
 > behind a native extension, each as a RoomKit provider. Nothing is
 > released. The
@@ -24,13 +23,13 @@ contract.
 
 - **One implementation per provider.** A provider's wire format, streaming,
   retries and failures are written once, in Rust.
-- **A provider-neutral contract.** A request, its messages and tools, the
-  response, the events of a streamed answer, typed failures and model
-  catalogues are defined apart from any vendor.
-- **Tied to no core.** The Rust contract and the Rust providers need
-  neither RoomKit nor an agent framework, and RoomKit's cores are to depend
-  on the contract, never on a vendor. The Python package is RoomKit's: a
-  provider there is a RoomKit provider.
+- **What a provider is stays in the core.** The request, its messages and
+  tools, the response, the events of a streamed answer, typed failures and
+  model catalogues are RoomKit's: a provider here implements RoomKit's
+  provider trait in Rust and is a RoomKit `AIProvider` in Python. This
+  repository defines none of it.
+- **The core is tied to no vendor.** A vendor's code lives here, so that
+  RoomKit's cores name none.
 - **The host stays in control.** Endpoints, credentials, timeouts and limits
   are explicit host configuration. A provider writes no credential into a
   log, a `Debug` form or a result, and removes from an error's text a
@@ -45,25 +44,24 @@ Section numbers in the code and its documentation (`RFC §6.7`) refer to the
 
 In this order:
 
-1. the contract crate, `roomkit-providers-llm`: written, not released;
-2. a provider for OpenAI-compatible Chat Completions endpoints,
+1. a provider for OpenAI-compatible Chat Completions endpoints,
    `roomkit-providers-openai`: written, not released. It answers a request
    whole or as a stream and lists its endpoint's models, replaying the cases
    captured on RoomKit's Python provider;
-3. a Python package holding the same implementation behind a native
+2. a Python package holding the same implementation behind a native
    extension, `roomkit-providers`: written, not released, for Linux x86_64.
    A provider is a RoomKit `AIProvider`, and what translates between RoomKit
    and the contract is written once for every provider ([Python](#python));
-4. a provider for Anthropic's Messages API,
+3. a provider for Anthropic's Messages API,
    `roomkit-providers-anthropic`: written, not released, in Rust and in the
    Python package, which it joined with no change to what every provider
    shares there. It replays the cases captured on RoomKit's Python
    provider, and is written on the HTTP client the OpenAI provider is
    written on, `roomkit-providers-client`: a provider crate holds its wire
    and nothing else;
-5. the other providers of language models, then the other kinds of
+4. the other providers of language models, then the other kinds of
    provider;
-6. RoomKit's implementations, in Python and in Rust, depending on the
+5. RoomKit's implementations, in Python and in Rust, depending on the
    contract and on no vendor.
 
 Items 5 and 6 are not started.
@@ -100,12 +98,12 @@ provider.
 
 | Path | Contents |
 | --- | --- |
-| `crates/roomkit-providers-llm` | The contract crate: the provider trait, the request, the response and its stream events, the response schema, the replay of a round, the provider failure and the model catalogue, with a scripted provider for tests, and, for a provider crate, RoomKit's rules for a text from outside written in a model's context |
 | `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients, which trusts the certificate authorities the environment or the system names |
 | `crates/roomkit-providers-client` | The HTTP client a provider is built on, written once for every provider: a request and its tries, the proxies it reads from the environment, the bounds of an answer and of a stream, the base URLs refused when a provider is built, the one exit of failures, and, for a provider's tests, the replay of its recorded wire cases against a local fake |
 | `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy |
 | `crates/roomkit-providers-anthropic` | The Anthropic provider (`Anthropic`): whole answers, streams and the model listing on the Messages API, its configuration (`AnthropicConfig`), the wire cases it replays, and an example against a local server |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract, and the entries Python calls are written once for every vendor (`src/vendor.rs`); `src/vendors` holds each provider's own part, its configuration and how it is built |
+| `bindings/python-forms` | The JSON forms of RoomKit's Python models, read into and written from the types of RoomKit's Rust core: what crosses to Python, and what a recorded case holds. The conversion and nothing else |
 | `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, and `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, a class statement each |
 | `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the criterion that adding a provider changes none of it; the replay of each provider's recorded wire cases through its class; a RoomKit agent over each; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
@@ -147,15 +145,12 @@ vulnerability.
 
 [MIT](LICENSE).
 
-`roomkit-providers-llm` and `roomkit-providers-http` are
-`MIT AND Unicode-3.0`: the first holds tables and the second a list derived
-from Unicode data, under the Unicode License V3, which each crate ships as
-its `LICENSE-UNICODE`
-([llm](crates/roomkit-providers-llm/LICENSE-UNICODE),
-[http](crates/roomkit-providers-http/LICENSE-UNICODE)).
+`roomkit-providers-http` is `MIT AND Unicode-3.0`: it holds a list derived
+from Unicode data, under the Unicode License V3, which the crate ships as
+its [`LICENSE-UNICODE`](crates/roomkit-providers-http/LICENSE-UNICODE).
 
-The Python package's own code is MIT. Its wheel links both crates and the
-crates they depend on, a few of which are under no license it could take
+The Python package's own code is MIT. Its wheel links the crates of this repository,
+RoomKit's Rust core and the crates they depend on, a few of which are under no license it could take
 them under in place of their own: the wheel is
 `MIT AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND CDLA-Permissive-2.0 AND ISC AND Zlib`,
 and ships the notices of every crate its extension is built from

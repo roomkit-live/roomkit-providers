@@ -7,6 +7,7 @@
 //! The harness of `roomkit-providers-client` holds what is made wrong
 //! whatever the wire; the wrongs of this provider's wire are written here.
 
+use roomkit_ai::StreamEvent;
 use roomkit_providers_client::harness::Outcome;
 use roomkit_providers_client::harness::self_test::{
     ANSWER, ASKED_WAIT, CUT, FAILURE, LISTING, MODELS, NAMED_ANSWER, NAMED_FAILURE, NAMED_STREAM,
@@ -14,7 +15,6 @@ use roomkit_providers_client::harness::self_test::{
     WAITS, Wrong, events_of, failure_of, held_to_its_entry, refuses,
     refuses_a_stream_served_in_one_piece,
 };
-use roomkit_providers_llm::StreamEvent;
 
 use super::fixture;
 use super::named::NAMED;

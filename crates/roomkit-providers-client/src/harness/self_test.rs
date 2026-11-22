@@ -8,7 +8,7 @@
 //! to the lists here, which hold whatever its wire, the wrongs of its own:
 //! another path, another key, a header it does not send.
 
-use roomkit_providers_llm::{
+use roomkit_ai::{
     ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions,
     ResponseSchemaFailure, StreamEvent,
 };

@@ -3,7 +3,8 @@
 //! before anything is sent, naming the tool and the rule, as Python's
 //! provider checks them (`ANTHROPIC_TOOL_NAMES`).
 
-use roomkit_providers_llm::{AiTool, ProviderError, ProviderErrorOptions, repr};
+use roomkit_ai::{AiTool, ProviderError, ProviderErrorOptions};
+use roomkit_core::rules::python_repr;
 
 /// The names Anthropic's endpoint accepts, written as Python's pattern is.
 const RULE: &str = "[A-Za-z0-9_-]{1,128}";
@@ -22,7 +23,7 @@ pub(crate) fn check(tools: &[AiTool], provider: &str) -> Result<(), ProviderErro
         return Ok(());
     };
     // The name is quoted as Python's `repr` quotes it.
-    let name = repr(&tool.name.as_str().into());
+    let name = python_repr(&tool.name);
     let message = format!("tool {name}: anthropic accepts tool names matching {RULE}");
     let options = ProviderErrorOptions {
         provider: provider.to_owned(),

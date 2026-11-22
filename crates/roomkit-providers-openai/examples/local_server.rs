@@ -14,7 +14,7 @@ use std::fmt::Write as _;
 use std::future::poll_fn;
 use std::io::Write as _;
 
-use roomkit_providers_llm::{AiMessage, AiProvider, AiRequest, AiRole, StreamEvent};
+use roomkit_ai::{AiContext, AiMessage, AiProvider, AiRole, StreamEvent};
 use roomkit_providers_openai::{OpenAi, OpenAiConfig};
 use serde_json::{Value, json};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -119,10 +119,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
     };
     let provider = OpenAi::new(config)?;
-    let request = AiRequest {
+    let request = AiContext {
         system_prompt: Some("You answer in one sentence.".to_owned()),
         messages: vec![AiMessage::new(AiRole::User, "When do you open?")],
-        ..AiRequest::default()
+        ..AiContext::default()
     };
     let mut shown = std::io::stdout().lock();
 

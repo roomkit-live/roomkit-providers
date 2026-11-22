@@ -14,7 +14,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use roomkit_providers_llm::{CallIds, StreamToolCallDelta};
+use roomkit_ai::{CallIds, StreamToolCallDelta};
 use serde_json::Value;
 
 use self::held::{Held, stripped};

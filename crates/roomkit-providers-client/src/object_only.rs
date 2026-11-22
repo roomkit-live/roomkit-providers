@@ -10,7 +10,7 @@ use serde::de::Visitor;
 /// through this one, the source is asked for an object, and refuses a list
 /// as it refuses a number. The source is read once: nothing is held back.
 ///
-/// For a provider crate too: the reader of its configuration.
+/// For a provider crate: the reader of its configuration.
 #[derive(Debug)]
 pub struct ObjectOnly<D>(pub D);
 
@@ -31,23 +31,3 @@ impl<'de, D: Deserializer<'de>> Deserializer<'de> for ObjectOnly<D> {
         tuple_struct map struct enum identifier ignored_any
     }
 }
-
-/// Implements `Deserialize` for each model as its form, read from an object
-/// only. A form holds the model's fields as Python's model takes them, a
-/// field left out taking its default, and converts into the model.
-macro_rules! read_as_object {
-    ($($form:ty => $model:ty),+ $(,)?) => {
-        $(
-            impl<'de> serde::Deserialize<'de> for $model {
-                fn deserialize<D: serde::Deserializer<'de>>(
-                    deserializer: D,
-                ) -> Result<Self, D::Error> {
-                    let object = $crate::strict::ObjectOnly(deserializer);
-                    <$form as serde::Deserialize>::deserialize(object).map(Self::from)
-                }
-            }
-        )+
-    };
-}
-
-pub(crate) use read_as_object;

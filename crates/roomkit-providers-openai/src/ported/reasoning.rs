@@ -2,7 +2,7 @@
 //! catalogue says of its model and what the configuration says of a server
 //! behind a base URL; and the models the endpoint refuses a turn.
 
-use roomkit_providers_llm::{AiProvider, AiRequest};
+use roomkit_ai::{AiContext, AiProvider};
 use serde_json::{Value, json};
 
 use super::support::{
@@ -47,7 +47,7 @@ struct Turn {
 /// The `reasoning_effort` the request of `turn` carries, with a tool when
 /// `tools`; null when it carries none.
 async fn effort(config: OpenAiConfig, turn: Turn, tools: bool) -> Value {
-    let request = AiRequest {
+    let request = AiContext {
         reasoning_effort: turn.effort.map(str::to_owned),
         enable_thinking: turn.off.then_some(false),
         tools: if tools {
@@ -229,7 +229,7 @@ async fn a_responses_only_model_fails_before_the_request() {
 // Source: src/reasoning/tests.rs::a_refused_model_is_named_before_a_refused_tool_name
 #[tokio::test]
 async fn a_refused_model_is_named_before_a_refused_tool_name() {
-    let request = AiRequest {
+    let request = AiContext {
         tools: vec![tool("ns.lookup")],
         ..hello()
     };

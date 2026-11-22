@@ -4,7 +4,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use roomkit_providers_llm::{AiProvider, ProviderError};
+use roomkit_ai::{AiProvider, ProviderError};
 use serde_json::json;
 
 use super::support::{

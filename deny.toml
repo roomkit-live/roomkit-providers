@@ -6,11 +6,10 @@ yanked = "deny"
 
 [licenses]
 # Unicode-3.0 covers the crates that hold or read Unicode data: the ICU crates
-# behind the URL parser, unicode-ident behind the derive macros, and the two
-# crates of this repository that ship that data's notice (LICENSE-UNICODE):
-# the contract crate for its table of printable characters and the tables it
-# reads a text from outside with, the HTTP support crate for its list of the
-# characters that normalize to a URL's delimiter.
+# behind the URL parser, unicode-ident behind the derive macros, and the
+# crate of this repository that ships that data's notice (LICENSE-UNICODE):
+# the HTTP support crate, for its list of the characters that normalize to
+# a URL's delimiter.
 allow = ["MIT", "Apache-2.0", "Unicode-3.0"]
 # Any other license is allowed for the one crate that needs it.
 exceptions = [
@@ -45,3 +44,6 @@ allow-wildcard-paths = true
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+# RoomKit's Rust core, which is not on crates.io: what a provider is comes
+# from it.
+allow-git = ["https://github.com/roomkit-live/roomkit-rs"]

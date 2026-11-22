@@ -1,15 +1,14 @@
-//! A provider held as an object (RFC §6.7): Python takes any `AIProvider`
-//! where it takes a provider, which a Rust trait with `async` methods
-//! cannot be.
+//! A provider held as an object, whichever its type: what Python is given.
+//!
+//! `RoomKit`'s core has such an object for a host that picks among
+//! providers (`roomkit_ai::AnyProvider`), with the methods a channel
+//! calls. Python calls more of a provider: a whole answer, a text stream,
+//! the model listing and what it says it supports. This one has them all.
 
 use std::future::Future;
 use std::pin::Pin;
 
-use super::{AiProvider, ProviderStream, TextStream};
-use crate::catalog::ModelInfo;
-use crate::error::ProviderError;
-use crate::request::AiRequest;
-use crate::response::AiResponse;
+use roomkit_ai::{AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, ProviderStream};
 
 /// What a provider's call gives once awaited, held as an object.
 type Held<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
@@ -20,12 +19,9 @@ type Held<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 ///
 /// Its methods are [`AiProvider`]'s under names of their own, so that a
 /// provider with both traits in scope reads each method as one.
-pub trait DynAiProvider: Send + Sync + 'static {
+pub(crate) trait AnyProvider: Send + Sync + 'static {
     /// [`AiProvider::name`].
     fn dyn_name(&self) -> &str;
-
-    /// [`AiProvider::label`].
-    fn dyn_label(&self) -> &str;
 
     /// [`AiProvider::model_name`].
     fn dyn_model_name(&self) -> &str;
@@ -60,31 +56,19 @@ pub trait DynAiProvider: Send + Sync + 'static {
     /// [`AiProvider::generate`].
     fn dyn_generate<'a>(
         &'a self,
-        request: &'a AiRequest,
+        request: &'a AiContext,
     ) -> Held<'a, Result<AiResponse, ProviderError>>;
 
-    /// [`AiProvider::generate_stream`].
-    fn dyn_generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a>;
-
     /// [`AiProvider::generate_structured_stream`].
-    fn dyn_generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a>;
+    fn dyn_generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a>;
 
     /// [`AiProvider::close`].
     fn dyn_close(&self) -> Held<'_, ()>;
-
-    /// The provider's type name, without its path nor its parameters
-    /// (Python's `type(provider).__name__`).
-    #[doc(hidden)]
-    fn dyn_type_name(&self) -> &'static str;
 }
 
-impl<P: AiProvider> DynAiProvider for P {
+impl<P: AiProvider> AnyProvider for P {
     fn dyn_name(&self) -> &str {
         self.name()
-    }
-
-    fn dyn_label(&self) -> &str {
-        self.label()
     }
 
     fn dyn_model_name(&self) -> &str {
@@ -129,24 +113,16 @@ impl<P: AiProvider> DynAiProvider for P {
 
     fn dyn_generate<'a>(
         &'a self,
-        request: &'a AiRequest,
+        request: &'a AiContext,
     ) -> Held<'a, Result<AiResponse, ProviderError>> {
         Box::pin(self.generate(request))
     }
 
-    fn dyn_generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a> {
-        self.generate_stream(request)
-    }
-
-    fn dyn_generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
+    fn dyn_generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
         self.generate_structured_stream(request)
     }
 
     fn dyn_close(&self) -> Held<'_, ()> {
         Box::pin(self.close())
-    }
-
-    fn dyn_type_name(&self) -> &'static str {
-        super::short_type_name::<P>()
     }
 }

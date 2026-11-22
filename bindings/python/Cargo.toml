@@ -24,9 +24,13 @@ crate-type = ["cdylib", "rlib"]
 testing = []
 
 [dependencies]
-# The contract: the request read from JSON, the response and the events
-# written as JSON, the failure a call raises.
-roomkit-providers-llm = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-llm" }
+# RoomKit's core: the request a provider is given, the answer and the events
+# it gives, the failure a call raises. The revision is the providers'.
+roomkit = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
+roomkit-ai = { version = "0.2.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "4f271c660c0531aff760e6f2a60c8d58093153aa" }
+# The JSON form those values cross to Python in: the request read, the
+# answer and the events written.
+roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "../python-forms" }
 # The providers, which bring the HTTP crates. `replay` is the seam the Python
 # replay of the recorded cases drives a provider through: a private function
 # of the native module, which sends to a loopback address only.

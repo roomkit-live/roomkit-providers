@@ -3,8 +3,8 @@
 
 use std::time::Duration;
 
+use roomkit_ai::AiProvider;
 use roomkit_providers_client::USER_AGENT;
-use roomkit_providers_llm::AiProvider;
 use serde_json::json;
 
 use crate::ported::support::{KEY, chunk, elsewhere, ending, events, hello, pointed, saying};

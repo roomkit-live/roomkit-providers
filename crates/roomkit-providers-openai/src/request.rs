@@ -4,8 +4,8 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use roomkit_providers_llm::{
-    AiRequest, AiTool, ModelInfo, ProviderError, ProviderErrorOptions, declared_parameters,
+use roomkit_ai::{
+    AiContext, AiTool, ModelInfo, ProviderError, ProviderErrorOptions, declared_parameters,
     schema_for_generate,
 };
 use serde_json::{Map, Value, json};
@@ -45,7 +45,7 @@ impl Asked<'_> {
     /// schema the server does not take, a tool name the vendor refuses.
     pub(crate) fn body(
         &self,
-        request: &AiRequest,
+        request: &AiContext,
         streamed: bool,
     ) -> Result<Map<String, Value>, ProviderError> {
         self.check_model_serves(request)?;
@@ -118,7 +118,7 @@ impl Asked<'_> {
 
     /// Refuses, before the request, a turn `OpenAI`'s endpoint refuses its
     /// model, as the catalogue states it (Python's `_check_model_serves`).
-    fn check_model_serves(&self, request: &AiRequest) -> Result<(), ProviderError> {
+    fn check_model_serves(&self, request: &AiContext) -> Result<(), ProviderError> {
         let model = &self.config.model;
         let refused = if tagged(self.entry, RESPONSES_ONLY) {
             format!("{model} is served by OpenAI's Responses API only, not Chat Completions")
@@ -141,7 +141,7 @@ impl Asked<'_> {
     /// one; the model's least effort where the request states off and the
     /// catalogue knows it; then, on a turn with tools, what the endpoint
     /// accepts there.
-    fn reasoning_effort(&self, request: &AiRequest) -> Option<String> {
+    fn reasoning_effort(&self, request: &AiContext) -> Option<String> {
         let stated = request.reasoning_effort.as_deref();
         let effort = stated.or(self.config.reasoning_effort.as_deref());
         // The budget, then the switch, then an effort of `none` state off.

@@ -22,8 +22,8 @@
 //! reason. The crate's README lists them.
 //!
 //! It is built on `roomkit-providers-client`, the HTTP client every
-//! provider of this repository shares, and depends on neither Python nor
-//! `RoomKit`.
+//! provider of this repository shares, and on `RoomKit`'s Rust core for
+//! what a provider is. It needs no Python.
 
 #![forbid(unsafe_code)]
 

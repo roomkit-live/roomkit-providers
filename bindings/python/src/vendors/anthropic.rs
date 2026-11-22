@@ -9,8 +9,8 @@
 
 use std::net::SocketAddr;
 
+use roomkit_ai::ProviderError;
 use roomkit_providers_anthropic::{AnthropicConfig, ReplayWaits};
-use roomkit_providers_llm::ProviderError;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::vendor::Vendor;

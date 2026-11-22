@@ -23,9 +23,9 @@ use std::error::Error;
 use std::io::Write as _;
 use std::process::{Command, ExitCode};
 
+use roomkit_ai::{AiContext, AiMessage, AiProvider, AiRole};
 use roomkit_providers_client::harness::fake::{Fake, Reply, Seen};
 use roomkit_providers_client::harness::tls::Authority;
-use roomkit_providers_llm::{AiMessage, AiProvider, AiRequest, AiRole};
 use roomkit_providers_openai::{OpenAi, OpenAiConfig};
 use serde_json::json;
 
@@ -63,9 +63,9 @@ async fn host(base_urls: Vec<String>) -> Result<(), Box<dyn Error>> {
             ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
         };
         let provider = OpenAi::new(config)?;
-        let request = AiRequest {
+        let request = AiContext {
             messages: vec![AiMessage::new(AiRole::User, "How did you get here?")],
-            ..AiRequest::default()
+            ..AiContext::default()
         };
         let response = provider.generate(&request).await?;
         writeln!(shown, "{base_url}: {}", response.content)?;

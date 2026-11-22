@@ -4,12 +4,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
-use roomkit_providers_llm::{
-    AiRequest, AiResponse, ModelInfo, ProviderError, ProviderErrorOptions, ResponseSchemaError,
-    ResponseSchemaErrorOptions, ResponseSchemaFailure, StreamEvent, repr,
+use crate::harness::python_repr::repr;
+use roomkit_ai::{
+    AiContext, AiResponse, ModelInfo, ProviderError, ProviderErrorOptions, ResponseSchemaError,
+    ResponseSchemaErrorOptions, ResponseSchemaFailure, StreamEvent,
 };
+use roomkit_providers_python_forms::{As, Form};
+use serde::Serialize;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{Case, Chunk, Exchange, Failure, Failures, Fixture, Shape};
@@ -291,11 +293,11 @@ impl Fixture {
         let mut unread = Vec::new();
         for case in &self.cases {
             let name = &case.name;
-            if AiRequest::deserialize(&case.request).is_err() {
+            if AiContext::read(case.request.clone()).is_err() {
                 unread.push(name.as_str());
                 continue;
             }
-            read_back::<AiRequest>(&case.request, name);
+            read_back::<As<AiContext>>(&case.request, name);
             let written = case.request["metadata"].get("api_key");
             assert_eq!(case.request_api_key.is_some(), written.is_some(), "{name}");
             let (Some(key), Some(written)) = (&case.request_api_key, written) else {
@@ -339,13 +341,13 @@ impl Fixture {
                 other => panic!("{name}: an unknown call {other}"),
             }
             if let Some(response) = &expected.response {
-                read_back::<AiResponse>(response, name);
+                read_back::<As<AiResponse>>(response, name);
             }
             for model in expected.models.iter().flatten() {
                 read_back::<ModelInfo>(model, name);
             }
             for event in expected.events.iter().flatten() {
-                read_back::<StreamEvent>(event, name);
+                read_back::<As<StreamEvent>>(event, name);
             }
             let Some(failure) = &expected.error else {
                 continue;

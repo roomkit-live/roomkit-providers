@@ -19,11 +19,12 @@ mod self_test;
 
 use std::net::SocketAddr;
 
+use roomkit_ai::ProviderError;
 use roomkit_providers_client::Client;
 pub(crate) use roomkit_providers_client::harness::fake;
 use roomkit_providers_client::harness::{Fixture, Replays, replayed_or_named};
 pub(crate) use roomkit_providers_client::harness::{drained, let_pass, poll_once};
-use roomkit_providers_llm::ProviderError;
+use roomkit_providers_python_forms::Form;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -98,7 +99,7 @@ async fn every_structured_stream_case_replays_as_python_or_is_named() {
 // names, whole as streamed, and nothing else of the body.
 #[tokio::test]
 async fn a_refusal_worded_as_a_list_says_what_the_list_says() {
-    use roomkit_providers_llm::AiProvider as _;
+    use roomkit_ai::AiProvider as _;
 
     let fixture = fixture();
     let says = "the provider answered HTTP 422: body.messages: Field required";
@@ -143,7 +144,7 @@ async fn every_listing_case_replays_as_python_or_is_named() {
 #[cfg(feature = "replay")]
 #[tokio::test]
 async fn the_seam_of_a_replay_outside_the_crate_does_as_this_one() {
-    use roomkit_providers_llm::AiProvider as _;
+    use roomkit_ai::AiProvider as _;
 
     use self::fake::Fake;
 
@@ -156,7 +157,7 @@ async fn the_seam_of_a_replay_outside_the_crate_does_as_this_one() {
     let request = dated.asked();
     let response = provider.generate(&request).await.unwrap();
     let expected = dated.expected_response().unwrap().to_string();
-    assert_eq!(serde_json::to_string(&response).unwrap(), expected);
+    assert_eq!(response.written().to_string(), expected);
     assert_eq!(fake.seen().len(), 2);
     assert_eq!(waits.taken(), [7.0]);
     // Read against the system's clock, the date is long past: the wait is

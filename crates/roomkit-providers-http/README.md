@@ -35,8 +35,7 @@ that is there and does not read gets no stand-in: no configuration is made.
 `roomkit-providers-client`'s README says it in full, with where it differs
 from RoomKit's Python client.
 
-It depends on neither Python nor RoomKit, nor on `roomkit-providers-llm`,
-and on no HTTP client: it reads a URL with the `url` crate, the parser
+It depends on neither Python nor RoomKit, and on no HTTP client: it reads a URL with the `url` crate, the parser
 `reqwest` reads one with.
 
 ## What it does not guard

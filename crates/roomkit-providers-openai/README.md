@@ -20,18 +20,18 @@ The OpenAI model provider of RoomKit Providers.
   the endpoint.
 
 ```rust
-use roomkit_providers_llm::{AiMessage, AiProvider, AiRequest, AiRole};
+use roomkit_ai::{AiMessage, AiProvider, AiContext, AiRole};
 use roomkit_providers_openai::{OpenAi, OpenAiConfig};
 
-async fn ask() -> Result<String, roomkit_providers_llm::ProviderError> {
+async fn ask() -> Result<String, roomkit_ai::ProviderError> {
     let config = OpenAiConfig {
         base_url: Some("http://localhost:11434/v1".to_owned()),
         ..OpenAiConfig::new("placeholder-not-a-key", "local-model")
     };
     let provider = OpenAi::new(config)?;
-    let request = AiRequest {
+    let request = AiContext {
         messages: vec![AiMessage::new(AiRole::User, "Hello")],
-        ..AiRequest::default()
+        ..AiContext::default()
     };
     Ok(provider.generate(&request).await?.content)
 }
@@ -429,9 +429,9 @@ backoff" is a new try after the backoff's wait:
 | a date with single-digit fields (`Thu, 1 Jan 2026 0:0:7 GMT`) | read | no date: the backoff |
 | a date whose day is past its month (`32 Jan`) | the first day of the next month, too far to wait for: gives the request up | no date: the backoff |
 
-It depends on `roomkit-providers-llm` and on `roomkit-providers-client`, the
-HTTP client every provider of this repository is built on, and on neither
-Python nor RoomKit.
+It depends on RoomKit's Rust core for what a provider is (`roomkit-ai`), and
+on `roomkit-providers-client`, the HTTP client every provider of this
+repository is built on. It needs no Python.
 
 ## Where the configuration differs from Python's
 

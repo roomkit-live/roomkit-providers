@@ -14,9 +14,10 @@
 //! may weigh. The text and the reasoning are handed on as they come and
 //! kept nowhere.
 
-use roomkit_providers_llm::{
-    Metadata, StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta, StreamToolCallDelta,
-    dumps, read_tool_calls, stream_call_of,
+use roomkit::model::Metadata;
+use roomkit_ai::{
+    StreamDone, StreamEvent, StreamTextDelta, StreamThinkingDelta, StreamToolCallDelta, dumps,
+    read_tool_calls, stream_call_of,
 };
 use serde::Deserialize;
 use serde_json::Value;

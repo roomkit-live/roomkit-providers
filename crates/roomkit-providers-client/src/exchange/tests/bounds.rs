@@ -4,7 +4,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
-use roomkit_providers_llm::ProviderError;
+use roomkit_ai::ProviderError;
 
 use crate::harness::fake::{Body, Ending, Fake, Reply};
 use crate::testing::{client, left, url_on, usual};

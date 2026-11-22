@@ -10,7 +10,8 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use futures_core::Stream;
 use pyo3::prelude::*;
-use roomkit_providers_llm::{Yielder, items, next};
+use roomkit_providers_client::items::{Yielder, items, next};
+use roomkit_providers_python_forms::Form;
 use tokio::sync::Mutex as TaskMutex;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio_util::sync::CancellationToken;
@@ -42,18 +43,18 @@ type Feed = Pin<Box<dyn Stream<Item = Result<String, Failure>> + Send>>;
 /// owning both: each event as JSON. `api_key` is the credential of this one
 /// request, which no failure of the stream repeats. A request that does not
 /// read is its one failure.
-fn feed(provider: Held, request_json: String, api_key: Option<String>) -> Feed {
+fn feed(provider: Held, label: String, request_json: String, api_key: Option<String>) -> Feed {
     Box::pin(items(
         move |out: Yielder<Result<String, Failure>>| async move {
             let lent = api_key.clone();
-            let request = match request_of(&request_json, api_key, provider.dyn_label()) {
+            let request = match request_of(&request_json, api_key, &label) {
                 Ok(request) => request,
                 Err(refused) => return out.give(Err(refused.without(lent.as_deref()))).await,
             };
             let mut events = provider.dyn_generate_structured_stream(&request);
             while let Some(event) = next(&mut events).await {
                 let event = event.map_err(Failure::from);
-                let event = event.and_then(|event| written(&event, "the event"));
+                let event = event.and_then(|event| written(&event.written(), "the event"));
                 out.give(event.map_err(|failure| failure.without(lent.as_deref())))
                     .await;
             }
@@ -207,12 +208,13 @@ impl PythonStream {
     /// writes, unbegun.
     pub(crate) fn of(
         provider: Held,
+        label: &str,
         request_json: String,
         api_key: Option<String>,
     ) -> PyResult<Self> {
         fork::ensure_unforked()?;
-        let label = provider.dyn_label().to_owned();
-        let feed = feed(provider, request_json, api_key);
+        let label = label.to_owned();
+        let feed = feed(provider, label.clone(), request_json, api_key);
         let (sender, receiver) = mpsc::channel(BATCH_LIMIT);
         let inbox = Inbox {
             receiver,

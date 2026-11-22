@@ -4,8 +4,8 @@
 mod blocks;
 mod cache;
 
-use roomkit_providers_llm::{
-    AiRequest, AiTool, ModelInfo, ProviderError, declared_parameters, schema_for_generate,
+use roomkit_ai::{
+    AiContext, AiTool, ModelInfo, ProviderError, declared_parameters, schema_for_generate,
 };
 use serde_json::{Map, Value, json};
 
@@ -36,7 +36,7 @@ impl Asked<'_> {
     /// What is refused before any request, in Python's order: a response
     /// schema outside the portable subset, an image that cannot be sent, a
     /// tool name Anthropic refuses.
-    pub(crate) fn body(&self, request: &AiRequest) -> Result<Map<String, Value>, ProviderError> {
+    pub(crate) fn body(&self, request: &AiContext) -> Result<Map<String, Value>, ProviderError> {
         let schema = schema_for_generate(request, true, true, self.provider)?;
         let mut messages = blocks::messages(&request.messages, self.provider)?;
         let sampling = reasoning::sampling(self.config, request, self.entry);

@@ -2,10 +2,10 @@
 //! its bytes arrive, what it is when it is no stream, and what is given
 //! before it fails.
 
+use crate::items::{Yielder, items, next};
 use reqwest::header::HeaderMap;
-use roomkit_providers_llm::{
+use roomkit_ai::{
     ProviderError, ProviderErrorOptions, ProviderStream, StreamDone, StreamEvent, StreamTextDelta,
-    Yielder, items, next,
 };
 use serde_json::json;
 
@@ -176,9 +176,10 @@ async fn what_a_stream_gave_before_it_failed_is_given_first() {
 // leaves as it is.
 #[tokio::test]
 async fn a_stream_leaves_with_the_request_of_its_generation() {
-    use roomkit_providers_llm::{
-        API_KEY_METADATA_KEY, AiRequest, ProviderError, ProviderErrorOptions, StreamEvent,
-        StreamTextDelta, Yielder, items, next,
+    use crate::items::{Yielder, items, next};
+    use roomkit_ai::{
+        API_KEY_METADATA_KEY, AiContext, ProviderError, ProviderErrorOptions, StreamEvent,
+        StreamTextDelta,
     };
 
     use crate::failure::{Exit, Failure, Secrets, carried, told};
@@ -197,7 +198,7 @@ async fn a_stream_leaves_with_the_request_of_its_generation() {
     let refused = carried(Failure::said(vec![echoed], false, Some(401)));
     let quoting = format!("The answer quotes {LENT}.");
     let checked = ProviderError::new(quoting, ProviderErrorOptions::default());
-    let mut lending = AiRequest::default();
+    let mut lending = AiContext::default();
     let key = (API_KEY_METADATA_KEY.to_owned(), LENT.into());
     lending.metadata.extend([key]);
     let exit = Exit::new("test", Secrets::default());
@@ -206,7 +207,7 @@ async fn a_stream_leaves_with_the_request_of_its_generation() {
         (checked, &lending, "The answer quotes [***].", None),
         (
             refused,
-            &AiRequest::default(),
+            &AiContext::default(),
             "Wrong key: placeholder-of-one-request.",
             Some(401),
         ),

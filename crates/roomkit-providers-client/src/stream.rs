@@ -7,13 +7,13 @@
 
 use std::collections::VecDeque;
 
+use roomkit_ai::{AiContext, ProviderError, ProviderStream, StreamEvent, TextStream};
 use roomkit_providers_http::SseError;
 use roomkit_providers_http::sse::Events;
 /// The most bytes read of a streamed answer, envelopes included.
 pub use roomkit_providers_http::sse::STREAM_LIMIT;
-use roomkit_providers_llm::{
-    AiRequest, ProviderError, ProviderStream, StreamEvent, TextStream, Yielder, items, next,
-};
+
+use crate::items::{Yielder, items, next};
 use serde_json::Value;
 
 use crate::client::Client;
@@ -197,7 +197,7 @@ fn stops_short(data: &str) -> bool {
 pub fn leaving<'a>(
     mut events: ProviderStream<'a>,
     exit: &'a Exit,
-    request: &'a AiRequest,
+    request: &'a AiContext,
 ) -> ProviderStream<'a> {
     Box::pin(items(move |out: Yielder<Item>| async move {
         while let Some(event) = next(&mut events).await {

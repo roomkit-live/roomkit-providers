@@ -14,9 +14,10 @@
 //! no event and that the server says is JSON may be an error object in
 //! place of a stream: it reads as a whole answer's does.
 
+use roomkit_ai::{AiContext, ProviderStream};
 use roomkit_providers_client::failure::carried;
+use roomkit_providers_client::items::{Yielder, items};
 use roomkit_providers_client::stream::Item;
-use roomkit_providers_llm::{AiRequest, ProviderStream, Yielder, items};
 use serde_json::Value;
 
 use crate::answer::truthy;
@@ -30,7 +31,7 @@ const END_MARK: &str = "[DONE]";
 /// The events of the generation answering `request`, a failure the last
 /// of them. The failure has not left the provider yet: it is carried, to
 /// be let out once the contract checked the stream.
-pub(crate) fn events<'a>(provider: &'a OpenAi, request: &'a AiRequest) -> ProviderStream<'a> {
+pub(crate) fn events<'a>(provider: &'a OpenAi, request: &'a AiContext) -> ProviderStream<'a> {
     Box::pin(items(move |out: Yielder<Item>| async move {
         if let Err(failure) = read(provider, request, &out).await {
             out.give(Err(carried(failure))).await;
@@ -55,7 +56,7 @@ fn no_event(answer: Option<&Value>) -> Failure {
 /// is, as Python's client reads it: a page or a whole JSON body holds no
 /// event, which is a failure, the one an error object names when the body
 /// is one.
-async fn read(provider: &OpenAi, request: &AiRequest, out: &Yielder<Item>) -> Result<(), Failure> {
+async fn read(provider: &OpenAi, request: &AiContext, out: &Yielder<Item>) -> Result<(), Failure> {
     let body = provider.asked().body(request, true)?;
     let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
     let mut answer = provider.client.stream(provider.asking(&body)).await?;

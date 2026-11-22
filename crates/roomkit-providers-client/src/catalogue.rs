@@ -6,7 +6,7 @@
 //! What a tag means is the provider's own: the catalogue of each vendor
 //! names its own tags, and each provider decides what it does of one.
 
-use roomkit_providers_llm::ModelInfo;
+use roomkit_ai::ModelInfo;
 use serde_json::Value;
 
 /// What starts the tag naming the least reasoning effort a model takes.

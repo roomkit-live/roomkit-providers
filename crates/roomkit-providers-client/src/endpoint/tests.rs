@@ -2,7 +2,7 @@
 //! of an API follows one, what is shown of one, and which base URLs are a
 //! vendor's own endpoint.
 
-use roomkit_providers_llm::ProviderError;
+use roomkit_ai::ProviderError;
 
 use super::*;
 use crate::failure::{Exit, Secrets};

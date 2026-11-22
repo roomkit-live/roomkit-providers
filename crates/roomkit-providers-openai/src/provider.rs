@@ -6,13 +6,13 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 use reqwest::header::HeaderMap;
+use roomkit_ai::{
+    AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
+    TextStream, checked_stream, listing,
+};
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
 use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, tried_again};
-use roomkit_providers_llm::{
-    AiProvider, AiRequest, AiResponse, ModelInfo, ProviderError, ProviderStream, StreamDone,
-    TextStream, checked_stream, listing,
-};
 
 use self::build::{exit_of, headers_of, own_endpoint};
 use crate::answer;
@@ -78,7 +78,7 @@ const JSON: &str = "application/json";
 ///   builds the failure writes it again: the key, the value of a default
 ///   header, the user information of the base URL, and the key a host
 ///   lends one request
-///   ([`API_KEY_METADATA_KEY`](roomkit_providers_llm::API_KEY_METADATA_KEY)),
+///   ([`API_KEY_METADATA_KEY`](roomkit_ai::API_KEY_METADATA_KEY)),
 ///   which the provider does not send. This holds whatever built the
 ///   failure. A secret shorter than 8 characters is not searched for, and
 ///   one a server itself sends back in another form cannot be recognised;
@@ -242,7 +242,7 @@ impl OpenAi {
 
     /// One whole answer: the request, tried again as the configuration
     /// allows, and the response read from the answer.
-    async fn answer(&self, request: &AiRequest) -> Result<AiResponse, Failure> {
+    async fn answer(&self, request: &AiContext) -> Result<AiResponse, Failure> {
         let body = self.asked().body(request, false)?;
         let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
         let (answer, json) = self.client.send(self.asking(&body)).await?;
@@ -271,13 +271,17 @@ fn refusal(done: &StreamDone) -> Option<String> {
     (done.finish_reason.as_deref() == Some("content_filter")).then(|| "content_filter".to_owned())
 }
 
+impl OpenAi {
+    /// The name the provider's failures carry: Python's `provider`.
+    #[must_use]
+    pub fn label(&self) -> &'static str {
+        NAME
+    }
+}
+
 impl AiProvider for OpenAi {
     fn name(&self) -> &'static str {
         CLASS_NAME
-    }
-
-    fn label(&self) -> &'static str {
-        NAME
     }
 
     fn model_name(&self) -> &str {
@@ -336,7 +340,7 @@ impl AiProvider for OpenAi {
     /// One whole answer. Its failure leaves with `request`: the key a host
     /// lends the request, which the provider does not send, is in no
     /// failure either.
-    async fn generate(&self, request: &AiRequest) -> Result<AiResponse, ProviderError> {
+    async fn generate(&self, request: &AiContext) -> Result<AiResponse, ProviderError> {
         let answered = self.answer(request).await;
         answered.map_err(|failure| self.exit.leave_for(request, &failure))
     }
@@ -345,7 +349,7 @@ impl AiProvider for OpenAi {
     /// reasoning, its calls and its end are left out.
     ///
     /// [`generate_structured_stream`]: AiProvider::generate_structured_stream
-    fn generate_stream<'a>(&'a self, request: &'a AiRequest) -> TextStream<'a> {
+    fn generate_stream<'a>(&'a self, request: &'a AiContext) -> TextStream<'a> {
         roomkit_providers_client::stream::text(self.generate_structured_stream(request))
     }
 
@@ -355,7 +359,7 @@ impl AiProvider for OpenAi {
     /// done event. An answer constrained by a response schema is checked
     /// before its done event, which its failure replaces. A failure leaves
     /// with `request`, as that of [`generate`](AiProvider::generate).
-    fn generate_structured_stream<'a>(&'a self, request: &'a AiRequest) -> ProviderStream<'a> {
+    fn generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
         let checked = checked_stream(stream::events(self, request), request, NAME, refusal);
         roomkit_providers_client::stream::leaving(checked, &self.exit, request)
     }

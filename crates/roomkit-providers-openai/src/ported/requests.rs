@@ -1,8 +1,8 @@
 //! What a request carries: its token bound, the switches of its
 //! configuration, and its conversation as Chat Completions messages.
 
-use roomkit_providers_llm::{
-    AiContentPart, AiImagePart, AiMessage, AiRequest, AiRole, AiTextPart, AiThinkingPart,
+use roomkit_ai::{
+    AiContentPart, AiContext, AiImagePart, AiMessage, AiRole, AiTextPart, AiThinkingPart,
     AiToolCallPart, AiToolResultPart, ToolResult, ToolResultPart,
 };
 use serde_json::{Value, json};
@@ -26,7 +26,7 @@ async fn no_cap_is_sent_when_none_is_set() {
             use_max_completion_tokens: Some(completion_tokens),
             ..elsewhere("local-model")
         };
-        let request = AiRequest {
+        let request = AiContext {
             max_tokens: turn,
             ..hello()
         };

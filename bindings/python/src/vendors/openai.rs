@@ -3,7 +3,7 @@
 
 use std::net::SocketAddr;
 
-use roomkit_providers_llm::ProviderError;
+use roomkit_ai::ProviderError;
 use roomkit_providers_openai::{OpenAiConfig, ReplayWaits};
 
 use crate::vendor::Vendor;

@@ -24,10 +24,10 @@ use std::error::Error;
 use std::fmt;
 use std::ops::Range;
 
-use roomkit_providers_llm::{
-    AiRequest, ProviderError, ProviderErrorOptions, ResponseSchemaError,
-    ResponseSchemaErrorOptions, repr, request_api_key,
+use roomkit_ai::{
+    AiContext, ProviderError, ProviderErrorOptions, ResponseSchemaError, ResponseSchemaErrorOptions,
 };
+use roomkit_core::rules::python_repr;
 
 use super::{Built, Failure, MESSAGE_LIMIT, Piece};
 
@@ -81,13 +81,13 @@ fn written_forms(text: &str) -> Vec<String> {
         inside.as_str().to_owned()
     };
     let json = serde_json::to_string(text).unwrap_or_default();
-    let beside_a_double_quote = inside(repr(&format!("{text}\"").into()));
+    let beside_a_double_quote = inside(python_repr(&format!("{text}\"")));
     let escaped = beside_a_double_quote.strip_suffix('"');
     vec![
         text.to_owned(),
         inside(json),
         inside(format!("{text:?}")),
-        inside(repr(&text.into())),
+        inside(python_repr(text)),
         escaped.unwrap_or_default().to_owned(),
     ]
 }
@@ -315,8 +315,8 @@ impl Exit {
     /// the contract reads it (`request_api_key`) and searched for in every
     /// form a secret of the configuration is. The exit itself when
     /// `request` brings none.
-    fn answering(&self, request: &AiRequest) -> Cow<'_, Self> {
-        match request_api_key(request) {
+    fn answering(&self, request: &AiContext) -> Cow<'_, Self> {
+        match crate::key::request_api_key(request) {
             Some(key) => Cow::Owned(Self {
                 provider: self.provider,
                 secrets: self.secrets.with([key.to_owned()]),
@@ -330,7 +330,7 @@ impl Exit {
     /// `request` brings for itself either, whether the provider sends that
     /// key or not.
     #[must_use]
-    pub fn leave_for(&self, request: &AiRequest, failure: &Failure) -> ProviderError {
+    pub fn leave_for(&self, request: &AiContext, failure: &Failure) -> ProviderError {
         self.answering(request).leave(failure)
     }
 
@@ -415,7 +415,7 @@ impl Exit {
     /// An item of the stream of the generation that answers `request`,
     /// once it went through the contract's check: the failure it carries
     /// leaves with `request`, and so does one the check built.
-    pub(crate) fn leave_carried(&self, request: &AiRequest, error: ProviderError) -> ProviderError {
+    pub(crate) fn leave_carried(&self, request: &AiContext, error: ProviderError) -> ProviderError {
         let carried = error.source();
         match carried.and_then(|cause| cause.downcast_ref::<Carried>()) {
             Some(carried) => self.leave_for(request, &carried.0),

@@ -6,7 +6,7 @@
 //! included. Any other (a text, `true`, a fraction, a number below zero)
 //! stays unknown: it is neither converted nor fatal.
 
-use roomkit_providers_llm::Metadata;
+use roomkit::model::Metadata;
 use serde_json::Value;
 
 /// The counters of one message, each unknown until it is told.

@@ -19,11 +19,12 @@ mod self_test;
 
 use std::net::SocketAddr;
 
+use roomkit_ai::{AiProvider, ProviderError};
 use roomkit_providers_client::Client;
 pub(crate) use roomkit_providers_client::harness::fake;
 use roomkit_providers_client::harness::{Fixture, Replays, replayed_or_named};
 pub(crate) use roomkit_providers_client::harness::{drained, let_pass, poll_once};
-use roomkit_providers_llm::{AiProvider, ProviderError};
+use roomkit_providers_python_forms::Form;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -123,7 +124,7 @@ async fn the_seam_of_a_replay_outside_the_crate_does_as_this_one() {
     let request = dated.asked();
     let response = provider.generate(&request).await.unwrap();
     let expected = dated.expected_response().unwrap().to_string();
-    assert_eq!(serde_json::to_string(&response).unwrap(), expected);
+    assert_eq!(response.written().to_string(), expected);
     assert_eq!(fake.seen().len(), 2);
     let [wait] = waits.taken()[..] else {
         panic!("one wait: {:?}", waits.taken());

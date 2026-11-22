@@ -41,7 +41,7 @@ uv pip install --python .venv/bin/python ../roomkit
 | Command | Scope |
 | --- | --- |
 | `make fmt` | Format the workspace |
-| `make all` | Formatting, Clippy, the check of `scripts/no-network.sh`, tests, the examples, rustdoc, dependency policy and the contract crate's dependency allow list |
+| `make all` | Formatting, Clippy, the check of `scripts/no-network.sh`, tests, the examples, rustdoc and dependency policy |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
 | `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed beside the RoomKit of `PYTHON`'s environment and tested |
 | `make python-msrv` | Check the binding on the minimum Rust toolchain |
@@ -107,77 +107,32 @@ for a raised exception.
 - A type that RoomKit's Python API already names keeps that name here.
 - Any other difference needs a maintainer's decision before it is written.
 
-## JSON forms
+## What a provider is
 
-Every contract type that is a model in RoomKit's Python implementation reads
-and writes the JSON that model gives with `model_dump(mode="json")`: no form
-is specific to one language. The proof is a fixture written by RoomKit's
-Python,
-`crates/roomkit-providers-llm/tests/fixtures/python_forms.json`, which the
-`python_forms` test reads into the Rust types and writes back.
+What a provider is belongs to RoomKit's core: the request it is asked, the
+answer and the events it gives, its failure, the trait it implements. This
+repository holds the providers of vendors and defines none of that. A
+provider crate takes it from RoomKit's Rust core (`roomkit-ai`, `roomkit`,
+`roomkit-core`), at the revision the workspace's `Cargo.toml` names, which
+is the one a host pins: a build holds one of each of these crates.
 
-- `make all` and CI only read the fixture: they need no Python.
-- `make python-forms` rewrites it with `scripts/generate_python_forms.py`. It
-  needs an interpreter that has the `roomkit` package installed, named by
-  `PYTHON` (`python3` by default):
+- Something the core lacks or decides wrongly is fixed in the core, not
+  copied here.
+- The core gives its types no JSON form. What crosses to Python, and what a
+  recorded case holds of a request and its result, is JSON in the form of
+  RoomKit's Python models (`model_dump(mode="json")`): that conversion, and
+  nothing else, is `bindings/python-forms`. The replay of the recorded
+  cases reads every request and every result through it and requires that
+  each writes back unchanged.
 
-  ```sh
-  make python-forms PYTHON=path/to/venv/bin/python
-  ```
+## Fixtures written by RoomKit's Python
 
-- A new contract type or field brings its examples to the script, and the
-  regenerated fixture is committed with it. The fixture records the RoomKit
-  version it was written from.
-- A public type never derives `Deserialize`: a derived reader also takes a
-  list of a model's values for the model, and an object or a number for a
-  name. A model is read as a private form through `read_as_object!`, a name
-  through `read_name`, a union of models through `read_tagged`
-  (`src/strict/`), and joins the lists of `tests/strict_input.rs`.
-- The same script writes `python_call_rules.json`, what RoomKit's Python
-  decides of a call's arguments, which the `python_call_rules` test compares
-  the Rust rules with.
+A crate that decides something as RoomKit's Python decides it is held to a
+fixture Python wrote. `make all` and CI only read a fixture: they need no
+Python. A fixture records the RoomKit version it was written from.
 
-The words of a refusal are Python's too, which quote a value with `repr`.
-`repr` escapes the characters `str.isprintable()` refuses, so the crate
-carries that table, generated from Python's Unicode data rather than read
-from Rust's standard library:
-
-```sh
-make printable-table PYTHON=path/to/venv/bin/python
-```
-
-Run it with the Python version RoomKit is tested with; the table's header
-records the Python and Unicode versions it was written from, and carries
-the notice of the Unicode data it is derived from. The same command writes
-that notice as `crates/roomkit-providers-llm/LICENSE-UNICODE`, the license
-file the crate ships beside its own: the crate is `MIT AND Unicode-3.0`.
-
-The contract also holds two of RoomKit's rules for a text a model reads that
-neither the host nor the provider wrote (RFC §6.4), for the provider whose
-wire has no place of its own for such a text: `fence`, which sets a text
-apart in a block it cannot close, and `identifier`, which writes a name
-outside any quote. Both are exported for provider crates, hidden from the
-documentation a host reads, and both decide as Python's (`roomkit._text`):
-
-```sh
-make outside-text-tables PYTHON=path/to/venv/bin/python
-make python-outside-text PYTHON=path/to/venv/bin/python
-```
-
-- `outside-text-tables` rewrites `src/outside/tables/`: what each character
-  reads as in a tag, from the look-alikes RoomKit's Python holds, the
-  classes of characters its patterns use, and canonical composition, from
-  the Unicode data of `PYTHON`. Neither function reads the Unicode data of
-  Rust's standard library, but to lower the case of a letter of a tag's
-  name that the tables do not hold. The headers record the RoomKit, Python
-  and Unicode versions, and the command writes the same `LICENSE-UNICODE`.
-- `python-outside-text` rewrites `tests/fixtures/python_outside_text.json`,
-  what Python's `fence` and `identifier` give of a table of texts and
-  names, which the `python_outside_text` test compares the Rust functions
-  with. A new forgery of a tag joins the script's table, never the test.
-
-`roomkit-providers-client` is checked the same way for the proxies it reads
-from the environment: `make python-proxy-cases` rewrites
+`roomkit-providers-client` is checked for the proxies it reads from the
+environment: `make python-proxy-cases` rewrites
 `crates/roomkit-providers-client/tests/fixtures/python_proxy_cases.json`,
 which proxy the client of RoomKit's Python providers takes for each endpoint
 of a table of environments, with the user and the password it gives that
@@ -196,7 +151,7 @@ reason, never left out of the fixture. The fixture also carries the
 characters that Python's Unicode data turns into a delimiter of a URL, which
 the crate lists: the same command writes the notice of that data as
 `crates/roomkit-providers-http/LICENSE-UNICODE`, and the crate is
-`MIT AND Unicode-3.0` too.
+`MIT AND Unicode-3.0`.
 
 `roomkit-providers-openai` has two fixtures and a catalogue, written with
 the same `PYTHON`, which needs RoomKit's `openai` extra for the second:
@@ -592,9 +547,8 @@ written, and none reads the name of a class.
 
 ## Implementation boundaries
 
-- Keep `roomkit-providers-llm` free of I/O, async runtimes, Python and
-  RoomKit dependencies. `make check-contract-deps` holds its allow list; update
-  the list in the commit that changes the crate's dependencies.
+- A provider crate holds its vendor's wire and nothing of what a provider
+  is: that is the core's.
 - Put dependency versions in `workspace.dependencies`; consuming crates enable
   only the features they need.
 - The host sets endpoints, credentials, timeouts and limits explicitly. A

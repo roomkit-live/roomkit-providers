@@ -1,9 +1,7 @@
 //! What the tests share: the configurations they build, the answers the
 //! fake gives, and a provider pointed at the fake.
 
-use roomkit_providers_llm::{
-    AiMessage, AiProvider, AiRequest, AiRole, AiTool, ProviderError, StreamEvent,
-};
+use roomkit_ai::{AiContext, AiMessage, AiProvider, AiRole, AiTool, ProviderError, StreamEvent};
 use serde_json::{Value, json};
 
 use crate::replay::drained;
@@ -31,10 +29,10 @@ pub(crate) fn elsewhere(model: &str) -> AnthropicConfig {
 }
 
 /// A request of one user message.
-pub(crate) fn hello() -> AiRequest {
-    AiRequest {
+pub(crate) fn hello() -> AiContext {
+    AiContext {
         messages: vec![AiMessage::new(AiRole::User, "Hi")],
-        ..AiRequest::default()
+        ..AiContext::default()
     }
 }
 
@@ -52,7 +50,7 @@ pub(crate) fn pointed(config: AnthropicConfig, fake: &Fake) -> Anthropic {
 }
 
 /// The body the provider of `config` writes for `request`.
-pub(crate) fn body_of(config: AnthropicConfig, request: &AiRequest) -> Value {
+pub(crate) fn body_of(config: AnthropicConfig, request: &AiContext) -> Value {
     let provider = Anthropic::new(config).unwrap();
     Value::Object(provider.asked().body(request).unwrap())
 }
@@ -122,7 +120,7 @@ pub(crate) fn saying(text: &str) -> Reply {
 /// that ended them.
 pub(crate) async fn streamed(
     reply: Reply,
-    request: &AiRequest,
+    request: &AiContext,
 ) -> (Vec<StreamEvent>, Option<ProviderError>) {
     let fake = Fake::serving(vec![reply]).await;
     let provider = pointed(elsewhere("local-model"), &fake);

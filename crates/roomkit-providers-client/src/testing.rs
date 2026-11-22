@@ -2,13 +2,18 @@
 //! exit with no secret, and the URL of a local fake. A test's client reads
 //! no environment: it is given its proxies and its TLS.
 
+use std::future::Future;
+use std::pin::pin;
 use std::sync::Arc;
+use std::task::{Context, Poll, Waker};
 use std::time::Duration;
 
-use roomkit_providers_llm::ProviderError;
+use futures_core::Stream;
+use roomkit_ai::ProviderError;
 
 use crate::failure::{Exit, Failure, Secrets, Stated};
 use crate::harness::fake::Fake;
+use crate::items::next;
 use crate::proxy::Proxies;
 use crate::retry::{Past, Rule};
 use crate::{Client, Settings, Timeouts};
@@ -60,4 +65,31 @@ pub(crate) fn left(failure: &Failure) -> ProviderError {
 /// The URL of `path` on `fake`.
 pub(crate) fn url_on(fake: &Fake, path: &str) -> reqwest::Url {
     reqwest::Url::parse(&format!("http://{}{path}", fake.address)).unwrap()
+}
+
+/// The polls after which a future still pending is taken for stuck.
+const POLLS: usize = 100_000;
+
+/// The output of `future`, polled on this thread until it is ready: for a
+/// future that waits on nothing but its own reader.
+pub(crate) fn block_on<F: Future>(future: F) -> F::Output {
+    let mut future = pin!(future);
+    let mut context = Context::from_waker(Waker::noop());
+    for _ in 0..POLLS {
+        if let Poll::Ready(output) = future.as_mut().poll(&mut context) {
+            return output;
+        }
+    }
+    panic!("a future of a test is still pending after {POLLS} polls");
+}
+
+/// Every item of `stream`, in order.
+pub(crate) fn collected<S: Stream + Unpin>(mut stream: S) -> Vec<S::Item> {
+    block_on(async {
+        let mut items = Vec::new();
+        while let Some(item) = next(&mut stream).await {
+            items.push(item);
+        }
+        items
+    })
 }

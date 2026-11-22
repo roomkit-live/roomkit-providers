@@ -17,10 +17,11 @@
 //! an error object in place of a stream: it fails as the status that
 //! object names.
 
+use roomkit_ai::{AiContext, ProviderStream};
 use roomkit_providers_client::Call;
 use roomkit_providers_client::failure::carried;
+use roomkit_providers_client::items::{Yielder, items};
 use roomkit_providers_client::stream::Item;
-use roomkit_providers_llm::{AiRequest, ProviderStream, Yielder, items};
 
 use crate::failure::{self, Failure};
 use crate::folding::Folding;
@@ -29,7 +30,7 @@ use crate::provider::Anthropic;
 /// The events of the generation answering `request`, a failure the last
 /// of them. The failure has not left the provider yet: it is carried, to
 /// be let out once the contract checked the stream.
-pub(crate) fn events<'a>(provider: &'a Anthropic, request: &'a AiRequest) -> ProviderStream<'a> {
+pub(crate) fn events<'a>(provider: &'a Anthropic, request: &'a AiContext) -> ProviderStream<'a> {
     Box::pin(items(move |out: Yielder<Item>| async move {
         if let Err(failure) = read(provider, request, &out).await {
             out.give(Err(carried(failure))).await;
@@ -45,7 +46,7 @@ pub(crate) fn events<'a>(provider: &'a Anthropic, request: &'a AiRequest) -> Pro
 /// is one.
 async fn read(
     provider: &Anthropic,
-    request: &AiRequest,
+    request: &AiContext,
     out: &Yielder<Item>,
 ) -> Result<(), Failure> {
     let body = provider.asked().body(request)?;

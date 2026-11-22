@@ -21,14 +21,14 @@ The Anthropic model provider of RoomKit Providers.
 
 ```rust
 use roomkit_providers_anthropic::{Anthropic, AnthropicConfig};
-use roomkit_providers_llm::{AiMessage, AiProvider, AiRequest, AiRole};
+use roomkit_ai::{AiMessage, AiProvider, AiContext, AiRole};
 
-async fn ask() -> Result<String, roomkit_providers_llm::ProviderError> {
+async fn ask() -> Result<String, roomkit_ai::ProviderError> {
     let config = AnthropicConfig::new("placeholder-not-a-key", "claude-sonnet-4-6");
     let provider = Anthropic::new(config)?;
-    let request = AiRequest {
+    let request = AiContext {
         messages: vec![AiMessage::new(AiRole::User, "Hello")],
-        ..AiRequest::default()
+        ..AiContext::default()
     };
     Ok(provider.generate(&request).await?.content)
 }
@@ -424,9 +424,8 @@ Python's, it masks the key alone.
 
 Where a result follows its tool references, the provider writes it as text,
 with RoomKit's rule for text a model reads that neither the host nor the
-provider wrote (RFC §6.4). The rule is the contract's, which every provider
-that writes such a text reads it from (`roomkit-providers-llm`, held there to
-what RoomKit's Python gives):
+provider wrote (RFC §6.4). The rule is the core's, which every provider
+that writes such a text reads it from (`roomkit_core::rules::transcript`):
 
 - `fence` sets the result apart in a `tool_result` block it cannot close: a
   closing or an opening tag of the block's name the text holds is

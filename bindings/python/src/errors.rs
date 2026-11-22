@@ -14,8 +14,8 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use roomkit_ai::{ProviderError, ProviderErrorOptions, ResponseSchemaError};
 use roomkit_providers_client::Secrets;
-use roomkit_providers_llm::{ProviderError, ProviderErrorOptions, ResponseSchemaError};
 
 /// The most characters of a reader's words a failure repeats: a reader
 /// quotes what it refuses, however long.

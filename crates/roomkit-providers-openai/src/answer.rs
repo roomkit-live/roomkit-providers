@@ -1,8 +1,9 @@
 //! A whole answer read as the contract's response: Python's `_response_of`
 //! and the readers of the Chat Completions dialect it calls.
 
-use roomkit_providers_llm::{
-    AiRequest, AiResponse, AiToolCall, CallGarbledOptions, CallIds, CallPartialOptions, Metadata,
+use roomkit::model::Metadata;
+use roomkit_ai::{
+    AiContext, AiResponse, AiToolCall, CallGarbledOptions, CallIds, CallPartialOptions,
     call_garbled, call_partial, check_schema_answer, tool_arguments,
 };
 use serde_json::{Map, Value};
@@ -21,7 +22,7 @@ use crate::think_tags::{extract_think_tags, field_reasoning, merge_thinking};
 pub(crate) fn read(
     body: &[u8],
     json: bool,
-    request: &AiRequest,
+    request: &AiContext,
     asked: &str,
     provider: &str,
 ) -> Result<AiResponse, Failure> {

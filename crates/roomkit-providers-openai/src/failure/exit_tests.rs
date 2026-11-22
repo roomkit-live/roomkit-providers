@@ -5,7 +5,7 @@
 
 use std::fmt::Write as _;
 
-use roomkit_providers_llm::{AiProvider, AiRequest, ProviderError, ResponseSchemaFailure};
+use roomkit_ai::{AiContext, AiProvider, ProviderError, ResponseSchemaFailure};
 use serde_json::{Value, json};
 
 use super::MESSAGE_LIMIT;
@@ -17,14 +17,14 @@ use crate::replay::drained;
 use crate::replay::fake::{Fake, Reply};
 
 /// A question under a schema of one required text.
-fn asking() -> AiRequest {
+fn asking() -> AiContext {
     let schema = json!({
         "type": "object",
         "properties": {"label": {"type": "string"}},
         "required": ["label"],
         "additionalProperties": false,
     });
-    AiRequest {
+    AiContext {
         response_schema: schema.as_object().cloned(),
         ..hello()
     }
@@ -42,7 +42,7 @@ fn answers(members: &Value) -> [Reply; 2] {
 async fn failures(
     config: &OpenAiConfig,
     replies: [Reply; 2],
-    request: &AiRequest,
+    request: &AiContext,
 ) -> [ProviderError; 2] {
     let fake = Fake::serving(replies.to_vec()).await;
     let provider = pointed(config.clone(), &fake);

@@ -20,7 +20,8 @@
 //! by read, and name the few the provider answers otherwise, with the
 //! reason. The crate's README lists them.
 //!
-//! It depends on neither Python nor `RoomKit`.
+//! It depends on `RoomKit`'s Rust core for what a provider is, and on no
+//! Python.
 
 #![forbid(unsafe_code)]
 

@@ -21,7 +21,8 @@ provider's tests, the replay of its recorded cases.
 `roomkit-providers-openai` is written on it: each section below names the
 file of that crate that shows it in full.
 
-It depends on neither Python nor RoomKit. It is not for a host: a host uses a
+It depends on RoomKit's Rust core for what a provider is asked and answers,
+and on no Python. It is not for a host: a host uses a
 provider.
 
 ## What it holds
@@ -320,7 +321,7 @@ use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::failure::{Stated, past_mark};
 use roomkit_providers_client::retry::{Past, Rule};
 use roomkit_providers_client::{Call, Client, Exit, Failure, Settings, Timeouts, tried_again};
-use roomkit_providers_llm::{AiRequest, ProviderError};
+use roomkit_ai::{AiContext, ProviderError};
 use serde_json::Value;
 
 /// The label the provider's failures carry.
@@ -390,7 +391,7 @@ impl Vendor {
 
     /// One whole answer to `request`, written as `body`. Every failure
     /// leaves through the exit, with the request it answers.
-    async fn ask(&self, request: &AiRequest, body: &[u8]) -> Result<Value, ProviderError> {
+    async fn ask(&self, request: &AiContext, body: &[u8]) -> Result<Value, ProviderError> {
         let call = Call {
             url: &self.messages,
             headers: &self.headers,
@@ -520,8 +521,8 @@ is complete (`roomkit-providers-openai/src/stream.rs`):
 use roomkit_providers_client::failure::carried;
 use roomkit_providers_client::stream::{Item, Streamed, leaving, text};
 use roomkit_providers_client::{Exit, Failure};
-use roomkit_providers_llm::{
-    AiRequest, ProviderStream, StreamDone, StreamEvent, StreamTextDelta, TextStream, Yielder,
+use roomkit_ai::{
+    AiContext, ProviderStream, StreamDone, StreamEvent, StreamTextDelta, TextStream, Yielder,
     items,
 };
 
@@ -560,13 +561,13 @@ fn events<'a>(answer: Streamed) -> ProviderStream<'a> {
 fn structured<'a>(
     answer: Streamed,
     exit: &'a Exit,
-    request: &'a AiRequest,
+    request: &'a AiContext,
 ) -> ProviderStream<'a> {
     leaving(events(answer), exit, request)
 }
 
 /// What `generate_stream` returns: the text of the same events.
-fn as_text<'a>(answer: Streamed, exit: &'a Exit, request: &'a AiRequest) -> TextStream<'a> {
+fn as_text<'a>(answer: Streamed, exit: &'a Exit, request: &'a AiContext) -> TextStream<'a> {
     text(structured(answer, exit, request))
 }
 ```
@@ -743,7 +744,7 @@ machine (`OpenAi::replaying` in `roomkit-providers-openai/src/provider.rs`).
 ## What it does not hold
 
 - The contract: the request, the response, the events and the failure a host
-  sees are `roomkit-providers-llm`'s.
+  sees are RoomKit's core's (`roomkit-ai`).
 - TLS and the reader of server-sent events: they are
   `roomkit-providers-http`'s, which depends on no HTTP client.
 - Anything of a vendor's wire.
