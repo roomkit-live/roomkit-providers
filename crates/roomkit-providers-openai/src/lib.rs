@@ -34,14 +34,14 @@ mod folding;
 mod messages;
 mod models;
 mod names;
-#[cfg(test)]
-mod ported;
 mod provider;
 #[cfg(test)]
 mod replay;
 mod request;
 mod responses;
 mod stream;
+#[cfg(test)]
+mod tests;
 mod think_tags;
 
 pub use config::{OpenAiApi, OpenAiConfig};

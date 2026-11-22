@@ -7,9 +7,9 @@ use roomkit_ai::AiProvider;
 use roomkit_providers_client::USER_AGENT;
 use serde_json::json;
 
-use crate::ported::support::{KEY, chunk, elsewhere, ending, events, hello, pointed, saying};
 use crate::replay::drained;
 use crate::replay::fake::{Fake, Reply};
+use crate::tests::support::{KEY, chunk, elsewhere, ending, events, hello, pointed, saying};
 use crate::{OpenAi, OpenAiConfig};
 
 fn behind(base_url: &str) -> OpenAiConfig {

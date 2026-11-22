@@ -10,12 +10,12 @@ use roomkit_providers_client::stream::STREAM_LIMIT;
 use serde_json::{Value, json};
 
 use crate::AnthropicConfig;
-use crate::ported::support::{
+use crate::replay::fake::{Body, Ending, Fake, Reply};
+use crate::replay::{drained, let_pass, poll_once};
+use crate::tests::support::{
     elsewhere, end, event, hello, message_saying, pointed, sse_of, start, stream_of, streamed,
     text_block, text_of,
 };
-use crate::replay::fake::{Body, Ending, Fake, Reply};
-use crate::replay::{drained, let_pass, poll_once};
 
 /// One read of a stream: a message that starts and says `text`, with no
 /// end after it.

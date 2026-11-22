@@ -10,11 +10,11 @@ use serde_json::{Value, json};
 
 use super::MESSAGE_LIMIT;
 use crate::OpenAiConfig;
-use crate::ported::support::{
-    KEY, chunk, completion, elsewhere, events, hello, json_reply, pointed, schema_failure,
-};
 use crate::replay::drained;
 use crate::replay::fake::{Fake, Reply};
+use crate::tests::support::{
+    KEY, chunk, completion, elsewhere, events, hello, json_reply, pointed, schema_failure,
+};
 
 /// A question under a schema of one required text.
 fn asking() -> AiContext {

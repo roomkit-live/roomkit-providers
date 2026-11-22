@@ -1,7 +1,7 @@
 //! Whether a failed try is tried again and after what wait, read through
 //! what a provider calls: the wait before a try, and whether an answer is
-//! worth one. Each test names the test it was ported from, in the crate the
-//! rule was written from.
+//! worth one. Each test names the test it comes from, in the crate the rule
+//! was written from.
 
 use std::time::Duration;
 

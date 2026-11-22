@@ -110,7 +110,7 @@ async fn a_refusal_worded_as_a_list_says_what_the_list_says() {
         let case = fixture.case(name);
         let config: OpenAiConfig = serde_json::from_value(case.config.clone()).unwrap();
         let fake = fake::Fake::serving(case.replies()).await;
-        let provider = crate::ported::support::pointed(config, &fake);
+        let provider = crate::tests::support::pointed(config, &fake);
         let request = case.asked();
         let failure = if case.call == "generate" {
             provider.generate(&request).await.unwrap_err()

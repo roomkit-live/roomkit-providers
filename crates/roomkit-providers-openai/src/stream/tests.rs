@@ -9,11 +9,11 @@ use roomkit_providers_client::stream::STREAM_LIMIT;
 use serde_json::json;
 
 use crate::OpenAiConfig;
-use crate::ported::support::{
-    chunk, elsewhere, hello, pointed, sse_of, stream_reply, streamed, text_of,
-};
 use crate::replay::fake::{Ending, Fake, Reply};
 use crate::replay::{drained, let_pass, poll_once};
+use crate::tests::support::{
+    chunk, elsewhere, hello, pointed, sse_of, stream_reply, streamed, text_of,
+};
 
 /// The events of a chunk that says `text`, with no end after it.
 fn said(text: &str) -> Vec<u8> {
@@ -467,11 +467,11 @@ async fn a_json_error_object_answering_a_stream_reads_as_the_status_it_names() {
         json!({"error": {"message": "The engine is overloaded.", "type": "overloaded_error"}});
     let refused = json!({"error": {"message": "No such model.", "code": 404}});
     for (body, status, retryable) in [(&overloaded, 529, true), (&refused, 404, false)] {
-        let reply = || crate::ported::support::json_reply(200, body.to_string());
+        let reply = || crate::tests::support::json_reply(200, body.to_string());
         let (events, failure) = streamed(reply(), &hello()).await;
         assert!(events.is_empty(), "{events:?}");
         let streamed = failure.unwrap();
-        let whole = crate::ported::support::asked(reply(), &hello())
+        let whole = crate::tests::support::asked(reply(), &hello())
             .await
             .unwrap_err();
         let attributes = |error: &roomkit_ai::ProviderError| {
@@ -491,7 +491,7 @@ async fn a_json_error_object_answering_a_stream_reads_as_the_status_it_names() {
     // A JSON body that holds no error, and an error object the server does
     // not say is JSON, are an answer that carried no event, as before.
     let no_event = "The provider's stream carried no event: its body could not be read";
-    let json_reply = crate::ported::support::json_reply;
+    let json_reply = crate::tests::support::json_reply;
     let plain = Reply::Answer {
         status: 200,
         headers: vec![("content-type".to_owned(), "text/plain".to_owned())],

@@ -33,14 +33,14 @@ mod failure;
 mod folding;
 mod models;
 mod names;
-#[cfg(test)]
-mod ported;
 mod provider;
 mod reasoning;
 #[cfg(test)]
 mod replay;
 mod request;
 mod stream;
+#[cfg(test)]
+mod tests;
 mod whole;
 
 pub use config::AnthropicConfig;

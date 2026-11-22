@@ -1,4 +1,4 @@
-//! What the ported tests share: the configurations they build, the replies
+//! What these tests share: the configurations they build, the replies
 //! the fake gives, and a provider pointed at the fake.
 
 use std::error::Error as _;

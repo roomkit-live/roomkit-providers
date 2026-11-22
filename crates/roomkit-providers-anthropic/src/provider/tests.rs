@@ -9,9 +9,9 @@ use roomkit_ai::{AiContext, AiProvider};
 use roomkit_providers_client::{Call, USER_AGENT};
 use serde_json::json;
 
-use crate::ported::support::{KEY, elsewhere, hello, official, pointed, saying};
 use crate::replay::drained;
 use crate::replay::fake::{Fake, Reply};
+use crate::tests::support::{KEY, elsewhere, hello, official, pointed, saying};
 use crate::{Anthropic, AnthropicConfig};
 
 fn behind(base_url: &str) -> AnthropicConfig {
