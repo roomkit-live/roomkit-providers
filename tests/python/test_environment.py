@@ -17,16 +17,8 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-from fake_endpoint import (
-    JSON,
-    NO_OPENSSL,
-    OPENSSL,
-    Authority,
-    Fake,
-    Tunnel,
-    Whole,
-    completion,
-)
+from fake_endpoint import JSON, NO_OPENSSL, OPENSSL, Authority, Fake, Tunnel, Whole
+from fake_openai import completion
 from roomkit.providers.ai import AIContext, AIMessage, ProviderError
 from roomkit.providers.openai import OpenAIConfig as RoomKitConfig
 from roomkit_providers.llm.openai import OpenAI, OpenAIConfig

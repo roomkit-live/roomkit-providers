@@ -20,17 +20,8 @@ import json
 import sys
 
 sys.path.insert(0, sys.argv[1])
-from fake_endpoint import (
-    EVENT_STREAM,
-    JSON,
-    Reads,
-    Silent,
-    ThreadedFake,
-    Whole,
-    completion,
-    events,
-    local_config,
-)
+from fake_endpoint import EVENT_STREAM, JSON, Reads, Silent, ThreadedFake, Whole
+from fake_openai import completion, events, local_config
 
 from roomkit.providers.ai import AIContext, AIMessage
 

@@ -14,7 +14,8 @@ import traceback
 import unittest
 from typing import Any
 
-from fake_endpoint import JSON, Fake, Refused, Whole, local_config
+from fake_endpoint import JSON, Fake, Refused, Whole
+from fake_openai import local_config
 from roomkit.providers.ai import AIContext, AIMessage, ProviderError
 from roomkit.providers.openai import OpenAIConfig as RoomKitConfig
 from roomkit_providers.llm.openai import OpenAI, OpenAIConfig

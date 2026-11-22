@@ -13,52 +13,34 @@ sees.
 
 from __future__ import annotations
 
-import copy
 import unittest
-from collections import Counter
 
-from fake_endpoint import Fake
-from replay_cases import fixture, goes_silent, judged, named, replay
+from replay_cases import (
+    LEFT_TO_RUST,
+    NEVER_ANSWERED,
+    Replays,
+    cases_set_apart,
+    every_case,
+    made_wrong,
+)
 from roomkit.providers.ai import ProviderError
+from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 
-# The cases whose fake stops answering after it answered something, or
-# before a try that is answered: the provider's timeout ends the silence,
-# and what was sent before must be read first. The Rust replay lets that
-# time pass on a clock it moves; here the configuration's 30 s would have
-# to pass, or a shorter timeout race what was sent.
-LEFT_TO_RUST = {
-    "retry_of_a_timeout",
-    "answer_timed_out_midway_on_every_try",
-    "stream_read_timeout_after_an_event",
-}
-
-# The cases whose fake never answers their one request: with a timeout of
-# 50 ms in place of the configuration's, nothing but the timeout ends them,
-# however long anything takes.
-NEVER_ANSWERED = {"timeout", "stream_timeout"}
-SHORT_TIMEOUT = 0.05
+OPENAI = Replays(
+    vendor="openai",
+    provider=OpenAI,
+    config=OpenAIConfig,
+    cases="python_chat_cases.json",
+    key_header="authorization",
+)
 
 
 class ReplayTests(unittest.IsolatedAsyncioTestCase):
     async def test_every_case_replays_as_the_rust_provider(self) -> None:
-        cases, stated = fixture()["cases"], named()
-        counts: Counter[tuple[str, str]] = Counter()
-        wrong = []
-        async with Fake() as fake:
-            for case in cases:
-                name, call = case["name"], case["call"]
-                if name in LEFT_TO_RUST:
-                    counts[call, "left to Rust"] += 1
-                    continue
-                short = SHORT_TIMEOUT if name in NEVER_ANSWERED else None
-                replayed = await replay(case, fake, read_timeout=short)
-                as_python, said = judged(case, stated.get(name), replayed)
-                if said:
-                    wrong.append(f"{name}: {said}")
-                counts[call, "as Python" if as_python else "named"] += 1
+        counts, wrong = await every_case(OPENAI)
         self.assertEqual(wrong, [], "\n".join(wrong))
         self.assertEqual(
-            dict(counts),
+            counts,
             {
                 ("generate", "as Python"): 185,
                 ("generate", "named"): 24,
@@ -74,52 +56,37 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
 
     def test_the_cases_set_apart_are_those_whose_fake_goes_silent(self) -> None:
         """A case is left to the Rust replay, or given a short timeout, for
-        what its exchanges are, not by its name."""
-        left, never = set(), set()
-        for case in fixture()["cases"]:
-            silences = [goes_silent(exchange) for exchange in case["exchanges"]]
-            if not any(silences):
-                continue
-            answered = silences == [True] and case["exchanges"][0]["response"].get("failure")
-            (never if answered else left).add(case["name"])
-        self.assertEqual(left, LEFT_TO_RUST)
-        self.assertEqual(never, NEVER_ANSWERED)
+        what its exchanges are, not by its name: these are the ones."""
+        self.assertEqual(
+            cases_set_apart(OPENAI),
+            {
+                # The fake stops answering after it answered something, or
+                # before a try that is answered.
+                LEFT_TO_RUST: {
+                    "retry_of_a_timeout",
+                    "answer_timed_out_midway_on_every_try",
+                    "stream_read_timeout_after_an_event",
+                },
+                # The fake never answers their one request.
+                NEVER_ANSWERED: {"timeout", "stream_timeout"},
+            },
+        )
 
     def test_every_named_case_is_a_case_of_the_fixture(self) -> None:
-        names = {case["name"] for case in fixture()["cases"]}
-        self.assertEqual(set(named()) - names, set())
-        self.assertEqual(len(named()), 49)
+        names = {case["name"] for case in OPENAI.fixture()["cases"]}
+        self.assertEqual(set(OPENAI.named()) - names, set())
+        self.assertEqual(len(OPENAI.named()), 49)
 
 
 class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
     """The replay held to what it compares: a case is replayed, found to be
     as stated, then one thing is made wrong, of what was replayed, of the
     case or of its entry among the named cases, and the replay must say so.
-    Each comparison of ``replay_cases`` has a wrong here that only it
-    finds."""
+    Each comparison of ``replay_cases`` that a case of this fixture shows
+    has a wrong here that only it finds."""
 
-    async def refuses(
-        self,
-        name: str,
-        word: str,
-        wrong=None,
-        *,
-        in_case=None,
-        in_entry=None,
-        entry_of: str | None = None,
-    ) -> None:
-        cases = {case["name"]: case for case in fixture()["cases"]}
-        case = copy.deepcopy(cases[name])
-        stated = copy.deepcopy(named().get(entry_of or name))
-        async with Fake() as fake:
-            replayed = await replay(case, fake)
-        if entry_of is None:
-            self.assertEqual(judged(case, stated, replayed)[1], "")
-        for change, changed in ((wrong, replayed), (in_case, case), (in_entry, stated)):
-            if change is not None:
-                change(changed)
-        said = judged(case, stated, replayed)[1]
-        self.assertIn(word, said, name)
+    async def refuses(self, name: str, word: str, wrong=None, **where) -> None:
+        self.assertIn(word, await made_wrong(OPENAI, name, wrong, **where), name)
 
     async def test_a_request_that_is_not_python_s(self) -> None:
         def another_body(replayed):
@@ -156,7 +123,7 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
         await self.refuses("plain_answer", "authorization", another_key)
         await self.refuses("plain_answer", "which Python does not send", a_header_more)
         await self.refuses("plain_answer", "accept is sent 2 times", a_header_twice)
-        await self.refuses("plain_answer", "user-agent is 'roomkit-providers/", another_agent)
+        await self.refuses("plain_answer", 'user-agent is Some("roomkit-providers/', another_agent)
         await self.refuses("plain_answer", "user-agent is None", no_agent)
         await self.refuses("plain_answer", "request 0: POST /v1/chat", another_path)
         await self.refuses("plain_answer", "request 0: PUT /v1/chat/completions", another_method)
@@ -164,7 +131,7 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
         await self.refuses("stream", "served in 1 reads", served_in_one_read)
 
     async def test_a_header_python_leaves_out_and_the_provider_sends(self) -> None:
-        cases = {case["name"]: case for case in fixture()["cases"]}
+        cases = {case["name"]: case for case in OPENAI.fixture()["cases"]}
         left_out = [
             name
             for name, value in cases["list_models"]["exchanges"][0]["request"]["headers"].items()
@@ -206,7 +173,7 @@ class ReplayRefusesTests(unittest.IsolatedAsyncioTestCase):
             replayed.given["content"] += "!"
 
         def another_vision(replayed):
-            replayed.vision = not replayed.vision
+            replayed.supports["supports_vision"] = not replayed.supports["supports_vision"]
 
         def an_event_less(replayed):
             replayed.given.pop()

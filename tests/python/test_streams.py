@@ -8,7 +8,8 @@ import gc
 import json
 import unittest
 
-from fake_endpoint import DEADLINE, EVENT_STREAM, Fake, Reads, events, local_config
+from fake_endpoint import DEADLINE, EVENT_STREAM, Fake, Reads
+from fake_openai import events, local_config
 from roomkit.providers.ai import AIContext, AIMessage, ProviderError
 from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 

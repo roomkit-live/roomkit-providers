@@ -9,7 +9,8 @@ import asyncio
 import json
 import unittest
 
-from fake_endpoint import DEADLINE, EVENT_STREAM, Fake, Reads, call_events, events, local_config
+from fake_endpoint import DEADLINE, EVENT_STREAM, Fake, Reads
+from fake_openai import call_events, events, local_config
 from roomkit import (
     AIChannel,
     ChannelCategory,

@@ -8,18 +8,8 @@ import asyncio
 import gc
 import unittest
 
-from fake_endpoint import (
-    DEADLINE,
-    EVENT_STREAM,
-    JSON,
-    Fake,
-    Reads,
-    Silent,
-    Whole,
-    completion,
-    events,
-    local_config,
-)
+from fake_endpoint import DEADLINE, EVENT_STREAM, JSON, Fake, Reads, Silent, Whole
+from fake_openai import completion, events, local_config
 from roomkit.providers.ai import AIContext, AIMessage, StreamTextDelta
 from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 

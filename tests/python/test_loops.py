@@ -7,16 +7,8 @@ import asyncio
 import threading
 import unittest
 
-from fake_endpoint import (
-    EVENT_STREAM,
-    JSON,
-    Reads,
-    ThreadedFake,
-    Whole,
-    completion,
-    events,
-    local_config,
-)
+from fake_endpoint import EVENT_STREAM, JSON, Reads, ThreadedFake, Whole
+from fake_openai import completion, events, local_config
 from roomkit.providers.ai import AIContext, AIMessage
 from roomkit_providers.llm.openai import OpenAI, OpenAIConfig
 

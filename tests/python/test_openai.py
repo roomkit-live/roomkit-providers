@@ -14,18 +14,8 @@ from pathlib import Path
 from unittest import mock
 
 import roomkit_providers
-from fake_endpoint import (
-    EVENT_STREAM,
-    JSON,
-    Fake,
-    Reads,
-    Silent,
-    Whole,
-    call_events,
-    completion,
-    events,
-    local_config,
-)
+from fake_endpoint import EVENT_STREAM, JSON, Fake, Reads, Silent, Whole
+from fake_openai import call_events, completion, events, local_config
 from pydantic import ValidationError
 from roomkit.providers.ai import (
     AIContext,
