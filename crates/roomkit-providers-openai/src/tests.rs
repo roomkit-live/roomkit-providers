@@ -19,6 +19,7 @@ mod first_token;
 mod reasoning;
 mod requests;
 mod responses;
+mod responses_readings;
 pub(crate) mod room;
 mod streams;
 pub(crate) mod support;
