@@ -9,6 +9,7 @@
 //! its configuration says of its endpoint.
 
 mod failures;
+mod first_token;
 mod requests;
 pub(crate) mod support;
 mod transport;

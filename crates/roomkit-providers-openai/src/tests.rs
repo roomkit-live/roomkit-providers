@@ -15,6 +15,7 @@ mod composition;
 mod credentials;
 mod endpoints;
 mod failures;
+mod first_token;
 mod reasoning;
 mod requests;
 mod responses;

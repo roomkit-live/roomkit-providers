@@ -7,6 +7,12 @@ nothing has been released yet.
 
 ### Added
 
+- A generation's time to first token is recorded for a host built on
+  RoomKit's Rust core, as the metric `roomkit.llm.ttfb_ms`, under the
+  provider's name and its model: once, at the first text or reasoning of a
+  stream, never at a call's fragment, and as a whole Chat Completions
+  answer arrives. The providers that left RoomKit's Rust core recorded it;
+  these did not. In Python, the provider classes already recorded it.
 - How an answer ended is told in the vocabulary of RoomKit's provider
   contract, `FinishReason`, in Rust and in Python: each provider maps its
   vendor's words (Anthropic's `end_turn` is `stop`, `tool_use` is

@@ -7,12 +7,13 @@ use std::sync::atomic::AtomicBool;
 
 use reqwest::header::{AUTHORIZATION, HeaderMap};
 use roomkit_ai::{
-    AiContext, AiProvider, AiResponse, FinishReason, ModelInfo, ProviderError, ProviderStream,
-    StreamDone, TextStream, checked_stream, listing,
+    AiContext, AiProvider, AiResponse, FinishReason, FirstToken, ModelInfo, ProviderError,
+    ProviderStream, StreamDone, TextStream, checked_stream, listing,
 };
 use roomkit_providers_client::catalogue;
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
+use roomkit_providers_client::stream::timed;
 use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, TokenSource, tried_again};
 
 use self::build::{exit_of, headers_of, own_endpoint};
@@ -273,11 +274,15 @@ impl OpenAi {
     }
 
     /// One whole answer: the request, tried again as the configuration
-    /// allows, and the response read from the answer.
+    /// allows, and the response read from the answer. Asked whole, the
+    /// answer is its first token as it arrives, whatever it holds, as
+    /// Python's `_complete` records it; one that fails records nothing.
     async fn answer(&self, request: &AiContext) -> Result<AiResponse, Failure> {
         let body = self.asked().body(request, false)?;
         let body = serde_json::to_vec(&body).map_err(|_| Failure::unwritten())?;
+        let mut first = FirstToken::start(self.name(), &self.config.model);
         let (answer, json) = self.client.send(self.asking(&body)).await?;
+        first.seen();
         answer::read(&answer, json, request, &self.config.model, self.vendor)
     }
 
@@ -411,9 +416,11 @@ impl AiProvider for OpenAi {
     /// field), the composition of each call, then the whole calls and the
     /// done event. An answer constrained by a response schema is checked
     /// before its done event, which its failure replaces. A failure leaves
-    /// with `request`, as that of [`generate`](AiProvider::generate).
+    /// with `request`, as that of [`generate`](AiProvider::generate). The
+    /// time to its first text or reasoning is recorded on the way.
     fn generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
         let events = stream::events(self, request);
+        let events = timed(events, self.name(), &self.config.model);
         let checked = checked_stream(events, request, self.vendor.provider(), refusal);
         roomkit_providers_client::stream::leaving(checked, &self.exit, request)
     }

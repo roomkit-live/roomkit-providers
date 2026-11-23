@@ -13,7 +13,7 @@ use roomkit_ai::{
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::request_api_key;
 use roomkit_providers_client::retry::{Past, Rule};
-use roomkit_providers_client::stream::{leaving, text};
+use roomkit_providers_client::stream::{leaving, text, timed};
 use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, tried_again};
 use serde_json::Value;
 
@@ -374,9 +374,16 @@ impl AiProvider for Anthropic {
     /// each call and the call itself, then the done event. An answer
     /// constrained by a response schema is checked before its done event,
     /// which its failure replaces. A failure leaves with `request`, whose
-    /// own key it does not repeat.
+    /// own key it does not repeat. The time to its first text or reasoning
+    /// is recorded on the way, for a whole answer too, which reads this
+    /// stream.
     fn generate_structured_stream<'a>(&'a self, request: &'a AiContext) -> ProviderStream<'a> {
-        let checked = checked_stream(stream::events(self, request), request, LABEL, refusal);
+        let events = timed(
+            stream::events(self, request),
+            self.name(),
+            &self.config.model,
+        );
+        let checked = checked_stream(events, request, LABEL, refusal);
         leaving(checked, &self.exit, request)
     }
 }

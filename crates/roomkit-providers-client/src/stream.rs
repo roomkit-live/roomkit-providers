@@ -7,7 +7,7 @@
 
 use std::collections::VecDeque;
 
-use roomkit_ai::{AiContext, ProviderError, ProviderStream, StreamEvent, TextStream};
+use roomkit_ai::{AiContext, FirstToken, ProviderError, ProviderStream, StreamEvent, TextStream};
 use roomkit_providers_http::SseError;
 use roomkit_providers_http::sse::Events;
 /// The most bytes read of a streamed answer, envelopes included.
@@ -213,6 +213,43 @@ pub fn leaving<'a>(
             }
         }
     }))
+}
+
+/// `events`, with the generation's time to first token recorded on the
+/// way (the metric `roomkit.llm.ttfb_ms`): Python's `FirstToken`. The
+/// measure starts when the events are first read, just before the request,
+/// and is recorded once, at the first text or reasoning, never at a call
+/// fragment. `provider` and `model` label it, as Python's `name` and
+/// `model_name` do. It goes to the kit whose call this is; outside a kit,
+/// nothing is recorded.
+pub fn timed<'a>(
+    mut events: ProviderStream<'a>,
+    provider: &'a str,
+    model: &'a str,
+) -> ProviderStream<'a> {
+    Box::pin(items(move |out: Yielder<Item>| async move {
+        let mut first = FirstToken::start(provider, model);
+        while let Some(event) = next(&mut events).await {
+            if event.as_ref().is_ok_and(is_first_output) {
+                first.seen();
+            }
+            out.give(event).await;
+        }
+    }))
+}
+
+/// Whether `event` is output of the model, which the time to first token
+/// measures: text, or reasoning that says something (Python's
+/// `is_first_output`).
+fn is_first_output(event: &StreamEvent) -> bool {
+    match event {
+        StreamEvent::TextDelta(_) => true,
+        StreamEvent::ThinkingDelta(delta) => !delta.thinking.is_empty(),
+        StreamEvent::ToolCall(_)
+        | StreamEvent::ToolCallDelta(_)
+        | StreamEvent::Done(_)
+        | StreamEvent::Usage(_) => false,
+    }
 }
 
 /// The text of `events`, as it comes: its reasoning, its calls and its end
