@@ -1429,7 +1429,7 @@ dependencies = [
 [[package]]
 name = "roomkit"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96#bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=9713a02d14dbaa8ca5a4c579fc649e30b6df6893#9713a02d14dbaa8ca5a4c579fc649e30b6df6893"
 dependencies = [
  "futures-core",
  "getrandom 0.4.3",
@@ -1448,7 +1448,7 @@ dependencies = [
 [[package]]
 name = "roomkit-ai"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96#bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=9713a02d14dbaa8ca5a4c579fc649e30b6df6893#9713a02d14dbaa8ca5a4c579fc649e30b6df6893"
 dependencies = [
  "base64 0.23.1",
  "fancy-regex",
@@ -1469,7 +1469,7 @@ dependencies = [
 [[package]]
 name = "roomkit-core"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96#bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=9713a02d14dbaa8ca5a4c579fc649e30b6df6893#9713a02d14dbaa8ca5a4c579fc649e30b6df6893"
 dependencies = [
  "jiff",
  "serde",
@@ -1483,7 +1483,7 @@ dependencies = [
 [[package]]
 name = "roomkit-mcp"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96#bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=9713a02d14dbaa8ca5a4c579fc649e30b6df6893#9713a02d14dbaa8ca5a4c579fc649e30b6df6893"
 dependencies = [
  "nix",
  "rmcp",
@@ -1598,7 +1598,7 @@ dependencies = [
 [[package]]
 name = "roomkit-sqlite"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96#bd1caf0e2bbc57e8aeeb8638cd6fbb2fe1847e96"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=9713a02d14dbaa8ca5a4c579fc649e30b6df6893#9713a02d14dbaa8ca5a4c579fc649e30b6df6893"
 dependencies = [
  "roomkit",
  "roomkit-core",
