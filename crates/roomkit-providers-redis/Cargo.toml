@@ -1,0 +1,46 @@
+[package]
+name = "roomkit-providers-redis"
+description = "RoomKit's turn backend across processes on Redis: the broker and the registry of the core's distributed backend, kept by one Redis server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+readme = "README.md"
+include = ["/LICENSE", "/README.md", "/examples", "/src", "/tests"]
+keywords = ["roomkit", "redis", "turns", "broker", "registry"]
+categories = ["asynchronous"]
+
+[dependencies]
+# RoomKit's core: the distributed turn backend, the two ports this crate
+# implements and what they carry.
+roomkit = { workspace = true }
+# The Redis client: streams for the inboxes, a connection manager for the
+# commands, and TLS for a `rediss` URL.
+redis = { workspace = true }
+# What the registry's scripts answer, read as JSON.
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# The data connection, opened once and shared.
+tokio = { workspace = true, features = ["sync"] }
+
+[dev-dependencies]
+# The echoing agent and the recording transport of the tests' rooms.
+roomkit = { workspace = true }
+# The agent of the interop's Rust executor: an AI channel over a scripted
+# model.
+roomkit-ai = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "time"] }
+# A key prefix of its own for each test, on a server the tests share.
+uuid = { workspace = true, features = ["v4"] }
+
+# The interop with RoomKit's Python on one Redis server: the test binary is
+# each language's peer in turn, started by its Python driver.
+[[test]]
+name = "python_interop"
+path = "tests/python_interop/main.rs"
+harness = false
+
+[lints]
+workspace = true

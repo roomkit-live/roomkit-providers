@@ -7,6 +7,15 @@ nothing has been released yet.
 
 ### Added
 
+- `roomkit-providers-redis`: RoomKit's turn backend across processes, on
+  Redis, for a host built on RoomKit's Rust core. `RedisTurnBackend` is the
+  backend that was in the core, with the constructor and the operations it
+  had there; `RedisTurnBroker` and `RedisTurnRegistry` are its two services,
+  the ports of the core's `DistributedTurnBackend`, which
+  `RedisTurnBackend::broker` and `RedisTurnBackend::registry` give. The
+  keys, the scripts and the messages are those of RoomKit's Python backend:
+  a Rust process and a Python process on one server serve each other's
+  turns. Rust only: RoomKit's Python keeps its own.
 - A generation's time to first token is recorded for a host built on
   RoomKit's Rust core, as the metric `roomkit.llm.ttfb_ms`, under the
   provider's name and its model: once, at the first text or reasoning of a

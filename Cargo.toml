@@ -41,6 +41,10 @@ openssl-probe = "0.2"
 # The authority a test makes for itself and the certificates it signs, made
 # when the test runs: no key is kept in the repository.
 rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
+# The Redis client of the turn backend on Redis (roomkit-providers-redis):
+# streams, a connection manager and rustls, the version RoomKit's Python and
+# Rust backends were proven with.
+redis = { version = "1.8.2", default-features = false, features = ["connection-manager", "streams", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
 # The HTTP client of the providers. No default feature: no system TLS
 # library, no HTTP/2, no proxy from the system's settings and no charset
 # support; a crate enables what it needs.

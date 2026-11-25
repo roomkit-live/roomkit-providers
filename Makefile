@@ -20,7 +20,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	scripts/roomkit_env.py scripts/wheel_paths.py
 
 .PHONY: all fmt fmt-check clippy no-network-test test examples doc deny \
-	msrv msrv-toolchain hooks \
+	msrv msrv-toolchain hooks redis-test \
 	python-public-urls python-proxy-cases python-openai-config \
 	python-openai-chat-cases \
 	python-openai-catalogue \
@@ -50,9 +50,27 @@ no-network-test:
 # The tests are built, then run where no network is reachable but loopback
 # (scripts/no-network.sh): each answers from a local fake, and one that lost
 # its way to it fails there instead of reaching a service.
+#
+# No Redis server is reachable there either: the tests of the turn backend
+# on Redis that need one skip themselves, whatever REDIS_URL names
+# (`make redis-test` runs them).
 test:
 	$(CARGO) test --workspace --all-features --locked --no-run
-	$(NO_NETWORK) $(CARGO) test --workspace --all-features --locked --offline
+	$(NO_NETWORK) env -u REDIS_URL $(CARGO) test --workspace --all-features --locked --offline
+
+# The turn backend on Redis (roomkit-providers-redis) on a Redis server:
+# its functional tests, the interop with RoomKit's Python where
+# ROOMKIT_PYTHON names the interpreter of a RoomKit checkout, and its
+# example of two processes. REDIS_URL names the server, a local one for
+# tests: this target alone runs outside scripts/no-network.sh, because a
+# server of the machine is out of reach from a namespace with no network.
+#
+#     docker run -d --rm -p 127.0.0.1:6379:6379 redis:7
+#     REDIS_URL=redis://127.0.0.1:6379 make redis-test
+redis-test:
+	@test -n "$$REDIS_URL" || { echo "redis-test: REDIS_URL is not set" >&2; exit 1; }
+	$(CARGO) test --locked --no-fail-fast -p roomkit-providers-redis
+	$(CARGO) run --locked -p roomkit-providers-redis --example two_processes
 
 # Runs each example, which checks what it shows and fails otherwise. An
 # example talks to local servers it starts itself: nothing leaves the

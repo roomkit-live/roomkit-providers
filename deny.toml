@@ -40,6 +40,11 @@ exceptions = [
     # targets alone: the lock file lists it, and no target this workspace
     # builds compiles it.
     { crate = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] },
+    # The Redis client of the turn backend on Redis (roomkit-providers-redis),
+    # and the XXH3 hash it requires, at the version it requires: no other
+    # crate depends on either.
+    { crate = "redis", allow = ["BSD-3-Clause"] },
+    { crate = "xxhash-rust@=0.8.21", allow = ["BSL-1.0"] },
     # PyO3's detection of the build's target, in the Python binding's tree
     # alone (`make python-check`): a build script's dependency.
     { crate = "target-lexicon", allow = ["Apache-2.0 WITH LLVM-exception"] },

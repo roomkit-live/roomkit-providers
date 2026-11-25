@@ -43,6 +43,7 @@ uv pip install --python .venv/bin/python ../roomkit
 | `make fmt` | Format the workspace |
 | `make all` | Formatting, Clippy, the check of `scripts/no-network.sh`, tests, the examples, rustdoc and dependency policy |
 | `make msrv-toolchain msrv` | Install and check the minimum Rust toolchain |
+| `make redis-test` | The turn backend on Redis, on the Redis server `REDIS_URL` names: its functional tests, its interop with RoomKit's Python and its example |
 | `make python-check` | The Python package: the binding's formatting, Clippy, rustdoc and dependency policy, the Python lint, then a wheel and a source distribution, each installed beside the RoomKit of `PYTHON`'s environment and tested |
 | `make python-msrv` | Check the binding on the minimum Rust toolchain |
 | `make python-wheel` | Build the optimized wheel into `dist/` |
@@ -92,6 +93,14 @@ especially boundaries, failures, cancellation and cleanup.
   timeout's time pass at once (the tests' `let_pass`).
 - No key belongs in a fixture, a test or a command. Default checks require no
   external service and no credentials.
+- The turn backend on Redis (`roomkit-providers-redis`) is proven on a Redis
+  server: its functional tests, its interop with RoomKit's Python and its
+  example of two processes. Without `REDIS_URL` they skip themselves, saying
+  so, and `make all` runs none of them: no server is reachable from the
+  namespace its tests run in. `make redis-test` runs them on the local
+  server `REDIS_URL` names, outside that namespace; it is the one target
+  that does. The interop needs `ROOMKIT_PYTHON` too, the interpreter of a
+  RoomKit checkout installed editable with its Redis extra.
 - No test asks a name of the network. A test of `validate_public_url` gives
   its own answers for the names it resolves, or uses a URL that needs none.
 - A bug fix brings the test that failed before it.
