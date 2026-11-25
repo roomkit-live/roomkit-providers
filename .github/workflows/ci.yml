@@ -82,6 +82,34 @@ jobs:
       - if: matrix.python == '3.12'
         run: make msrv-toolchain python-msrv
 
+  redis:
+    name: Turn backend on Redis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The one job whose tests reach a server: a Redis of the job's own, on
+    # the runner's loopback, which a namespace of scripts/no-network.sh
+    # cannot reach (CONTRIBUTING.md, "Contracts and tests"). The interop
+    # with RoomKit's Python needs a RoomKit checkout and skips itself here:
+    # the local gates run it.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      REDIS_URL: redis://127.0.0.1:6379
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - run: make redis-test
+
   msrv:
     name: Minimum supported Rust version
     runs-on: ubuntu-latest
