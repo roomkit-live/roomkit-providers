@@ -294,26 +294,37 @@ impl TurnRegistry for RedisTurnRegistry {
         running: &'a [(&'a str, Vec<&'a str>)],
     ) -> TurnFuture<'a, Result<Beats, RoomKitError>> {
         Box::pin(async move {
+            // Redis refuses either command with nothing to look up: what
+            // names none is asked nothing, and answered nothing.
             let mut pipe = redis::pipe();
-            pipe.atomic()
-                .cmd("ZMSCORE")
-                .arg(self.0.key("alive"))
-                .arg(members);
-            for (node, ids) in running {
+            pipe.atomic();
+            if !members.is_empty() {
+                pipe.cmd("ZMSCORE").arg(self.0.key("alive")).arg(members);
+            }
+            let asked = running.iter().filter(|(_, ids)| !ids.is_empty());
+            for (node, ids) in asked.clone() {
                 pipe.cmd("SMISMEMBER")
                     .arg(self.0.key(&format!("running:{node}")))
                     .arg(ids);
             }
-            let mut client = self.0.connection().await?;
-            let rows: Vec<Vec<Option<i64>>> = pipe
-                .query_async(&mut client)
-                .await
-                .map_err(|error| redis_error(&error))?;
+            let rows: Vec<Vec<Option<i64>>> = if members.is_empty() && asked.count() == 0 {
+                Vec::new()
+            } else {
+                let mut client = self.0.connection().await?;
+                pipe.query_async(&mut client)
+                    .await
+                    .map_err(|error| redis_error(&error))?
+            };
             let mut rows = rows.into_iter();
+            let mut row = |named: bool| named.then(|| rows.next()).flatten().unwrap_or_default();
             Ok(Beats {
-                last: rows.next().unwrap_or_default(),
-                running: rows
-                    .map(|row| row.into_iter().map(|runs| runs == Some(1)).collect())
+                last: row(!members.is_empty()),
+                running: running
+                    .iter()
+                    .map(|(_, ids)| {
+                        let runs = row(!ids.is_empty()).into_iter();
+                        runs.map(|runs| runs == Some(1)).collect()
+                    })
                     .collect(),
             })
         })
