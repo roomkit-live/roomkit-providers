@@ -70,7 +70,10 @@ async fn an_inbox_is_a_stream_that_lasts_three_heartbeat_timeouts() {
     };
     let prefix = support::prefix("inbox-key");
     let node = support::node(&url, &prefix, false);
-    let message = BrokerMessage::new("frame", node.node_id(), "body".to_owned(), "turn", "");
+    let message = BrokerMessage {
+        target: "turn".to_owned(),
+        ..BrokerMessage::new("frame", node.node_id(), "body".to_owned())
+    };
     node.broker().post("peer", &[message]).await.unwrap();
 
     let key = format!("{prefix}:inbox:peer");
