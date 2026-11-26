@@ -17,13 +17,13 @@ publish = false
 # its host's: the revision is the one a host pins. It is past the 0.3.0
 # release, whose contract ends a generation in a free word: this one ends
 # it in `FinishReason`, which no release holds yet.
-roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
-roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
-roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
+roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
+roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
+roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
 # What the examples' agents run on beside a provider (rust-examples): the
 # SQLite store of the server examples and the MCP tools of one of them.
-roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
-roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
+roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
+roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/python-forms" }
@@ -51,6 +51,22 @@ redis = { version = "1.8.2", default-features = false, features = ["connection-m
 opentelemetry = { version = "0.33", default-features = false, features = ["trace", "metrics"] }
 opentelemetry_sdk = { version = "0.33", default-features = false, features = ["trace", "metrics"] }
 pretty_assertions = "1"
+# The Postgres store (roomkit-providers-postgres), as RoomKit's Rust core
+# held it: the client, its pool, and TLS on rustls; JSONB through
+# serde_json. The client is the fork the root patch below names.
+tokio-postgres = { version = "=0.7.18", git = "https://github.com/sboily/rust-postgres", rev = "068bbab6cf2bd3867aa897d1e296126dfed650f8", default-features = false, features = ["runtime", "with-serde_json-1"] }
+deadpool-postgres = { version = "0.14", default-features = false, features = ["rt_tokio_1"] }
+tokio-postgres-rustls = "0.13"
+# A TIMESTAMPTZ's wire form: the type the client's `ToSql` writes to.
+bytes = "1"
+# The user's name a connection string leaves out, as Python's
+# `getpass.getuser` reads it.
+whoami = "2"
+# The advisory lock's key, Python's `hashlib.blake2b(digest_size=8)`, so that
+# processes of both implementations exclude each other.
+blake2 = { version = "0.11", default-features = false }
+# The Postgres store's cross-read fixture digest (tests).
+sha2 = { version = "0.11", default-features = false }
 # The HTTP client of the providers. No default feature: no system TLS
 # library, no HTTP/2, no proxy from the system's settings and no charset
 # support; a crate enables what it needs.
@@ -123,3 +139,28 @@ broken_intra_doc_links = "warn"
 private_intra_doc_links = "warn"
 missing_crate_level_docs = "warn"
 bare_urls = "warn"
+
+# Keep the pool, its TLS connector and the Postgres store on the same driver
+# until rust-postgres/rust-postgres#1409 ships, as RoomKit's Rust core does.
+# An application that takes roomkit-providers-postgres repeats this root
+# patch.
+[patch.crates-io]
+tokio-postgres = { git = "https://github.com/sboily/rust-postgres", rev = "068bbab6cf2bd3867aa897d1e296126dfed650f8" }
+postgres-types = { git = "https://github.com/sboily/rust-postgres", rev = "068bbab6cf2bd3867aa897d1e296126dfed650f8" }
+postgres-protocol = { git = "https://github.com/sboily/rust-postgres", rev = "068bbab6cf2bd3867aa897d1e296126dfed650f8" }
+
+# Identity verification's hash, in RoomKit's core, runs at its production
+# work factor in the tests too (RFC §11.7.7): optimized in debug builds, one
+# hash costs tens of milliseconds rather than most of a second, as in
+# RoomKit's Rust workspace.
+[profile.dev.package.scrypt]
+opt-level = 3
+
+[profile.dev.package.salsa20]
+opt-level = 3
+
+[profile.dev.package.pbkdf2]
+opt-level = 3
+
+[profile.dev.package.sha2]
+opt-level = 3

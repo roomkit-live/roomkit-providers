@@ -10,6 +10,16 @@ nothing has been released yet.
 - A managed llama.cpp provider for Rust and Python. Load a local GGUF or a
   Hugging Face reference, stream tool calls and release the local model on close.
 
+- `roomkit-providers-postgres`: RoomKit's conversation store, room lock
+  and knowledge source on Postgres, for a host built on RoomKit's Rust
+  core. `PostgresStore`, `PostgresAdvisoryLockManager`,
+  `PostgresKnowledgeSource` and their options are the crate
+  `roomkit-postgres` of RoomKit's Rust workspace, moved as it was: the
+  schema of RoomKit's Python `PostgresStore`, byte for byte, the same
+  advisory keys, a store both implementations share. The store passes
+  the core's store contract (`roomkit::testing::check_conversation_store`).
+  An application that takes it repeats the root patch of the Postgres
+  driver its README names. Rust only: RoomKit's Python keeps its own.
 - `roomkit-providers-opentelemetry`: RoomKit's telemetry on OpenTelemetry,
   for a host built on RoomKit's Rust core. `OpenTelemetryProvider` and
   `OpenTelemetryProviderOptions` are the provider that was the core's
