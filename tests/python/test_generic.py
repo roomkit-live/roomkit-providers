@@ -91,7 +91,7 @@ NAMES_OF_A_CLASS = {"__name__", "__qualname__", "__module__", "__class__"}
 
 # The two classes a vendor's own derive from, each by the shared module that
 # defines it, and the keywords each takes in a class statement.
-SHARED_CLASSES = {"Config": "_config", "Provider": "_provider"}
+SHARED_CLASSES = {"Config": "_config", "Provider": "_provider", "ManagedServer": "_provider"}
 OF_A_CONFIGURATION = {"vendor", "stands_for", "decided"}
 OF_A_PROVIDER = {"config"}
 # Where else a vendor's module of the package imports names from: for its
@@ -220,10 +220,15 @@ def kind_of(node: ast.ClassDef) -> str | None:
     configurations; or neither. A first base from elsewhere would make the
     shared class's methods another's."""
     keywords = {keyword.arg for keyword in node.keywords}
-    if len(node.bases) != 1:
+    bases = node.bases
+    # A managed provider may add the shared lifecycle mixin, before its provider base.
+    managed = len(bases) == 2 and isinstance(bases[0], ast.Name) and bases[0].id == "ManagedServer"
+    if managed:
+        bases = bases[1:]
+    if len(bases) != 1:
         return None
-    (base,) = node.bases
-    if isinstance(base, ast.Name) and base.id == "Config":
+    (base,) = bases
+    if not managed and isinstance(base, ast.Name) and base.id == "Config":
         stated = "vendor" in keywords and keywords <= OF_A_CONFIGURATION
         return "configuration" if stated else None
     over = base.value if isinstance(base, ast.Subscript) else None
@@ -370,7 +375,17 @@ class GenericTests(unittest.TestCase):
                     if isinstance(node, ast.ImportFrom) and node.level
                     for alias in node.names
                 }
-                self.assertEqual(shared, {"_config.Config", "_provider.Provider"})
+                expected = {"_config.Config", "_provider.Provider"}
+                if any(
+                    isinstance(node, ast.ClassDef)
+                    and any(
+                        isinstance(base, ast.Name) and base.id == "ManagedServer"
+                        for base in node.bases
+                    )
+                    for node in tree.body
+                ):
+                    expected.add("_provider.ManagedServer")
+                self.assertEqual(shared, expected)
                 self.assertEqual(imported_beyond_the_list(tree), [])
 
     def test_a_vendor_s_classes_hold_a_class_statement_s_worth(self) -> None:
@@ -402,7 +417,9 @@ class GenericTests(unittest.TestCase):
         for vendor, module in sorted(package_modules().items()):
             with self.subTest(vendor=vendor):
                 defined = defined_by_the_shared_classes(module.parent)
-                self.assertGreater(min(len(names) for names in defined.values()), 5)
+                for base in ("Config", "Provider"):
+                    self.assertGreater(len(defined[base]), 5)
+                self.assertGreaterEqual(defined["ManagedServer"], {"base_url", "start"})
                 tree = ast.parse(module.read_text(encoding="utf-8"))
                 self.assertEqual(taken_from_the_shared_class(tree, defined), [])
 

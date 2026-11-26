@@ -142,6 +142,20 @@ impl OpenAi {
     }
 
     /// The provider for `config`, applying `vendor`'s rules.
+    /// Chat Completions for a managed llama.cpp server on this machine.
+    /// Applies its chat template settings, including on turns that use tools.
+    ///
+    /// # Errors
+    /// The HTTP client could not be built.
+    pub fn for_llamacpp(
+        mut config: OpenAiConfig,
+        port: u16,
+        enable_thinking: Option<bool>,
+    ) -> Result<Self, ProviderError> {
+        config.base_url = Some(format!("http://127.0.0.1:{port}/v1"));
+        Self::for_vendor(config, Vendor::LlamaCpp { enable_thinking })
+    }
+
     pub(crate) fn for_vendor(config: OpenAiConfig, vendor: Vendor) -> Result<Self, ProviderError> {
         // A provider that cannot be built says why in its own words.
         Self::built(config, vendor).map_err(|failure| Exit::unbuilt(vendor.provider(), &failure))
@@ -152,13 +166,19 @@ impl OpenAi {
         let chat = joined(base_url, config.api.path())?;
         let models = joined(base_url, MODELS)?;
         let headers = headers_of(&config, &chat)?;
-        let client = Client::new(Settings {
+        let settings = Settings {
             timeouts: Timeouts::new(config.timeout, config.connect_timeout)?,
             max_retries: config.max_retries,
             retry: RETRY,
             refused: failure::status,
             tried_again: tried_again!("roomkit::providers::openai"),
-        })?;
+        };
+        let client = match vendor {
+            Vendor::LlamaCpp { .. } => Client::direct(settings),
+            Vendor::OpenAi | Vendor::Kimi | Vendor::MiniMax | Vendor::DeepSeek { .. } => {
+                Client::new(settings)
+            }
+        }?;
         let exit = exit_of(&config, vendor, &client, &chat);
         Ok(Self {
             vendor,

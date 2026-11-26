@@ -3,6 +3,10 @@
     "Anthropic",
     "AnthropicConfig"
   ],
+  "roomkit_providers.llm.llamacpp": [
+    "LlamaCpp",
+    "LlamaCppConfig"
+  ],
   "roomkit_providers.llm.openai": [
     "OpenAI",
     "OpenAIConfig"

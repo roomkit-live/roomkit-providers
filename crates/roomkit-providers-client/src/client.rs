@@ -157,7 +157,18 @@ impl Client {
     /// certificate store of the system that is there and does not read, or
     /// a TLS configuration or an HTTP client that could not be made.
     pub fn new(settings: Settings) -> Result<Self, Failure> {
-        let proxies = Proxies::of_the_environment()?;
+        Self::with_proxies(settings, Proxies::of_the_environment()?)
+    }
+
+    /// A client for a managed local service. Requests bypass every proxy.
+    ///
+    /// # Errors
+    /// The TLS configuration or HTTP client could not be built.
+    pub fn direct(settings: Settings) -> Result<Self, Failure> {
+        Self::with_proxies(settings, Proxies::default())
+    }
+
+    fn with_proxies(settings: Settings, proxies: Proxies) -> Result<Self, Failure> {
         let tls = roomkit_providers_http::tls_config();
         let tls = tls.map_err(|unset| without_tls(&unset))?;
         Self::built(settings, proxies, tls)

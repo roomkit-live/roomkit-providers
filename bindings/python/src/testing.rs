@@ -344,7 +344,7 @@ impl PythonScripted {
 impl PythonScripted {
     /// The provider, as any provider crosses.
     fn provider(&self, py: Python<'_>) -> PyResult<PythonProvider> {
-        let held = PythonProvider::holding(self.scripted.clone(), &self.scripted.label);
+        let held = PythonProvider::holding(self.scripted.clone(), &self.scripted.label, None);
         held.map_err(|failure| failure.raised(py))
     }
 

@@ -14,7 +14,7 @@ dependencies = ["roomkit>=0.117.0.dev0,<0.118"]
 # What is true of the wheel: the licenses of every crate its extension
 # links, each taken under MIT where it offers it
 # (`scripts/native-notices.py check` holds the expression to them).
-license = "MIT AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND CDLA-Permissive-2.0 AND ISC AND Zlib"
+license = "MIT AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND CC0-1.0 AND CDLA-Permissive-2.0 AND ISC AND Zlib"
 # The MIT license, the notice of the Unicode data two of the crates the
 # extension links derive a table from, and the notices of its dependencies.
 license-files = [

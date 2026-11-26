@@ -24,6 +24,7 @@ pub(crate) const TOOLS_REASONING_EFFORT: &str = "tools_reasoning_effort";
 /// The embedded catalogue of each vendor, as the script wrote it.
 const fn written(vendor: Vendor) -> &'static str {
     match vendor {
+        Vendor::LlamaCpp { .. } => "[]",
         Vendor::OpenAi => include_str!("../catalog/models.json"),
         Vendor::DeepSeek { .. } => include_str!("../catalog/deepseek.json"),
         Vendor::Kimi => include_str!("../catalog/kimi.json"),
@@ -52,6 +53,7 @@ const DEEPSEEK_VENDOR: Vendor = Vendor::DeepSeek {
 /// The curated catalogue of `vendor`, in Python's order.
 pub(crate) fn of(vendor: Vendor) -> &'static [ModelInfo] {
     match vendor {
+        Vendor::LlamaCpp { .. } => &[],
         Vendor::OpenAi => &OPENAI,
         Vendor::DeepSeek { .. } => &DEEPSEEK,
         Vendor::Kimi => &KIMI,

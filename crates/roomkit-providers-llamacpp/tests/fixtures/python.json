@@ -1,0 +1,114 @@
+{
+  "roomkit_version": "0.117.0.dev0",
+  "defaults": {
+    "model": "example/model:Q4_K_M",
+    "context_size": 8192,
+    "gpu_layers": null,
+    "max_tokens": 1024,
+    "enable_thinking": null,
+    "binary": null,
+    "variant": null,
+    "cache_dir": null,
+    "port": null,
+    "startup_timeout": 1800.0,
+    "timeout": 120.0,
+    "extra_args": []
+  },
+  "catalogue": [],
+  "launch": [
+    "llama-server",
+    "-hf",
+    "example/model:Q4_K_M",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "18080",
+    "--jinja",
+    "-c",
+    "8192"
+  ],
+  "requests": [
+    {
+      "model": "example/model:Q4_K_M",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Look up the record."
+        }
+      ],
+      "max_tokens": 1024,
+      "temperature": 0.7,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "lookup",
+            "description": "Read a record",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    {
+      "model": "example/model:Q4_K_M",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Look up the record."
+        }
+      ],
+      "max_tokens": 1024,
+      "temperature": 0.7,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "lookup",
+            "description": "Read a record",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "chat_template_kwargs": {
+        "enable_thinking": false,
+        "reasoning_effort": "high"
+      }
+    },
+    {
+      "model": "example/model:Q4_K_M",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Look up the record."
+        }
+      ],
+      "max_tokens": 1024,
+      "temperature": 0.7,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "lookup",
+            "description": "Read a record",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    }
+  ]
+}

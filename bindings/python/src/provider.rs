@@ -23,6 +23,14 @@ use super::fork::Kept;
 use super::runtime;
 use super::stream::PythonStream;
 
+/// Optional lifecycle of a service that belongs to the provider.
+pub(crate) trait Managed: Send + Sync {
+    fn base_url(&self) -> String;
+    fn start(
+        &self,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Result<(), ProviderError>> + Send + '_>>;
+}
+
 /// A provider of the contract, whichever its type.
 pub(crate) type Held = Arc<dyn AnyProvider>;
 
@@ -99,18 +107,31 @@ impl Said {
 pub(crate) struct PythonProvider {
     provider: Kept<Held>,
     said: Said,
+    managed: Kept<Option<Arc<dyn Managed>>>,
 }
 
 impl PythonProvider {
     /// `provider` as Python holds it, with what it says of itself, and
     /// `label`, the name its vendor states its failures carry.
-    pub(crate) fn holding(provider: impl AiProvider, label: &str) -> Result<Self, Failure> {
+    pub(crate) fn holding(
+        provider: impl AiProvider,
+        label: &str,
+        managed: Option<Arc<dyn Managed>>,
+    ) -> Result<Self, Failure> {
         let provider: Held = Arc::new(provider);
         let said = Said::of(&provider, label)?;
         Ok(Self {
             provider: Kept::new(provider),
             said,
+            managed: Kept::new(managed),
         })
+    }
+
+    fn managed(&self) -> PyResult<&Arc<dyn Managed>> {
+        self.managed
+            .get()
+            .and_then(Option::as_ref)
+            .ok_or_else(|| PyRuntimeError::new_err("this provider has no managed server"))
     }
 
     /// The name the provider goes by.
@@ -254,6 +275,22 @@ impl PythonProvider {
                 request_json,
                 api_key,
             )
+        })
+    }
+
+    /// The managed server's local endpoint.
+    fn managed_base_url(&self) -> PyResult<String> {
+        Ok(self.managed()?.base_url())
+    }
+
+    /// Await startup on the binding's runtime so cancelling the awaitable stops it.
+    fn managed_start<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let label = self.label();
+        guarded(py, label, || {
+            let provider = Arc::clone(self.managed()?);
+            runtime::call(py, label, async move {
+                provider.start().await.map_err(Failure::from)
+            })
         })
     }
 

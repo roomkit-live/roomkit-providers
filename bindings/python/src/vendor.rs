@@ -54,6 +54,11 @@ pub(crate) trait Vendor: 'static {
     /// carries the same.
     const LABEL: &'static str;
 
+    /// Explicit startup for a provider that owns a local service.
+    fn managed(_provider: &Self::Provider) -> Option<std::sync::Arc<dyn super::provider::Managed>> {
+        None
+    }
+
     /// The label `provider` gives its failures.
     fn label(provider: &Self::Provider) -> &str;
 
@@ -121,7 +126,8 @@ fn config_of<V: Vendor>(json: &str) -> PyResult<V::Config> {
 /// never left to a default.
 fn held<V: Vendor>(py: Python<'_>, provider: V::Provider) -> PyResult<PythonProvider> {
     let labelled = V::label(&provider) == V::LABEL;
-    let held = PythonProvider::holding(provider, V::LABEL);
+    let managed = V::managed(&provider);
+    let held = PythonProvider::holding(provider, V::LABEL, managed);
     let held = held.map_err(|failure| failure.raised(py))?;
     if labelled && held.name() == V::RECORDED_AS {
         Ok(held)

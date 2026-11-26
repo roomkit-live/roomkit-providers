@@ -93,11 +93,12 @@ AGENT_EXAMPLES := $(basename $(notdir $(wildcard rust-examples/*.rs)))
 # The examples are built first, outside the namespace that runs them.
 examples:
 	$(CARGO) build --locked -p roomkit-providers-openai -p roomkit-providers-anthropic \
-		-p roomkit-providers-examples --examples
+		-p roomkit-providers-llamacpp -p roomkit-providers-examples --examples
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example behind_a_proxy
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-anthropic --example local_messages
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-opentelemetry --example one_trace
+	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-llamacpp --example managed_gguf
 	@for example in $(AGENT_EXAMPLES); do \
 		echo "== $$example"; \
 		$(NO_NETWORK) $(CARGO) run --quiet --locked --offline \
@@ -215,3 +216,6 @@ named-cases:
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-anthropic/tests/fixtures/named_cases.json) \
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-anthropic --lib the_named_cases_file
 
+.PHONY: python-llamacpp-cases
+python-llamacpp-cases:
+	$(PYTHON) scripts/generate_llamacpp_cases.py

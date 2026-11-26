@@ -12,12 +12,16 @@ implementation per service, written once in Rust, for RoomKit's Rust core
 and, behind a Python binding, for RoomKit's Python.
 
 > **Early development.** The HTTP client the providers are built on is
-> written, and two providers, OpenAI's and Anthropic's:
-> whole answers, streams and the model listing. A Python package holds both
+> written, with providers for OpenAI, Anthropic and managed local llama.cpp:
+> whole answers, streams and the model listing. A Python package exposes them
 > behind a native extension, each as a RoomKit provider. Nothing is
 > released. The
 > [changelog](CHANGELOG.md) says what exists; the rest of this page says
 > where the project is going.
+
+For local GGUF inference, the [managed llama.cpp provider](crates/roomkit-providers-llamacpp/README.md)
+installs the pinned server or runs an explicit binary. In Python, import
+`LlamaCpp` and `LlamaCppConfig` from `roomkit_providers.llm.llamacpp`.
 
 ## Goals
 

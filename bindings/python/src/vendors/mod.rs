@@ -9,10 +9,12 @@
 use super::vendor::Entries;
 
 mod anthropic;
+mod llamacpp;
 mod openai;
 
 /// The entries of every vendor.
 pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<anthropic::Anthropic>(),
     Entries::of::<openai::OpenAi>(),
+    Entries::of::<llamacpp::LlamaCpp>(),
 ];

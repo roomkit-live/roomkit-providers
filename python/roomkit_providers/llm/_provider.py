@@ -308,3 +308,21 @@ class Provider[C: BaseModel](AIProvider):
         _process.start()
         with suppress(RuntimeError):
             await self._native.close()
+
+
+class ManagedServer:
+    """The lifecycle a provider with its own inference process exposes."""
+
+    _native: _native._Provider
+
+    @property
+    def base_url(self) -> str:
+        """The local endpoint of the managed server."""
+        _process.enter()
+        return self._native.managed_base_url()
+
+    async def start(self) -> None:
+        """Load the model before the first request."""
+        _process.start()
+        with failing_as_roomkit():
+            await self._native.managed_start()

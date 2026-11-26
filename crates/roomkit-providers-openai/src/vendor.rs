@@ -36,6 +36,8 @@ const KIMI_LEVELS: [&str; 3] = ["low", "high", "max"];
 pub(crate) enum Vendor {
     /// `OpenAI`, or any server behind a base URL: Python's `OpenAIAIProvider`.
     OpenAi,
+    /// The local llama.cpp server and its chat-template thinking switch.
+    LlamaCpp { enable_thinking: Option<bool> },
     /// Python's `DeepSeekAIProvider`, with its configuration's
     /// `enable_thinking`.
     DeepSeek { enable_thinking: Option<bool> },
@@ -58,7 +60,7 @@ impl Vendor {
     /// Where the vendor reads a replayed round's reasoning.
     pub(crate) fn dialect(self) -> ChatDialect<'static> {
         match self {
-            Self::OpenAi => OPENAI_CHAT,
+            Self::OpenAi | Self::LlamaCpp { .. } => OPENAI_CHAT,
             Self::DeepSeek { .. } => DEEPSEEK_CHAT,
             Self::MiniMax => MINIMAX_CHAT,
             Self::Kimi => KIMI_CHAT,
@@ -69,6 +71,7 @@ impl Vendor {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::OpenAi => "OpenAIAIProvider",
+            Self::LlamaCpp { .. } => "llamacpp",
             Self::DeepSeek { .. } => "DeepSeekAIProvider",
             Self::MiniMax => "minimax",
             Self::Kimi => "kimi",
@@ -79,6 +82,7 @@ impl Vendor {
     pub(crate) fn provider(self) -> &'static str {
         match self {
             Self::OpenAi => "openai",
+            Self::LlamaCpp { .. } => "llamacpp",
             Self::DeepSeek { .. } => "deepseek",
             Self::MiniMax => "minimax",
             Self::Kimi => "kimi",
@@ -96,7 +100,7 @@ impl Vendor {
     /// document one for their models, `OpenAI`'s and Kimi's do.
     pub(crate) fn takes_response_schema(self) -> bool {
         match self {
-            Self::OpenAi | Self::Kimi => true,
+            Self::OpenAi | Self::Kimi | Self::LlamaCpp { .. } => true,
             Self::DeepSeek { .. } | Self::MiniMax => false,
         }
     }
@@ -105,6 +109,7 @@ impl Vendor {
     pub(crate) fn base_urls(self) -> &'static [&'static str] {
         match self {
             Self::OpenAi => &[OPENAI_BASE_URL],
+            Self::LlamaCpp { .. } => &[],
             Self::DeepSeek { .. } => &DEEPSEEK_BASE_URLS,
             Self::MiniMax => &[MINIMAX_BASE_URL],
             Self::Kimi => &[KIMI_BASE_URL],
@@ -125,7 +130,7 @@ impl Vendor {
             Self::OpenAi => Some(&names::OPENAI),
             Self::DeepSeek { .. } => Some(&names::DEEPSEEK),
             Self::Kimi => Some(&names::KIMI),
-            Self::MiniMax => None,
+            Self::MiniMax | Self::LlamaCpp { .. } => None,
         }
     }
 
@@ -152,6 +157,7 @@ impl Vendor {
         }
         match self {
             Self::MiniMax | Self::Kimi => !self.is_own_endpoint(base_url),
+            Self::LlamaCpp { .. } => true,
             Self::OpenAi => {
                 !self.is_own_endpoint(base_url) || models::sees_images_by_its_name(model)
             }
@@ -172,6 +178,7 @@ impl Vendor {
     ) -> Sampling {
         match self {
             Self::OpenAi => Sampling::default(),
+            Self::LlamaCpp { enable_thinking } => local_template(request, enable_thinking),
             Self::DeepSeek { enable_thinking } => deepseek(request, configured, enable_thinking),
             Self::MiniMax => minimax(entry, request, configured),
             Self::Kimi => Sampling {
@@ -180,6 +187,24 @@ impl Vendor {
             },
         }
     }
+}
+
+/// Local chat templates consume thinking settings on tool turns as well.
+fn local_template(request: &AiContext, default: Option<bool>) -> Sampling {
+    let mut template = serde_json::Map::new();
+    if let Some(enabled) = thinking_switch(request).or(default) {
+        template.insert("enable_thinking".into(), enabled.into());
+    }
+    if let Some(effort) = request.reasoning_effort.as_deref().filter(|s| *s != "none") {
+        template.insert("reasoning_effort".into(), effort.into());
+    }
+    let mut sampling = Sampling::default();
+    if !template.is_empty() {
+        sampling
+            .extra
+            .insert("chat_template_kwargs".into(), Value::Object(template));
+    }
+    sampling
 }
 
 /// The effort on a vendor's catalogued model: the turn's over the

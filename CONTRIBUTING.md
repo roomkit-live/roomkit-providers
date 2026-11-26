@@ -403,6 +403,14 @@ one module of the package. The names follow its vendor: the Rust type
 `OpenAi`, the Python class `OpenAI` with `OpenAIConfig`, no `Provider`
 suffix.
 
+A provider that owns an inference process can also expose its local endpoint
+and explicit startup through the shared `ManagedServer` mixin. Its binding
+supplies the optional lifecycle with `Vendor::managed`. Generate, stream and
+close still use the same provider contract. The managed llama.cpp crate
+captures its launch and local chat-template settings with
+`make python-llamacpp-cases`; its Chat Completions transport is shared with
+the existing OpenAI wire replay.
+
 In Rust, in this order:
 
 - **The wire cases first**, captured on RoomKit's Python provider before

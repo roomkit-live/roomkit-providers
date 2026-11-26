@@ -7,6 +7,9 @@ nothing has been released yet.
 
 ### Added
 
+- A managed llama.cpp provider for Rust and Python. Load a local GGUF or a
+  Hugging Face reference, stream tool calls and release the local model on close.
+
 - `roomkit-providers-opentelemetry`: RoomKit's telemetry on OpenTelemetry,
   for a host built on RoomKit's Rust core. `OpenTelemetryProvider` and
   `OpenTelemetryProviderOptions` are the provider that was the core's
