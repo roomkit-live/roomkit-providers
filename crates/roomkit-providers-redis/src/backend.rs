@@ -233,6 +233,22 @@ mod tests {
     use super::*;
     use redis::aio::ConnectionManagerConfig;
 
+    /// The defaults of Python's `RedisTurnBackend(url, *, client, key_prefix,
+    /// timeouts)`, and of its private `_loop_back`.
+    #[test]
+    fn the_options_default_as_pythons_keywords() {
+        let RedisTurnBackendOptions {
+            client,
+            _loop_back: loop_back,
+            key_prefix,
+            timeouts,
+        } = RedisTurnBackendOptions::default();
+        assert!(client.is_none());
+        assert_eq!(key_prefix, "roomkit:turns");
+        assert!(!loop_back);
+        assert_eq!(timeouts, TurnTimeouts::default());
+    }
+
     #[tokio::test]
     async fn only_an_absent_url_is_refused_with_an_injected_client() {
         let default = redis::ConnectionAddr::Tcp("localhost".into(), 6379);

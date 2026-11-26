@@ -4,5 +4,6 @@
 #![expect(clippy::unwrap_used, reason = "a test fails on a broken fixture")]
 
 mod keys;
+mod ports;
 mod room_turn;
 mod support;

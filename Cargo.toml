@@ -17,13 +17,13 @@ publish = false
 # its host's: the revision is the one a host pins. It is past the 0.3.0
 # release, whose contract ends a generation in a free word: this one ends
 # it in `FinishReason`, which no release holds yet.
-roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "fd4fd2023f643da50f02b2c6c5482022c556182f" }
-roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "fd4fd2023f643da50f02b2c6c5482022c556182f" }
-roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "fd4fd2023f643da50f02b2c6c5482022c556182f" }
+roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b0ccf3d99d08e8a9816eae1c1779a5534d7371bc" }
+roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b0ccf3d99d08e8a9816eae1c1779a5534d7371bc" }
+roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b0ccf3d99d08e8a9816eae1c1779a5534d7371bc" }
 # What the examples' agents run on beside a provider (rust-examples): the
 # SQLite store of the server examples and the MCP tools of one of them.
-roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "fd4fd2023f643da50f02b2c6c5482022c556182f" }
-roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "fd4fd2023f643da50f02b2c6c5482022c556182f" }
+roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b0ccf3d99d08e8a9816eae1c1779a5534d7371bc" }
+roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "b0ccf3d99d08e8a9816eae1c1779a5534d7371bc" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/python-forms" }
