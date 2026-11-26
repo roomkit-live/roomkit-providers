@@ -97,6 +97,7 @@ examples:
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example local_server
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example behind_a_proxy
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-anthropic --example local_messages
+	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-opentelemetry --example one_trace
 	@for example in $(AGENT_EXAMPLES); do \
 		echo "== $$example"; \
 		$(NO_NETWORK) $(CARGO) run --quiet --locked --offline \

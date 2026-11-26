@@ -7,6 +7,15 @@ nothing has been released yet.
 
 ### Added
 
+- `roomkit-providers-opentelemetry`: RoomKit's telemetry on OpenTelemetry,
+  for a host built on RoomKit's Rust core. `OpenTelemetryProvider` and
+  `OpenTelemetryProviderOptions` are the provider that was the core's
+  feature `opentelemetry`, with the options and the behaviour it had there:
+  the kit's spans and metrics handed to an OpenTelemetry SDK tracer and
+  meter provider, a turn of another process in its owner's trace. It starts
+  its spans under the current span's context, which the core gives by its
+  public `telemetry::get_current_telemetry_ctx`. Rust only: RoomKit's
+  Python keeps its own.
 - `roomkit-providers-redis`: RoomKit's turn backend across processes, on
   Redis, for a host built on RoomKit's Rust core. `RedisTurnBackend` is the
   backend that was in the core, with the constructor and the operations it

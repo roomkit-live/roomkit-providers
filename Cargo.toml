@@ -17,13 +17,13 @@ publish = false
 # its host's: the revision is the one a host pins. It is past the 0.3.0
 # release, whose contract ends a generation in a free word: this one ends
 # it in `FinishReason`, which no release holds yet.
-roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "d33e0eed4ca569c03e3b2a7917b7e03331e0db64" }
-roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "d33e0eed4ca569c03e3b2a7917b7e03331e0db64" }
-roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "d33e0eed4ca569c03e3b2a7917b7e03331e0db64" }
+roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
+roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
+roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
 # What the examples' agents run on beside a provider (rust-examples): the
 # SQLite store of the server examples and the MCP tools of one of them.
-roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "d33e0eed4ca569c03e3b2a7917b7e03331e0db64" }
-roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "d33e0eed4ca569c03e3b2a7917b7e03331e0db64" }
+roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
+roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/python-forms" }
@@ -45,6 +45,12 @@ rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem
 # streams, a connection manager and rustls, the version RoomKit's Python and
 # Rust backends were proven with.
 redis = { version = "1.8.2", default-features = false, features = ["connection-manager", "streams", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
+# OpenTelemetry's API and SDK, for the telemetry provider
+# (roomkit-providers-opentelemetry): spans and metrics only, the versions the
+# core's provider was proven with.
+opentelemetry = { version = "0.33", default-features = false, features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.33", default-features = false, features = ["trace", "metrics"] }
+pretty_assertions = "1"
 # The HTTP client of the providers. No default feature: no system TLS
 # library, no HTTP/2, no proxy from the system's settings and no charset
 # support; a crate enables what it needs.

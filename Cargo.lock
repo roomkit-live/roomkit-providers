@@ -440,6 +440,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e9de72ce2ad1f90dc62fa25f0f430ef85eb4b0d8fa0be4f30373bc40a21d28e"
 
 [[package]]
+name = "diff"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -485,7 +491,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e35d6e78f4cebb90e51d543db8fe41528851d6deeef6ef21ebd4bfdc1e784776"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1256,6 +1262,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e036b411754132fd6b74e94b74e9a13c5cf606fa93d1885c35860d3060820b1"
 
 [[package]]
+name = "opentelemetry"
+version = "0.33.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c1f1a6ac9c875a4941e4c7c085b61e8f4daa326de03b4701768c3491a6ad9ee"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "js-sys",
+ "pin-project-lite",
+ "thiserror",
+]
+
+[[package]]
+name = "opentelemetry_sdk"
+version = "0.33.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "372a912db2974d1990207006fd0e3aa0ef3fd4ad3be43c65cfaadf2206866061"
+dependencies = [
+ "futures-channel",
+ "futures-executor",
+ "futures-util",
+ "opentelemetry",
+ "percent-encoding",
+ "portable-atomic",
+ "rand",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "parking"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1336,6 +1372,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
 dependencies = [
  "zerocopy",
+]
+
+[[package]]
+name = "pretty_assertions"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ae130e2f271fbc2ac3a40fb1d07180839cdbbe443c7a27e1e3c13c5cac0116d"
+dependencies = [
+ "diff",
+ "yansi",
 ]
 
 [[package]]
@@ -1530,7 +1576,7 @@ dependencies = [
 [[package]]
 name = "roomkit"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=d33e0eed4ca569c03e3b2a7917b7e03331e0db64#d33e0eed4ca569c03e3b2a7917b7e03331e0db64"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=8f2b99a2297a78d0a0887b62fa51c7389341a9ad#8f2b99a2297a78d0a0887b62fa51c7389341a9ad"
 dependencies = [
  "futures-core",
  "getrandom 0.4.3",
@@ -1549,7 +1595,7 @@ dependencies = [
 [[package]]
 name = "roomkit-ai"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=d33e0eed4ca569c03e3b2a7917b7e03331e0db64#d33e0eed4ca569c03e3b2a7917b7e03331e0db64"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=8f2b99a2297a78d0a0887b62fa51c7389341a9ad#8f2b99a2297a78d0a0887b62fa51c7389341a9ad"
 dependencies = [
  "base64 0.23.1",
  "fancy-regex",
@@ -1570,7 +1616,7 @@ dependencies = [
 [[package]]
 name = "roomkit-core"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=d33e0eed4ca569c03e3b2a7917b7e03331e0db64#d33e0eed4ca569c03e3b2a7917b7e03331e0db64"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=8f2b99a2297a78d0a0887b62fa51c7389341a9ad#8f2b99a2297a78d0a0887b62fa51c7389341a9ad"
 dependencies = [
  "jiff",
  "serde",
@@ -1584,7 +1630,7 @@ dependencies = [
 [[package]]
 name = "roomkit-mcp"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=d33e0eed4ca569c03e3b2a7917b7e03331e0db64#d33e0eed4ca569c03e3b2a7917b7e03331e0db64"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=8f2b99a2297a78d0a0887b62fa51c7389341a9ad#8f2b99a2297a78d0a0887b62fa51c7389341a9ad"
 dependencies = [
  "nix",
  "rmcp",
@@ -1687,6 +1733,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-opentelemetry"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "pretty_assertions",
+ "roomkit",
+ "roomkit-ai",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "roomkit-providers-python-forms"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -1712,7 +1772,7 @@ dependencies = [
 [[package]]
 name = "roomkit-sqlite"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=d33e0eed4ca569c03e3b2a7917b7e03331e0db64#d33e0eed4ca569c03e3b2a7917b7e03331e0db64"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=8f2b99a2297a78d0a0887b62fa51c7389341a9ad#8f2b99a2297a78d0a0887b62fa51c7389341a9ad"
 dependencies = [
  "roomkit",
  "roomkit-core",
@@ -1819,7 +1879,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2598,7 +2658,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2777,6 +2837,12 @@ name = "xxhash-rust"
 version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40de123dbb523ebcc00d61ec01840ad192578afc378d859f3429caa38308fad5"
+
+[[package]]
+name = "yansi"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "yasna"

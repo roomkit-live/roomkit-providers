@@ -26,8 +26,8 @@ testing = []
 [dependencies]
 # RoomKit's core: the request a provider is given, the answer and the events
 # it gives, the failure a call raises. The revision is the providers'.
-roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "d33e0eed4ca569c03e3b2a7917b7e03331e0db64" }
-roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "d33e0eed4ca569c03e3b2a7917b7e03331e0db64" }
+roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
+roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "8f2b99a2297a78d0a0887b62fa51c7389341a9ad" }
 # The JSON form those values cross to Python in: the request read, the
 # answer and the events written.
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "../python-forms" }
