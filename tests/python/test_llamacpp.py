@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from roomkit.providers.llamacpp import LlamaCppConfig as ReferenceConfig
 from roomkit_providers.llm.llamacpp import LlamaCpp, LlamaCppConfig
 
 SERVER = """
-import json, sys
+import json, os, sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -27,7 +29,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(reply)
 
 args = sys.argv[1:]
-Path(args[args.index("--record") + 1]).write_text(json.dumps(args))
+Path(args[args.index("--record") + 1]).write_text(json.dumps({
+    "args": args, "libraries": os.environ.get("LD_LIBRARY_PATH"),
+    "inherited_original": "LD_LIBRARY_PATH_ORIG" in os.environ,
+}))
 HTTPServer(("127.0.0.1", int(args[args.index("--port") + 1])), Handler).serve_forever()
 """
 
@@ -46,13 +51,24 @@ class ManagedTests(unittest.IsolatedAsyncioTestCase):
             config = ReferenceConfig(
                 model=str(gguf), binary=str(binary), extra_args=["--record", str(record)]
             )
-            provider = LlamaCpp(config)
+            with (
+                patch.object(sys, "frozen", True, create=True),
+                patch.object(sys, "_MEIPASS", str(root / "bundle"), create=True),
+            ):
+                provider = LlamaCpp(config)
             self.assertTrue(provider.base_url.startswith("http://127.0.0.1:"))
             self.assertEqual(provider.available_models(), [])
             self.assertFalse(record.exists())
             try:
-                await provider.start()
-                self.assertIn(str(gguf), record.read_text())
+                with patch.dict(
+                    os.environ,
+                    {"LD_LIBRARY_PATH": str(root / "bundle"), "LD_LIBRARY_PATH_ORIG": str(root)},
+                ):
+                    await provider.start()
+                launched = json.loads(record.read_text())
+                self.assertIn(str(gguf), launched["args"])
+                self.assertEqual(launched["libraries"], str(root))
+                self.assertFalse(launched["inherited_original"])
                 self.assertEqual([m.id for m in await provider.list_models()], ["local"])
             finally:
                 await provider.close()

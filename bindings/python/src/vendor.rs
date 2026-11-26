@@ -71,6 +71,14 @@ pub(crate) trait Vendor: 'static {
     /// The provider `config` configures.
     fn built(config: Self::Config) -> Result<Self::Provider, ProviderError>;
 
+    /// Build for this interpreter. A managed service can request the packager's bundle path.
+    fn in_host(
+        config: Self::Config,
+        _bundle: impl FnOnce() -> Option<std::path::PathBuf>,
+    ) -> Result<Self::Provider, ProviderError> {
+        Self::built(config)
+    }
+
     /// `provider` as a replay of recorded cases drives it: sending to
     /// `fake`, a loopback address, reading a `retry-after` date against
     /// `clock` and keeping its waits instead of taking them.
@@ -136,13 +144,27 @@ fn held<V: Vendor>(py: Python<'_>, provider: V::Provider) -> PyResult<PythonProv
     }
 }
 
+/// A frozen interpreter's loader paths apply to the host, not its child services.
+fn frozen_bundle(py: Python<'_>) -> Option<std::path::PathBuf> {
+    let sys = py.import("sys").ok()?;
+    if !sys.getattr("frozen").ok()?.is_truthy().ok()? {
+        return None;
+    }
+    sys.getattr("_MEIPASS")
+        .ok()?
+        .extract::<String>()
+        .ok()
+        .map(Into::into)
+}
+
 fn provider_of<V: Vendor>(
     py: Python<'_>,
     config_json: &str,
     key: Option<String>,
 ) -> PyResult<PythonProvider> {
     let config = V::keyed(config_of::<V>(config_json)?, key);
-    let provider = V::built(config).map_err(|error| Failure::from(error).raised(py))?;
+    let provider = V::in_host(config, || frozen_bundle(py))
+        .map_err(|error| Failure::from(error).raised(py))?;
     held::<V>(py, provider)
 }
 
@@ -164,7 +186,8 @@ fn replaying_of<V: Vendor>(
     clock: f64,
 ) -> PyResult<(PythonProvider, ReplayWaits)> {
     let config = V::keyed(config_of::<V>(config_json)?, key);
-    let built = V::built(config).and_then(|provider| V::replaying(provider, fake, clock));
+    let built = V::in_host(config, || frozen_bundle(py))
+        .and_then(|provider| V::replaying(provider, fake, clock));
     let (provider, waits) = built.map_err(|error| Failure::from(error).raised(py))?;
     Ok((held::<V>(py, provider)?, waits))
 }

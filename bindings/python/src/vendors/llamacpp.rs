@@ -8,7 +8,7 @@ use roomkit_providers_llamacpp::LlamaCppConfig;
 
 use crate::vendor::Vendor;
 
-/// `OpenAI`'s Chat Completions.
+/// Managed local inference.
 #[derive(Debug)]
 pub(crate) struct LlamaCpp;
 
@@ -33,19 +33,14 @@ impl Vendor for LlamaCpp {
     }
 
     fn built(config: LlamaCppConfig) -> Result<Self::Provider, ProviderError> {
-        use pyo3::prelude::*;
-        let bundle = Python::attach(|py| {
-            let sys = py.import("sys").ok()?;
-            if !sys.getattr("frozen").ok()?.is_truthy().ok()? {
-                return None;
-            }
-            sys.getattr("_MEIPASS")
-                .ok()?
-                .extract::<String>()
-                .ok()
-                .map(Into::into)
-        });
-        Self::Provider::from_host(config, bundle)
+        Self::Provider::new(config)
+    }
+
+    fn in_host(
+        config: LlamaCppConfig,
+        bundle: impl FnOnce() -> Option<std::path::PathBuf>,
+    ) -> Result<Self::Provider, ProviderError> {
+        Self::Provider::from_host(config, bundle())
     }
 
     fn replaying(
