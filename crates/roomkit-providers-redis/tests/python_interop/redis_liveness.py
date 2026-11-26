@@ -14,7 +14,6 @@ import redis.asyncio as redis
 import roomkit
 from redis_process import line, namespace, output, process, signal
 from roomkit import Agent, TurnExecutor
-from roomkit.turns._redis_presence import Keys
 from roomkit.turns.redis import RedisTurnBackend
 
 PEER = Path(__file__).with_name("redis_peer.py")
@@ -22,15 +21,15 @@ PEER = Path(__file__).with_name("redis_peer.py")
 
 async def beating(env: dict[str, str], executor_id: str, *, running: bool) -> None:
     """See the same process refresh its Redis beat with the same turn membership."""
-    keys = Keys(env["ROOMKIT_INTEROP_PREFIX"])
+    prefix = env["ROOMKIT_INTEROP_PREFIX"]
     previous: tuple[float, set[bytes]] | None = None
     async with redis.from_url(env["REDIS_URL"]) as client, asyncio.timeout(5):
         while True:
-            for raw, score in await client.zrange(keys.alive, 0, -1, withscores=True):
+            for raw, score in await client.zrange(f"{prefix}:alive", 0, -1, withscores=True):
                 node, _, name = raw.decode().rpartition(":")
                 if name != executor_id:
                     continue
-                turns = await client.smembers(keys.running(node))
+                turns = await client.smembers(f"{prefix}:running:{node}")
                 if len(turns) != int(running):
                     continue
                 if previous and score > previous[0] and turns == previous[1]:
