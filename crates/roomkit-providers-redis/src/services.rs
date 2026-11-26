@@ -161,33 +161,33 @@ impl TurnBroker for RedisTurnBroker {
     fn post<'a>(
         &'a self,
         node: &'a str,
-        message: &'a Message,
+        messages: &'a [Message],
     ) -> TurnFuture<'a, Result<(), RoomKitError>> {
         Box::pin(async move {
             let key = self.0.key(&format!("inbox:{node}"));
             let mut connection = self.0.connection().await?;
-            // A crash between adding a message and setting the TTL would leave an orphaned inbox.
-            redis::pipe()
-                .atomic()
-                .cmd("XADD")
-                .arg(&key)
-                .arg("*")
-                .arg("kind")
-                .arg(&message.kind)
-                .arg("sender")
-                .arg(&message.sender)
-                .arg("body")
-                .arg(&message.body)
-                .arg("target")
-                .arg(&message.target)
-                .arg("ref")
-                .arg(&message.reference)
-                .ignore()
-                .cmd("PEXPIRE")
-                .arg(key)
-                .arg(self.0.ttl_ms())
-                .ignore()
-                .query_async(&mut connection)
+            // One round trip, and one change: a crash between adding the
+            // messages and setting the TTL would leave an orphaned inbox.
+            let mut pipe = redis::pipe();
+            pipe.atomic();
+            for message in messages {
+                pipe.cmd("XADD")
+                    .arg(&key)
+                    .arg("*")
+                    .arg("kind")
+                    .arg(&message.kind)
+                    .arg("sender")
+                    .arg(&message.sender)
+                    .arg("body")
+                    .arg(&message.body)
+                    .arg("target")
+                    .arg(&message.target)
+                    .arg("ref")
+                    .arg(&message.reference)
+                    .ignore();
+            }
+            pipe.cmd("PEXPIRE").arg(key).arg(self.0.ttl_ms()).ignore();
+            pipe.query_async(&mut connection)
                 .await
                 .map_err(|error| redis_error(&error))
         })

@@ -71,7 +71,7 @@ async fn an_inbox_is_a_stream_that_lasts_three_heartbeat_timeouts() {
     let prefix = support::prefix("inbox-key");
     let node = support::node(&url, &prefix, false);
     let message = BrokerMessage::new("frame", node.node_id(), "body".to_owned(), "turn", "");
-    node.broker().post("peer", &message).await.unwrap();
+    node.broker().post("peer", &[message]).await.unwrap();
 
     let key = format!("{prefix}:inbox:peer");
     let mut redis = support::connection(&url).await;

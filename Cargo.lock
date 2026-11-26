@@ -485,7 +485,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e35d6e78f4cebb90e51d543db8fe41528851d6deeef6ef21ebd4bfdc1e784776"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1530,7 +1530,7 @@ dependencies = [
 [[package]]
 name = "roomkit"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=b0ccf3d99d08e8a9816eae1c1779a5534d7371bc#b0ccf3d99d08e8a9816eae1c1779a5534d7371bc"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=219e945538a97bc17e8c4299adbf15a0a7b6d391#219e945538a97bc17e8c4299adbf15a0a7b6d391"
 dependencies = [
  "futures-core",
  "getrandom 0.4.3",
@@ -1549,7 +1549,7 @@ dependencies = [
 [[package]]
 name = "roomkit-ai"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=b0ccf3d99d08e8a9816eae1c1779a5534d7371bc#b0ccf3d99d08e8a9816eae1c1779a5534d7371bc"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=219e945538a97bc17e8c4299adbf15a0a7b6d391#219e945538a97bc17e8c4299adbf15a0a7b6d391"
 dependencies = [
  "base64 0.23.1",
  "fancy-regex",
@@ -1570,7 +1570,7 @@ dependencies = [
 [[package]]
 name = "roomkit-core"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=b0ccf3d99d08e8a9816eae1c1779a5534d7371bc#b0ccf3d99d08e8a9816eae1c1779a5534d7371bc"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=219e945538a97bc17e8c4299adbf15a0a7b6d391#219e945538a97bc17e8c4299adbf15a0a7b6d391"
 dependencies = [
  "jiff",
  "serde",
@@ -1584,7 +1584,7 @@ dependencies = [
 [[package]]
 name = "roomkit-mcp"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=b0ccf3d99d08e8a9816eae1c1779a5534d7371bc#b0ccf3d99d08e8a9816eae1c1779a5534d7371bc"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=219e945538a97bc17e8c4299adbf15a0a7b6d391#219e945538a97bc17e8c4299adbf15a0a7b6d391"
 dependencies = [
  "nix",
  "rmcp",
@@ -1712,7 +1712,7 @@ dependencies = [
 [[package]]
 name = "roomkit-sqlite"
 version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=b0ccf3d99d08e8a9816eae1c1779a5534d7371bc#b0ccf3d99d08e8a9816eae1c1779a5534d7371bc"
+source = "git+https://github.com/roomkit-live/roomkit-rs?rev=219e945538a97bc17e8c4299adbf15a0a7b6d391#219e945538a97bc17e8c4299adbf15a0a7b6d391"
 dependencies = [
  "roomkit",
  "roomkit-core",
@@ -1819,7 +1819,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2598,7 +2598,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
