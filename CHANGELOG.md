@@ -12,6 +12,14 @@ nothing has been released yet.
 
 ### Added
 
+- Gemini, on Google's Developer API, in Rust and in Python: the
+  `roomkit-providers-gemini` crate (`Gemini`, `GeminiConfig`), and
+  `roomkit_providers.llm.gemini` (`Gemini`, `GeminiConfig`) as a RoomKit
+  `AIProvider`, in place of RoomKit's `GeminiAIProvider`. It is held to the
+  cases captured on RoomKit's Python provider, 122 wire cases, each replayed
+  as Python but one (a failed listing fails as a failed generation does),
+  and to the JSON forms of its configuration; it takes RoomKit's own
+  configuration.
 - OpenRouter, LiteLLM, Azure and vLLM, in Rust and in Python: `OpenRouter`,
   `LiteLlm`, `AzureAi` and `Vllm` with their configurations in the OpenAI
   crate, and `roomkit_providers.llm.openrouter` (`OpenRouter`,
