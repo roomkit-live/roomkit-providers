@@ -1,9 +1,11 @@
 //! The vendors' rules, as Python's providers state them.
 
-use roomkit_ai::{AiMessage, AiRole, AiTool};
-use serde_json::json;
+use roomkit_ai::{AiContext, AiMessage, AiRole, AiTool};
+use serde_json::{Value, json};
 
+use super::sampling::{KIMI_LEVELS, SCALE};
 use super::*;
+use crate::reasoning::nearest_level;
 use crate::{OpenAi, OpenAiConfig};
 
 /// Whether `vendor`'s provider at `base_url` refuses, before any request, a
