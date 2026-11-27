@@ -71,6 +71,9 @@ impl MiniMaxConfig {
     /// Whether the configuration takes a thinking field: the provider sends
     /// reasoning where its vendor reads it.
     pub(crate) const TAKES_THINKING_FIELD: bool = false;
+    /// Whether the configuration takes the setting of a turn with tools:
+    /// the vendor's own rule decides it.
+    pub(crate) const TAKES_TOOL_TURN_SETTING: bool = false;
     /// Whether the configuration refuses a key that is not ASCII: the provider
     /// refuses one when it is built.
     pub(crate) const ASCII_KEY: bool = false;

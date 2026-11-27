@@ -1,4 +1,4 @@
-//! DeepSeek, Kimi, MiniMax, xAI, Cerebras, Qwen and Meta against the wire cases captured on their
+//! DeepSeek, Kimi, MiniMax, xAI, Cerebras, Qwen, Meta, OpenRouter and LiteLLM against the wire cases captured on their
 //! `RoomKit` Python providers, each a derivative of `OpenAIAIProvider`:
 //! `tests/fixtures/python_<vendor>_cases.json`, written by
 //! `scripts/generate_openai_chat_cases.py` from `scripts/vendor_chat_cases.py`.
@@ -16,8 +16,9 @@ use roomkit_providers_client::harness::{Fixture, Replays, replayed_or_named};
 use serde_json::Value;
 
 use crate::{
-    Cerebras, CerebrasConfig, DeepSeek, DeepSeekConfig, Kimi, KimiConfig, Meta, MetaConfig,
-    MiniMax, MiniMaxConfig, Qwen, QwenConfig, Xai, XaiConfig,
+    Cerebras, CerebrasConfig, DeepSeek, DeepSeekConfig, Kimi, KimiConfig, LiteLlm, LiteLlmConfig,
+    Meta, MetaConfig, MiniMax, MiniMaxConfig, OpenRouter, OpenRouterConfig, Qwen, QwenConfig, Xai,
+    XaiConfig,
 };
 
 /// The fixture's clock, in seconds since 1970: 2026-01-01T00:00:00Z.
@@ -51,8 +52,10 @@ replays!(Xai, XaiConfig);
 replays!(Cerebras, CerebrasConfig);
 replays!(Qwen, QwenConfig);
 replays!(Meta, MetaConfig);
+replays!(OpenRouter, OpenRouterConfig);
+replays!(LiteLlm, LiteLlmConfig);
 
-/// No case of the seven is answered otherwise than Python.
+/// No case of the nine is answered otherwise than Python.
 const NONE_NAMED: Named = Named {
     questioned_otherwise: &[],
     only_python: &[],
@@ -78,6 +81,8 @@ const XAI: &str = include_str!("../../tests/fixtures/python_xai_cases.json");
 const CEREBRAS: &str = include_str!("../../tests/fixtures/python_cerebras_cases.json");
 const QWEN: &str = include_str!("../../tests/fixtures/python_qwen_cases.json");
 const META: &str = include_str!("../../tests/fixtures/python_meta_cases.json");
+const OPENROUTER: &str = include_str!("../../tests/fixtures/python_openrouter_cases.json");
+const LITELLM: &str = include_str!("../../tests/fixtures/python_litellm_cases.json");
 
 #[tokio::test]
 async fn every_deepseek_case_replays_as_python() {
@@ -133,4 +138,20 @@ async fn every_meta_case_replays_as_python() {
     let streamed = replayed::<Meta>(META, "generate_structured_stream").await;
     let listed = replayed::<Meta>(META, "list_models").await;
     assert_eq!((generated, streamed, listed), ((41, 0), (1, 0), (2, 0)));
+}
+
+#[tokio::test]
+async fn every_openrouter_case_replays_as_python() {
+    let generated = replayed::<OpenRouter>(OPENROUTER, "generate").await;
+    let streamed = replayed::<OpenRouter>(OPENROUTER, "generate_structured_stream").await;
+    let listed = replayed::<OpenRouter>(OPENROUTER, "list_models").await;
+    assert_eq!((generated, streamed, listed), ((51, 0), (2, 0), (4, 0)));
+}
+
+#[tokio::test]
+async fn every_litellm_case_replays_as_python() {
+    let generated = replayed::<LiteLlm>(LITELLM, "generate").await;
+    let streamed = replayed::<LiteLlm>(LITELLM, "generate_structured_stream").await;
+    let listed = replayed::<LiteLlm>(LITELLM, "list_models").await;
+    assert_eq!((generated, streamed, listed), ((48, 0), (1, 0), (4, 0)));
 }

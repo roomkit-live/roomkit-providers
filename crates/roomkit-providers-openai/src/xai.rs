@@ -64,6 +64,9 @@ impl XaiConfig {
     /// Whether the configuration takes a thinking field: it sends no reasoning
     /// back unless it names a field.
     pub(crate) const TAKES_THINKING_FIELD: bool = true;
+    /// Whether the configuration takes the setting of a turn with tools:
+    /// the vendor's own rule decides it.
+    pub(crate) const TAKES_TOOL_TURN_SETTING: bool = false;
     /// Whether the configuration refuses a key that is not ASCII: the provider
     /// refuses one when it is built.
     pub(crate) const ASCII_KEY: bool = false;
@@ -129,7 +132,7 @@ impl fmt::Debug for XaiConfig {
 }
 
 // Python's `XAIConfig.model_dump(mode="json")`, read and written.
-vendor_config_form!(XaiConfig, "a xAI configuration, as a JSON object");
+vendor_config_form!(XaiConfig, "an xAI configuration, as a JSON object");
 
 vendor_provider!(
     /// A Grok model (RFC §6.7): Python's `XAIAIProvider(config)`. Its effort

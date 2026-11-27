@@ -17,8 +17,8 @@ macro_rules! vendor_provider {
             /// # Errors
             ///
             /// A failure before any request: a configuration stating
-            /// `supports_reasoning_effort_with_tools`, which the vendor's
-            /// own rule makes moot, or `thinking_field` where the
+            /// `supports_reasoning_effort_with_tools` where the vendor's
+            /// own rule makes it moot, or `thinking_field` where the
             /// configuration takes none, as the provider sends reasoning
             /// where its vendor reads it; a key that is
             /// not ASCII, where the configuration refuses one; and what
@@ -29,7 +29,8 @@ macro_rules! vendor_provider {
                     let name = vendor.provider();
                     Err(roomkit_providers_client::Exit::unbuilt(name, &failure))
                 };
-                if config.supports_reasoning_effort_with_tools.is_some() {
+                let tool_turn = config.supports_reasoning_effort_with_tools.is_some();
+                if tool_turn && !$config::TAKES_TOOL_TURN_SETTING {
                     let config = stringify!($config);
                     return refused($crate::vendor::refused_tool_turn_setting(config));
                 }
@@ -170,6 +171,7 @@ macro_rules! into_openai {
             use_max_completion_tokens: Some(config.use_max_completion_tokens),
             supports_custom_temperature: Some(config.supports_custom_temperature),
             reasoning_effort: config.reasoning_effort,
+            supports_reasoning_effort_with_tools: config.supports_reasoning_effort_with_tools,
             thinking_field: config.thinking_field,
             default_headers: config.default_headers,
             extra_body: config.extra_body,
@@ -187,11 +189,11 @@ pub(crate) use into_openai;
 /// order, the vendor's defaults for what a form leaves out, then the
 /// vendor's own members, each typed, its default the configuration's own
 /// when a form leaves it out, `null` read as `None`. The configuration says
-/// whether it takes a thinking field (`TAKES_THINKING_FIELD`), whether it
-/// refuses a key that is not ASCII (`ASCII_KEY`) and which model a form that
-/// names none asks (`MODEL`, `None` where one is required);
-/// `supports_reasoning_effort_with_tools`, which every vendor's own rule makes
-/// moot, is read only as `null`, as Python refuses any other value. Each rule
+/// whether it takes a thinking field (`TAKES_THINKING_FIELD`) and the
+/// setting of a turn with tools (`TAKES_TOOL_TURN_SETTING`), each read only
+/// as `null` where it takes none, as Python refuses any other value; whether
+/// it refuses a key that is not ASCII (`ASCII_KEY`); and which model a form
+/// that names none asks (`MODEL`, `None` where one is required). Each rule
 /// of `OpenAiConfig`'s form holds otherwise: an object only, the timeouts in
 /// seconds, the key written masked.
 macro_rules! vendor_config_form {
@@ -205,7 +207,7 @@ macro_rules! vendor_config_form {
             use serde::de::Error as _;
             use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-            use $crate::config::form::{MASK, left_null, present, seconds};
+            use $crate::config::form::{MASK, present, seconds};
             use $crate::vendor::NOT_ASCII;
 
             fn defaults() -> $config {
@@ -270,13 +272,8 @@ macro_rules! vendor_config_form {
                 supports_response_schema: Option<bool>,
                 #[serde(default)]
                 supports_response_schema_with_tools: Option<bool>,
-                // Read for its refusal of a value, never kept.
-                #[serde(
-                    default,
-                    rename = "supports_reasoning_effort_with_tools",
-                    deserialize_with = "left_null"
-                )]
-                _tool_turn_setting: (),
+                #[serde(default)]
+                supports_reasoning_effort_with_tools: Option<bool>,
                 #[serde(default)]
                 thinking_field: Option<String>,
                 $(
@@ -294,6 +291,13 @@ macro_rules! vendor_config_form {
                     if form.thinking_field.is_some() && !$config::TAKES_THINKING_FIELD {
                         return Err(D::Error::custom(
                             "the vendor's own rule decides thinking_field: it is left unset",
+                        ));
+                    }
+                    let tool_turn = form.supports_reasoning_effort_with_tools.is_some();
+                    if tool_turn && !$config::TAKES_TOOL_TURN_SETTING {
+                        return Err(D::Error::custom(
+                            "the vendor's own rule decides supports_reasoning_effort_with_tools: \
+                             it is left unset",
                         ));
                     }
                     if $config::ASCII_KEY && !form.api_key.is_ascii() {
@@ -314,7 +318,8 @@ macro_rules! vendor_config_form {
                         use_max_completion_tokens: form.use_max_completion_tokens,
                         supports_custom_temperature: form.supports_custom_temperature,
                         reasoning_effort: form.reasoning_effort,
-                        supports_reasoning_effort_with_tools: None,
+                        supports_reasoning_effort_with_tools: form
+                            .supports_reasoning_effort_with_tools,
                         thinking_field: form.thinking_field,
                         supports_response_schema: form.supports_response_schema,
                         supports_response_schema_with_tools: form.supports_response_schema_with_tools,

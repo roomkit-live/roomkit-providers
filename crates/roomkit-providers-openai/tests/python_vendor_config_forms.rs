@@ -5,7 +5,8 @@
 //! (`make python-openai-config`).
 
 use roomkit_providers_openai::{
-    CerebrasConfig, DeepSeekConfig, KimiConfig, MetaConfig, MiniMaxConfig, QwenConfig, XaiConfig,
+    CerebrasConfig, DeepSeekConfig, KimiConfig, LiteLlmConfig, MetaConfig, MiniMaxConfig,
+    OpenRouterConfig, QwenConfig, XaiConfig,
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -111,10 +112,11 @@ fn holds_to_python<C: DeserializeOwned + Serialize>(text: &str, model: &str, mem
             .any(|example| example.form[member] != defaults[member]);
         assert!(stated, "{model}: no example states {member}");
     }
-    // A vendor that names a model of its own takes a form without one, and
-    // one that takes a thinking field refuses no thinking field: 27 at least.
+    // OpenAI's refusals, its missing model aside where the vendor names one,
+    // and a null base URL; the vendor's rule adds a thinking field and the
+    // setting of a turn with tools where it decides them: 25 at least.
     assert!(
-        fixture.rejected.len() >= 27 && fixture.converted.len() >= 11,
+        fixture.rejected.len() >= 25 && fixture.converted.len() >= 11,
         "{model}"
     );
 }
@@ -178,6 +180,24 @@ fn meta_s_configuration_reads_and_writes_as_python_s() {
     holds_to_python::<MetaConfig>(
         include_str!("fixtures/python_meta_config_forms.json"),
         "MetaConfig",
+        17,
+    );
+}
+
+#[test]
+fn openrouter_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<OpenRouterConfig>(
+        include_str!("fixtures/python_openrouter_config_forms.json"),
+        "OpenRouterConfig",
+        19,
+    );
+}
+
+#[test]
+fn litellm_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<LiteLlmConfig>(
+        include_str!("fixtures/python_litellm_config_forms.json"),
+        "LiteLLMConfig",
         17,
     );
 }

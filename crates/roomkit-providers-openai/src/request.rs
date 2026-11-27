@@ -18,7 +18,7 @@ use crate::models::{
     reasoning_floor, tagged,
 };
 use crate::names::NameRule;
-use crate::vendor::{Sampling, Vendor};
+use crate::vendor::{Sampling, Vendor, litellm_sampling, require_parameters};
 use crate::{reasoning, responses};
 
 /// What a request is written for: the configuration, and what the provider
@@ -111,6 +111,9 @@ impl Asked<'_> {
         for (name, value) in configured.chain(&sampling.extra) {
             body.insert(name.clone(), value.clone());
         }
+        if self.vendor.requires_parameters() && body.contains_key("response_format") {
+            require_parameters(&mut body);
+        }
         Ok(body)
     }
 
@@ -184,6 +187,11 @@ impl Asked<'_> {
             };
         }
         let configured = self.config.reasoning_effort.as_deref();
+        if self.vendor == Vendor::LiteLlm {
+            let says = self.config.supports_reasoning_effort_with_tools;
+            let warned = |setting: &str| self.warn_left_out(setting);
+            return litellm_sampling(request, configured, says, warned);
+        }
         self.vendor.sampling(self.vendor_entry, request, configured)
     }
 

@@ -64,6 +64,9 @@ impl MetaConfig {
     /// Whether the configuration takes a thinking field: it sends no reasoning
     /// back unless it names a field.
     pub(crate) const TAKES_THINKING_FIELD: bool = true;
+    /// Whether the configuration takes the setting of a turn with tools:
+    /// the vendor's own rule decides it.
+    pub(crate) const TAKES_TOOL_TURN_SETTING: bool = false;
     /// Whether the configuration refuses a key that is not ASCII: a header
     /// carries ASCII only, and a placeholder's ellipsis copied as is is caught
     /// when the configuration is built, as Python's `_header_safe`.

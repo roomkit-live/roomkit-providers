@@ -7,9 +7,9 @@
 //! - [`OpenAiConfig`]: what the provider is configured with, the
 //!   `OpenAIConfig` of `RoomKit`'s Python implementation: the same names,
 //!   the same defaults and the same JSON form.
-//! - [`DeepSeek`], [`Kimi`], [`MiniMax`], [`Xai`], [`Cerebras`], [`Qwen`]
-//!   and [`Meta`]: the providers of seven vendors that speak Chat
-//!   Completions with rules of their own (RFC §6.4, §6.7),
+//! - [`DeepSeek`], [`Kimi`], [`MiniMax`], [`Xai`], [`Cerebras`], [`Qwen`],
+//!   [`Meta`], [`OpenRouter`] and [`LiteLlm`]: the providers of nine vendors
+//!   that speak Chat Completions with rules of their own (RFC §6.4, §6.7),
 //!   each with its configuration: where a round's earlier reasoning goes
 //!   back, how a reasoning setting is sent, the tool names the vendor
 //!   takes. Each is the choice of its vendor's rules, on the vendor's API
@@ -43,10 +43,12 @@ mod endpoint;
 mod failure;
 mod folding;
 mod kimi;
+mod litellm;
 mod meta;
 mod minimax;
 mod models;
 mod names;
+mod openrouter;
 mod provider;
 mod qwen;
 mod reasoning;
@@ -65,8 +67,10 @@ pub use cerebras::{Cerebras, CerebrasConfig, CerebrasReasoningFormat};
 pub use config::{OpenAiApi, OpenAiConfig};
 pub use deepseek::{DeepSeek, DeepSeekConfig};
 pub use kimi::{Kimi, KimiConfig};
+pub use litellm::{LiteLlm, LiteLlmConfig};
 pub use meta::{Meta, MetaConfig};
 pub use minimax::{MiniMax, MiniMaxConfig};
+pub use openrouter::{OpenRouter, OpenRouterConfig};
 pub use provider::OpenAi;
 #[cfg(feature = "replay")]
 #[doc(hidden)]

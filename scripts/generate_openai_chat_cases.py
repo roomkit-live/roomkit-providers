@@ -26,6 +26,7 @@ versions and the commit of ``roomkit`` it was written from.
 from __future__ import annotations
 
 import asyncio
+import datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -39,13 +40,17 @@ from roomkit.providers.ai.reasoning import reasoning_floor
 from roomkit.providers.cerebras import CerebrasAIProvider, CerebrasConfig
 from roomkit.providers.deepseek import DeepSeekAIProvider, DeepSeekConfig
 from roomkit.providers.kimi import KimiAIProvider, KimiConfig
+from roomkit.providers.litellm import LiteLLMAIProvider, LiteLLMConfig
+from roomkit.providers.litellm import ai as litellm_ai
 from roomkit.providers.meta import MetaAIProvider, MetaConfig
 from roomkit.providers.minimax import MiniMaxAIProvider, MiniMaxConfig
 from roomkit.providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit.providers.openrouter import OpenRouterAIProvider, OpenRouterConfig
 from roomkit.providers.qwen import QwenAIProvider, QwenConfig
 from roomkit.providers.xai import XAIAIProvider, XAIConfig
 from vendor_chat_cases import VENDOR_CASES
 from wire_capture import (
+    NOW,
     Case,
     MintedIds,
     Wire,
@@ -193,6 +198,11 @@ NOTES = {
 }
 
 
+# The headers a vendor's provider sets of its own, written where a request
+# carries one: OpenRouter's attribution.
+VENDOR_HEADERS = ("http-referer", "x-title")
+
+
 def sent(request: httpx2.Request, case: Case) -> dict[str, Any]:
     """``request`` as the fixture writes it."""
     headers = {
@@ -203,6 +213,9 @@ def sent(request: httpx2.Request, case: Case) -> dict[str, Any]:
     for name in case.config.get("default_headers") or {}:
         if name.lower() not in headers:
             headers[name.lower()] = request.headers.get(name)
+    for name in VENDOR_HEADERS:
+        if name in request.headers and name not in headers:
+            headers[name] = request.headers[name]
     return request_form(request, headers)
 
 
@@ -292,13 +305,26 @@ VENDORS: dict[str, tuple[Any, Any]] = {
     "cerebras": (CerebrasAIProvider, CerebrasConfig),
     "qwen": (QwenAIProvider, QwenConfig),
     "meta": (MetaAIProvider, MetaConfig),
+    "openrouter": (OpenRouterAIProvider, OpenRouterConfig),
+    "litellm": (LiteLLMAIProvider, LiteLLMConfig),
 }
+
+
+class FixtureDay:
+    """``date`` as LiteLLM's provider reads it, its day the fixture's: it
+    dates the rates it reads live from its proxy with ``date.today()``,
+    which the stopped clock of the SDK does not reach."""
+
+    @staticmethod
+    def today() -> datetime.date:
+        return datetime.datetime.fromtimestamp(NOW, tz=datetime.UTC).date()
 
 
 def main() -> None:
     # The SDK reads its key, its base URL and more from the environment when
     # a client is given none: a case is what its configuration says.
     prepare(sdk, "OPENAI_")
+    litellm_ai.date = FixtureDay  # type: ignore[misc]
     unique_names(CASES)
     cases = [asyncio.run(run(case)) for case in CASES]
     fixture = fixture_of("scripts/generate_openai_chat_cases.py", openai, NOTES, cases)

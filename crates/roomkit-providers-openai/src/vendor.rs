@@ -17,9 +17,12 @@ use crate::models;
 use crate::names::{self, NameRule};
 
 mod arguments;
+mod listings;
 mod sampling;
 
 pub(crate) use arguments::{repaired_response, repaired_stream};
+pub(crate) use listings::MODEL_INFO;
+pub(crate) use sampling::litellm_sampling;
 
 /// DeepSeek's endpoint, under the two bases its documentation gives.
 pub(crate) const DEEPSEEK_BASE_URLS: [&str; 2] =
@@ -36,6 +39,11 @@ pub(crate) const CEREBRAS_BASE_URL: &str = "https://api.cerebras.ai/v1";
 pub(crate) const QWEN_BASE_URL: &str = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
 /// Meta's endpoint.
 pub(crate) const META_BASE_URL: &str = "https://api.meta.ai/v1";
+/// OpenRouter's endpoint.
+pub(crate) const OPENROUTER_BASE_URL: &str = "https://openrouter.ai/api/v1";
+/// A LiteLLM proxy on its own default port, which the proxy serves with or
+/// without `/v1`.
+pub(crate) const LITELLM_BASE_URL: &str = "http://localhost:4000";
 /// The ids of Meta's chat models, among the image, speech and segmentation
 /// models its listing holds too (Python's `_CHAT_PREFIXES`).
 const META_CHAT_PREFIXES: [&str; 3] = ["muse-spark", "muse-wonder", "muse-ember"];
@@ -65,6 +73,10 @@ pub(crate) enum Vendor {
     Qwen { enable_thinking: Option<bool> },
     /// Python's `MetaAIProvider`.
     Meta,
+    /// Python's `OpenRouterAIProvider`.
+    OpenRouter,
+    /// Python's `LiteLLMAIProvider`, in front of a LiteLLM proxy.
+    LiteLlm,
 }
 
 /// What a request carries of the turn's reasoning beside `OpenAI`'s fields:
@@ -80,9 +92,13 @@ impl Vendor {
     /// Where the vendor reads a replayed round's reasoning.
     pub(crate) fn dialect(self) -> ChatDialect<'static> {
         match self {
-            Self::OpenAi | Self::LlamaCpp { .. } | Self::Xai | Self::Qwen { .. } | Self::Meta => {
-                OPENAI_CHAT
-            }
+            Self::OpenAi
+            | Self::LlamaCpp { .. }
+            | Self::Xai
+            | Self::Qwen { .. }
+            | Self::Meta
+            | Self::OpenRouter
+            | Self::LiteLlm => OPENAI_CHAT,
             Self::DeepSeek { .. } => DEEPSEEK_CHAT,
             Self::MiniMax => MINIMAX_CHAT,
             Self::Kimi => KIMI_CHAT,
@@ -102,6 +118,8 @@ impl Vendor {
             Self::Cerebras { .. } => "cerebras",
             Self::Qwen { .. } => "QwenAIProvider",
             Self::Meta => "MetaAIProvider",
+            Self::OpenRouter => "OpenRouterAIProvider",
+            Self::LiteLlm => "LiteLLMAIProvider",
         }
     }
 
@@ -117,6 +135,8 @@ impl Vendor {
             Self::Cerebras { .. } => "cerebras",
             Self::Qwen { .. } => "qwen",
             Self::Meta => "meta",
+            Self::OpenRouter => "openrouter",
+            Self::LiteLlm => "litellm",
         }
     }
 
@@ -136,7 +156,9 @@ impl Vendor {
             | Self::LlamaCpp { .. }
             | Self::Xai
             | Self::Cerebras { .. }
-            | Self::Meta => true,
+            | Self::Meta
+            | Self::OpenRouter
+            | Self::LiteLlm => true,
             Self::DeepSeek { .. } | Self::MiniMax | Self::Qwen { .. } => false,
         }
     }
@@ -153,6 +175,8 @@ impl Vendor {
             Self::Cerebras { .. } => &[CEREBRAS_BASE_URL],
             Self::Qwen { .. } => &[QWEN_BASE_URL],
             Self::Meta => &[META_BASE_URL],
+            Self::OpenRouter => &[OPENROUTER_BASE_URL],
+            Self::LiteLlm => &[LITELLM_BASE_URL],
         }
     }
 
@@ -175,7 +199,9 @@ impl Vendor {
             | Self::Xai
             | Self::Cerebras { .. }
             | Self::Qwen { .. }
-            | Self::Meta => None,
+            | Self::Meta
+            | Self::OpenRouter
+            | Self::LiteLlm => None,
         }
     }
 
@@ -210,6 +236,23 @@ impl Vendor {
             .any(|prefix| model.starts_with(prefix))
     }
 
+    /// Whether a request that constrains its answer asks the vendor to
+    /// route it only where every parameter it sends is honoured:
+    /// OpenRouter may otherwise send it to an upstream that drops
+    /// `response_format` without a word (Python's
+    /// `OpenRouterAIProvider._apply_response_format`).
+    pub(crate) fn requires_parameters(self) -> bool {
+        matches!(self, Self::OpenRouter)
+    }
+
+    /// The path of the vendor's model listing under its base URL.
+    pub(crate) fn listing_path(self) -> &'static str {
+        if self == Self::LiteLlm {
+            return MODEL_INFO;
+        }
+        "/models"
+    }
+
     /// Whether the vendor writes an array argument as the JSON text of the
     /// array, which the provider reads back where the tool declares one.
     pub(crate) fn repairs_arguments(self) -> bool {
@@ -233,7 +276,12 @@ impl Vendor {
         }
         match self {
             Self::MiniMax | Self::Kimi => !self.is_own_endpoint(base_url),
-            Self::LlamaCpp { .. } | Self::Xai | Self::Qwen { .. } | Self::Meta => true,
+            Self::LlamaCpp { .. }
+            | Self::Xai
+            | Self::Qwen { .. }
+            | Self::Meta
+            | Self::OpenRouter
+            | Self::LiteLlm => true,
             Self::Cerebras { .. } => false,
             Self::OpenAi => {
                 !self.is_own_endpoint(base_url) || models::sees_images_by_its_name(model)
@@ -241,6 +289,16 @@ impl Vendor {
             Self::DeepSeek { .. } => models::sees_images_by_its_name(model),
         }
     }
+}
+
+/// `body` asking OpenRouter to route it only to an upstream that honours
+/// every parameter it sends, beside the routing preferences it already
+/// states, which are kept.
+pub(crate) fn require_parameters(body: &mut serde_json::Map<String, serde_json::Value>) {
+    let stated = body.get("provider").and_then(serde_json::Value::as_object);
+    let mut provider = stated.cloned().unwrap_or_default();
+    provider.insert("require_parameters".to_owned(), true.into());
+    body.insert("provider".to_owned(), provider.into());
 }
 
 mod macros;

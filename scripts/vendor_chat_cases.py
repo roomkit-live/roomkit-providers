@@ -1,7 +1,7 @@
 """The cases ``generate_openai_chat_cases.py`` runs on the RoomKit Python
 providers of the vendors that speak OpenAI's Chat Completions with rules of
-their own: DeepSeek, Kimi and MiniMax, each a derivative of
-``OpenAIAIProvider``.
+their own: DeepSeek, Kimi, MiniMax, xAI, Cerebras, Qwen, Meta, OpenRouter and
+LiteLLM, each a derivative of ``OpenAIAIProvider``.
 
 A vendor's cases show what its class redefines, on its own endpoint and
 behind a base URL: its name, the tool names it takes, how a turn's sampling
@@ -827,6 +827,276 @@ _meta(
     answer(completion()),
 )
 
+OPENROUTER_CASES: list[Case] = []
+_openrouter = registrar(OPENROUTER_CASES)
+OPENROUTER = {"api_key": KEY, "model": "anthropic/claude-sonnet-5"}
+common(_openrouter, OPENROUTER, {**OPENROUTER, "base_url": PROXY, "model": "router-local"})
+for _members, _name in (
+    ({"site_url": "https://app.example"}, "site_url"),
+    ({"app_name": "Example App"}, "app_name"),
+    ({"site_url": "https://app.example", "app_name": "Example App"}, "site_url_and_app_name"),
+    (
+        {"app_name": "Example App", "default_headers": {"X-Title": "Header App", "X-A": "1"}},
+        "app_name_under_a_default_header",
+    ),
+    (
+        {"app_name": "Example App", "default_headers": {"X-TITLE": "Header App"}},
+        "app_name_under_a_default_header_written_in_capitals",
+    ),
+    ({"site_url": "", "app_name": ""}, "empty_site_url_and_app_name"),
+):
+    _openrouter(
+        f"attribution_{_name}",
+        "attribution",
+        GENERATE,
+        {**OPENROUTER, **_members},
+        HELLO,
+        answer(completion()),
+    )
+_openrouter(
+    "thinking_turned_on_with_an_effort",
+    "reasoning",
+    GENERATE,
+    {**OPENROUTER, "reasoning_effort": "medium"},
+    asked(enable_thinking=True),
+    answer(completion()),
+)
+_openrouter(
+    "thinking_budget_over_an_effort",
+    "reasoning",
+    GENERATE,
+    OPENROUTER,
+    asked(thinking_budget=1024, reasoning_effort="high"),
+    answer(completion()),
+)
+_openrouter(
+    "response_schema_with_routing_preferences",
+    "response_schema",
+    GENERATE,
+    {**OPENROUTER, "extra_body": {"provider": {"order": ["anthropic"]}, "top_k": 40}},
+    asked(response_schema=CITY),
+    answer(completion('{"city": "Paris"}')),
+)
+_openrouter(
+    "response_schema_behind_a_base_url",
+    "response_schema proxy",
+    GENERATE,
+    {**OPENROUTER, "base_url": PROXY, "model": "router-local"},
+    asked(response_schema=CITY),
+    answer(completion('{"city": "Paris"}')),
+)
+_openrouter(
+    "reasoning_read_from_the_reasoning_member",
+    "round_reasoning",
+    GENERATE,
+    OPENROUTER,
+    HELLO,
+    answer(completion("Hello.", reasoning="The user greets me.")),
+)
+_openrouter(
+    "reasoning_streamed_in_the_reasoning_member",
+    "round_reasoning stream",
+    STREAM,
+    OPENROUTER,
+    HELLO,
+    stream(
+        sse(
+            chunk({"role": "assistant", "content": ""}),
+            chunk({"reasoning": "The user "}),
+            chunk({"reasoning": "greets me."}),
+            chunk({"content": "Hello."}),
+            chunk({}, finish="stop"),
+        )
+    ),
+)
+_openrouter(
+    "the_routed_models_listed",
+    "listing",
+    LISTING,
+    OPENROUTER,
+    HELLO,
+    answer(
+        {
+            "data": [
+                {
+                    "id": "anthropic/claude-sonnet-5",
+                    "name": "Anthropic: Claude Sonnet 5",
+                    "context_length": 1000000,
+                    "architecture": {"input_modalities": ["text", "image"]},
+                },
+                {
+                    "id": "vendor/text-only",
+                    "name": "Vendor: Text Only",
+                    "context_length": 32768,
+                    "architecture": {"input_modalities": ["text"]},
+                },
+                {"id": "vendor/unknown-modalities", "architecture": {}},
+                {"id": "vendor/no-architecture", "name": None, "context_length": None},
+            ]
+        }
+    ),
+)
+_openrouter(
+    "a_listing_whose_data_is_no_list",
+    "listing",
+    LISTING,
+    OPENROUTER,
+    HELLO,
+    answer({"data": {"id": "vendor/model"}}),
+)
+_openrouter(
+    "a_listing_without_data",
+    "listing",
+    LISTING,
+    OPENROUTER,
+    HELLO,
+    answer({"object": "list"}),
+)
+_openrouter(
+    "thinking_field_of_the_configuration",
+    "round_reasoning tools",
+    GENERATE,
+    {**OPENROUTER, "thinking_field": "reasoning"},
+    EARLIER_REASONING,
+    answer(completion()),
+)
+
+LITELLM_CASES: list[Case] = []
+_litellm = registrar(LITELLM_CASES)
+LITELLM = {"api_key": KEY, "model": "claude-sonnet"}
+common(_litellm, LITELLM, {**LITELLM, "base_url": PROXY})
+for _stated in (True, False):
+    _litellm(
+        f"reasoning_on_a_tool_turn_stated_{str(_stated).lower()}",
+        "reasoning tools",
+        GENERATE,
+        {**LITELLM, "supports_reasoning_effort_with_tools": _stated},
+        {**TOOLS, "reasoning_effort": "high"},
+        answer(completion()),
+    )
+    _litellm(
+        f"thinking_budget_on_a_tool_turn_stated_{str(_stated).lower()}",
+        "reasoning tools",
+        GENERATE,
+        {**LITELLM, "supports_reasoning_effort_with_tools": _stated},
+        {**TOOLS, "thinking_budget": 1024},
+        answer(completion()),
+    )
+_litellm(
+    "thinking_budget_over_an_effort",
+    "reasoning",
+    GENERATE,
+    {**LITELLM, "reasoning_effort": "low"},
+    asked(thinking_budget=1024),
+    answer(completion()),
+)
+_litellm(
+    "thinking_turned_off_over_an_effort",
+    "reasoning",
+    GENERATE,
+    {**LITELLM, "reasoning_effort": "low"},
+    asked(enable_thinking=False),
+    answer(completion()),
+)
+_litellm(
+    "thinking_budget_merged_into_the_extra_body",
+    "reasoning",
+    GENERATE,
+    {**LITELLM, "extra_body": {"metadata": {"team": "a"}}},
+    asked(thinking_budget=1024),
+    answer(completion()),
+)
+
+
+def _deployment(name: Any, **info: Any) -> dict[str, Any]:
+    """One entry of LiteLLM's ``/model/info``: a public name and what the
+    proxy's cost map says of its deployment."""
+    return {"model_name": name, "litellm_params": {"model": "upstream"}, "model_info": info}
+
+
+_PRICED = {"input_cost_per_token": 0.000003, "output_cost_per_token": 0.000015}
+_litellm(
+    "the_deployments_listed",
+    "listing",
+    LISTING,
+    LITELLM,
+    HELLO,
+    answer(
+        {
+            "data": [
+                _deployment(
+                    "claude-sonnet",
+                    max_input_tokens=200000,
+                    supports_vision=True,
+                    cache_read_input_token_cost=0.0000003,
+                    cache_creation_input_token_cost=0.00000375,
+                    **_PRICED,
+                ),
+                _deployment("dictation-alias", mode="audio_transcription"),
+                _deployment("narrator-alias", mode="audio_speech", supports_vision="yes"),
+                _deployment("free-or-unmapped", input_cost_per_token=0, output_cost_per_token=0),
+                _deployment("half-priced", input_cost_per_token=0.000001),
+                _deployment(
+                    "priced-by-a-boolean", input_cost_per_token=True, output_cost_per_token=0.000002
+                ),
+                _deployment("window-as-text", max_input_tokens="128000"),
+                {"model_name": "no-model-info", "model_info": None},
+                {"model_name": 42, "model_info": {}},
+                {"litellm_params": {"model": "upstream"}},
+            ]
+        }
+    ),
+)
+_litellm(
+    "a_load_balanced_group_folded",
+    "listing",
+    LISTING,
+    LITELLM,
+    HELLO,
+    answer(
+        {
+            "data": [
+                _deployment("group", max_input_tokens=200000, supports_vision=True, **_PRICED),
+                _deployment("group", max_input_tokens=128000, supports_vision=True, **_PRICED),
+                _deployment("split", max_input_tokens=64000, supports_vision=False, **_PRICED),
+                _deployment(
+                    "split",
+                    max_input_tokens=None,
+                    supports_vision=True,
+                    input_cost_per_token=0.000001,
+                    output_cost_per_token=0.000002,
+                ),
+                _deployment("unsure", supports_vision=True, mode="audio_speech"),
+                _deployment("unsure", mode="audio_speech"),
+            ]
+        }
+    ),
+)
+_litellm(
+    "a_listing_whose_data_is_no_list",
+    "listing",
+    LISTING,
+    LITELLM,
+    HELLO,
+    answer({"data": {"model_name": "claude-sonnet"}}),
+)
+_litellm(
+    "thinking_field_of_the_configuration",
+    "round_reasoning tools",
+    GENERATE,
+    {**LITELLM, "thinking_field": "reasoning_content"},
+    EARLIER_REASONING,
+    answer(completion()),
+)
+_litellm(
+    "the_proxy_s_default_base_url",
+    "endpoint",
+    GENERATE,
+    {"api_key": KEY, "model": "claude-sonnet", "base_url": "http://localhost:4000"},
+    HELLO,
+    answer(completion()),
+)
+
 # The table of each vendor, by the name its fixture is written under.
 VENDOR_CASES: dict[str, list[Case]] = {
     "deepseek": DEEPSEEK_CASES,
@@ -836,4 +1106,6 @@ VENDOR_CASES: dict[str, list[Case]] = {
     "cerebras": CEREBRAS_CASES,
     "qwen": QWEN_CASES,
     "meta": META_CASES,
+    "openrouter": OPENROUTER_CASES,
+    "litellm": LITELLM_CASES,
 }

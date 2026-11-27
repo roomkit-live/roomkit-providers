@@ -67,6 +67,9 @@ impl QwenConfig {
     /// Whether the configuration takes a thinking field: it sends no reasoning
     /// back unless it names a field.
     pub(crate) const TAKES_THINKING_FIELD: bool = true;
+    /// Whether the configuration takes the setting of a turn with tools:
+    /// the vendor's own rule decides it.
+    pub(crate) const TAKES_TOOL_TURN_SETTING: bool = false;
     /// Whether the configuration refuses a key that is not ASCII: the provider
     /// refuses one when it is built.
     pub(crate) const ASCII_KEY: bool = false;

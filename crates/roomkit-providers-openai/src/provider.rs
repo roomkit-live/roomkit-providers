@@ -29,9 +29,6 @@ use crate::vendor::Vendor;
 
 mod build;
 
-/// The path of the model listing under a base URL.
-const MODELS: &str = "/models";
-
 /// Where the retry rule of Python's openai SDK stands: a server may ask for
 /// a wait of two minutes at most, and an answer that asks for more is
 /// final.
@@ -164,7 +161,7 @@ impl OpenAi {
     fn built(config: OpenAiConfig, vendor: Vendor) -> Result<Self, Failure> {
         let base_url = config.base_url.as_deref().unwrap_or(OPENAI_BASE_URL);
         let chat = joined(base_url, config.api.path())?;
-        let models = joined(base_url, MODELS)?;
+        let models = joined(base_url, vendor.listing_path())?;
         let headers = headers_of(&config, &chat)?;
         let settings = Settings {
             timeouts: Timeouts::new(config.timeout, config.connect_timeout)?,
@@ -182,7 +179,9 @@ impl OpenAi {
             | Vendor::Xai
             | Vendor::Cerebras { .. }
             | Vendor::Qwen { .. }
-            | Vendor::Meta => Client::new(settings),
+            | Vendor::Meta
+            | Vendor::OpenRouter
+            | Vendor::LiteLlm => Client::new(settings),
         }?;
         let exit = exit_of(&config, vendor, &client, &chat);
         Ok(Self {
@@ -327,7 +326,8 @@ impl OpenAi {
         let (page, json) = self.client.send(self.asking_the_models()).await?;
         let no_page =
             || Failure::unreadable("the model listing is no page of models with their ids");
-        let listed = json.then(|| models::listed(&page)).flatten();
+        let now = self.client.now();
+        let listed = json.then(|| self.vendor.listed(&page, now)).flatten();
         listed.ok_or_else(no_page)
     }
 }

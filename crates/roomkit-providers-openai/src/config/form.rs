@@ -174,18 +174,6 @@ impl Serialize for OpenAiConfig {
     }
 }
 
-/// Reads a member a vendor's configuration leaves unset: `null` only, as
-/// Python's derivative configuration refuses any other value, the vendor's
-/// own rule making the member moot (RFC §6.4, §6.7).
-pub(crate) fn left_null<'de, D: Deserializer<'de>>(deserializer: D) -> Result<(), D::Error> {
-    match Option::<serde::de::IgnoredAny>::deserialize(deserializer)? {
-        None => Ok(()),
-        Some(_) => Err(D::Error::custom(
-            "the vendor's own rule decides this member: it is left unset",
-        )),
-    }
-}
-
 /// Reads a member a form states, `null` included: `Some` of what it holds,
 /// where a member left out takes its default (`None`).
 pub(crate) fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(

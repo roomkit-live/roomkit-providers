@@ -24,7 +24,7 @@ pub(crate) const TOOLS_REASONING_EFFORT: &str = "tools_reasoning_effort";
 /// The embedded catalogue of each vendor, as the script wrote it.
 const fn written(vendor: Vendor) -> &'static str {
     match vendor {
-        Vendor::LlamaCpp { .. } => "[]",
+        Vendor::LlamaCpp { .. } | Vendor::LiteLlm => "[]",
         Vendor::OpenAi => include_str!("../catalog/models.json"),
         Vendor::DeepSeek { .. } => include_str!("../catalog/deepseek.json"),
         Vendor::Kimi => include_str!("../catalog/kimi.json"),
@@ -33,6 +33,7 @@ const fn written(vendor: Vendor) -> &'static str {
         Vendor::Cerebras { .. } => include_str!("../catalog/cerebras.json"),
         Vendor::Qwen { .. } => include_str!("../catalog/qwen.json"),
         Vendor::Meta => include_str!("../catalog/meta.json"),
+        Vendor::OpenRouter => include_str!("../catalog/openrouter.json"),
     }
 }
 
@@ -52,6 +53,7 @@ static XAI: Catalogue = LazyLock::new(|| read(Vendor::Xai).unwrap_or_default());
 static CEREBRAS: Catalogue = LazyLock::new(|| read(CEREBRAS_VENDOR).unwrap_or_default());
 static QWEN: Catalogue = LazyLock::new(|| read(QWEN_VENDOR).unwrap_or_default());
 static META: Catalogue = LazyLock::new(|| read(Vendor::Meta).unwrap_or_default());
+static OPENROUTER: Catalogue = LazyLock::new(|| read(Vendor::OpenRouter).unwrap_or_default());
 
 /// DeepSeek, whatever its configuration states: its catalogue is one.
 const DEEPSEEK_VENDOR: Vendor = Vendor::DeepSeek {
@@ -72,7 +74,7 @@ const QWEN_VENDOR: Vendor = Vendor::Qwen {
 /// The curated catalogue of `vendor`, in Python's order.
 pub(crate) fn of(vendor: Vendor) -> &'static [ModelInfo] {
     match vendor {
-        Vendor::LlamaCpp { .. } => &[],
+        Vendor::LlamaCpp { .. } | Vendor::LiteLlm => &[],
         Vendor::OpenAi => &OPENAI,
         Vendor::DeepSeek { .. } => &DEEPSEEK,
         Vendor::Kimi => &KIMI,
@@ -81,6 +83,7 @@ pub(crate) fn of(vendor: Vendor) -> &'static [ModelInfo] {
         Vendor::Cerebras { .. } => &CEREBRAS,
         Vendor::Qwen { .. } => &QWEN,
         Vendor::Meta => &META,
+        Vendor::OpenRouter => &OPENROUTER,
     }
 }
 

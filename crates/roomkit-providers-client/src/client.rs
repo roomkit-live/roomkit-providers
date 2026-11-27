@@ -253,6 +253,14 @@ impl Client {
         self.pace = pace;
     }
 
+    /// The seconds since 1970 by the client's clock: the system's, or the
+    /// one a replay or a test set. What a provider dates from an answer it
+    /// reads now, as a listing's prices, is dated by it.
+    #[must_use]
+    pub fn now(&self) -> f64 {
+        (self.pace.now)()
+    }
+
     /// Where the failures of the provider labelled `provider` leave: the
     /// one way a provider gets an [`Exit`], so that none lacks what the
     /// client alone knows, the credentials of the proxies its environment

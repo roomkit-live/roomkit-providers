@@ -26,6 +26,7 @@ from roomkit.providers.kimi.models import MODELS as KIMI
 from roomkit.providers.meta.models import MODELS as META
 from roomkit.providers.minimax.models import MODELS as MINIMAX
 from roomkit.providers.openai.models import MODELS as OPENAI
+from roomkit.providers.openrouter.models import MODELS as OPENROUTER
 from roomkit.providers.qwen.models import MODELS as QWEN
 from roomkit.providers.xai.models import MODELS as XAI
 
@@ -43,6 +44,7 @@ FILES = {
     "cerebras.json": CEREBRAS,
     "qwen.json": QWEN,
     "meta.json": META,
+    "openrouter.json": OPENROUTER,
 }
 
 

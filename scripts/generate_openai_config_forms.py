@@ -31,9 +31,11 @@ from pydantic import ValidationError
 from roomkit.providers.cerebras import CerebrasConfig
 from roomkit.providers.deepseek import DeepSeekConfig
 from roomkit.providers.kimi import KimiConfig
+from roomkit.providers.litellm import LiteLLMConfig
 from roomkit.providers.meta import MetaConfig
 from roomkit.providers.minimax import MiniMaxConfig
 from roomkit.providers.openai import OpenAIConfig
+from roomkit.providers.openrouter import OpenRouterConfig
 from roomkit.providers.qwen import QwenConfig
 from roomkit.providers.vendor_endpoint import OPENAI_BASE_URL, is_vendor_endpoint
 from roomkit.providers.xai import XAIConfig
@@ -277,12 +279,14 @@ def endpoint(base_url: str) -> dict[str, Any]:
 
 
 def vendor_examples(
-    model: str, extra: dict[str, Any], thinking_field: bool
+    model: str, extra: dict[str, Any], thinking_field: bool, tool_turn: bool
 ) -> list[tuple[str, dict[str, Any]]]:
     """The examples of a vendor's configuration: its required members, every
     member, and each one apart; ``extra`` holds the vendor's own members, each
-    given once, and ``thinking_field`` says whether the vendor takes one (the
-    vendor whose provider sends reasoning where it reads it takes none)."""
+    given once, ``thinking_field`` says whether the vendor takes one (the
+    vendor whose provider sends reasoning where it reads it takes none), and
+    ``tool_turn`` whether it takes ``supports_reasoning_effort_with_tools``
+    (the vendor whose own rule decides a turn with tools takes none)."""
     required = {"api_key": KEY, "model": model}
     every = {
         **required,
@@ -300,6 +304,7 @@ def vendor_examples(
         "supports_response_schema": True,
         "supports_response_schema_with_tools": False,
         **({"thinking_field": "reasoning_content"} if thinking_field else {}),
+        **({"supports_reasoning_effort_with_tools": True} if tool_turn else {}),
         **{member: values[0] for member, values in extra.items()},
     }
     examples = [
@@ -335,6 +340,12 @@ def vendor_examples(
     ]
     if thinking_field:
         examples.append(("thinking_field", {**required, "thinking_field": "reasoning"}))
+    if tool_turn:
+        examples += [
+            (f"tool_turn_setting_{str(value).lower()}", {**required, setting: value})
+            for setting in ("supports_reasoning_effort_with_tools",)
+            for value in (True, False)
+        ]
     for member, values in extra.items():
         examples += [
             (f"{member}_{json.dumps(value)}", {**required, member: value}) for value in values
@@ -351,17 +362,25 @@ def with_model(given: Any, model: str) -> Any:
 
 
 def vendor_rejected(
-    model: str, extra_rejected: dict[str, Any], thinking_field: bool
+    model: str, extra_rejected: dict[str, Any], thinking_field: bool, tool_turn: bool
 ) -> list[tuple[str, Any]]:
     """The inputs a vendor's configuration refuses: OpenAI's, the members the
     vendor's own rule makes moot (a thinking field where ``thinking_field``
-    is false), and ``extra_rejected``."""
+    is false, the tool-turn setting where ``tool_turn`` is), and
+    ``extra_rejected``."""
     required = {"api_key": KEY, "model": model}
     rejected = [(name, with_model(given, model)) for name, given in REJECTED]
+    setting = "supports_reasoning_effort_with_tools"
     return [
         *rejected,
-        ("tool_turn_setting_stated", {**required, "supports_reasoning_effort_with_tools": True}),
-        ("tool_turn_setting_off", {**required, "supports_reasoning_effort_with_tools": False}),
+        *(
+            []
+            if tool_turn
+            else [
+                ("tool_turn_setting_stated", {**required, setting: True}),
+                ("tool_turn_setting_off", {**required, setting: False}),
+            ]
+        ),
         *(
             []
             if thinking_field
@@ -392,7 +411,9 @@ def vendor_fixture(
             return True
         return False
 
-    rejected = vendor_rejected(model, extra_rejected, thinking_field)
+    # A vendor whose own rule decides a turn with tools refuses the setting.
+    tool_turn = not getattr(config_class, "_vendor_rule_on_tool_turns", False)
+    rejected = vendor_rejected(model, extra_rejected, thinking_field, tool_turn)
     # A vendor whose configuration names a model of its own takes none.
     if not config_class.model_fields["model"].is_required():
         rejected = [(name, given) for name, given in rejected if name != "no_model"]
@@ -407,7 +428,7 @@ def vendor_fixture(
         "model": config_class.__name__,
         "examples": [
             {"name": name, "given": given, "form": dumped(given)}
-            for name, given in vendor_examples(model, extra, thinking_field)
+            for name, given in vendor_examples(model, extra, thinking_field, tool_turn)
             + (
                 []
                 if config_class.model_fields["model"].is_required()
@@ -470,6 +491,15 @@ VENDORS: list[tuple[str, Any, str, dict[str, Any], dict[str, Any], bool]] = [
         {"key_not_ascii": {"api_key": "placeholder" + chr(0x2026)}},
         True,
     ),
+    (
+        "openrouter",
+        OpenRouterConfig,
+        "anthropic/claude-sonnet-5",
+        {"site_url": ["https://app.example", None], "app_name": ["Example App", None]},
+        {"site_url_a_number": {"site_url": 1}, "app_name_a_list": {"app_name": ["a"]}},
+        True,
+    ),
+    ("litellm", LiteLLMConfig, "claude-sonnet", {}, {}, True),
 ]
 
 

@@ -13,15 +13,15 @@ The OpenAI model provider of RoomKit Providers.
   `OpenAIConfig` of RoomKit's Python implementation: the same names, the same
   defaults, and the JSON it gives with `model_dump(mode="json")`, read and
   written;
-- `DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen` and `Meta`, the
-  providers of seven vendors that speak Chat Completions with rules of their
-  own, each with its configuration (see
-  [Seven vendors on the same wire](#seven-vendors-on-the-same-wire));
+- `DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen`, `Meta`,
+  `OpenRouter` and `LiteLlm`, the providers of nine vendors that speak Chat
+  Completions with rules of their own, each with its configuration (see
+  [Nine vendors on the same wire](#nine-vendors-on-the-same-wire));
 - the wire cases the provider is held to
   (`tests/fixtures/python_chat_cases.json`): what RoomKit's Python provider
   sends and reads on Chat Completions and on the model listing, case by
   case. Every case is replayed against the provider through a local fake of
-  the endpoint. The seven vendors are held the same way to the cases
+  the endpoint. The nine vendors are held the same way to the cases
   captured on their own Python providers
   (`tests/fixtures/python_<vendor>_cases.json`, from
   `scripts/vendor_chat_cases.py`), and their configurations to the JSON
@@ -150,18 +150,21 @@ fn provider() -> Result<OpenAi, roomkit_ai::ProviderError> {
 RoomKit's Python implementation has no Responses API: this one is the
 Rust core's, and the wire cases do not cover it.
 
-## Seven vendors on the same wire
+## Nine vendors on the same wire
 
-`DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen` and `Meta` are the
-providers of RoomKit's Python implementation for these vendors
-(`DeepSeekAIProvider`, `KimiAIProvider`, `MiniMaxAIProvider`,
-`XAIAIProvider`, `CerebrasAIProvider`, `QwenAIProvider`, `MetaAIProvider`).
+`DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen`, `Meta`,
+`OpenRouter` and `LiteLlm` are the providers of RoomKit's Python
+implementation for these vendors (`DeepSeekAIProvider`, `KimiAIProvider`,
+`MiniMaxAIProvider`, `XAIAIProvider`, `CerebrasAIProvider`,
+`QwenAIProvider`, `MetaAIProvider`, `OpenRouterAIProvider`,
+`LiteLLMAIProvider`).
 Each is `OpenAi` with its vendor's rules: every request and answer is Chat
 Completions', read and bounded as `OpenAi`'s are. Its configuration
 (`DeepSeekConfig`, `KimiConfig`, `MiniMaxConfig`, `XaiConfig`,
-`CerebrasConfig`, `QwenConfig`, `MetaConfig`) has `OpenAiConfig`'s members
-with its vendor's endpoint and defaults, and Cerebras's and Qwen's members
-of their own.
+`CerebrasConfig`, `QwenConfig`, `MetaConfig`, `OpenRouterConfig`,
+`LiteLlmConfig`) has `OpenAiConfig`'s members with its vendor's endpoint
+and defaults, and Cerebras's, Qwen's and OpenRouter's members of their
+own.
 
 ```rust
 use roomkit_providers_openai::{Kimi, KimiConfig};
@@ -197,6 +200,18 @@ What a vendor's provider does that `OpenAi` does not:
 | Usage | reasoning reported beside the completion counts as output | as `OpenAi`; a stream asks for none by default | as `OpenAi` | as `OpenAi` |
 | `list_models` | the endpoint's | the endpoint's | its catalogue, as Model Studio lists none | the endpoint's chat models (`muse-spark`, `muse-wonder`, `muse-ember`) |
 
+| | OpenRouter | LiteLLM |
+| --- | --- | --- |
+| A round's earlier reasoning goes back in | the field the configuration names, else nowhere | the field the configuration names, else nowhere |
+| A reasoning setting goes as | a `reasoning` object: `{"enabled": false}` for a turn that states off, a budget as its `max_tokens`, else the effort, else `{"enabled": true}` for a turn that states on | `reasoning_effort`, a budget as a `thinking` object; nothing for a turn that states off, as no off survives every upstream |
+| On a turn with tools, the setting | is sent | is sent where `supports_reasoning_effort_with_tools` is true; left out otherwise, with a warning once when it is unset |
+| Tool names on its own endpoint | not checked | not checked |
+| A response schema, unless the configuration says | taken, the request routed only where every parameter is honoured (`provider.require_parameters`) | taken |
+| Token bound by default | 1024, as `max_tokens` | 1024, as `max_tokens` |
+| Temperature by default | sent | sent |
+| Usage | as `OpenAi` | as `OpenAi` |
+| `list_models` | the routed models, with their names, windows and whether they read images (`architecture.input_modalities`) | the proxy's `/model/info`: one model per public name, its deployments folded into what all deliver, with the proxy's prices |
+
 - **A model the vendor's catalogue does not name** is sent what the turn
   states as it is, and reads images when it is served behind another base
   URL, where the server decides. DeepSeek's provider reads such a model's
@@ -209,12 +224,21 @@ What a vendor's provider does that `OpenAi` does not:
   MiniMax-M3 are sent `thinking: {"type": "disabled"}`, Qwen
   `enable_thinking: false`.
 - **A failure names its vendor** (`deepseek`, `kimi`, `minimax`, `xai`,
-  `cerebras`, `qwen`, `meta`), and `list_models` fills what its vendor's
-  catalogue knows of a model.
+  `cerebras`, `qwen`, `meta`, `openrouter`, `litellm`), and `list_models`
+  fills what its vendor's catalogue knows of a model.
 - **`supports_reasoning_effort_with_tools` is refused** when the provider
-  is built, and so is `thinking_field` by DeepSeek's, Kimi's, MiniMax's and
-  Cerebras's: the vendor's own rule decides. xAI's, Qwen's and Meta's take a
-  thinking field, for a server of one's own.
+  is built, but by LiteLLM's, and so is `thinking_field` by DeepSeek's,
+  Kimi's, MiniMax's and Cerebras's: the vendor's own rule decides. The
+  others take a thinking field, for a server of one's own; LiteLLM's takes
+  the setting of a turn with tools, the model behind a proxy's name being
+  unknown.
+- **OpenRouter's attribution** goes as `HTTP-Referer` (`site_url`) and
+  `X-Title` (`app_name`), an empty one left out, under the configuration's
+  default headers, which win over one of the same name however it is
+  written.
+- **LiteLLM's prices are dated** the day the listing is read, by the
+  provider's clock, in UTC; Python's provider dates them in the machine's
+  local time, a day apart around midnight.
 - **xAI's and Meta's configurations name a model** for a form that leaves it
   out (`grok-4.7`, `muse-spark-1.3`), as Python's do. Meta's refuses a key
   that is not ASCII, which no header can carry, and never says the key.

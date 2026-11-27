@@ -34,7 +34,10 @@ impl Vendor {
         configured: Option<&str>,
     ) -> Sampling {
         match self {
-            Self::OpenAi => Sampling::default(),
+            // `OpenAI`'s and LiteLLM's read the configuration's setting of a
+            // turn with tools, which the request applies.
+            Self::OpenAi | Self::LiteLlm => Sampling::default(),
+            Self::OpenRouter => openrouter(request, configured),
             Self::LlamaCpp { enable_thinking } => local_template(request, enable_thinking),
             Self::DeepSeek { enable_thinking } => deepseek(request, configured, enable_thinking),
             Self::MiniMax => minimax(entry, request, configured),
@@ -201,4 +204,70 @@ fn deepseek(
         effort: None,
         extra,
     }
+}
+
+/// OpenRouter's `reasoning` object, which it translates for every upstream
+/// it routes to, in place of a top-level `reasoning_effort` (Python's
+/// `OpenRouterAIProvider._resolve_reasoning`): off as `{"enabled": false}`;
+/// on, a positive budget as its `max_tokens`, else the effort, the turn's
+/// over the configured one, else `{"enabled": true}` for a turn that states
+/// on; nothing when the turn states nothing, so that the model decides.
+fn openrouter(request: &AiContext, configured: Option<&str>) -> Sampling {
+    let switch = thinking_switch(request);
+    let budget = request.thinking_budget.filter(|budget| *budget != 0);
+    let effort = request.reasoning_effort.as_deref().or(configured);
+    let reasoning = match (switch, budget, effort.filter(|effort| !effort.is_empty())) {
+        (Some(false), _, _) => Some(json!({ "enabled": false })),
+        (_, Some(budget), _) => Some(json!({ "max_tokens": budget })),
+        (_, None, Some(effort)) => Some(json!({ "effort": effort })),
+        (Some(true), None, None) => Some(json!({ "enabled": true })),
+        (None, None, None) => None,
+    };
+    let mut extra = Metadata::new();
+    if let Some(reasoning) = reasoning {
+        extra.insert("reasoning".to_owned(), reasoning);
+    }
+    Sampling {
+        effort: None,
+        extra,
+    }
+}
+
+/// LiteLLM's, which it translates for every upstream it fronts (Python's
+/// `LiteLLMAIProvider._apply_sampling_kwargs`): nothing for a turn that
+/// states off, as LiteLLM has no off that every translator takes; a positive
+/// budget as an Anthropic `thinking` object, else the effort, the turn's
+/// over the configured one, as `reasoning_effort`. On a turn with tools
+/// either goes only where `says`, the configuration's
+/// `supports_reasoning_effort_with_tools`, is true, the model behind the
+/// alias being unknown; an unsaid one is `warned` of.
+pub(crate) fn litellm_sampling(
+    request: &AiContext,
+    configured: Option<&str>,
+    says: Option<bool>,
+    warned: impl FnOnce(&str),
+) -> Sampling {
+    let mut sampling = Sampling::default();
+    if thinking_switch(request) == Some(false) {
+        return sampling;
+    }
+    let budget = request.thinking_budget.filter(|budget| *budget != 0);
+    let effort = request.reasoning_effort.as_deref().or(configured);
+    if !request.tools.is_empty() {
+        let setting = budget.map(|budget| budget.to_string());
+        let setting = setting.or_else(|| effort.map(str::to_owned));
+        if let (None, Some(setting)) = (says, &setting) {
+            warned(setting);
+        }
+        if says != Some(true) {
+            return sampling;
+        }
+    }
+    if let Some(budget) = budget {
+        let thinking = json!({ "type": "enabled", "budget_tokens": budget });
+        sampling.extra.insert("thinking".to_owned(), thinking);
+        return sampling;
+    }
+    sampling.effort = effort.map(str::to_owned);
+    sampling
 }
