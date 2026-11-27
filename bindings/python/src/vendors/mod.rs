@@ -22,6 +22,7 @@ mod mistral;
 mod ollama;
 mod openai;
 mod openrouter;
+mod polargrid;
 mod qwen;
 mod vllm;
 mod xai;
@@ -32,6 +33,7 @@ pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<gemini::Gemini>(),
     Entries::of::<mistral::Mistral>(),
     Entries::of::<ollama::Ollama>(),
+    Entries::of::<polargrid::PolarGrid>(),
     Entries::of::<openai::OpenAi>(),
     Entries::of::<llamacpp::LlamaCpp>(),
     Entries::of::<deepseek::DeepSeek>(),
