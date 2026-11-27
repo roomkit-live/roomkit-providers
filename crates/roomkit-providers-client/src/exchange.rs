@@ -246,7 +246,11 @@ impl Client {
     fn lost(&self, error: &reqwest::Error, retries_taken: u32) -> Failed {
         if self.left(retries_taken) {
             let now = (self.pace.now)();
-            Failed::Again(self.retry.delay(retries_taken, None, now))
+            let wait = match self.unanswered_only {
+                Some(backoff) => backoff.delay(retries_taken),
+                None => self.retry.delay(retries_taken, None, now),
+            };
+            Failed::Again(wait)
         } else {
             Failed::Final(Failure::transport(error))
         }
@@ -337,7 +341,11 @@ impl Client {
             return Ok(Opened { response, hidden });
         }
         let answered = response.headers();
-        if self.left(retries_taken) && self.retry.should_retry(status, answered, now) {
+        let answers_retried = self.unanswered_only.is_none();
+        if answers_retried
+            && self.left(retries_taken)
+            && self.retry.should_retry(status, answered, now)
+        {
             let wait = self.retry.delay(retries_taken, Some(answered), now);
             return Err(Failed::Again(wait));
         }

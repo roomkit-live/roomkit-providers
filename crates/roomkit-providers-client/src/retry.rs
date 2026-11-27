@@ -19,6 +19,27 @@ use reqwest::header::{HeaderMap, HeaderValue};
 const INITIAL_RETRY_DELAY: f64 = 0.5;
 const MAX_RETRY_DELAY: f64 = 8.0;
 
+/// The waits of an SDK that tries again only a request that got no answer
+/// (a lost connection, a timeout), never one a server answered whatever its
+/// status: the first wait, doubled at each try, with no part drawn at
+/// random. A provider whose SDK does so says it with
+/// [`Client::try_again_only_unanswered`](crate::Client::try_again_only_unanswered).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Backoff {
+    /// The wait before the second try, in seconds.
+    pub first: f64,
+}
+
+impl Backoff {
+    /// The wait before the try after `retries_taken`.
+    #[must_use]
+    pub fn delay(&self, retries_taken: u32) -> Duration {
+        let tries = i32::try_from(retries_taken.min(1000)).unwrap_or(1000);
+        let seconds = self.first * 2.0_f64.powi(tries);
+        Duration::try_from_secs_f64(seconds).unwrap_or(Duration::MAX)
+    }
+}
+
 /// What an answer that asks for a wait past the longest of a [`Rule`] is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Past {
