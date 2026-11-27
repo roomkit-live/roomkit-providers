@@ -7,7 +7,10 @@
 
 use std::collections::VecDeque;
 
-use roomkit_ai::{AiContext, FirstToken, ProviderError, ProviderStream, StreamEvent, TextStream};
+use roomkit_ai::{
+    AiContext, AiResponse, FirstToken, ProviderError, ProviderStream, StreamEvent, TextStream,
+    ThinkingBlocks, tool_call_of,
+};
 use roomkit_providers_http::SseError;
 use roomkit_providers_http::sse::Events;
 /// The most bytes read of a streamed answer, envelopes included.
@@ -273,6 +276,40 @@ pub fn text(mut events: ProviderStream<'_>) -> TextStream<'_> {
             }
         },
     ))
+}
+
+/// The response `events` stand for, a provider's whole answer folded from
+/// its stream: its text, all its reasoning with the last signature and
+/// each block to send back, its calls, and how it ended. The composition of
+/// a call and the usage a message's start tells say nothing more than the
+/// call and the done event that follow them.
+///
+/// # Errors
+///
+/// The failure the stream ended with: nothing of an answer that failed
+/// under way is given.
+pub async fn whole(mut events: ProviderStream<'_>) -> Result<AiResponse, ProviderError> {
+    let mut response = AiResponse::new("");
+    let mut thinking = ThinkingBlocks::new();
+    while let Some(event) = next(&mut events).await {
+        match event? {
+            StreamEvent::TextDelta(delta) => response.content.push_str(&delta.text),
+            StreamEvent::ThinkingDelta(delta) => {
+                thinking.add(&delta);
+            }
+            StreamEvent::ToolCall(call) => response.tool_calls.push(tool_call_of(&call)),
+            StreamEvent::Done(done) => {
+                response.finish_reason = done.finish_reason;
+                response.usage = done.usage;
+                response.metadata = done.metadata;
+            }
+            StreamEvent::ToolCallDelta(_) | StreamEvent::Usage(_) => {}
+        }
+    }
+    response.thinking = thinking.seen().then(|| thinking.text());
+    response.thinking_signature = thinking.last_signature().map(str::to_owned);
+    response.thinking_parts = thinking.keyed().then(|| thinking.parts());
+    Ok(response)
 }
 
 #[cfg(test)]

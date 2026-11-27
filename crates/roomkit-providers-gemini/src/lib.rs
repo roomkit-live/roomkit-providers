@@ -35,7 +35,6 @@ mod provider;
 mod replay;
 mod request;
 mod stream;
-mod whole;
 
 pub use config::GeminiConfig;
 pub use provider::Gemini;

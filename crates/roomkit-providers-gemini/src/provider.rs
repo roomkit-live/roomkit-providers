@@ -16,7 +16,7 @@ use roomkit_ai::{
 };
 use roomkit_providers_client::endpoint::joined;
 use roomkit_providers_client::retry::{Past, Rule};
-use roomkit_providers_client::stream::{leaving, text, timed};
+use roomkit_providers_client::stream::{leaving, text, timed, whole};
 use roomkit_providers_client::{Call, Client, Exit, Settings, Timeouts, tried_again};
 use serde_json::Value;
 
@@ -26,7 +26,6 @@ use crate::failure::{self, Failure, past_mark};
 use crate::models;
 use crate::request::Asked;
 use crate::stream;
-use crate::whole;
 
 /// The provider its failures name.
 const LABEL: &str = "gemini";
@@ -225,7 +224,7 @@ impl AiProvider for Gemini {
     }
 
     async fn generate(&self, request: &AiContext) -> Result<AiResponse, ProviderError> {
-        whole::response(self.generate_structured_stream(request)).await
+        whole(self.generate_structured_stream(request)).await
     }
 
     fn generate_stream<'a>(&'a self, request: &'a AiContext) -> TextStream<'a> {

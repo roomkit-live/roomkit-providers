@@ -42,7 +42,6 @@ mod stop_reasons;
 mod stream;
 #[cfg(test)]
 mod tests;
-mod whole;
 
 pub use config::AnthropicConfig;
 pub use provider::Anthropic;
