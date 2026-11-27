@@ -9,7 +9,10 @@
 use super::vendor::Entries;
 
 mod anthropic;
+mod deepseek;
+mod kimi;
 mod llamacpp;
+mod minimax;
 mod openai;
 
 /// The entries of every vendor.
@@ -17,4 +20,7 @@ pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<anthropic::Anthropic>(),
     Entries::of::<openai::OpenAi>(),
     Entries::of::<llamacpp::LlamaCpp>(),
+    Entries::of::<deepseek::DeepSeek>(),
+    Entries::of::<kimi::Kimi>(),
+    Entries::of::<minimax::MiniMax>(),
 ];

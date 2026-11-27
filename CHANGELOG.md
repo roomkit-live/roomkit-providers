@@ -7,6 +7,15 @@ nothing has been released yet.
 
 ### Added
 
+- DeepSeek, Kimi and MiniMax in Python: `roomkit_providers.llm.deepseek`
+  (`DeepSeek`, `DeepSeekConfig`), `roomkit_providers.llm.kimi` (`Kimi`,
+  `KimiConfig`) and `roomkit_providers.llm.minimax` (`MiniMax`,
+  `MiniMaxConfig`), the Rust providers of the OpenAI crate as RoomKit
+  `AIProvider`s. Each takes RoomKit's own configuration of the vendor, and
+  names itself as RoomKit's provider does. The three Rust providers are held
+  to cases captured on RoomKit's Python providers, as OpenAI's is: 145 wire
+  cases, every one replayed as Python, and the JSON forms of their
+  configurations, which they now read and write.
 - A managed llama.cpp provider for Rust and Python. Load a local GGUF or a
   Hugging Face reference, stream tool calls and release the local model on close.
 

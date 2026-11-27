@@ -3,9 +3,21 @@
     "Anthropic",
     "AnthropicConfig"
   ],
+  "roomkit_providers.llm.deepseek": [
+    "DeepSeek",
+    "DeepSeekConfig"
+  ],
+  "roomkit_providers.llm.kimi": [
+    "Kimi",
+    "KimiConfig"
+  ],
   "roomkit_providers.llm.llamacpp": [
     "LlamaCpp",
     "LlamaCppConfig"
+  ],
+  "roomkit_providers.llm.minimax": [
+    "MiniMax",
+    "MiniMaxConfig"
   ],
   "roomkit_providers.llm.openai": [
     "OpenAI",

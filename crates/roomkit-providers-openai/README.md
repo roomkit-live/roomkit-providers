@@ -20,7 +20,11 @@ The OpenAI model provider of RoomKit Providers.
   (`tests/fixtures/python_chat_cases.json`): what RoomKit's Python provider
   sends and reads on Chat Completions and on the model listing, case by
   case. Every case is replayed against the provider through a local fake of
-  the endpoint.
+  the endpoint. The three vendors are held the same way to the cases
+  captured on their own Python providers
+  (`tests/fixtures/python_<vendor>_cases.json`, from
+  `scripts/vendor_chat_cases.py`), and their configurations to the JSON
+  forms of Python's (`tests/fixtures/python_<vendor>_config_forms.json`).
 
 ```rust
 use roomkit_ai::{AiMessage, AiProvider, AiContext, AiRole};

@@ -23,6 +23,12 @@ For local GGUF inference, the [managed llama.cpp provider](crates/roomkit-provid
 installs the pinned server or runs an explicit binary. In Python, import
 `LlamaCpp` and `LlamaCppConfig` from `roomkit_providers.llm.llamacpp`.
 
+DeepSeek, Kimi and MiniMax are in Python too: `DeepSeek` and `DeepSeekConfig`
+from `roomkit_providers.llm.deepseek`, `Kimi` and `KimiConfig` from
+`roomkit_providers.llm.kimi`, `MiniMax` and `MiniMaxConfig` from
+`roomkit_providers.llm.minimax`. Each takes RoomKit's own configuration of the
+vendor as well.
+
 ## Goals
 
 - **One implementation per provider.** A provider's wire format, streaming,
@@ -109,7 +115,7 @@ provider.
 | `crates/roomkit-providers-redis` | RoomKit's turn backend across processes, on Redis (`RedisTurnBackend`): the broker and the registry of the core's distributed backend (`RedisTurnBroker`, `RedisTurnRegistry`), with the keys, the scripts and the messages of RoomKit's Python backend. Rust only. Its functional tests, its interop with RoomKit's Python and its example of two processes run on a Redis server (`make redis-test`) |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract, and the entries Python calls are written once for every vendor (`src/vendor.rs`); `src/vendors` holds each provider's own part, its configuration and how it is built |
 | `bindings/python-forms` | The JSON forms of RoomKit's Python models, read into and written from the types of RoomKit's Rust core: what crosses to Python, and what a recorded case holds. The conversion and nothing else |
-| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, and `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, a class statement each |
+| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, `roomkit_providers.llm.deepseek`, `.kimi` and `.minimax` hold `DeepSeek`, `Kimi`, `MiniMax` and their configurations, a class statement each |
 | `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the criterion that adding a provider changes none of it; the replay of each provider's recorded wire cases through its class; a RoomKit agent over each; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
 | `examples/roomkit_agent.py` | A RoomKit agent over the provider: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |

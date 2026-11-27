@@ -105,9 +105,16 @@ class Replays:
     # The header that carries the provider's key, in lower case: what a
     # provider built without a key does not send.
     key_header: str
+    # The crate that holds the fixture, when it is not the vendor's own: a
+    # vendor of OpenAI's wire is a module of the OpenAI crate.
+    crate: str | None = None
+    # The cases the Rust replay names, among the crate's fixtures; ``None``
+    # where it names none.
+    named_cases: str | None = "named_cases.json"
 
     def _read(self, name: str) -> Any:
-        fixtures = ROOT / f"crates/roomkit-providers-{self.vendor}/tests/fixtures"
+        crate = self.crate or self.vendor
+        fixtures = ROOT / f"crates/roomkit-providers-{crate}/tests/fixtures"
         return json.loads((fixtures / name).read_text(encoding="utf-8"))
 
     def fixture(self) -> dict[str, Any]:
@@ -117,7 +124,9 @@ class Replays:
     def named(self) -> dict[str, dict[str, Any]]:
         """The cases the provider answers otherwise than Python, by name, as
         the Rust replay states them."""
-        return {case["name"]: case for case in self._read("named_cases.json")["cases"]}
+        if self.named_cases is None:
+            return {}
+        return {case["name"]: case for case in self._read(self.named_cases)["cases"]}
 
 
 def turns(case: dict[str, Any]) -> list[dict[str, Any]]:

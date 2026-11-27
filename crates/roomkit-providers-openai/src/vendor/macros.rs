@@ -45,6 +45,25 @@ macro_rules! vendor_provider {
                 self.inner.label()
             }
 
+            /// The provider a replay of recorded cases drives: as
+            /// [`OpenAi::replaying`]($crate::OpenAi::replaying), its
+            /// requests sent to `fake`, a loopback address, a date read
+            /// against `clock`, the waits kept instead of taken.
+            ///
+            /// # Errors
+            ///
+            /// A `fake` that is no loopback address.
+            #[cfg(feature = "replay")]
+            #[doc(hidden)]
+            pub fn replaying(
+                self,
+                fake: std::net::SocketAddr,
+                clock: f64,
+            ) -> Result<(Self, $crate::ReplayWaits), roomkit_ai::ProviderError> {
+                let (inner, waits) = self.inner.replaying(fake, clock)?;
+                Ok((Self { inner }, waits))
+            }
+
             /// The `OpenAI` provider it runs on, for a replay of the cases
             /// captured on its Python provider.
             #[cfg(test)]
