@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from roomkit.providers.ai import AIContext, AIMessage
 from roomkit.providers.llamacpp import LlamaCppConfig as ReferenceConfig
 from roomkit_providers.llm.llamacpp import LlamaCpp, LlamaCppConfig
 
@@ -21,6 +22,15 @@ from pathlib import Path
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         data = {"status": "ok"} if self.path == "/health" else {"data": [{"id": "local"}]}
+        self.reply(data)
+
+    def do_POST(self):
+        request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        content = json.dumps(request.get("reasoning_budget_tokens"))
+        message = {"role": "assistant", "content": content}
+        self.reply({"choices": [{"index": 0, "message": message, "finish_reason": "stop"}]})
+
+    def reply(self, data):
         reply = json.dumps(data).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -70,6 +80,15 @@ class ManagedTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(launched["libraries"], str(root))
                 self.assertFalse(launched["inherited_original"])
                 self.assertEqual([m.id for m in await provider.list_models()], ["local"])
+                for budget in (1024, None):
+                    reply = await provider.generate(
+                        AIContext(
+                            messages=[AIMessage(role="user", content="Hello")],
+                            max_tokens=4096,
+                            thinking_budget=budget,
+                        )
+                    )
+                    self.assertEqual(json.loads(reply.content), budget)
             finally:
                 await provider.close()
 

@@ -5,6 +5,11 @@ nothing has been released yet.
 
 ## Unreleased
 
+### Fixed
+
+- The managed llama.cpp provider sends the per-request reasoning token limit
+  to the server. Omitting the limit preserves the server default.
+
 ### Added
 
 - A managed llama.cpp provider for Rust and Python. Load a local GGUF or a
