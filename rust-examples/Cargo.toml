@@ -32,7 +32,7 @@ tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "sync
 # tokio-tungstenite's client.
 axum = { workspace = true }
 futures-util = { workspace = true }
-roomkit-sqlite = { workspace = true }
+roomkit-providers-sqlite = { workspace = true }
 tokio-tungstenite = { workspace = true }
 
 # What the shared library does not use: the signal that stops a server

@@ -13,6 +13,25 @@ nothing has been released yet.
 - A managed llama.cpp provider for Rust and Python. Load a local GGUF or a
   Hugging Face reference, stream tool calls and release the local model on close.
 
+- `roomkit-providers-sqlite`: RoomKit's conversation store in one SQLite
+  file, for a host built on RoomKit's Rust core. `SqliteStore` and its
+  options are the crate `roomkit-sqlite` of RoomKit's Rust workspace,
+  moved as it was: the file of RoomKit's Python `SQLiteStore`, which
+  either implementation reads. The store passes the core's store
+  contract (`roomkit::testing::check_conversation_store`). The server
+  examples run on it. It needs Rust 1.92, as in RoomKit's core. Rust
+  only: RoomKit's Python keeps its own.
+- `roomkit-providers-postgres`: RoomKit's conversation store, room lock
+  and knowledge source on Postgres, for a host built on RoomKit's Rust
+  core. `PostgresStore`, `PostgresAdvisoryLockManager`,
+  `PostgresKnowledgeSource` and their options are the crate
+  `roomkit-postgres` of RoomKit's Rust workspace, moved as it was: the
+  schema of RoomKit's Python `PostgresStore`, byte for byte, the same
+  advisory keys, a store both implementations share. The store passes
+  the core's store contract (`roomkit::testing::check_conversation_store`).
+  An application that takes it repeats the root patch of the Postgres
+  driver its README names. It needs Rust 1.92, as in RoomKit's core.
+  Rust only: RoomKit's Python keeps its own.
 - `roomkit-providers-opentelemetry`: RoomKit's telemetry on OpenTelemetry,
   for a host built on RoomKit's Rust core. `OpenTelemetryProvider` and
   `OpenTelemetryProviderOptions` are the provider that was the core's
@@ -20,7 +39,8 @@ nothing has been released yet.
   the kit's spans and metrics handed to an OpenTelemetry SDK tracer and
   meter provider, a turn of another process in its owner's trace. It starts
   its spans under the current span's context, which the core gives by its
-  public `telemetry::get_current_telemetry_ctx`. Rust only: RoomKit's
+  public `telemetry::get_current_telemetry_ctx`. It needs Rust 1.92, as
+  in RoomKit's core. Rust only: RoomKit's
   Python keeps its own.
 - `roomkit-providers-redis`: RoomKit's turn backend across processes, on
   Redis, for a host built on RoomKit's Rust core. `RedisTurnBackend` is the

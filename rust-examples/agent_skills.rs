@@ -40,7 +40,7 @@ use roomkit::{
     RoomKitOptions,
 };
 use roomkit_ai::{AiChannel, AiChannelOptions, DiscoverOptions, SkillRegistry, ToolPolicy};
-use roomkit_sqlite::{SqliteStore, SqliteStoreOptions};
+use roomkit_providers_sqlite::{SqliteStore, SqliteStoreOptions};
 use serde_json::Value;
 
 use shared::{Checks, FakeOpenAi, OpenAiEndpoint, Reply, TempDatabase};

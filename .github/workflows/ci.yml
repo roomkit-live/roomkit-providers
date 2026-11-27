@@ -110,6 +110,35 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - run: make redis-test
 
+  postgres:
+    name: Postgres store
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The Postgres store's tests on a Postgres of the job's own, on the
+    # runner's loopback, as the Redis job does. The cross-read with
+    # RoomKit's Python needs a RoomKit checkout and skips itself here: the
+    # local gates run it.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-throwaway
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      POSTGRES_DSN: postgresql://postgres:ci-throwaway@127.0.0.1:5432/postgres?sslmode=disable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - run: make postgres-test
+
   msrv:
     name: Minimum supported Rust version
     runs-on: ubuntu-latest

@@ -111,7 +111,7 @@ use std::time::Duration;
 use futures_util::{SinkExt, StreamExt};
 use roomkit::model::{EventContent, EventType, RoomEvent, RoomId, TextContent};
 use roomkit::{ConversationStore, HookExecution, HookOptions, HookTrigger, PostOptions};
-use roomkit_sqlite::{SqliteStore, SqliteStoreOptions};
+use roomkit_providers_sqlite::{SqliteStore, SqliteStoreOptions};
 use serde_json::{Value, json};
 use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpListener, TcpSocket, TcpStream};
