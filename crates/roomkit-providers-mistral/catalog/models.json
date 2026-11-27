@@ -1,0 +1,288 @@
+{
+ "generator": "scripts/generate_mistral_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "mistral-large-4-0",
+   "display_name": "Mistral Large 4",
+   "context_window": 1048576,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.7,
+    "output_per_million": 2.1,
+    "cache_read_per_million": 0.07,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-11-01"
+   }
+  },
+  {
+   "id": "mistral-large-4",
+   "display_name": "Mistral Large 4",
+   "context_window": 1048576,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.7,
+    "output_per_million": 2.1,
+    "cache_read_per_million": 0.07,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-11-01"
+   }
+  },
+  {
+   "id": "mistral-large-latest",
+   "display_name": "Mistral Large 3",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.5,
+    "output_per_million": 1.5,
+    "cache_read_per_million": 0.05,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "mistral-large-2512",
+   "display_name": "Mistral Large 3",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.5,
+    "output_per_million": 1.5,
+    "cache_read_per_million": 0.05,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "mistral-medium-latest",
+   "display_name": "Mistral Medium 3.5",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 1.5,
+    "output_per_million": 7.5,
+    "cache_read_per_million": 0.15,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "mistral-medium-3-5",
+   "display_name": "Mistral Medium 3.5",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 1.5,
+    "output_per_million": 7.5,
+    "cache_read_per_million": 0.15,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "mistral-small-latest",
+   "display_name": "Mistral Small 4",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.15,
+    "output_per_million": 0.6,
+    "cache_read_per_million": 0.015,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "mistral-small-2603",
+   "display_name": "Mistral Small 4",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.15,
+    "output_per_million": 0.6,
+    "cache_read_per_million": 0.015,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "ministral-14b-latest",
+   "display_name": "Ministral 3 14B",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.2,
+    "output_per_million": 0.2,
+    "cache_read_per_million": 0.02,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "ministral-8b-latest",
+   "display_name": "Ministral 3 8B",
+   "context_window": 262144,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.15,
+    "output_per_million": 0.15,
+    "cache_read_per_million": 0.015,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "ministral-3b-latest",
+   "display_name": "Ministral 3 3B",
+   "context_window": 131072,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.1,
+    "output_per_million": 0.1,
+    "cache_read_per_million": 0.01,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "magistral-medium-latest",
+   "display_name": "Magistral Medium 1.2",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": true,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 2.0,
+    "output_per_million": 5.0,
+    "cache_read_per_million": null,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "magistral-small-latest",
+   "display_name": "Magistral Small 1.2",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": true,
+   "capabilities": [],
+   "pricing": {
+    "input_per_million": 0.5,
+    "output_per_million": 1.5,
+    "cache_read_per_million": null,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-05"
+   }
+  },
+  {
+   "id": "pixtral-large-latest",
+   "display_name": "Pixtral Large",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": true,
+   "capabilities": [],
+   "pricing": null
+  }
+ ]
+}

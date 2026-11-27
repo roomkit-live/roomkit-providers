@@ -1,0 +1,282 @@
+{
+    "generator": "scripts/generate_mistral_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "MistralConfig",
+    "examples": [
+        {
+            "name": "key_alone",
+            "given": {
+                "api_key": "placeholder-not-a-key"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "mistral-small-latest",
+                "max_tokens": 4096,
+                "server_url": "https://llm.example",
+                "reasoning_effort": "high"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-small-latest",
+                "max_tokens": 4096,
+                "server_url": "https://llm.example",
+                "reasoning_effort": "high"
+            }
+        },
+        {
+            "name": "a_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "magistral-medium-latest"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "magistral-medium-latest",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "empty_key",
+            "given": {
+                "api_key": ""
+            },
+            "form": {
+                "api_key": "",
+                "model": "mistral-large-latest",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "empty_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": ""
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "a_token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 2048
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 2048,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "a_server_url",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "server_url": "https://gateway.example/mistral/"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 1024,
+                "server_url": "https://gateway.example/mistral/",
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "no_server_url",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "server_url": null
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "a_reasoning_effort",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "reasoning_effort": "none"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": "none"
+            }
+        },
+        {
+            "name": "no_reasoning_effort",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "reasoning_effort": null
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "base_url": "https://llm.example",
+                "x": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 1024,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_key",
+            "given": {
+                "model": "mistral-large-latest"
+            }
+        },
+        {
+            "name": "key_null",
+            "given": {
+                "api_key": null
+            }
+        },
+        {
+            "name": "key_a_number",
+            "given": {
+                "api_key": 42
+            }
+        },
+        {
+            "name": "model_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": null
+            }
+        },
+        {
+            "name": "model_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": 3
+            }
+        },
+        {
+            "name": "token_bound_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": null
+            }
+        },
+        {
+            "name": "token_bound_a_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 2.5
+            }
+        },
+        {
+            "name": "server_url_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "server_url": 8080
+            }
+        },
+        {
+            "name": "reasoning_effort_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "reasoning_effort": 2
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                {
+                    "api_key": "placeholder-not-a-key"
+                }
+            ]
+        },
+        {
+            "name": "a_number",
+            "given": 42
+        }
+    ],
+    "converted": [
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": "2048"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 2048,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "max_tokens_a_whole_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 2048.0
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 2048,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        },
+        {
+            "name": "max_tokens_a_boolean",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": true
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "mistral-large-latest",
+                "max_tokens": 1,
+                "server_url": null,
+                "reasoning_effort": null
+            }
+        }
+    ]
+}

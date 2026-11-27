@@ -1,0 +1,41 @@
+{
+  "notes": "The cases of python_mistral_cases.json the provider answers otherwise than Python, as src/replay/mod.rs states them, for a replay outside the crate. 'differs' lists the differences from Python a replay finds, each by the words it starts with; 'requests' is how many requests the provider sends; 'does' is what the call gives. A test of the crate keeps this file equal to the source: run that test with NAMED_CASES_OUT naming the file to rewrite it.",
+  "cases": [
+    {
+      "name": "models_listing_failed",
+      "list": "only_python",
+      "reason": "Python's list_models wraps no error: the mistralai SDK's is raised as it is. The provider fails as it does for a generation.",
+      "differs": [
+        "a SDKError no provider reproduces"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails",
+        "status_code": 401,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "the provider answered HTTP 401: Unauthorized"
+        }
+      }
+    },
+    {
+      "name": "empty_key",
+      "list": "by_its_own_rule",
+      "reason": "A key goes in its header as it is written, an empty one too, as the request's key of Anthropic's provider goes (KEY_AS_WRITTEN): the provider sends `Bearer `, which a server, the fake among them, reads as `Bearer`, white space around a header's value being no part of it. Python's HTTP client refuses that value on a wire (`Illegal header value`): it sends nothing, and fails as a lost connection, worth a retry.",
+      "differs": [
+        "request 0: authorization is Some(\"Bearer\")"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "answers",
+        "text": "Hello there.",
+        "finish_reason": "stop",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 5
+        }
+      }
+    }
+  ]
+}

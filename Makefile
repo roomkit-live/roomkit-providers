@@ -30,6 +30,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	python-openai-catalogue \
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
 	python-gemini-config python-gemini-cases python-gemini-catalogue \
+	python-mistral-config python-mistral-cases python-mistral-catalogue \
 	named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
@@ -300,6 +301,22 @@ python-gemini-catalogue:
 python-gemini-cases:
 	$(PYTHON) scripts/generate_gemini_cases.py
 
+# Rewrites the fixture of the JSON forms of RoomKit's Python `MistralConfig`.
+python-mistral-config:
+	$(PYTHON) scripts/generate_mistral_config_forms.py
+
+# Rewrites the catalogue of Mistral's models the provider reads, from
+# RoomKit's Python.
+python-mistral-catalogue:
+	$(PYTHON) scripts/generate_mistral_catalogue.py
+
+# Rewrites the fixture of what RoomKit's Python Mistral provider sends and
+# reads on Mistral's chat completions, case by case. PYTHON needs roomkit's
+# `mistral` extra. The script answers its own requests: nothing is sent to a
+# network.
+python-mistral-cases:
+	$(PYTHON) scripts/generate_mistral_cases.py
+
 # Rewrites, for each provider, the data file of the cases it answers
 # otherwise than Python, from the replay's own list: a replay outside the
 # crate reads it, and a test of the crate fails while the two differ.
@@ -310,6 +327,8 @@ named-cases:
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-anthropic --lib the_named_cases_file
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-gemini/tests/fixtures/named_cases.json) \
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-gemini --lib the_named_cases_file
+	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-mistral/tests/fixtures/named_cases.json) \
+		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-mistral --lib the_named_cases_file
 
 .PHONY: python-llamacpp-cases
 python-llamacpp-cases:
