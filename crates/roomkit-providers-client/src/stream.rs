@@ -165,6 +165,19 @@ impl Streamed {
         self.cut
     }
 
+    /// Whether the server says the answer is a stream of events: its media
+    /// type is `text/event-stream`, in any case, whatever its parameters. An
+    /// answer that names none is not one, as Python's reader of a media
+    /// type reads it (`email.message.Message.get_content_type`): for a
+    /// provider whose SDK reads a stream only from such an answer.
+    #[must_use]
+    pub fn is_event_stream(&self) -> bool {
+        let named = self.response.headers().get(reqwest::header::CONTENT_TYPE);
+        let named = named.and_then(|value| value.to_str().ok());
+        let media = named.and_then(|named| named.split(';').next());
+        media.is_some_and(|media| media.trim().eq_ignore_ascii_case("text/event-stream"))
+    }
+
     /// Keeps `bytes`, the next ones of an answer the server says is JSON.
     fn keep(&mut self, bytes: &[u8]) {
         let Some(kept) = &mut self.kept else {
