@@ -77,6 +77,12 @@ pub trait Replays: AiProvider + Sized {
     /// provider built without a key does not send.
     const KEY_HEADER: &'static str;
 
+    /// Whether a failure says what the server answered: `false` for a
+    /// provider whose first request asks a token of its identity, which
+    /// fails in closed words. The check of a key lent to a request then
+    /// holds it to the key alone ([`lent`](self)).
+    const SAYS_REFUSALS: bool = true;
+
     /// The provider of `config`, the configuration of a case as its fixture
     /// writes it.
     ///
@@ -92,6 +98,14 @@ pub trait Replays: AiProvider + Sized {
     /// each to the path it had: what the provider knows of its endpoint
     /// stays what its configuration says.
     fn point_at(&mut self, fake: SocketAddr);
+
+    /// Sets the clock and the waits of every request the provider sends,
+    /// once it is pointed at the fake: its [`client`](Self::client)'s, and
+    /// those of a provider that sends other requests than through it, as
+    /// one that asks a token of its own identity.
+    fn paced(&mut self, pace: Pace) {
+        self.client().set_pace(pace);
+    }
 
     /// The timeouts of the requests the provider sends through another
     /// client than [`client`](Self::client), by the start of the path they
@@ -547,7 +561,7 @@ async fn replay_served<P: Replays>(
     let waits = Arc::new(Mutex::new(Vec::new()));
     let kept = Arc::clone(&waits);
     let clock = fixture.clock();
-    provider.client().set_pace(Pace {
+    provider.paced(Pace {
         now: Arc::new(move || clock),
         wait: Arc::new(move |wait| {
             kept.lock().unwrap().push(wait.as_secs_f64());
@@ -637,7 +651,9 @@ pub async fn replayed_or_named<P: Replays>(
         }
     }
     // A listing is asked with the configuration's key: no request lends one.
-    if call != "list_models" && kept_out == 0 {
+    // A provider whose failures say nothing of a server's answer shows no
+    // 401's words: each of its failures holds no key, which suffices.
+    if P::SAYS_REFUSALS && call != "list_models" && kept_out == 0 {
         failures.push(format!(
             "{call}: no case shows the key lent to a request kept out of a failure"
         ));

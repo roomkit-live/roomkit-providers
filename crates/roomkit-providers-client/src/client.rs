@@ -265,6 +265,15 @@ impl Client {
         self.pace = pace;
     }
 
+    /// The clock and the waits the client takes: for a provider whose
+    /// other requests, sent on a client of their own, keep to this one's in
+    /// a test or a replay.
+    #[cfg(any(test, feature = "replay", feature = "harness"))]
+    #[must_use]
+    pub fn pace(&self) -> Pace {
+        self.pace.clone()
+    }
+
     /// The seconds since 1970 by the client's clock: the system's, or the
     /// one a replay or a test set. What a provider dates from an answer it
     /// reads now, as a listing's prices, is dated by it.

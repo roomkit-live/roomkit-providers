@@ -39,6 +39,10 @@ pub enum Does {
     /// Nothing is asked: the contract, stricter than Python's on what a
     /// request holds, does not read the case's request, and says why.
     Unread(Says),
+    /// The call fails before its request to the provider's endpoint, final
+    /// and with no status, in these words: a host's source of tokens could
+    /// give none, as an identity whose token was refused.
+    FailsBefore(Says),
     /// It is built where Python's is not, and asks without the header that
     /// carries its key: the fake, which the case gives no answer, answers
     /// its 599.
@@ -157,6 +161,21 @@ impl Instead {
                     | Outcome::Text(_, Some(error)),
                 ),
             ) => failed(error, self.does),
+            (
+                Does::FailsBefore(says),
+                None,
+                Some(
+                    Outcome::Response(Err(error))
+                    | Outcome::Models(Err(error))
+                    | Outcome::Events(_, Some(error))
+                    | Outcome::Text(_, Some(error)),
+                ),
+            ) => {
+                error.before_request
+                    && !error.retryable
+                    && error.status_code.is_none()
+                    && said(&error.message, says)
+            }
             (Does::AsksWithoutAKey, None, Some(Outcome::Response(Err(error)))) => {
                 let asked = replayed.seen.first();
                 let no_key = asked.is_some_and(|seen| !seen.headers.contains_key(P::KEY_HEADER));
@@ -302,6 +321,9 @@ fn does_as_data(does: Does) -> serde_json::Value {
             "finish_reason": finish_reason,
             "usage": serde_json::from_str::<serde_json::Value>(usage).unwrap(),
         }),
+        Does::FailsBefore(says) => {
+            serde_json::json!({"kind": "fails_before", "says": says_as_data(says)})
+        }
         Does::Unread(says) => serde_json::json!({"kind": "unread", "says": says_as_data(says)}),
         Does::AsksWithoutAKey => serde_json::json!({"kind": "asks_without_a_key"}),
     }

@@ -10,6 +10,10 @@
 //! provider sends that key or not: a host that lends a key must find it in
 //! no failure.
 //!
+//! A provider whose failures say nothing of what a server answered
+//! ([`Replays::SAYS_REFUSALS`]), as one whose identity asks its token
+//! first, is held to the key alone.
+//!
 //! [`replayed_or_named`](super::replayed_or_named) asks it of every case it
 //! replays, so a provider that replays its fixture is held to it without
 //! writing anything.
@@ -70,7 +74,7 @@ pub(super) async fn kept_out<P: Replays>(case: &Case, door: &Door) -> Result<boo
     let fake = Fake::behind(door, refusals.collect());
     provider.point_at(fake.address);
     // Should the provider try again, it takes no wait.
-    provider.client().set_pace(Pace {
+    provider.paced(Pace {
         now: Arc::new(|| 0.0),
         wait: Arc::new(|_| Box::pin(std::future::ready(()))),
     });
@@ -83,7 +87,10 @@ pub(super) async fn kept_out<P: Replays>(case: &Case, door: &Door) -> Result<boo
         "generate_stream" => drained(provider.generate_stream(&request)).await.1,
         _ => return Ok(false),
     };
-    judged(failure.as_ref(), !fake.seen().is_empty())
+    judged(
+        failure.as_ref(),
+        P::SAYS_REFUSALS && !fake.seen().is_empty(),
+    )
 }
 
 /// How `failure` stands, the failure of a request that lent [`LENT_KEY`]

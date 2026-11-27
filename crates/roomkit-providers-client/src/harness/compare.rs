@@ -11,6 +11,20 @@ use serde_json::Value;
 use super::fake::Seen;
 use super::{Case, Failure, Outcome, Replayed, Sent, Wait};
 
+/// The body `seen`, as the fixture writes the one Python sent: JSON, or,
+/// where the fixture writes a form (`{"form": [[name, value], ...]}`), its
+/// pairs decoded, in order.
+fn read_body(seen: &[u8], sent: Option<&Value>) -> Option<Value> {
+    let form = sent.and_then(|sent| sent.get("form")).is_some();
+    if !form {
+        return serde_json::from_slice::<Value>(seen).ok();
+    }
+    let pairs = url::form_urlencoded::parse(seen).map(|(name, value)| {
+        Value::Array(vec![name.into_owned().into(), value.into_owned().into()])
+    });
+    Some(serde_json::json!({"form": pairs.collect::<Vec<_>>()}))
+}
+
 /// Where the requests the provider sent differ from Python's.
 fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
     if replayed.seen.len() != case.exchanges.len() {
@@ -27,7 +41,7 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
         if (seen.method.as_str(), seen.target.as_str()) != (sent.method.as_str(), target) {
             found.push(format!("request {at}: {} {}", seen.method, seen.target));
         }
-        let body = serde_json::from_slice::<Value>(&seen.body).ok();
+        let body = read_body(&seen.body, sent.body.as_ref());
         let written = |body: Option<&Value>| body.map(Value::to_string);
         if written(body.as_ref()) != written(sent.body.as_ref()) {
             found.push(format!(
