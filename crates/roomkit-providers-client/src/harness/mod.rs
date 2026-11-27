@@ -93,6 +93,15 @@ pub trait Replays: AiProvider + Sized {
     /// stays what its configuration says.
     fn point_at(&mut self, fake: SocketAddr);
 
+    /// The timeouts of the requests the provider sends through another
+    /// client than [`client`](Self::client), by the start of the path they
+    /// ask: none, unless the provider has such a client, as one that asks a
+    /// server of its own where to send a request, with timeouts of its own.
+    #[must_use]
+    fn timeouts_by_path(&self) -> Vec<(&'static str, Timeouts)> {
+        Vec::new()
+    }
+
     /// What the provider's endpoint answers a request whose key it refuses:
     /// a 401 whose error object says `said` for its message, under `error`.
     /// A provider whose wire words a refusal otherwise writes its own.
@@ -340,6 +349,9 @@ pub struct Replayed {
     pub waits: Vec<f64>,
     /// The timeouts the provider's client was built with.
     pub timeouts: Option<Timeouts>,
+    /// The timeouts of the requests it sends through another client, by
+    /// the start of their path.
+    pub timeouts_by_path: Vec<(&'static str, Timeouts)>,
     /// Whether the provider says its model takes images.
     pub vision: Option<bool>,
 }
@@ -508,6 +520,7 @@ async fn replay_served<P: Replays>(
         seen: Vec::new(),
         waits: Vec::new(),
         timeouts: None,
+        timeouts_by_path: Vec::new(),
         vision: None,
     };
     let request = match case.read_request() {
@@ -526,6 +539,7 @@ async fn replay_served<P: Replays>(
     };
     let timeouts = provider.client().timeouts();
     replayed.timeouts = Some(timeouts);
+    replayed.timeouts_by_path = provider.timeouts_by_path();
     replayed.vision = Some(provider.supports_vision());
     let replies = case.exchanges.iter().map(|e| reply(&e.response));
     let fake = Fake::behind(door, replies.collect());

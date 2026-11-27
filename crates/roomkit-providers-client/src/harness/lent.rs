@@ -3,9 +3,12 @@
 //! Beside the replay of its recorded cases, a provider is asked each
 //! generation of its fixture once more, the request lending a key, by a
 //! fake that refuses it with a 401 whose message repeats that key. The
-//! failure must say what the 401 says without the key, in its message as
-//! in its `Debug` form, whether the provider sends that key or not: a host
-//! that lends a key must find it in no failure.
+//! fake refuses every request it is sent so, up to [`REFUSALS`]: a provider
+//! that asks a server of its own first, one that tells it where to send the
+//! request, gets the 401 there too. The failure must say what the 401 says
+//! without the key, in its message as in its `Debug` form, whether the
+//! provider sends that key or not: a host that lends a key must find it in
+//! no failure.
 //!
 //! [`replayed_or_named`](super::replayed_or_named) asks it of every case it
 //! replays, so a provider that replays its fixture is held to it without
@@ -29,6 +32,9 @@ const _: () = assert!(LENT_KEY.len() >= SECRET_MIN);
 
 /// What the 401 says before the key it repeats.
 const SAID: &str = "the key lent to the request is refused: ";
+
+/// How many requests the fake refuses: past them, it answers 599.
+const REFUSALS: usize = 4;
 
 /// What the fake's 401 says: [`SAID`], then the key.
 fn said_with_the_key() -> String {
@@ -60,7 +66,8 @@ pub(super) async fn kept_out<P: Replays>(case: &Case, door: &Door) -> Result<boo
     assert_ne!(case.key(), LENT_KEY, "{}", case.name);
     let lent = (API_KEY_METADATA_KEY.to_owned(), LENT_KEY.into());
     request.metadata.extend([lent]);
-    let fake = Fake::behind(door, vec![P::key_refused(&said_with_the_key())]);
+    let refusals = (0..REFUSALS).map(|_| P::key_refused(&said_with_the_key()));
+    let fake = Fake::behind(door, refusals.collect());
     provider.point_at(fake.address);
     // Should the provider try again, it takes no wait.
     provider.client().set_pace(Pace {

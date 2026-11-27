@@ -49,8 +49,15 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
                 seen.reads
             ));
         }
-        // The timeouts are the ones the client was built with.
-        let built = replayed.timeouts.map(|timeouts| {
+        // The timeouts are the ones the client was built with, or the ones
+        // of the other client the provider sends that path through.
+        let path = seen.target.split('?').next().unwrap_or_default();
+        let other = replayed
+            .timeouts_by_path
+            .iter()
+            .find(|(start, _)| path.starts_with(start));
+        let timeouts = other.map(|(_, timeouts)| *timeouts).or(replayed.timeouts);
+        let built = timeouts.map(|timeouts| {
             let seconds = [("connect", timeouts.connect()), ("read", timeouts.read())];
             seconds.map(|(name, timeout)| (name, timeout.as_secs_f64()))
         });
