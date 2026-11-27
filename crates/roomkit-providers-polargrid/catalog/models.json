@@ -1,0 +1,282 @@
+{
+ "generator": "scripts/generate_polargrid_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "qwen-3.8-27b",
+   "display_name": "Qwen 3.8 27B",
+   "context_window": 262144,
+   "supports_vision": false,
+   "deprecated": false,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 0.2,
+    "output_per_million": 0.75,
+    "cache_read_per_million": null,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-09-02"
+   }
+  }
+ ],
+ "curated": [
+  {
+   "id": "qwen-3.8-27b",
+   "display_name": "Qwen 3.8 27B",
+   "context_window": 262144,
+   "supports_vision": false,
+   "deprecated": false,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 0.2,
+    "output_per_million": 0.75,
+    "cache_read_per_million": null,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-09-02"
+   }
+  },
+  {
+   "id": "qwen-3.6-35b-a3b",
+   "display_name": "Qwen 3.6 35B-A3B",
+   "context_window": 8192,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking",
+    "vision"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "whisper-large-v3-turbo",
+   "display_name": "Whisper Large v3 Turbo",
+   "context_window": null,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [
+    "transcription"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "cohere-transcribe-03-2026",
+   "display_name": "Cohere Transcribe 03-2026",
+   "context_window": null,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [
+    "transcription"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "kokoro-82m",
+   "display_name": "Kokoro 82M",
+   "context_window": null,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [
+    "speech"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "tada-3b-ml",
+   "display_name": "TADA 3B ML",
+   "context_window": null,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [
+    "speech"
+   ],
+   "pricing": null
+  }
+ ],
+ "regions": [
+  {
+   "id": "yto-01",
+   "name": "Toronto",
+   "location": "Canada Central"
+  },
+  {
+   "id": "yul-01",
+   "name": "Montreal",
+   "location": "Canada East"
+  },
+  {
+   "id": "yul-02",
+   "name": "Montreal 02",
+   "location": "Canada East"
+  },
+  {
+   "id": "yvr-02",
+   "name": "Vancouver",
+   "location": "Canada West"
+  },
+  {
+   "id": "nyc-01",
+   "name": "New York",
+   "location": "US East"
+  },
+  {
+   "id": "nyc-02",
+   "name": "New York 02",
+   "location": "US East"
+  },
+  {
+   "id": "was-01",
+   "name": "Washington DC",
+   "location": "US East"
+  },
+  {
+   "id": "mia-01",
+   "name": "Miami",
+   "location": "US East"
+  },
+  {
+   "id": "dfw-01",
+   "name": "Dallas",
+   "location": "US Central"
+  },
+  {
+   "id": "dfw-02",
+   "name": "Dallas 02",
+   "location": "US Central"
+  },
+  {
+   "id": "chi-01",
+   "name": "Chicago",
+   "location": "US Central"
+  },
+  {
+   "id": "sfo-01",
+   "name": "San Francisco",
+   "location": "US West"
+  },
+  {
+   "id": "sfo-03",
+   "name": "San Francisco 03",
+   "location": "US West"
+  },
+  {
+   "id": "lax-01",
+   "name": "Los Angeles",
+   "location": "US West"
+  },
+  {
+   "id": "sea-01",
+   "name": "Seattle",
+   "location": "US West"
+  },
+  {
+   "id": "phx-01",
+   "name": "Phoenix",
+   "location": "US West"
+  }
+ ],
+ "aliases": {
+  "toronto": "yto-01",
+  "yto": "yto-01",
+  "vancouver": "yvr-02",
+  "yvr": "yvr-02",
+  "montreal": "yul-01",
+  "yul": "yul-01",
+  "new-york": "nyc-01",
+  "newyork": "nyc-01",
+  "nyc": "nyc-01",
+  "dallas": "dfw-01",
+  "dfw": "dfw-01",
+  "san-francisco": "sfo-01",
+  "sanfrancisco": "sfo-01",
+  "sf": "sfo-01",
+  "sfo": "sfo-01"
+ },
+ "edges": {
+  "yto-01": {
+   "url": "https://api.yto-01.edge.polargrid.ai",
+   "name": "Toronto"
+  },
+  "yvr-02": {
+   "url": "https://api.yvr-02.edge.polargrid.ai",
+   "name": "Vancouver"
+  },
+  "yul-01": {
+   "url": "https://api.yul-01.edge.polargrid.ai",
+   "name": "Montreal"
+  },
+  "yul-02": {
+   "url": "https://api.yul-02.edge.polargrid.ai",
+   "name": "Montreal 02"
+  },
+  "nyc-01": {
+   "url": "https://api.nyc-01.edge.polargrid.ai",
+   "name": "New York"
+  },
+  "nyc-02": {
+   "url": "https://api.nyc-02.edge.polargrid.ai",
+   "name": "New York 02"
+  },
+  "dfw-01": {
+   "url": "https://api.dfw-01.edge.polargrid.ai",
+   "name": "Dallas"
+  },
+  "dfw-02": {
+   "url": "https://api.dfw-02.edge.polargrid.ai",
+   "name": "Dallas 02"
+  },
+  "sfo-01": {
+   "url": "https://api.sfo-01.edge.polargrid.ai",
+   "name": "San Francisco"
+  },
+  "lax-01": {
+   "url": "https://api.lax-01.edge.polargrid.ai",
+   "name": "Los Angeles"
+  },
+  "sea-01": {
+   "url": "https://api.sea-01.edge.polargrid.ai",
+   "name": "Seattle"
+  },
+  "chi-01": {
+   "url": "https://api.chi-01.edge.polargrid.ai",
+   "name": "Chicago"
+  },
+  "phx-01": {
+   "url": "https://api.phx-01.edge.polargrid.ai",
+   "name": "Phoenix"
+  },
+  "was-01": {
+   "url": "https://api.was-01.edge.polargrid.ai",
+   "name": "Washington DC"
+  },
+  "mia-01": {
+   "url": "https://api.mia-01.edge.polargrid.ai",
+   "name": "Miami"
+  },
+  "sfo-03": {
+   "url": "https://api.sfo-03.edge.polargrid.ai",
+   "name": "San Francisco"
+  }
+ },
+ "fallback": "yto-01"
+}

@@ -1,0 +1,403 @@
+{
+    "generator": "scripts/generate_polargrid_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "PolarGridConfig",
+    "examples": [
+        {
+            "name": "key_alone",
+            "given": {
+                "api_key": "placeholder-not-a-key"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen-3.6-35b-a3b",
+                "region": "yul-02",
+                "max_tokens": 512,
+                "top_p": 0.5,
+                "thinking": true,
+                "timeout": 60.5,
+                "connect_timeout": 2,
+                "max_retries": 2,
+                "debug": true
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.6-35b-a3b",
+                "region": "yul-02",
+                "max_tokens": 512,
+                "top_p": 0.5,
+                "thinking": true,
+                "timeout": 60.5,
+                "connect_timeout": 2.0,
+                "max_retries": 2,
+                "debug": true
+            }
+        },
+        {
+            "name": "an_empty_key",
+            "given": {
+                "api_key": ""
+            },
+            "form": {
+                "api_key": "",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "a_region_by_its_id",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "region": "sfo-03"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": "sfo-03",
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "a_region_by_its_name",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "region": "montreal"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": "montreal",
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "a_region_in_capitals",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "region": "YTO-01"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": "YTO-01",
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "no_region",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "region": null
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "thinking_off",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "thinking": false
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": false,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "the_least_token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": 1,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "a_token_bound_past_the_sdk_s",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 9000
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": 9000,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "top_p_an_integer",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "top_p": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 1.0,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "base_url": "https://llm.example",
+                "x": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_key",
+            "given": {
+                "model": "qwen-3.8-27b"
+            }
+        },
+        {
+            "name": "key_null",
+            "given": {
+                "api_key": null
+            }
+        },
+        {
+            "name": "an_unknown_region",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "region": "yul-2"
+            }
+        },
+        {
+            "name": "a_region_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "region": 1
+            }
+        },
+        {
+            "name": "no_token_at_all",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 0
+            }
+        },
+        {
+            "name": "a_negative_token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": -5
+            }
+        },
+        {
+            "name": "top_p_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "top_p": null
+            }
+        },
+        {
+            "name": "thinking_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "thinking": "maybe"
+            }
+        },
+        {
+            "name": "timeout_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "timeout": null
+            }
+        },
+        {
+            "name": "debug_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "debug": "loud"
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                {
+                    "api_key": "placeholder-not-a-key"
+                }
+            ]
+        },
+        {
+            "name": "a_number",
+            "given": 42
+        }
+    ],
+    "converted": [
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": "512"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": 512,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "thinking_a_text_of_true",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "thinking": "true"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": true,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "thinking_one",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "thinking": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": true,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        },
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "timeout": "30"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "qwen-3.8-27b",
+                "region": null,
+                "max_tokens": null,
+                "top_p": 0.9,
+                "thinking": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "debug": false
+            }
+        }
+    ]
+}

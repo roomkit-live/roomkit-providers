@@ -32,6 +32,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	python-gemini-config python-gemini-cases python-gemini-catalogue \
 	python-mistral-config python-mistral-cases python-mistral-catalogue \
 	python-ollama-config python-ollama-cases python-ollama-catalogue python-ollama-images \
+	python-polargrid-config python-polargrid-cases python-polargrid-catalogue \
 	named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
@@ -339,6 +340,23 @@ python-ollama-images:
 python-ollama-cases:
 	$(PYTHON) scripts/generate_ollama_cases.py
 
+# Rewrites the fixture of the JSON forms of RoomKit's Python
+# `PolarGridConfig`.
+python-polargrid-config:
+	$(PYTHON) scripts/generate_polargrid_config_forms.py
+
+# Rewrites the catalogue of PolarGrid's models and edges the provider reads,
+# from RoomKit's Python and polargrid-sdk.
+python-polargrid-catalogue:
+	$(PYTHON) scripts/generate_polargrid_catalogue.py
+
+# Rewrites the fixture of what RoomKit's Python PolarGrid provider sends and
+# reads on an edge's chat completions and on the autorouter, case by case.
+# PYTHON needs roomkit's `polargrid` extra. The script answers its own
+# requests: nothing is sent to a network.
+python-polargrid-cases:
+	$(PYTHON) scripts/generate_polargrid_cases.py
+
 # Rewrites, for each provider, the data file of the cases it answers
 # otherwise than Python, from the replay's own list: a replay outside the
 # crate reads it, and a test of the crate fails while the two differ.
@@ -353,6 +371,8 @@ named-cases:
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-mistral --lib the_named_cases_file
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-ollama/tests/fixtures/named_cases.json) \
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-ollama --lib the_named_cases_file
+	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-polargrid/tests/fixtures/named_cases.json) \
+		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-polargrid --lib the_named_cases_file
 
 .PHONY: python-llamacpp-cases
 python-llamacpp-cases:

@@ -2104,6 +2104,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-polargrid"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "reqwest",
+ "roomkit",
+ "roomkit-ai",
+ "roomkit-core",
+ "roomkit-providers-client",
+ "roomkit-providers-python-forms",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "roomkit-providers-postgres"
 version = "0.1.0-alpha.1"
 dependencies = [
