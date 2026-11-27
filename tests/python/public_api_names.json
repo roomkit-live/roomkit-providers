@@ -43,6 +43,10 @@
     "Mistral",
     "MistralConfig"
   ],
+  "roomkit_providers.llm.ollama": [
+    "Ollama",
+    "OllamaConfig"
+  ],
   "roomkit_providers.llm.openai": [
     "OpenAI",
     "OpenAIConfig"
