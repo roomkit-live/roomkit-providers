@@ -13,6 +13,7 @@ headers a request is written with, and whose words a failure's message holds.
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import logging
 import os
@@ -565,6 +566,14 @@ def unique_names(cases: list[Case]) -> None:
         raise AssertionError("two cases share a name")
 
 
+def version_of(package: ModuleType) -> str:
+    """The version of ``package``: its ``__version__``, or, for a package
+    that has none (mistralai, ollama), the one its installed distribution
+    names."""
+    version = getattr(package, "__version__", None)
+    return version if version is not None else importlib.metadata.version(package.__name__)
+
+
 def fixture_of(
     generator: str,
     sdk: ModuleType,
@@ -581,7 +590,7 @@ def fixture_of(
         "roomkit_version": roomkit.__version__,
         "roomkit_commit": commit,
         "roomkit_dirty": dirty,
-        f"{sdk.__name__}_version": sdk.__version__,
+        f"{sdk.__name__}_version": version_of(sdk),
         "pydantic_version": pydantic.__version__,
         f"{http.__name__}_version": http.__version__,
         "python_version": platform.python_version(),
@@ -618,6 +627,6 @@ def write(
     print(
         f"Wrote {path.relative_to(repository)}: {len(cases)} cases, {failed} that fail, "
         f"{len(fixture['questioned'])} questioned, from roomkit {roomkit.__version__}, "
-        f"{sdk.__name__} {sdk.__version__}, {http.__name__} {http.__version__}, "
+        f"{sdk.__name__} {version_of(sdk)}, {http.__name__} {http.__version__}, "
         f"Python {platform.python_version()}"
     )
