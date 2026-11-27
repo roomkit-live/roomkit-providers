@@ -109,8 +109,9 @@ pub trait Replays: AiProvider + Sized {
 
     /// The timeouts of the requests the provider sends through another
     /// client than [`client`](Self::client), by the start of the path they
-    /// ask: none, unless the provider has such a client, as one that asks a
-    /// server of its own where to send a request, with timeouts of its own.
+    /// ask, the longest start that matches deciding: none, unless the
+    /// provider has such a client, as one that asks a server of its own
+    /// where to send a request, with timeouts of its own.
     #[must_use]
     fn timeouts_by_path(&self) -> Vec<(&'static str, Timeouts)> {
         Vec::new()
