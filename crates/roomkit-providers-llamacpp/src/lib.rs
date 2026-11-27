@@ -1,6 +1,7 @@
 //! A local model served by a managed llama.cpp process.
 
 mod binary;
+mod child_env;
 mod config;
 mod diagnostics;
 mod install;

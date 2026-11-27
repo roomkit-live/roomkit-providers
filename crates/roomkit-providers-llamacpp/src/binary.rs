@@ -13,7 +13,7 @@ use roomkit_ai::ProviderError;
 use serde::Deserialize;
 use tokio::{process::Command, time::timeout};
 
-use crate::{LlamaCppConfig, error, install};
+use crate::{LlamaCppConfig, child_env::child_command, error, install};
 
 #[derive(Deserialize)]
 pub(crate) struct Release {
@@ -52,7 +52,7 @@ pub(crate) struct Binary {
 
 impl Binary {
     pub(crate) fn command(&self, bundle: Option<&Path>) -> Result<Command, ProviderError> {
-        let mut cmd = Command::new(&self.executable);
+        let mut cmd = child_command(&self.executable);
         crate::loader::configure(&mut cmd, &self.libraries, bundle)?;
         Ok(cmd)
     }
@@ -172,7 +172,7 @@ async fn detect(release: &Release) -> Result<String, ProviderError> {
     let Some(smi) = on_path(Path::new("nvidia-smi")) else {
         return Ok(format!("{os}-{arch}-cpu"));
     };
-    let mut command = Command::new(smi);
+    let mut command = child_command(smi);
     command.kill_on_drop(true).stdin(Stdio::null());
     let driver = match timeout(Duration::from_secs(10), command.output()).await {
         Ok(Ok(output)) => cuda_major(&String::from_utf8_lossy(&output.stdout)),

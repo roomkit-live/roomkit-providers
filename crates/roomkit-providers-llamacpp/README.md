@@ -25,6 +25,9 @@ Clones share one child. Closing it releases its model; a later request can
 start it again. Inference, model listing and streamed tool calls use Chat
 Completions. Size the context for messages, tool declarations and results.
 The local model's reasoning switch and effort go to its chat template.
+The server and GPU probe inherit selected runtime settings such as library paths,
+GPU selection, model cache locations and network proxies. Application credentials
+and session-group keys stay in the parent process.
 
 Run the example with a local file, optionally followed by a server executable:
 

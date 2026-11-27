@@ -5,6 +5,9 @@ nothing has been released yet.
 
 ## Unreleased
 
+- Managed llama.cpp and its GPU probe inherit only the environment needed for
+  model loading, hardware selection and the local runtime.
+
 ### Added
 
 - A managed llama.cpp provider for Rust and Python. Load a local GGUF or a
