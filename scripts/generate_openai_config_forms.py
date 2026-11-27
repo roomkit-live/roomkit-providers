@@ -28,6 +28,9 @@ from typing import Any
 
 import roomkit
 from pydantic import ValidationError
+from roomkit.providers.deepseek import DeepSeekConfig
+from roomkit.providers.kimi import KimiConfig
+from roomkit.providers.minimax import MiniMaxConfig
 from roomkit.providers.openai import OpenAIConfig
 from roomkit.providers.vendor_endpoint import OPENAI_BASE_URL, is_vendor_endpoint
 
@@ -269,6 +272,152 @@ def endpoint(base_url: str) -> dict[str, Any]:
     return {"base_url": base_url, "openai": own}
 
 
+def vendor_examples(model: str, extra: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    """The examples of a vendor's configuration: its required members, every
+    member, and each one apart; ``extra`` holds the vendor's own members, each
+    given once."""
+    required = {"api_key": KEY, "model": model}
+    every = {
+        **required,
+        "base_url": "https://llm.example/v1",
+        "max_tokens": 4096,
+        "timeout": 120.0,
+        "connect_timeout": 2.5,
+        "max_retries": 3,
+        "include_stream_usage": False,
+        "use_max_completion_tokens": True,
+        "supports_custom_temperature": False,
+        "reasoning_effort": "high",
+        "default_headers": {"X-Route": "blue", "X-Tenant": "acme"},
+        "extra_body": {"top_k": 40, "guided_choice": ["yes", "no"], "min_p": 0.05},
+        "supports_response_schema": True,
+        "supports_response_schema_with_tools": False,
+        **{member: values[0] for member, values in extra.items()},
+    }
+    examples = [
+        ("required_alone", required),
+        ("every_member", every),
+        ("behind_a_base_url", {**required, "base_url": LOCAL}),
+        ("no_token_bound", {**required, "max_tokens": None}),
+        ("a_token_bound", {**required, "max_tokens": 2048}),
+        ("empty_key", {**required, "api_key": ""}),
+        ("empty_model", {**required, "model": ""}),
+        ("timeouts_as_integers", {**required, "timeout": 120, "connect_timeout": 2}),
+        ("timeouts_with_fractions", {**required, "timeout": 0.25, "connect_timeout": 1.5}),
+        ("retries", {**required, "max_retries": 2}),
+        ("no_stream_usage", {**required, "include_stream_usage": False}),
+        (
+            "switches_stated",
+            {**required, "use_max_completion_tokens": False, "supports_custom_temperature": True},
+        ),
+        ("reasoning_effort", {**required, "reasoning_effort": "low"}),
+        (
+            "headers",
+            {**required, "default_headers": {"Authorization": "Basic placeholder", "X-A": "1"}},
+        ),
+        (
+            "extra_body",
+            {**required, "extra_body": {"repetition_penalty": 1.1, "nested": {"b": 1, "a": 2}}},
+        ),
+        ("response_schema_switches", {**required, "supports_response_schema": False}),
+        ("tool_turn_setting_left_null", {**required, "supports_reasoning_effort_with_tools": None}),
+        ("thinking_field_left_null", {**required, "thinking_field": None}),
+        ("members_python_does_not_have", {**required, "vision": True, "organization": "acme"}),
+    ]
+    for member, values in extra.items():
+        examples += [
+            (f"{member}_{json.dumps(value)}", {**required, member: value}) for value in values
+        ]
+    return examples
+
+
+def with_model(given: Any, model: str) -> Any:
+    """``given`` with OpenAI's model of the examples replaced by ``model``,
+    every other member as it is."""
+    if isinstance(given, dict) and given.get("model") == "gpt-4o":
+        return {**given, "model": model}
+    return given
+
+
+def vendor_rejected(model: str, extra_rejected: dict[str, Any]) -> list[tuple[str, Any]]:
+    """The inputs a vendor's configuration refuses: OpenAI's, the two members
+    the vendor's own rule makes moot, and ``extra_rejected``."""
+    required = {"api_key": KEY, "model": model}
+    rejected = [(name, with_model(given, model)) for name, given in REJECTED]
+    return [
+        *rejected,
+        ("tool_turn_setting_stated", {**required, "supports_reasoning_effort_with_tools": True}),
+        ("tool_turn_setting_off", {**required, "supports_reasoning_effort_with_tools": False}),
+        ("thinking_field_stated", {**required, "thinking_field": "reasoning_content"}),
+        ("base_url_null", {**required, "base_url": None}),
+        *[(name, {**required, **given}) for name, given in extra_rejected.items()],
+    ]
+
+
+def vendor_fixture(
+    config_class: Any, model: str, extra: dict[str, Any], extra_rejected: dict[str, Any]
+) -> dict[str, Any]:
+    """The fixture of a vendor's configuration, the way OpenAI's is written
+    but for its base URLs, which the vendor's provider reads otherwise."""
+
+    def dumped(given: Any) -> Any:
+        return config_class.model_validate(given).model_dump(mode="json")
+
+    def refused(given: Any) -> bool:
+        try:
+            config_class.model_validate(given)
+        except ValidationError:
+            return True
+        return False
+
+    rejected = vendor_rejected(model, extra_rejected)
+    for name, given in rejected:
+        if not refused(given):
+            raise AssertionError(f"Python's {config_class.__name__} takes the input {name}")
+    converted = [(name, with_model(given, model)) for name, given in CONVERTED]
+    return {
+        "generator": "scripts/generate_openai_config_forms.py",
+        "roomkit_version": roomkit.__version__,
+        "python_version": platform.python_version(),
+        "model": config_class.__name__,
+        "examples": [
+            {"name": name, "given": given, "form": dumped(given)}
+            for name, given in vendor_examples(model, extra)
+        ],
+        "rejected": [{"name": name, "given": given} for name, given in rejected],
+        "converted": [
+            {"name": name, "given": given, "form": dumped(given)} for name, given in converted
+        ],
+    }
+
+
+# The vendors whose configuration is OpenAI's with the vendor's defaults:
+# their class, a model of theirs, their own members with the values each
+# example gives, and the inputs of their own members Python refuses.
+VENDORS: list[tuple[str, Any, str, dict[str, Any], dict[str, Any]]] = [
+    (
+        "deepseek",
+        DeepSeekConfig,
+        "deepseek-v4-pro",
+        {"enable_thinking": [True, False, None]},
+        {"enable_thinking_a_word": {"enable_thinking": "perhaps"}},
+    ),
+    ("kimi", KimiConfig, "kimi-k3.1-pro", {}, {}),
+    ("minimax", MiniMaxConfig, "MiniMax-M3", {}, {}),
+]
+
+
+def write_vendor_fixtures() -> None:
+    for vendor, config_class, model, extra, extra_rejected in VENDORS:
+        fixture = vendor_fixture(config_class, model, extra, extra_rejected)
+        path = FIXTURE.with_name(f"python_{vendor}_config_forms.json")
+        path.write_text(json.dumps(fixture, indent=4) + "\n", encoding="utf-8")
+        print(
+            f"Wrote {path.relative_to(REPOSITORY)}: {len(fixture['examples'])} examples, "
+            f"{len(fixture['rejected'])} rejected, {len(fixture['converted'])} converted"
+        )
+
+
 def main() -> None:
     for name, given in REJECTED:
         if not refuses(given):
@@ -296,6 +445,7 @@ def main() -> None:
         f"{len(REJECTED)} rejected, {len(CONVERTED)} converted, {len(ENDPOINTS)} base URLs "
         f"({own} OpenAI's), from roomkit {roomkit.__version__}"
     )
+    write_vendor_fixtures()
 
 
 if __name__ == "__main__":

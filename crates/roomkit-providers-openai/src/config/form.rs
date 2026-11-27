@@ -13,7 +13,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use super::OpenAiConfig;
 
 /// What Python writes in place of a key (`SecretStr`).
-const MASK: &str = "**********";
+pub(crate) const MASK: &str = "**********";
 
 /// [`OpenAiConfig`] as it is read.
 #[derive(Deserialize)]
@@ -76,7 +76,7 @@ fn default_include_stream_usage() -> bool {
 }
 
 /// Reads a duration written in seconds, as Python's `float` holds one.
-fn seconds<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Duration, D::Error> {
+pub(crate) fn seconds<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Duration, D::Error> {
     let written = f64::deserialize(deserializer)?;
     Duration::try_from_secs_f64(written).map_err(|_| {
         D::Error::custom(format!(
@@ -171,5 +171,17 @@ impl Serialize for OpenAiConfig {
             thinking_field: self.thinking_field.as_deref(),
         }
         .serialize(serializer)
+    }
+}
+
+/// Reads a member a vendor's configuration leaves unset: `null` only, as
+/// Python's derivative configuration refuses any other value, the vendor's
+/// own rule making the member moot (RFC §6.4, §6.7).
+pub(crate) fn left_null<'de, D: Deserializer<'de>>(deserializer: D) -> Result<(), D::Error> {
+    match Option::<serde::de::IgnoredAny>::deserialize(deserializer)? {
+        None => Ok(()),
+        Some(_) => Err(D::Error::custom(
+            "the vendor's own rule decides this member: it is left unset",
+        )),
     }
 }

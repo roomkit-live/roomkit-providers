@@ -1,0 +1,6160 @@
+{
+ "generator": "scripts/generate_openai_chat_cases.py",
+ "roomkit_version": "0.117.0.dev0",
+ "roomkit_commit": "d08b9cd0a314fa463ec533491b6a0cd7a7aaf9c6",
+ "roomkit_dirty": false,
+ "openai_version": "3.57.0",
+ "pydantic_version": "2.13.5",
+ "httpx2_version": "2.13.1",
+ "python_version": "3.13.3",
+ "clock": "2026-01-01T00:00:00Z",
+ "notes": {
+  "environment": "Every OPENAI_* variable of the environment is removed before a case runs: the openai SDK reads its key, its base URL and more from them when a client is given none. No case is captured with one set.",
+  "versions": "The versions the fixture was written from. A message in Python's own words, which no replay compares, may name one: pydantic's names its version in a link.",
+  "provenance": "roomkit_commit is the commit roomkit was imported at, and roomkit_dirty whether the package's files had changes not committed then. Both are null unless the package's own files are tracked by the repository that holds them: a package installed inside some checkout is not that checkout's. catalogue, on a case that calls OpenAI's own endpoint, holds what the provider read of its model's catalogue entry: whether the catalogue knows the model, the tags among those it reads on Chat Completions, and the least reasoning effort the entry declares. A case that changes because the catalogue changed shows it there.",
+  "config": "The keyword arguments of DeepSeekConfig. The key is a placeholder.",
+  "supports_vision": "What the provider of the case answers for supports_vision: whether its model takes images. It is left out where no provider was built.",
+  "request": "AIContext dumped with model_dump(mode='json'), its ten request fields. A key the request carries is written masked there, and plain under request_api_key.",
+  "exchanges.request": "What Python sent: the method, the whole URL (scheme, host, a port that is written, path and query), the body as JSON, and the headers RoomKit decides: authorization, with the key replaced by which key it was (<config key> or <request key>), content-type, accept, and each configured default header. The headers of the SDK and of the platform are left out. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool.",
+  "exchanges.response": "What the fake answered: status and headers with a body under json, under text for a body that is no JSON, or under chunks for a body read in several reads. Each chunk is the bytes of one read, in order: a text where the bytes are UTF-8, written as that text, else an object whose hex member holds the bytes in hexadecimal, as a read that ends inside a character is. then says how the reads end after them: the stream ends, the connection is lost, or the read times out. A failure in place of a response is under failure: no answer came.",
+  "exchanges.wait": "The wait the openai SDK took before its next try, in seconds, and where it came from: the answer's headers, or the SDK's backoff, which is up to a quarter less than what is written. An HTTP date is read against clock.",
+  "expected": "What Python returned: response for generate (AIResponse without tasks and observations), text for generate_stream (the deltas), events for generate_structured_stream (each event dumped), models for list_models (each ModelInfo dumped). A failure is under error, after whatever a stream gave first: its class, its message (the first argument), its text (str), the attributes of a ProviderError, and raised_from, the class of the SDK or transport error it was raised from, if any.",
+  "compare": "On a case that fails, how a replay compares the failure. exactly lists what it reproduces as written: attributes of the error, reason among them where the error is a response schema's, and events or text, what the stream gave before it failed. An empty list is a failure no provider reproduces: the SDK's own, or a raw Python exception. message says whose words the message holds, and so whether it is compared: roomkit (RoomKit's own words: compared), server (the text the server sent, handed on as it came: compared), sdk (the openai SDK's words: not compared), python_json (what Python's JSON reader says of a text: not compared), python_repr (Python's repr of the body the server sent, after 'Error code: <status> - ': not compared), transport (the HTTP client's words for a body it could not read to its end: not compared), python (the words of a Python exception raised while the answer was read: not compared). A python_json message leaves RoomKit's own words before it uncompared too ('the answer is not a JSON document (...)'). A compared roomkit message may hold Python's repr of a name or of a list (tool 'orders.lookup', missing ['city']), which a replay writes the same way.",
+  "minted_call_ids": "The ids in expected that Python minted for a call its server gave none: call_<name>_<12 hexadecimal digits>, random. A replay compares their shape, and that the events of one call share one id, not their value.",
+  "sdk": "Where a case says sdk, the openai SDK decided the behaviour, not RoomKit: its retries (which answers, how many times, after what wait), how it joins a URL, merges a body or follows a redirect, how it reads a body, and the words of a failure that has no answer. A provider without that SDK decides these itself.",
+  "questioned": "Where a case says questioned, it pins a behaviour of Python that is not settled, in the sentence given, which starts with its kind. 'A possible defect': reported upstream as one. 'A difference to decide': a point where the Rust provider is planned otherwise, which the maintainer decides; no defect is claimed. A replay may set the case aside, or expect otherwise once it is settled. The fixture lists their names under questioned."
+ },
+ "questioned": [],
+ "cases": [
+  {
+   "name": "plain_answer",
+   "kinds": [
+    "plain"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "plain_stream",
+   "kinds": [
+    "plain",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "stream": true,
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "stream_options": {
+        "include_usage": true
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" there.\"},\"finish_reason\":null}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+       "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-2024-08-06\",\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":5,\"total_tokens\":17}}\n\n",
+       "data: [DONE]\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hello"
+     },
+     {
+      "type": "text_delta",
+      "text": " there."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {
+       "input_tokens": 12,
+       "output_tokens": 5
+      },
+      "metadata": {
+       "model": "gpt-4o-2024-08-06"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "temperature_of_the_request",
+   "kinds": [
+    "sampling"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.2,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.2
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "temperature_stated_by_the_configuration",
+   "kinds": [
+    "sampling"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "supports_custom_temperature": true
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.2,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.2
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "token_bound_of_the_request",
+   "kinds": [
+    "sampling"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": 256,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 256,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "token_bound_as_max_tokens",
+   "kinds": [
+    "sampling"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "use_max_completion_tokens": false,
+    "max_tokens": 512
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 512,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_minimal",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "minimal",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "minimal"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_minimal_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "minimal",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "minimal"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_low",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "low",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "low"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_low_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "low",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "low"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_medium",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "medium",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "medium"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_medium_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "medium",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "medium"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_high",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "high",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "high"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_high_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "high",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "high"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_xhigh",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "xhigh",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "xhigh"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_xhigh_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "xhigh",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "xhigh"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_max",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "max",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "max"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_max_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "max",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "max"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_none",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "none",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "disabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_none_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "none",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "disabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_of_the_configuration",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "reasoning_effort": "high"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "high"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_effort_of_the_request_over_the_configuration",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "reasoning_effort": "high"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "low",
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "low"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "thinking_turned_off",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": false,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "disabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "thinking_turned_on",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": true,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "thinking_budget_of_zero",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": 0,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "disabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "thinking_budget",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": 2048,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_on_a_tool_turn",
+   "kinds": [
+    "reasoning",
+    "tools"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": "high",
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "lookup_order",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        },
+        {
+         "type": "function",
+         "function": {
+          "name": "clock",
+          "description": "Tell the time",
+          "parameters": {
+           "type": "object",
+           "properties": {}
+          }
+         }
+        }
+       ],
+       "thinking": {
+        "type": "enabled",
+        "reasoning_effort": "high"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "earlier_reasoning_on_a_tool_round",
+   "kinds": [
+    "round_reasoning",
+    "tools"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Where is order A-1?",
+      "metadata": {}
+     },
+     {
+      "role": "assistant",
+      "content": [
+       {
+        "type": "thinking",
+        "thinking": "The order number is A-1.",
+        "signature": null,
+        "redacted": null
+       },
+       {
+        "type": "text",
+        "text": "Let me look."
+       },
+       {
+        "type": "tool_call",
+        "id": "call_1",
+        "name": "lookup_order",
+        "arguments": {
+         "number": "A-1"
+        },
+        "metadata": {}
+       },
+       {
+        "type": "tool_call",
+        "id": "call_2",
+        "name": "clock",
+        "arguments": {},
+        "metadata": {}
+       }
+      ],
+      "metadata": {}
+     },
+     {
+      "role": "tool",
+      "content": [
+       {
+        "type": "tool_result",
+        "tool_call_id": "call_1",
+        "name": "lookup_order",
+        "result": "Shipped.",
+        "is_error": false,
+        "structured_content": null,
+        "outcome": null,
+        "references": []
+       },
+       {
+        "type": "tool_result",
+        "tool_call_id": "call_2",
+        "name": "clock",
+        "result": "12:00",
+        "is_error": false,
+        "structured_content": null,
+        "outcome": null,
+        "references": []
+       }
+      ],
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Where is order A-1?"
+        },
+        {
+         "role": "assistant",
+         "content": "Let me look.",
+         "tool_calls": [
+          {
+           "id": "call_1",
+           "type": "function",
+           "function": {
+            "name": "lookup_order",
+            "arguments": "{\"number\": \"A-1\"}"
+           }
+          },
+          {
+           "id": "call_2",
+           "type": "function",
+           "function": {
+            "name": "clock",
+            "arguments": "{}"
+           }
+          }
+         ],
+         "reasoning_content": "The order number is A-1."
+        },
+        {
+         "role": "tool",
+         "tool_call_id": "call_1",
+         "content": "Shipped."
+        },
+        {
+         "role": "tool",
+         "tool_call_id": "call_2",
+         "content": "12:00"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "lookup_order",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        },
+        {
+         "type": "function",
+         "function": {
+          "name": "clock",
+          "description": "Tell the time",
+          "parameters": {
+           "type": "object",
+           "properties": {}
+          }
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "earlier_round_without_reasoning",
+   "kinds": [
+    "round_reasoning",
+    "tools"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Where is order A-1?",
+      "metadata": {}
+     },
+     {
+      "role": "assistant",
+      "content": [
+       {
+        "type": "text",
+        "text": "Let me look."
+       },
+       {
+        "type": "tool_call",
+        "id": "call_1",
+        "name": "lookup_order",
+        "arguments": {
+         "number": "A-1"
+        },
+        "metadata": {}
+       }
+      ],
+      "metadata": {}
+     },
+     {
+      "role": "tool",
+      "content": [
+       {
+        "type": "tool_result",
+        "tool_call_id": "call_1",
+        "name": "lookup_order",
+        "result": "Shipped.",
+        "is_error": false,
+        "structured_content": null,
+        "outcome": null,
+        "references": []
+       }
+      ],
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Where is order A-1?"
+        },
+        {
+         "role": "assistant",
+         "content": "Let me look.",
+         "tool_calls": [
+          {
+           "id": "call_1",
+           "type": "function",
+           "function": {
+            "name": "lookup_order",
+            "arguments": "{\"number\": \"A-1\"}"
+           }
+          }
+         ],
+         "reasoning_content": ""
+        },
+        {
+         "role": "tool",
+         "tool_call_id": "call_1",
+         "content": "Shipped."
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "lookup_order",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        },
+        {
+         "type": "function",
+         "function": {
+          "name": "clock",
+          "description": "Tell the time",
+          "parameters": {
+           "type": "object",
+           "properties": {}
+          }
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "earlier_reasoning_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "round_reasoning",
+    "tools"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Where is order A-1?",
+      "metadata": {}
+     },
+     {
+      "role": "assistant",
+      "content": [
+       {
+        "type": "thinking",
+        "thinking": "The order number is A-1.",
+        "signature": null,
+        "redacted": null
+       },
+       {
+        "type": "text",
+        "text": "Let me look."
+       },
+       {
+        "type": "tool_call",
+        "id": "call_1",
+        "name": "lookup_order",
+        "arguments": {
+         "number": "A-1"
+        },
+        "metadata": {}
+       },
+       {
+        "type": "tool_call",
+        "id": "call_2",
+        "name": "clock",
+        "arguments": {},
+        "metadata": {}
+       }
+      ],
+      "metadata": {}
+     },
+     {
+      "role": "tool",
+      "content": [
+       {
+        "type": "tool_result",
+        "tool_call_id": "call_1",
+        "name": "lookup_order",
+        "result": "Shipped.",
+        "is_error": false,
+        "structured_content": null,
+        "outcome": null,
+        "references": []
+       },
+       {
+        "type": "tool_result",
+        "tool_call_id": "call_2",
+        "name": "clock",
+        "result": "12:00",
+        "is_error": false,
+        "structured_content": null,
+        "outcome": null,
+        "references": []
+       }
+      ],
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Where is order A-1?"
+        },
+        {
+         "role": "assistant",
+         "content": "Let me look.",
+         "tool_calls": [
+          {
+           "id": "call_1",
+           "type": "function",
+           "function": {
+            "name": "lookup_order",
+            "arguments": "{\"number\": \"A-1\"}"
+           }
+          },
+          {
+           "id": "call_2",
+           "type": "function",
+           "function": {
+            "name": "clock",
+            "arguments": "{}"
+           }
+          }
+         ],
+         "reasoning_content": "The order number is A-1."
+        },
+        {
+         "role": "tool",
+         "tool_call_id": "call_1",
+         "content": "Shipped."
+        },
+        {
+         "role": "tool",
+         "tool_call_id": "call_2",
+         "content": "12:00"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "lookup_order",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        },
+        {
+         "type": "function",
+         "function": {
+          "name": "clock",
+          "description": "Tell the time",
+          "parameters": {
+           "type": "object",
+           "properties": {}
+          }
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "reasoning_read_from_the_answer",
+   "kinds": [
+    "round_reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello.",
+          "reasoning_content": "The user greets me."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello.",
+     "thinking": "The user greets me.",
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "dotted_tool_name",
+   "kinds": [
+    "tool_names"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "orders.lookup",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "tool 'orders.lookup': deepseek accepts tool names matching [A-Za-z0-9_-]{1,128}",
+     "text": "tool 'orders.lookup': deepseek accepts tool names matching [A-Za-z0-9_-]{1,128}",
+     "before_request": true,
+     "context_overflow": false,
+     "provider": "deepseek",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "dotted_tool_name_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "tool_names"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "orders.lookup",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "tools": [
+        {
+         "type": "function",
+         "function": {
+          "name": "orders.lookup",
+          "description": "Find an order by its number",
+          "parameters": {
+           "type": "object",
+           "properties": {
+            "number": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "number"
+           ]
+          }
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "response_schema",
+   "kinds": [
+    "response_schema"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": {
+     "type": "object",
+     "properties": {
+      "city": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "city"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {}
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ResponseSchemaError",
+     "message": "deepseek does not support a response schema; check supports_response_schema before setting one",
+     "text": "deepseek does not support a response schema; check supports_response_schema before setting one",
+     "before_request": true,
+     "context_overflow": null,
+     "provider": "deepseek",
+     "reason": "unsupported",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "reason"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "usage_with_cached_tokens",
+   "kinds": [
+    "usage"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 30,
+        "completion_tokens": 5,
+        "total_tokens": 35,
+        "prompt_tokens_details": {
+         "cached_tokens": 20
+        }
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 10,
+      "output_tokens": 5,
+      "cache_read_input_tokens": 20
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "usage_with_reasoning_tokens",
+   "kinds": [
+    "usage"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 40,
+        "total_tokens": 52,
+        "completion_tokens_details": {
+         "reasoning_tokens": 30
+        }
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 40,
+      "reasoning_tokens": 30
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "status_400",
+   "kinds": [
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "message": "Invalid request.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": null
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "Error code: 400 - {'error': {'message': 'Invalid request.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "text": "deepseek (400): Error code: 400 - {'error': {'message': 'Invalid request.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "deepseek",
+     "retryable": false,
+     "status_code": 400,
+     "raised_from": "BadRequestError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "status_401",
+   "kinds": [
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 401,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "message": "Authentication failed.",
+        "type": "authentication_error",
+        "param": null,
+        "code": null
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "Error code: 401 - {'error': {'message': 'Authentication failed.', 'type': 'authentication_error', 'param': None, 'code': None}}",
+     "text": "deepseek (401): Error code: 401 - {'error': {'message': 'Authentication failed.', 'type': 'authentication_error', 'param': None, 'code': None}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "deepseek",
+     "retryable": false,
+     "status_code": 401,
+     "raised_from": "AuthenticationError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "models_listed",
+   "kinds": [
+    "listing"
+   ],
+   "call": "list_models",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://api.deepseek.com/v1/models",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": null,
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "object": "list",
+       "data": [
+        {
+         "id": "deepseek-v4-pro",
+         "object": "model",
+         "created": 1700000000,
+         "owned_by": "system"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": [
+     {
+      "id": "deepseek-v4-pro",
+      "display_name": "DeepSeek V4 Pro",
+      "context_window": 1048576,
+      "supports_vision": false,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": {
+       "input_per_million": 1.32,
+       "output_per_million": 3.96,
+       "cache_read_per_million": 0.044,
+       "cache_write_per_million": null,
+       "image_input_per_million": null,
+       "image_output_per_million": null,
+       "long_context_threshold_tokens": null,
+       "long_context_input_multiplier": 1.0,
+       "long_context_output_multiplier": 1.0,
+       "currency": "USD",
+       "verified": "2026-08-14"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_model_the_catalogue_does_not_name",
+   "kinds": [
+    "catalogue"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "vendor-next"
+   },
+   "catalogue": {
+    "model": "vendor-next",
+    "known": false,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "vendor-next",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "a_model_behind_a_base_url",
+   "kinds": [
+    "catalogue",
+    "proxy"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://llm.example/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "thinking_of_the_configuration_true",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "enable_thinking": true
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "enabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "thinking_of_the_configuration_false",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "enable_thinking": false
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "disabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "thinking_of_the_request_over_the_configuration",
+   "kinds": [
+    "reasoning"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "enable_thinking": true
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": false,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7,
+       "thinking": {
+        "type": "disabled"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "usage_with_deepseek_s_cache_counters",
+   "kinds": [
+    "usage"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 30,
+        "completion_tokens": 5,
+        "total_tokens": 35,
+        "prompt_cache_hit_tokens": 20,
+        "prompt_cache_miss_tokens": 10
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 10,
+      "output_tokens": 5,
+      "cache_read_input_tokens": 20
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "usage_with_a_cache_hit_and_no_miss",
+   "kinds": [
+    "usage"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 30,
+        "completion_tokens": 5,
+        "total_tokens": 35,
+        "prompt_cache_hit_tokens": 20
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 10,
+      "output_tokens": 5,
+      "cache_read_input_tokens": 20
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "usage_with_no_cache_hit",
+   "kinds": [
+    "usage"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 30,
+        "completion_tokens": 5,
+        "total_tokens": 35,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 30
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 30,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "response_schema_behind_a_base_url",
+   "kinds": [
+    "proxy",
+    "response_schema"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://llm.example/v1"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": {
+     "type": "object",
+     "properties": {
+      "city": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "city"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {}
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ResponseSchemaError",
+     "message": "deepseek does not support a response schema; check supports_response_schema before setting one",
+     "text": "deepseek does not support a response schema; check supports_response_schema before setting one",
+     "before_request": true,
+     "context_overflow": null,
+     "provider": "deepseek",
+     "reason": "unsupported",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "reason"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "response_schema_stated_by_the_configuration",
+   "kinds": [
+    "response_schema"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "supports_response_schema": true
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": {
+     "type": "object",
+     "properties": {
+      "city": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "city"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-pro",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+         "name": "response",
+         "schema": {
+          "type": "object",
+          "properties": {
+           "city": {
+            "type": "string"
+           }
+          },
+          "required": [
+           "city"
+          ],
+          "additionalProperties": false
+         },
+         "strict": true
+        }
+       },
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "{\"city\": \"Paris\"}"
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "{\"city\": \"Paris\"}",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "deepseek_s_other_base",
+   "kinds": [
+    "endpoint"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-pro",
+    "base_url": "https://api.deepseek.com"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-pro",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "orders.lookup",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "tool 'orders.lookup': deepseek accepts tool names matching [A-Za-z0-9_-]{1,128}",
+     "text": "tool 'orders.lookup': deepseek accepts tool names matching [A-Za-z0-9_-]{1,128}",
+     "before_request": true,
+     "context_overflow": false,
+     "provider": "deepseek",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "flash_model",
+   "kinds": [
+    "catalogue"
+   ],
+   "call": "generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "deepseek-v4-flash"
+   },
+   "catalogue": {
+    "model": "deepseek-v4-flash",
+    "known": true,
+    "tags": [],
+    "reasoning_floor": null
+   },
+   "supports_vision": false,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.deepseek.com/v1/chat/completions",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 30.0,
+       "write": 30.0,
+       "pool": 30.0
+      },
+      "body": {
+       "model": "deepseek-v4-flash",
+       "messages": [
+        {
+         "role": "user",
+         "content": "Hello"
+        }
+       ],
+       "max_tokens": 1024,
+       "temperature": 0.7
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "chatcmpl-1",
+       "object": "chat.completion",
+       "created": 1700000000,
+       "model": "gpt-4o-2024-08-06",
+       "choices": [
+        {
+         "index": 0,
+         "message": {
+          "role": "assistant",
+          "content": "Hello there."
+         },
+         "finish_reason": "stop"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 5,
+        "total_tokens": 17
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gpt-4o-2024-08-06"
+     },
+     "tool_calls": []
+    }
+   }
+  }
+ ]
+}

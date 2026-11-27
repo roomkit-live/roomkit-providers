@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use roomkit::model::Metadata;
 
-use crate::vendor::{Vendor, into_openai, vendor_provider};
+use crate::vendor::{Vendor, into_openai, vendor_config_form, vendor_provider};
 
 /// Kimi's endpoint, or a server serving its weights, and how it is called:
 /// Python's `KimiConfig`, its fields `OpenAIConfig`'s, built with
@@ -125,6 +125,9 @@ impl fmt::Debug for KimiConfig {
             .finish_non_exhaustive()
     }
 }
+
+// Python's `KimiConfig.model_dump(mode="json")`, read and written.
+vendor_config_form!(KimiConfig, "a Kimi configuration, as a JSON object");
 
 vendor_provider!(
     /// A Kimi model (RFC §6.7): Python's `KimiAIProvider(config)`, on Kimi's API

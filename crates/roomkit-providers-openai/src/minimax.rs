@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use roomkit::model::Metadata;
 
-use crate::vendor::{Vendor, into_openai, vendor_provider};
+use crate::vendor::{Vendor, into_openai, vendor_config_form, vendor_provider};
 
 /// MiniMax's endpoint, or a server serving its weights, and how it is called:
 /// Python's `MiniMaxConfig`, its fields `OpenAIConfig`'s, built with
@@ -126,6 +126,9 @@ impl fmt::Debug for MiniMaxConfig {
             .finish_non_exhaustive()
     }
 }
+
+// Python's `MiniMaxConfig.model_dump(mode="json")`, read and written.
+vendor_config_form!(MiniMaxConfig, "a MiniMax configuration, as a JSON object");
 
 vendor_provider!(
     /// A MiniMax model (RFC §6.7): Python's `MiniMaxAIProvider(config)`, on

@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use roomkit::model::Metadata;
 
-use crate::vendor::{Vendor, into_openai, vendor_provider};
+use crate::vendor::{Vendor, into_openai, vendor_config_form, vendor_provider};
 
 /// DeepSeek's endpoint and how it is called: Python's `DeepSeekConfig`, its
 /// fields `OpenAIConfig`'s and `enable_thinking`, built with
@@ -127,6 +127,13 @@ impl fmt::Debug for DeepSeekConfig {
             .finish_non_exhaustive()
     }
 }
+
+// Python's `DeepSeekConfig.model_dump(mode="json")`, read and written.
+vendor_config_form!(
+    DeepSeekConfig,
+    "a DeepSeek configuration, as a JSON object",
+    enable_thinking
+);
 
 vendor_provider!(
     /// A DeepSeek model (RFC §6.7): Python's `DeepSeekAIProvider(config)`. A

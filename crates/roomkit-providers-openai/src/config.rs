@@ -1,6 +1,6 @@
 //! What an `OpenAI` provider is configured with: Python's `OpenAIConfig`.
 
-mod form;
+pub(crate) mod form;
 
 use std::collections::BTreeMap;
 use std::fmt;

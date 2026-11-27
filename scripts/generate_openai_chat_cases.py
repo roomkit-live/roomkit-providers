@@ -36,7 +36,11 @@ from openai import _base_client as sdk
 from openai_chat_cases import CASES
 from roomkit.providers.ai import AIContext, tool_calls
 from roomkit.providers.ai.reasoning import reasoning_floor
+from roomkit.providers.deepseek import DeepSeekAIProvider, DeepSeekConfig
+from roomkit.providers.kimi import KimiAIProvider, KimiConfig
+from roomkit.providers.minimax import MiniMaxAIProvider, MiniMaxConfig
 from roomkit.providers.openai import OpenAIAIProvider, OpenAIConfig
+from vendor_chat_cases import VENDOR_CASES
 from wire_capture import (
     Case,
     MintedIds,
@@ -224,8 +228,9 @@ def words_of(error: dict[str, Any], sent: list[str]) -> str:
 
 def catalogue_of(provider: OpenAIAIProvider) -> dict[str, Any] | None:
     """What ``provider`` reads of its model's catalogue entry; ``None``
-    behind a base URL, where it reads none."""
-    if not provider._is_openai_endpoint:
+    behind a base URL, where OpenAI's provider reads none. A vendor's
+    provider reads its own catalogue wherever it is pointed."""
+    if type(provider) is OpenAIAIProvider and not provider._is_openai_endpoint:
         return None
     entry = provider.catalog_entry()
     tags = [tag for tag in READ_TAGS if entry is not None and tag in entry.capabilities]
@@ -237,12 +242,16 @@ def catalogue_of(provider: OpenAIAIProvider) -> dict[str, Any] | None:
     }
 
 
-async def answered_by_python(case: Case, wire: Wire, context: AIContext) -> dict[str, Any]:
-    """What the provider of ``case`` returns over ``wire`` and what it read
-    of the catalogue, or the error that kept it from being built."""
+async def answered_by_python(
+    case: Case, wire: Wire, context: AIContext, classes: tuple[Any, Any]
+) -> dict[str, Any]:
+    """What the provider of ``case``, of ``classes`` (its class and its
+    configuration's), returns over ``wire`` and what it read of the
+    catalogue, or the error that kept it from being built."""
+    provider_class, config_class = classes
     transport = httpx2.MockTransport(wire)
     try:
-        provider = OpenAIAIProvider(OpenAIConfig(**case.config), transport=transport)
+        provider = provider_class(config_class(**case.config), transport=transport)
     except openai.OpenAIError as unbuilt:
         return {"expected": {"error": error_form(unbuilt)}, "catalogue": None, "vision": None}
     wire.record_waits(provider._client, sdk)
@@ -254,16 +263,28 @@ async def answered_by_python(case: Case, wire: Wire, context: AIContext) -> dict
         await provider.close()
 
 
-async def run(case: Case) -> dict[str, Any]:
+async def run(
+    case: Case, classes: tuple[Any, Any] = (OpenAIAIProvider, OpenAIConfig)
+) -> dict[str, Any]:
     """One case, as the fixture writes it."""
     minted = tool_calls.uuid4 = MintedIds()
     wire = Wire(case.name, case.replies, partial(sent, case=case))
     context = AIContext.model_validate(case.request)
-    ran = await answered_by_python(case, wire, context)
+    ran = await answered_by_python(case, wire, context, classes)
     words = partial(words_of, sent=answered_texts(case.replies))
     turn = turn_form(case.request, context, wire, ran["expected"], words, minted)
     told = {"catalogue": ran["catalogue"], "supports_vision": ran["vision"]}
     return case_form(case, told, [turn])
+
+
+# The vendors whose RoomKit Python provider derives from OpenAIAIProvider,
+# by the name of their table in vendor_chat_cases.VENDOR_CASES: the class of
+# their provider and of its configuration.
+VENDORS: dict[str, tuple[Any, Any]] = {
+    "deepseek": (DeepSeekAIProvider, DeepSeekConfig),
+    "kimi": (KimiAIProvider, KimiConfig),
+    "minimax": (MiniMaxAIProvider, MiniMaxConfig),
+}
 
 
 def main() -> None:
@@ -274,6 +295,14 @@ def main() -> None:
     cases = [asyncio.run(run(case)) for case in CASES]
     fixture = fixture_of("scripts/generate_openai_chat_cases.py", openai, NOTES, cases)
     write(FIXTURE, REPOSITORY, fixture, openai)
+    for vendor, (provider_class, config_class) in VENDORS.items():
+        table = VENDOR_CASES[vendor]
+        unique_names(table)
+        written = [asyncio.run(run(case, (provider_class, config_class))) for case in table]
+        named = config_class.__name__
+        notes = {**NOTES, "config": f"The keyword arguments of {named}. The key is a placeholder."}
+        fixture = fixture_of("scripts/generate_openai_chat_cases.py", openai, notes, written)
+        write(FIXTURE.with_name(f"python_{vendor}_cases.json"), REPOSITORY, fixture, openai)
 
 
 if __name__ == "__main__":

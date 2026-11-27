@@ -16,6 +16,7 @@
 
 mod named;
 mod self_test;
+mod vendors;
 
 use std::net::SocketAddr;
 

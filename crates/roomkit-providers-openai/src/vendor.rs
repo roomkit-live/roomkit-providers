@@ -279,7 +279,7 @@ fn deepseek(
 
 mod macros;
 
-pub(crate) use macros::{into_openai, vendor_provider};
+pub(crate) use macros::{into_openai, vendor_config_form, vendor_provider};
 
 #[cfg(test)]
 mod tests;

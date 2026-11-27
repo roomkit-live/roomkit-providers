@@ -44,6 +44,13 @@ macro_rules! vendor_provider {
             pub fn label(&self) -> &'static str {
                 self.inner.label()
             }
+
+            /// The `OpenAI` provider it runs on, for a replay of the cases
+            /// captured on its Python provider.
+            #[cfg(test)]
+            pub(crate) fn openai_mut(&mut self) -> &mut $crate::OpenAi {
+                &mut self.inner
+            }
         }
 
         impl roomkit_ai::AiProvider for $provider {
@@ -141,3 +148,181 @@ macro_rules! into_openai {
 }
 
 pub(crate) use into_openai;
+
+/// A vendor's configuration read and written as the JSON form of its Python
+/// class, a derivative of `OpenAIConfig`: `OpenAIConfig`'s members in its
+/// order, the vendor's defaults for what a form leaves out, then the
+/// vendor's own switches (`Option<bool>`, `null` taken). The two members
+/// the vendor's own rule makes moot, `supports_reasoning_effort_with_tools`
+/// and `thinking_field`, are read only as `null`, as Python refuses any other
+/// value. Each rule of `OpenAiConfig`'s form holds otherwise: an object only,
+/// the timeouts in seconds, the key written masked.
+macro_rules! vendor_config_form {
+    ($config:ident, $expecting:literal $(, $own:ident)*) => {
+        const _: () = {
+            use std::collections::BTreeMap;
+            use std::time::Duration;
+
+            use roomkit::model::Metadata;
+            use roomkit_providers_client::ObjectOnly;
+            use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+            use $crate::config::form::{MASK, left_null, seconds};
+
+            fn defaults() -> $config {
+                $config::new("", "")
+            }
+            fn base_url() -> String {
+                defaults().base_url
+            }
+            fn max_tokens() -> Option<u32> {
+                defaults().max_tokens
+            }
+            fn timeout() -> Duration {
+                defaults().timeout
+            }
+            fn connect_timeout() -> Duration {
+                defaults().connect_timeout
+            }
+            fn max_retries() -> u32 {
+                defaults().max_retries
+            }
+            fn include_stream_usage() -> bool {
+                defaults().include_stream_usage
+            }
+            fn use_max_completion_tokens() -> bool {
+                defaults().use_max_completion_tokens
+            }
+            fn supports_custom_temperature() -> bool {
+                defaults().supports_custom_temperature
+            }
+
+            /// The configuration as it is read.
+            #[derive(Deserialize)]
+            #[serde(expecting = $expecting)]
+            struct Form {
+                api_key: String,
+                #[serde(default = "base_url")]
+                base_url: String,
+                model: String,
+                #[serde(default = "max_tokens")]
+                max_tokens: Option<u32>,
+                #[serde(default = "timeout", deserialize_with = "seconds")]
+                timeout: Duration,
+                #[serde(default = "connect_timeout", deserialize_with = "seconds")]
+                connect_timeout: Duration,
+                #[serde(default = "max_retries")]
+                max_retries: u32,
+                #[serde(default = "include_stream_usage")]
+                include_stream_usage: bool,
+                #[serde(default = "use_max_completion_tokens")]
+                use_max_completion_tokens: bool,
+                #[serde(default = "supports_custom_temperature")]
+                supports_custom_temperature: bool,
+                #[serde(default)]
+                reasoning_effort: Option<String>,
+                #[serde(default)]
+                default_headers: Option<BTreeMap<String, String>>,
+                #[serde(default)]
+                extra_body: Option<Metadata>,
+                #[serde(default)]
+                supports_response_schema: Option<bool>,
+                #[serde(default)]
+                supports_response_schema_with_tools: Option<bool>,
+                // Read for their refusal of a value, never kept.
+                #[serde(
+                    default,
+                    rename = "supports_reasoning_effort_with_tools",
+                    deserialize_with = "left_null"
+                )]
+                _tool_turn_setting: (),
+                #[serde(default, rename = "thinking_field", deserialize_with = "left_null")]
+                _thinking_field: (),
+                $(
+                    #[serde(default)]
+                    $own: Option<bool>,
+                )*
+            }
+
+            impl<'de> Deserialize<'de> for $config {
+                /// From a JSON object only, as Python refuses a list or a
+                /// number.
+                fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                    let form = Form::deserialize(ObjectOnly(deserializer))?;
+                    Ok(Self {
+                        api_key: form.api_key,
+                        base_url: form.base_url,
+                        model: form.model,
+                        max_tokens: form.max_tokens,
+                        timeout: form.timeout,
+                        connect_timeout: form.connect_timeout,
+                        max_retries: form.max_retries,
+                        include_stream_usage: form.include_stream_usage,
+                        use_max_completion_tokens: form.use_max_completion_tokens,
+                        supports_custom_temperature: form.supports_custom_temperature,
+                        reasoning_effort: form.reasoning_effort,
+                        supports_reasoning_effort_with_tools: None,
+                        thinking_field: None,
+                        supports_response_schema: form.supports_response_schema,
+                        supports_response_schema_with_tools: form.supports_response_schema_with_tools,
+                        default_headers: form.default_headers,
+                        extra_body: form.extra_body,
+                        $($own: form.$own,)*
+                    })
+                }
+            }
+
+            /// The configuration as it is written: Python's members, in
+            /// Python's order.
+            #[derive(Serialize)]
+            struct Written<'c> {
+                api_key: &'static str,
+                base_url: &'c str,
+                model: &'c str,
+                max_tokens: Option<u32>,
+                timeout: f64,
+                connect_timeout: f64,
+                max_retries: u32,
+                include_stream_usage: bool,
+                use_max_completion_tokens: bool,
+                supports_custom_temperature: bool,
+                reasoning_effort: Option<&'c str>,
+                default_headers: Option<&'c BTreeMap<String, String>>,
+                extra_body: Option<&'c Metadata>,
+                supports_response_schema: Option<bool>,
+                supports_response_schema_with_tools: Option<bool>,
+                supports_reasoning_effort_with_tools: Option<bool>,
+                thinking_field: Option<&'c str>,
+                $($own: Option<bool>,)*
+            }
+
+            impl Serialize for $config {
+                fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                    Written {
+                        api_key: if self.api_key.is_empty() { "" } else { MASK },
+                        base_url: &self.base_url,
+                        model: &self.model,
+                        max_tokens: self.max_tokens,
+                        timeout: self.timeout.as_secs_f64(),
+                        connect_timeout: self.connect_timeout.as_secs_f64(),
+                        max_retries: self.max_retries,
+                        include_stream_usage: self.include_stream_usage,
+                        use_max_completion_tokens: self.use_max_completion_tokens,
+                        supports_custom_temperature: self.supports_custom_temperature,
+                        reasoning_effort: self.reasoning_effort.as_deref(),
+                        default_headers: self.default_headers.as_ref(),
+                        extra_body: self.extra_body.as_ref(),
+                        supports_response_schema: self.supports_response_schema,
+                        supports_response_schema_with_tools: self.supports_response_schema_with_tools,
+                        supports_reasoning_effort_with_tools: self.supports_reasoning_effort_with_tools,
+                        thinking_field: self.thinking_field.as_deref(),
+                        $($own: self.$own,)*
+                    }
+                    .serialize(serializer)
+                }
+            }
+        };
+    };
+}
+
+pub(crate) use vendor_config_form;
