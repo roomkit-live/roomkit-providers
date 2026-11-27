@@ -11,7 +11,10 @@
 //! The fake stands in for every host: the host a location is asked on is
 //! checked against the fixture's URLs apart, as the provider builds them.
 
+use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -34,6 +37,9 @@ const CLOCK: f64 = 1_767_225_600.0;
 /// How long google-auth's token requests wait to connect and to read.
 const TOKEN_TIMEOUT: Duration = Duration::from_secs(120);
 
+/// How long its requests to the metadata server wait.
+const METADATA_TIMEOUT: Duration = Duration::from_secs(3);
+
 /// The PEM of the test key, as a key file writes it.
 fn test_key_pem() -> String {
     let der = STANDARD.encode(TEST_KEY);
@@ -48,19 +54,75 @@ fn test_key_pem() -> String {
     )
 }
 
-/// `config` with its key written whole: the members the fixture gives under
-/// `KEYED`, and the test key, as the capture builds it.
+/// A file's content as the fixture gives it: a key file written whole (the
+/// members under `KEYED`, and the test key), any other JSON as it is, as
+/// the capture writes it.
+fn written(content: &Value) -> String {
+    match content.get("KEYED").cloned() {
+        Some(Value::Object(mut key)) => {
+            key.insert("private_key".to_owned(), test_key_pem().into());
+            Value::Object(key).to_string()
+        }
+        _ => content.to_string(),
+    }
+}
+
+/// `config` with its key written whole, and without the environment the
+/// case runs in.
 fn keyed(config: &Value) -> Value {
     let mut config = config.clone();
-    let key = config
+    if let Some(members) = config.as_object_mut() {
+        members.remove("ENVIRONMENT");
+    }
+    if let Some(key) = config
         .get("service_account_json")
-        .and_then(|key| key.get("KEYED"))
-        .cloned();
-    if let Some(Value::Object(mut key)) = key {
-        key.insert("private_key".to_owned(), test_key_pem().into());
-        config["service_account_json"] = Value::Object(key).to_string().into();
+        .filter(|key| key.is_object())
+    {
+        config["service_account_json"] = written(key).into();
     }
     config
+}
+
+/// Where the capture wrote a case's files: its directory, and its HOME.
+const DIRECTORY: &str = "/case";
+
+/// The environment a case runs in (`ENVIRONMENT` of its configuration), as
+/// the capture made it: its files in a directory of their own, which is its
+/// HOME too, its variables, and whether the machine says it is Google's.
+/// Nothing of the process running the test is read.
+fn environment(config: &Value) -> roomkit_auth::Environment {
+    let stated = config.get("ENVIRONMENT").cloned().unwrap_or(Value::Null);
+    let mut variables = HashMap::from([("HOME".to_owned(), DIRECTORY.to_owned())]);
+    let set = stated.get("variables").and_then(Value::as_object);
+    for (name, value) in set.into_iter().flatten() {
+        let value = value
+            .as_str()
+            .unwrap_or_default()
+            .replace("{dir}", DIRECTORY);
+        variables.insert(name.clone(), value);
+    }
+    let mut files: HashMap<PathBuf, String> = HashMap::new();
+    let given = stated.get("files").and_then(Value::as_object);
+    for (name, content) in given.into_iter().flatten() {
+        files.insert(Path::new(DIRECTORY).join(name), written(content));
+    }
+    if let Some(name) = stated.get("product_name").and_then(Value::as_str) {
+        files.insert(
+            PathBuf::from("/sys/class/dmi/id/product_name"),
+            name.to_owned(),
+        );
+    }
+    roomkit_auth::Environment {
+        variable: Arc::new(move |name| variables.get(name).cloned()),
+        file: Arc::new(move |path: &Path| files.get(path).cloned()),
+        windows: false,
+    }
+}
+
+/// The provider of a case's configuration, in its environment.
+fn built_from(config: &Value) -> Result<GeminiVertex, ProviderError> {
+    let read: GeminiVertexConfig = serde_json::from_value(keyed(config)).unwrap();
+    GeminiVertex::new_in(read, &environment(config))
 }
 
 impl Replays for GeminiVertex {
@@ -70,8 +132,7 @@ impl Replays for GeminiVertex {
     const SAYS_REFUSALS: bool = false;
 
     fn built(config: &Value) -> Result<Self, ProviderError> {
-        let config: GeminiVertexConfig = serde_json::from_value(keyed(config)).unwrap();
-        Self::new(config)
+        built_from(config)
     }
 
     fn client(&mut self) -> &mut Client {
@@ -87,10 +148,19 @@ impl Replays for GeminiVertex {
         *self.pace.lock().unwrap() = pace;
     }
 
-    // google-auth asks its tokens on a client of its own.
+    // google-auth asks its tokens on a client of its own: Google's token
+    // endpoint and IAM Credentials within 120 seconds, the metadata server
+    // within three.
     fn timeouts_by_path(&self) -> Vec<(&'static str, Timeouts)> {
-        let timeouts = Timeouts::new(TOKEN_TIMEOUT, TOKEN_TIMEOUT).unwrap();
-        vec![("/token", timeouts)]
+        let tokens = Timeouts::new(TOKEN_TIMEOUT, TOKEN_TIMEOUT).unwrap();
+        let machine = Timeouts::new(METADATA_TIMEOUT, METADATA_TIMEOUT).unwrap();
+        vec![
+            ("/v1beta1/", self.inner.client.timeouts()),
+            ("/token", tokens),
+            ("/v1/projects/-/serviceAccounts/", tokens),
+            ("/computeMetadata/", machine),
+            ("/", machine),
+        ]
     }
 }
 
@@ -139,20 +209,89 @@ const BY_ITS_OWN_RULE: &[Entry] = &[
             does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
         },
     ),
+    (
+        "adc_user_refused",
+        TOKEN_REFUSED,
+        &["the failure's before_request"],
+        Instead {
+            requests: 1,
+            does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
+        },
+    ),
+    (
+        "adc_external_account",
+        "an external account is not taken yet (HITL 8e07fce8): it fails before any request, \
+         where Python's google-auth tries to read its subject token",
+        &["the failure's before_request"],
+        Instead {
+            requests: 0,
+            does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
+        },
+    ),
+    (
+        "adc_file_missing",
+        TOKEN_REFUSED,
+        &["the failure's before_request"],
+        Instead {
+            requests: 0,
+            does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
+        },
+    ),
+    (
+        "adc_file_of_no_type",
+        TOKEN_REFUSED,
+        &["the failure's before_request"],
+        Instead {
+            requests: 0,
+            does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
+        },
+    ),
+    (
+        "impersonation_refused",
+        TOKEN_REFUSED,
+        &["the failure's before_request"],
+        Instead {
+            requests: 2,
+            does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
+        },
+    ),
+    (
+        "adc_none",
+        TOKEN_REFUSED,
+        &["the failure's before_request"],
+        Instead {
+            requests: 3,
+            does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
+        },
+    ),
 ];
 
 /// The cases whose failure no provider reproduces: the google-genai SDK's
 /// own. What the provider does instead.
-const ONLY_PYTHON: &[Entry] = &[(
-    "models_listing_failed",
-    "Python's list_models wraps no error: the google-genai SDK's is raised as it is. The \
+const ONLY_PYTHON: &[Entry] = &[
+    (
+        "impersonation_with_no_identity",
+        "Python finds no identity to borrow with as the provider is built (google.auth.default, \
+         which pings the metadata server then) and refuses it with a ValueError; the provider \
+         is built with no request, and its first call pings the server, finds no identity, and \
+         fails before its request",
+        &["a failure with no rule"],
+        Instead {
+            requests: 3,
+            does: Does::FailsBefore(Says::Exactly(UNAVAILABLE)),
+        },
+    ),
+    (
+        "models_listing_failed",
+        "Python's list_models wraps no error: the google-genai SDK's is raised as it is. The \
      provider fails as it does for a generation.",
-    &["a ClientError no provider reproduces"],
-    Instead {
-        requests: 2,
-        does: Does::Fails(Some(403), false, None, Says::Exactly("Permission denied.")),
-    },
-)];
+        &["a ClientError no provider reproduces"],
+        Instead {
+            requests: 2,
+            does: Does::Fails(Some(403), false, None, Says::Exactly("Permission denied.")),
+        },
+    ),
+];
 
 const NAMED: Named = Named {
     questioned_otherwise: &[],
@@ -172,7 +311,7 @@ async fn replayed_or_named_for(call: &str) -> (usize, usize) {
 
 #[tokio::test]
 async fn every_generate_case_replays_as_python_or_is_named() {
-    assert_eq!(replayed_or_named_for("generate").await, (15, 4));
+    assert_eq!(replayed_or_named_for("generate").await, (25, 11));
 }
 
 #[tokio::test]
@@ -194,8 +333,7 @@ async fn every_listing_case_replays_as_python_or_is_named() {
 fn each_location_is_asked_on_python_s_host() {
     let fixture: Value = serde_json::from_str(FIXTURE).unwrap();
     for case in fixture["cases"].as_array().unwrap() {
-        let config: GeminiVertexConfig = serde_json::from_value(keyed(&case["config"])).unwrap();
-        let provider = GeminiVertex::new(config).unwrap();
+        let provider = built_from(&case["config"]).unwrap();
         let exchanges = case["exchanges"].as_array().unwrap();
         let asked = exchanges
             .iter()

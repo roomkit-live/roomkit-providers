@@ -31,6 +31,7 @@ import base64
 import datetime
 import json
 import os
+import tempfile
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -45,6 +46,7 @@ import requests.adapters
 from google import genai
 from google.auth import _exponential_backoff as auth_backoff
 from google.auth import _helpers as auth_clock
+from google.auth.compute_engine import _metadata as metadata_server
 from google.genai import _api_client as sdk
 from roomkit.providers.ai import AIContext, tool_calls
 from roomkit.providers.gemini.vertex import GeminiVertexConfig, GeminiVertexProvider
@@ -56,6 +58,7 @@ from wire_capture import (
     Reply,
     Turn,
     Wire,
+    error_form,
     answered_texts,
     case_form,
     data_lines,
@@ -73,7 +76,7 @@ FIXTURE = FIXTURES / "python_vertex_cases.json"
 TEST_KEY = FIXTURES / "test-only-rsa-pkcs8.der"
 
 # The headers of a request the fixture keeps.
-KEPT_HEADERS = ("authorization", "content-type", "accept", "metadata-flavor")
+KEPT_HEADERS = ("authorization", "content-type", "accept", "metadata-flavor", "x-goog-user-project")
 
 # The classes google-genai raises for an answer whose status is an error.
 SDK_ERRORS = {"APIError", "ClientError", "ServerError", "UnknownApiResponseError"}
@@ -101,8 +104,8 @@ NOTES = {
     "exchanges.request": (
         "What Python sent, in order, on either client: the method, the whole URL, the body "
         "(JSON with its members in the order sent, or {form: [[name, value], ...]} for a "
-        "form, in order), and four headers: authorization, content-type, accept and "
-        "metadata-flavor, null when not sent. The token request of a key comes from "
+        "form, in order), and five headers: authorization, content-type, accept, "
+        "metadata-flavor and x-goog-user-project, null when not sent. The token request of a key comes from "
         "google-auth, on requests; its other headers (x-goog-api-client, which names "
         "Python's version, user-agent) are left out, as are google-genai's. timeouts "
         "holds, in seconds, how long the request may wait to connect, for a read, for a "
@@ -145,13 +148,60 @@ def test_key_pem() -> str:
     return "-----BEGIN PRIVATE KEY-----\n" + "\n".join(lines) + "\n-----END PRIVATE KEY-----\n"
 
 
+def written(content: Any) -> str:
+    """A file's content as the fixture gives it: a key file written whole
+    (``{"KEYED": members}``), any other JSON as it is."""
+    if isinstance(content, dict) and "KEYED" in content:
+        return json.dumps({**content["KEYED"], "private_key": test_key_pem()})
+    return json.dumps(content)
+
+
 def built(config: dict[str, Any]) -> dict[str, Any]:
-    """``config`` with its key written whole, as a key file holds it."""
+    """``config`` with its key written whole, as a key file holds it, and
+    without the environment the case runs in."""
+    config = {name: value for name, value in config.items() if name != "ENVIRONMENT"}
     keyed = config.get("service_account_json")
     if not isinstance(keyed, dict):
         return config
-    key = {**keyed["KEYED"], "private_key": test_key_pem()}
-    return {**config, "service_account_json": json.dumps(key)}
+    return {**config, "service_account_json": written(keyed)}
+
+
+@contextmanager
+def environment_of(case: Case) -> Iterator[str]:
+    """While it lasts, the environment `case` runs in (``ENVIRONMENT`` of
+    its configuration): its files in a directory of their own, which is
+    also its HOME, its variables set, ``{dir}`` in them naming that
+    directory, and whether the machine says it is a Google Compute Engine
+    one. Gives the directory."""
+    stated = case.config.get("ENVIRONMENT", {})
+    kept = dict(os.environ)
+    product_file, host = metadata_server._GCE_PRODUCT_NAME_FILE, metadata_server._GCE_METADATA_HOST
+    with tempfile.TemporaryDirectory() as directory:
+        for name, content in stated.get("files", {}).items():
+            path = Path(directory) / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(written(content), encoding="utf-8")
+        # No case reads the home of the machine it is captured on: gcloud's
+        # file there would be found.
+        os.environ["HOME"] = directory
+        for name, value in stated.get("variables", {}).items():
+            os.environ[name] = value.replace("{dir}", directory)
+        product = Path(directory) / "product_name"
+        if "product_name" in stated:
+            product.write_text(stated["product_name"], encoding="utf-8")
+        metadata_server._GCE_PRODUCT_NAME_FILE = str(product)
+        # google-auth reads the host once, when it is imported; the address
+        # it pings, at each ping.
+        metadata_server._GCE_METADATA_HOST = os.environ.get(
+            "GCE_METADATA_HOST", os.environ.get("GCE_METADATA_ROOT", host)
+        )
+        try:
+            yield directory
+        finally:
+            os.environ.clear()
+            os.environ.update(kept)
+            metadata_server._GCE_PRODUCT_NAME_FILE = product_file
+            metadata_server._GCE_METADATA_HOST = host
 
 
 def from_requests(sent: requests.PreparedRequest, timeout: Any) -> httpx.Request:
@@ -288,14 +338,35 @@ async def run_turn(
 
 
 async def run(case: Case) -> dict[str, Any]:
-    """One case, as the fixture writes it."""
+    """One case, as the fixture writes it, in its environment: the
+    directory of its files written ``{dir}``."""
+    with environment_of(case) as directory:
+        form = await run_in(case)
+    return json.loads(json.dumps(form).replace(directory, "{dir}"))
+
+
+async def run_in(case: Case) -> dict[str, Any]:
     minted = tool_calls.uuid4 = MintedIds()
-    provider = GeminiVertexProvider(GeminiVertexConfig(**built(case.config)))
+    wire = Wire(case.name, case.replies, sent, http=httpx)
+    try:
+        with under_every_client(wire):
+            provider = GeminiVertexProvider(GeminiVertexConfig(**built(case.config)))
+    except Exception as refused:
+        # Python refuses the configuration when the provider is built, after
+        # what it asked then.
+        written = {"name": case.name, "kinds": sorted(case.kinds), "call": case.call}
+        written.update({"config": case.config, "request": case.request})
+        written["exchanges"] = wire.exchanges
+        return {**written, "unbuilt": True, "expected": {"error": error_form(refused)}}
+    # What the provider asked as it was built, its replies taken: the call
+    # goes on from there, and its exchanges start with those.
+    early = wire.exchanges
     try:
         turns = [
             await run_turn(provider, case, turn, minted)
-            for turn in (*case.before, Turn(case.request, case.replies))
+            for turn in (*case.before, Turn(case.request, case.replies[len(early) :]))
         ]
+        turns[-1]["exchanges"] = [*early, *turns[-1]["exchanges"]]
         return case_form(case, {"supports_vision": provider.supports_vision}, turns)
     finally:
         await provider.close()
@@ -303,7 +374,7 @@ async def run(case: Case) -> dict[str, Any]:
 
 def main() -> None:
     prepare(sdk, "GOOGLE_")
-    for prefix in ("GEMINI_", "CLOUDSDK_", "GCE_"):
+    for prefix in ("GEMINI_", "CLOUDSDK_", "GCE_", "NO_GCE_CHECK"):
         for name in [name for name in os.environ if name.startswith(prefix)]:
             del os.environ[name]
     warnings.filterwarnings("ignore", category=SyntaxWarning)

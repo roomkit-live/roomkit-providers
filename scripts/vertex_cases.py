@@ -35,6 +35,7 @@ case = registrar(CASES)
 PROJECT = "proj-1"
 EMAIL = "runner@proj-1.iam.gserviceaccount.com"
 TOKEN = "ya29.placeholder-access-token"
+SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 
 
 def keyed(**members: Any) -> dict[str, Any]:
@@ -227,4 +228,201 @@ case(
     {},
     token(),
     failed(403, "Permission denied.", "PERMISSION_DENIED"),
+)
+
+# -- Application Default Credentials -----------------------------------------------------
+#
+# A configuration with no key calls as the identity google-auth finds: the
+# file GOOGLE_APPLICATION_CREDENTIALS names, else gcloud's, else the
+# metadata server's. ``ENVIRONMENT`` says what the case runs in: its files,
+# its variables (``{dir}`` names the directory of its files), and whether
+# the machine says it is a Google Compute Engine one.
+
+USER = {
+    "type": "authorized_user",
+    "client_id": "100000000001-test.apps.googleusercontent.com",
+    "client_secret": "placeholder-client-secret",
+    "refresh_token": "placeholder-refresh-token",
+}
+BORROWED = "ya29.placeholder-borrowed-token"
+IMPERSONATION = (
+    "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/"
+    f"{EMAIL}:generateAccessToken"
+)
+
+
+def adc(files: dict[str, Any] | None = None, **stated: Any) -> dict[str, Any]:
+    """A configuration with no key, in the environment stated."""
+    environment = {"files": files or {}, **stated}
+    return {"project": PROJECT, "location": "northamerica-northeast1", "ENVIRONMENT": environment}
+
+
+def in_variable(content: Any, **stated: Any) -> dict[str, Any]:
+    """ADC in the file GOOGLE_APPLICATION_CREDENTIALS names."""
+    variables = {"GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json", **stated.pop("variables", {})}
+    return adc({"adc.json": content}, variables=variables, **stated)
+
+
+def in_gcloud(content: Any) -> dict[str, Any]:
+    """ADC in gcloud's file, its directory named by CLOUDSDK_CONFIG."""
+    files = {"gcloud/application_default_credentials.json": content}
+    return adc(files, variables={"CLOUDSDK_CONFIG": "{dir}/gcloud"})
+
+
+def borrowed(expire: str = "2026-01-01T01:00:00Z") -> Reply:
+    """What IAM Credentials answers generateAccessToken with."""
+    return answer({"accessToken": BORROWED, "expireTime": expire})
+
+
+def flavoured() -> Reply:
+    """The metadata server's answer to google-auth's ping."""
+    return answer({}, **{"Metadata-Flavor": "Google"})
+
+
+def served_by_the_machine() -> tuple[Reply, ...]:
+    """What the metadata server answers after the ping: the project, the
+    machine's account, then its token."""
+    flavour = {"Metadata-Flavor": "Google"}
+    project = Reply(status=200, headers={"content-type": "text/plain", **flavour}, text=PROJECT)
+    account = {"aliases": ["default"], "email": EMAIL, "scopes": [SCOPE]}
+    return (project, answer(account, **flavour), token())
+
+
+case("adc_key_in_the_variable", "adc", GENERATE, in_variable(keyed()), HELLO, token(), HELLO_THERE)
+case("adc_user_in_the_variable", "adc", GENERATE, in_variable(USER), HELLO, token(), HELLO_THERE)
+case(
+    "adc_user_with_a_quota_project",
+    "adc",
+    GENERATE,
+    in_variable({**USER, "quota_project_id": "quota-1"}),
+    HELLO,
+    token(),
+    HELLO_THERE,
+)
+case("adc_user_in_gcloud", "adc", GENERATE, in_gcloud(USER), HELLO, token(), HELLO_THERE)
+case(
+    "adc_user_refused",
+    "adc failure",
+    GENERATE,
+    in_variable(USER),
+    HELLO,
+    answer({"error": "invalid_grant", "error_description": "Token has been expired or revoked."}, status=400),
+)
+case(
+    "adc_impersonated_in_the_variable",
+    "adc impersonation",
+    GENERATE,
+    in_variable(
+        {
+            "type": "impersonated_service_account",
+            "service_account_impersonation_url": IMPERSONATION,
+            "source_credentials": USER,
+            "delegates": [],
+        }
+    ),
+    HELLO,
+    token(),
+    borrowed(),
+    HELLO_THERE,
+)
+case(
+    "adc_external_account",
+    "adc refused",
+    GENERATE,
+    in_variable(
+        {
+            "type": "external_account",
+            "audience": "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/p/providers/q",
+            "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+            "token_url": "https://sts.googleapis.com/v1/token",
+            "credential_source": {"file": "{dir}/subject.txt"},
+        }
+    ),
+    HELLO,
+)
+case("adc_file_missing", "adc failure", GENERATE, adc(variables={"GOOGLE_APPLICATION_CREDENTIALS": "{dir}/none.json"}), HELLO)
+case("adc_file_of_no_type", "adc failure", GENERATE, in_variable({"client_email": EMAIL}), HELLO)
+case(
+    "adc_metadata_server",
+    "adc metadata",
+    GENERATE,
+    adc(),
+    HELLO,
+    flavoured(),
+    *served_by_the_machine(),
+    HELLO_THERE,
+)
+case(
+    "adc_metadata_server_on_its_own_host",
+    "adc metadata",
+    GENERATE,
+    adc(variables={"GCE_METADATA_HOST": "metadata.example:8080", "GCE_METADATA_IP": "10.0.0.2:8080"}),
+    HELLO,
+    flavoured(),
+    *served_by_the_machine(),
+    HELLO_THERE,
+)
+case(
+    "adc_none",
+    "adc failure",
+    GENERATE,
+    adc(),
+    HELLO,
+    REFUSED,
+    REFUSED,
+    REFUSED,
+)
+case(
+    "adc_on_a_google_machine",
+    "adc metadata",
+    GENERATE,
+    adc(product_name="Google Compute Engine"),
+    HELLO,
+    REFUSED,
+    REFUSED,
+    REFUSED,
+    *served_by_the_machine(),
+    HELLO_THERE,
+)
+
+# -- A borrowed service account ------------------------------------------------------------
+
+case(
+    "impersonation_with_a_key",
+    "impersonation",
+    GENERATE,
+    vertex(impersonate_service_account=EMAIL),
+    HELLO,
+    token(),
+    borrowed(),
+    HELLO_THERE,
+)
+case(
+    "impersonation_with_adc",
+    "impersonation adc",
+    GENERATE,
+    {**in_variable(USER), "impersonate_service_account": EMAIL},
+    HELLO,
+    token(),
+    borrowed(),
+    HELLO_THERE,
+)
+case(
+    "impersonation_refused",
+    "impersonation failure",
+    GENERATE,
+    vertex(impersonate_service_account=EMAIL),
+    HELLO,
+    token(),
+    failed(403, "Permission 'iam.serviceAccounts.getAccessToken' denied.", "PERMISSION_DENIED"),
+)
+case(
+    "impersonation_with_no_identity",
+    "impersonation failure",
+    GENERATE,
+    {**adc(), "impersonate_service_account": EMAIL},
+    HELLO,
+    REFUSED,
+    REFUSED,
+    REFUSED,
 )

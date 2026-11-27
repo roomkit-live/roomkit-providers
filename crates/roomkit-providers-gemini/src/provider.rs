@@ -75,6 +75,9 @@ pub(crate) struct Parts {
     pub(crate) timeouts: Timeouts,
     pub(crate) token_source: Arc<dyn crate::TokenSource>,
     pub(crate) labels: Option<Vec<(String, String)>>,
+    /// The project the requests are billed to, sent in
+    /// `x-goog-user-project`, where the credentials name one.
+    pub(crate) quota_project: Option<String>,
 }
 
 impl Gemini {
@@ -163,6 +166,11 @@ impl Gemini {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        if let Some(project) = &parts.quota_project {
+            let project = HeaderValue::from_str(project)
+                .map_err(|_| Failure::unbuilt("its quota project cannot go in a header"))?;
+            headers.insert("x-goog-user-project", project);
+        }
         let client = client(parts.timeouts)?;
         let exit = client.exit(LABEL, [], [], &parts.generate);
         Ok(Self {

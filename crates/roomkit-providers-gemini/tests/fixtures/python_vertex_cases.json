@@ -13,7 +13,7 @@
   "versions": "The versions the fixture was written from.",
   "config": "The keyword arguments of GeminiVertexConfig. service_account_json is written {\"KEYED\": members}: the members of a key file but its private key, which is the PEM of test-only-rsa-pkcs8.der beside this fixture. A replay builds the same key: json.dumps(members + private_key).",
   "request": "AIContext dumped with model_dump(mode='json'), its ten request fields.",
-  "exchanges.request": "What Python sent, in order, on either client: the method, the whole URL, the body (JSON with its members in the order sent, or {form: [[name, value], ...]} for a form, in order), and four headers: authorization, content-type, accept and metadata-flavor, null when not sent. The token request of a key comes from google-auth, on requests; its other headers (x-goog-api-client, which names Python's version, user-agent) are left out, as are google-genai's. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool. The assertion of a key is signed at the fixture's clock, 2026-01-01T00:00:00Z, with the test key: a replay signs the same.",
+  "exchanges.request": "What Python sent, in order, on either client: the method, the whole URL, the body (JSON with its members in the order sent, or {form: [[name, value], ...]} for a form, in order), and five headers: authorization, content-type, accept, metadata-flavor and x-goog-user-project, null when not sent. The token request of a key comes from google-auth, on requests; its other headers (x-goog-api-client, which names Python's version, user-agent) are left out, as are google-genai's. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool. The assertion of a key is signed at the fixture's clock, 2026-01-01T00:00:00Z, with the test key: a replay signs the same.",
   "exchanges.wait": "Where google-auth tried a token request again, the wait it took first, in seconds, its random part drawn at the centre of its range (it draws within 10% of it).",
   "exchanges.response": "What the fake answered: status and headers with a body under json, under text for a body that is no JSON, or under chunks for a body read in several reads. A failure in place of a response is under failure: no answer came.",
   "expected": "What Python returned: response for generate, events for generate_structured_stream, models for list_models. A failure is under error: its class, its message, its text, the attributes of a ProviderError, and raised_from, the class of the error it was raised from, if any.",
@@ -70,7 +70,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -111,7 +112,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -215,7 +217,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -256,7 +259,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -373,7 +377,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -414,7 +419,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -518,7 +524,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -559,7 +566,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -663,7 +671,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -704,7 +713,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -809,7 +819,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -850,7 +861,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -955,7 +967,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -996,7 +1009,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -1101,7 +1115,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -1142,7 +1157,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -1247,7 +1263,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -1288,7 +1305,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -1396,7 +1414,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -1437,7 +1456,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -1546,7 +1566,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -1587,7 +1608,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -1721,7 +1743,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -1762,7 +1785,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -1905,7 +1929,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -1946,7 +1971,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -2050,7 +2076,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2157,7 +2184,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2200,7 +2228,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2243,7 +2272,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2349,7 +2379,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2449,7 +2480,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2552,7 +2584,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2592,7 +2625,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -2695,7 +2729,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2736,7 +2771,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -2850,7 +2886,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -2891,7 +2928,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -2998,7 +3036,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -3039,7 +3078,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -3155,7 +3195,8 @@
        "authorization": null,
        "content-type": "application/x-www-form-urlencoded",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 120,
@@ -3196,7 +3237,8 @@
        "authorization": "Bearer ya29.placeholder-access-token",
        "content-type": "application/json",
        "accept": "*/*",
-       "metadata-flavor": null
+       "metadata-flavor": null,
+       "x-goog-user-project": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -3232,6 +3274,2642 @@
    "compare": {
     "exactly": [],
     "message": "sdk"
+   }
+  },
+  {
+   "name": "adc_key_in_the_variable",
+   "kinds": [
+    "adc"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "KEYED": {
+        "type": "service_account",
+        "project_id": "proj-1",
+        "private_key_id": "test-only-key-1",
+        "client_email": "runner@proj-1.iam.gserviceaccount.com",
+        "client_id": "100000000000000000001",
+        "token_uri": "https://oauth2.googleapis.com/token"
+       }
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "adc_user_in_the_variable",
+   "kinds": [
+    "adc"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "type": "authorized_user",
+       "client_id": "100000000001-test.apps.googleusercontent.com",
+       "client_secret": "placeholder-client-secret",
+       "refresh_token": "placeholder-refresh-token"
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "grant_type",
+         "refresh_token"
+        ],
+        [
+         "client_id",
+         "100000000001-test.apps.googleusercontent.com"
+        ],
+        [
+         "client_secret",
+         "placeholder-client-secret"
+        ],
+        [
+         "refresh_token",
+         "placeholder-refresh-token"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "adc_user_with_a_quota_project",
+   "kinds": [
+    "adc"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "type": "authorized_user",
+       "client_id": "100000000001-test.apps.googleusercontent.com",
+       "client_secret": "placeholder-client-secret",
+       "refresh_token": "placeholder-refresh-token",
+       "quota_project_id": "quota-1"
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "grant_type",
+         "refresh_token"
+        ],
+        [
+         "client_id",
+         "100000000001-test.apps.googleusercontent.com"
+        ],
+        [
+         "client_secret",
+         "placeholder-client-secret"
+        ],
+        [
+         "refresh_token",
+         "placeholder-refresh-token"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": "quota-1"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "adc_user_in_gcloud",
+   "kinds": [
+    "adc"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "gcloud/application_default_credentials.json": {
+       "type": "authorized_user",
+       "client_id": "100000000001-test.apps.googleusercontent.com",
+       "client_secret": "placeholder-client-secret",
+       "refresh_token": "placeholder-refresh-token"
+      }
+     },
+     "variables": {
+      "CLOUDSDK_CONFIG": "{dir}/gcloud"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "grant_type",
+         "refresh_token"
+        ],
+        [
+         "client_id",
+         "100000000001-test.apps.googleusercontent.com"
+        ],
+        [
+         "client_secret",
+         "placeholder-client-secret"
+        ],
+        [
+         "refresh_token",
+         "placeholder-refresh-token"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "adc_user_refused",
+   "kinds": [
+    "adc",
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "type": "authorized_user",
+       "client_id": "100000000001-test.apps.googleusercontent.com",
+       "client_secret": "placeholder-client-secret",
+       "refresh_token": "placeholder-refresh-token"
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "grant_type",
+         "refresh_token"
+        ],
+        [
+         "client_id",
+         "100000000001-test.apps.googleusercontent.com"
+        ],
+        [
+         "client_secret",
+         "placeholder-client-secret"
+        ],
+        [
+         "refresh_token",
+         "placeholder-refresh-token"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": "invalid_grant",
+       "error_description": "Token has been expired or revoked."
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})",
+     "text": "gemini: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "RefreshError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "adc_impersonated_in_the_variable",
+   "kinds": [
+    "adc",
+    "impersonation"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "type": "impersonated_service_account",
+       "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/runner@proj-1.iam.gserviceaccount.com:generateAccessToken",
+       "source_credentials": {
+        "type": "authorized_user",
+        "client_id": "100000000001-test.apps.googleusercontent.com",
+        "client_secret": "placeholder-client-secret",
+        "refresh_token": "placeholder-refresh-token"
+       },
+       "delegates": []
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "grant_type",
+         "refresh_token"
+        ],
+        [
+         "client_id",
+         "100000000001-test.apps.googleusercontent.com"
+        ],
+        [
+         "client_secret",
+         "placeholder-client-secret"
+        ],
+        [
+         "refresh_token",
+         "placeholder-refresh-token"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/runner@proj-1.iam.gserviceaccount.com:generateAccessToken",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "delegates": [],
+       "scope": [
+        "https://www.googleapis.com/auth/cloud-platform"
+       ],
+       "lifetime": "3600s"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "accessToken": "ya29.placeholder-borrowed-token",
+       "expireTime": "2026-01-01T01:00:00Z"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-borrowed-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "adc_external_account",
+   "kinds": [
+    "adc",
+    "refused"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "type": "external_account",
+       "audience": "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/p/providers/q",
+       "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+       "token_url": "https://sts.googleapis.com/v1/token",
+       "credential_source": {
+        "file": "{dir}/subject.txt"
+       }
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "File '{dir}/subject.txt' was not found.",
+     "text": "gemini: File '{dir}/subject.txt' was not found.",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "RefreshError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "adc_file_missing",
+   "kinds": [
+    "adc",
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {},
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/none.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "File {dir}/none.json was not found.",
+     "text": "gemini: File {dir}/none.json was not found.",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "DefaultCredentialsError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "adc_file_of_no_type",
+   "kinds": [
+    "adc",
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "client_email": "runner@proj-1.iam.gserviceaccount.com"
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "The file {dir}/adc.json does not have a valid type. Type is None, expected one of ('authorized_user', 'service_account', 'external_account', 'external_account_authorized_user', 'impersonated_service_account', 'gdch_service_account').",
+     "text": "gemini: The file {dir}/adc.json does not have a valid type. Type is None, expected one of ('authorized_user', 'service_account', 'external_account', 'external_account_authorized_user', 'impersonated_service_account', 'gdch_service_account').",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "DefaultCredentialsError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "adc_metadata_server",
+   "kinds": [
+    "adc",
+    "metadata"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {}
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "Metadata-Flavor": "Google"
+      },
+      "json": {}
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.google.internal/computeMetadata/v1/project/project-id",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/plain",
+       "Metadata-Flavor": "Google"
+      },
+      "text": "proj-1"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/?recursive=true",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "Metadata-Flavor": "Google"
+      },
+      "json": {
+       "aliases": [
+        "default"
+       ],
+       "email": "runner@proj-1.iam.gserviceaccount.com",
+       "scopes": [
+        "https://www.googleapis.com/auth/cloud-platform"
+       ]
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "adc_metadata_server_on_its_own_host",
+   "kinds": [
+    "adc",
+    "metadata"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {},
+     "variables": {
+      "GCE_METADATA_HOST": "metadata.example:8080",
+      "GCE_METADATA_IP": "10.0.0.2:8080"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://10.0.0.2:8080/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "Metadata-Flavor": "Google"
+      },
+      "json": {}
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.example:8080/computeMetadata/v1/project/project-id",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/plain",
+       "Metadata-Flavor": "Google"
+      },
+      "text": "proj-1"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.example:8080/computeMetadata/v1/instance/service-accounts/default/?recursive=true",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "Metadata-Flavor": "Google"
+      },
+      "json": {
+       "aliases": [
+        "default"
+       ],
+       "email": "runner@proj-1.iam.gserviceaccount.com",
+       "scopes": [
+        "https://www.googleapis.com/auth/cloud-platform"
+       ]
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.example:8080/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "adc_none",
+   "kinds": [
+    "adc",
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {}
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     },
+     "wait": {
+      "seconds": 1.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     },
+     "wait": {
+      "seconds": 2.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.",
+     "text": "gemini: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "DefaultCredentialsError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "adc_on_a_google_machine",
+   "kinds": [
+    "adc",
+    "metadata"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {},
+     "product_name": "Google Compute Engine"
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     },
+     "wait": {
+      "seconds": 1.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     },
+     "wait": {
+      "seconds": 2.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.google.internal/computeMetadata/v1/project/project-id",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/plain",
+       "Metadata-Flavor": "Google"
+      },
+      "text": "proj-1"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/?recursive=true",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "Metadata-Flavor": "Google"
+      },
+      "json": {
+       "aliases": [
+        "default"
+       ],
+       "email": "runner@proj-1.iam.gserviceaccount.com",
+       "scopes": [
+        "https://www.googleapis.com/auth/cloud-platform"
+       ]
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "impersonation_with_a_key",
+   "kinds": [
+    "impersonation"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "impersonate_service_account": "runner@proj-1.iam.gserviceaccount.com"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2lhbSJ9.T9Nr66KB670i-Z-Ia7tJSivStF2kIbTjEPOPEpcAqYxlZBTGZjkH7E1274MnPnczEoDWtXUa8bTg1uau3UcduY8Du_zuj6mUaU1pgX04bb-cUjS-Kg9J9JRR3stjuY9ys-U3Z3nJRALqFTAYxwz3B0blIQbPyidOTaPcJN1LxWMWYLkxpThYmr8KULVMC9lImV7QxN15SIM1thgN8IVKTtAdtp1hhatxd5J0swhAdaeDYdcvn-WQ_umjVf3JYstpA7fXnMNzGh4WimtSFZXWGKki4bIQYNs0xS7-nZgc6anP3ixaAqiQMgErlzm8lohjqAjGclnBzk0SWidLg5SaTA"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/runner@proj-1.iam.gserviceaccount.com:generateAccessToken",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "delegates": null,
+       "scope": [
+        "https://www.googleapis.com/auth/cloud-platform"
+       ],
+       "lifetime": "3600s"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "accessToken": "ya29.placeholder-borrowed-token",
+       "expireTime": "2026-01-01T01:00:00Z"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-borrowed-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "impersonation_with_adc",
+   "kinds": [
+    "adc",
+    "impersonation"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {
+      "adc.json": {
+       "type": "authorized_user",
+       "client_id": "100000000001-test.apps.googleusercontent.com",
+       "client_secret": "placeholder-client-secret",
+       "refresh_token": "placeholder-refresh-token"
+      }
+     },
+     "variables": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "{dir}/adc.json"
+     }
+    },
+    "impersonate_service_account": "runner@proj-1.iam.gserviceaccount.com"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "grant_type",
+         "refresh_token"
+        ],
+        [
+         "client_id",
+         "100000000001-test.apps.googleusercontent.com"
+        ],
+        [
+         "client_secret",
+         "placeholder-client-secret"
+        ],
+        [
+         "refresh_token",
+         "placeholder-refresh-token"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/runner@proj-1.iam.gserviceaccount.com:generateAccessToken",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "delegates": null,
+       "scope": [
+        "https://www.googleapis.com/auth/cloud-platform"
+       ],
+       "lifetime": "3600s"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "accessToken": "ya29.placeholder-borrowed-token",
+       "expireTime": "2026-01-01T01:00:00Z"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-borrowed-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "impersonation_refused",
+   "kinds": [
+    "failure",
+    "impersonation"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "impersonate_service_account": "runner@proj-1.iam.gserviceaccount.com"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2lhbSJ9.T9Nr66KB670i-Z-Ia7tJSivStF2kIbTjEPOPEpcAqYxlZBTGZjkH7E1274MnPnczEoDWtXUa8bTg1uau3UcduY8Du_zuj6mUaU1pgX04bb-cUjS-Kg9J9JRR3stjuY9ys-U3Z3nJRALqFTAYxwz3B0blIQbPyidOTaPcJN1LxWMWYLkxpThYmr8KULVMC9lImV7QxN15SIM1thgN8IVKTtAdtp1hhatxd5J0swhAdaeDYdcvn-WQ_umjVf3JYstpA7fXnMNzGh4WimtSFZXWGKki4bIQYNs0xS7-nZgc6anP3ixaAqiQMgErlzm8lohjqAjGclnBzk0SWidLg5SaTA"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/runner@proj-1.iam.gserviceaccount.com:generateAccessToken",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null,
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "delegates": null,
+       "scope": [
+        "https://www.googleapis.com/auth/cloud-platform"
+       ],
+       "lifetime": "3600s"
+      }
+     },
+     "response": {
+      "status": 403,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "code": 403,
+        "message": "Permission 'iam.serviceAccounts.getAccessToken' denied.",
+        "status": "PERMISSION_DENIED"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "('Unable to acquire impersonated credentials', '{\"error\": {\"code\": 403, \"message\": \"Permission \\'iam.serviceAccounts.getAccessToken\\' denied.\", \"status\": \"PERMISSION_DENIED\"}}')",
+     "text": "gemini: ('Unable to acquire impersonated credentials', '{\"error\": {\"code\": 403, \"message\": \"Permission \\'iam.serviceAccounts.getAccessToken\\' denied.\", \"status\": \"PERMISSION_DENIED\"}}')",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "RefreshError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "impersonation_with_no_identity",
+   "kinds": [
+    "failure",
+    "impersonation"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "ENVIRONMENT": {
+     "files": {}
+    },
+    "impersonate_service_account": "runner@proj-1.iam.gserviceaccount.com"
+   },
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello"
+     }
+    ]
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     },
+     "wait": {
+      "seconds": 1.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     },
+     "wait": {
+      "seconds": 2.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "http://169.254.169.254/",
+      "headers": {
+       "authorization": null,
+       "content-type": null,
+       "accept": "*/*",
+       "metadata-flavor": "Google",
+       "x-goog-user-project": null
+      },
+      "timeouts": {
+       "connect": 3,
+       "read": 3,
+       "write": 3,
+       "pool": 3
+      },
+      "body": null
+     },
+     "response": {
+      "failure": "connection refused"
+     }
+    }
+   ],
+   "unbuilt": true,
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "Cannot borrow runner@proj-1.iam.gserviceaccount.com: this deployment has no Google credentials of its own to borrow it with.",
+     "text": "Cannot borrow runner@proj-1.iam.gserviceaccount.com: this deployment has no Google credentials of its own to borrow it with.",
+     "raised_from": "DefaultCredentialsError"
+    }
    }
   }
  ]

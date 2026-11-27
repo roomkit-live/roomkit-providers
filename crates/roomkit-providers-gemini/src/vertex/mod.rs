@@ -4,9 +4,10 @@
 //! What differs from [`Gemini`](crate::Gemini) is where a request goes and
 //! who sends it: the host of the configuration's location (a region's,
 //! `global`'s, or a multi-region's), the project and the location in the
-//! path, as the google-genai SDK writes them; a token of the identity of a
-//! service-account key in place of a key; and the billing labels each
-//! request carries. The generation, the stream, the thinking and the
+//! path, as the google-genai SDK writes them; a token of the identity
+//! google-auth would give (a service-account key, Application Default
+//! Credentials, a borrowed account) in place of a key, with the project a
+//! file bills; and the billing labels each request carries. The generation, the stream, the thinking and the
 //! catalogue are the Developer API's.
 
 mod config;
@@ -45,6 +46,10 @@ const MULTI_REGIONS: [&str; 2] = ["us", "eu"];
 pub struct GeminiVertex {
     inner: Gemini,
     config: Arc<GeminiVertexConfig>,
+    /// Where Application Default Credentials are read: the process's, or a
+    /// test's.
+    #[cfg(any(test, feature = "replay"))]
+    environment: roomkit_auth::Environment,
     /// The clock and the waits a test or a replay sets, which the identity
     /// keeps to as the client does.
     #[cfg(any(test, feature = "replay"))]
@@ -80,25 +85,33 @@ fn resource(model: &str) -> Result<String, Failure> {
 }
 
 impl GeminiVertex {
-    /// The provider `config` configures: its service-account key is read
-    /// now; nothing is asked before the first call.
+    /// The provider `config` configures, as the configuration's
+    /// service-account key, else Application Default Credentials (the
+    /// file `GOOGLE_APPLICATION_CREDENTIALS` names, gcloud's file, the
+    /// metadata server), a borrowed service account borrowed with it. A
+    /// key and a file are read now, from the process's environment;
+    /// nothing is asked before the first call. A file that cannot be read
+    /// fails the first call, as Python's provider fails then.
     ///
     /// # Errors
     ///
     /// A failure before any request: labels Google refuses, a key that is
-    /// no service-account key, an identity this version does not take yet
-    /// (Application Default Credentials, a borrowed service account), a
-    /// model or a location that cannot go in a URL, a timeout the clock
-    /// cannot count.
+    /// no service-account key, a model or a location that cannot go in a
+    /// URL, a timeout the clock cannot count.
     pub fn new(config: GeminiVertexConfig) -> Result<Self, ProviderError> {
-        Self::built(config).map_err(|failure| Exit::unbuilt(LABEL, &failure))
+        let environment = roomkit_auth::Environment::of_the_process();
+        Self::built(config, &environment).map_err(|failure| Exit::unbuilt(LABEL, &failure))
     }
 
-    fn built(config: GeminiVertexConfig) -> Result<Self, Failure> {
+    fn built(
+        config: GeminiVertexConfig,
+        environment: &roomkit_auth::Environment,
+    ) -> Result<Self, Failure> {
         config
             .checked_labels()
             .map_err(|_| Failure::unbuilt("its labels are not Google's"))?;
-        let cloud = identity::of(&config)?;
+        let cloud = identity::of(&config, environment)?;
+        let quota_project = cloud.quota_project().map(str::to_owned);
         let host = host(&config.location);
         let model = resource(&config.model)?;
         let path = if model.starts_with("projects/") {
@@ -129,10 +142,13 @@ impl GeminiVertex {
             timeouts: Timeouts::new(config.timeout, config.connect_timeout)?,
             token_source: Arc::new(Identity(cloud)),
             labels,
+            quota_project,
         })?;
         Ok(Self {
             inner,
             config: Arc::new(config),
+            #[cfg(any(test, feature = "replay"))]
+            environment: environment.clone(),
             #[cfg(any(test, feature = "replay"))]
             pace: Arc::default(),
         })
@@ -148,7 +164,7 @@ impl GeminiVertex {
     /// the waits of [`pace`](Self::pace).
     #[cfg(any(test, feature = "replay"))]
     fn identity_at(&mut self, origin: &str) -> Result<(), Failure> {
-        let cloud = identity::of(&self.config)?;
+        let cloud = identity::of(&self.config, &self.environment)?;
         let (now, wait) = (Arc::clone(&self.pace), Arc::clone(&self.pace));
         let pace = roomkit_auth::Pace {
             now: Arc::new(move || {
@@ -165,6 +181,16 @@ impl GeminiVertex {
             .map_err(|_| Failure::unbuilt("its identity cannot be sent to the fake"))?;
         self.inner.token_source = Some(Arc::new(Identity(cloud)));
         Ok(())
+    }
+
+    /// The provider `config` configures, Application Default Credentials
+    /// read in `environment`: a test's.
+    #[cfg(test)]
+    pub(crate) fn new_in(
+        config: GeminiVertexConfig,
+        environment: &roomkit_auth::Environment,
+    ) -> Result<Self, ProviderError> {
+        Self::built(config, environment).map_err(|failure| Exit::unbuilt(LABEL, &failure))
     }
 
     /// Sends every request to `address` instead, over plain HTTP, the token

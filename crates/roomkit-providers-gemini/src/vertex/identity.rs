@@ -2,12 +2,16 @@
 //! carries: `roomkit-auth`'s `GoogleCloud`, as Python's provider builds its
 //! credentials (`GeminiVertexProvider._credentials`).
 //!
-//! A service-account key is read when the provider is built; its token is
-//! asked at the first request and kept as google-auth keeps it. A token
-//! that cannot be had fails the request with the client's closed words: it
-//! says neither the endpoint nor what it answered.
+//! The identity is the configuration's service-account key, else
+//! Application Default Credentials found as google-auth finds them; a
+//! borrowed service account is borrowed with it. A key and an
+//! Application Default Credentials file are read when the provider is
+//! built; a token is asked at the first request and kept as google-auth
+//! keeps it. A token that cannot be had fails the request with the
+//! client's closed words: it says neither the endpoint nor what it
+//! answered.
 
-use roomkit_auth::GoogleCloud;
+use roomkit_auth::{Environment, GoogleCloud};
 use roomkit_providers_client::{TokenError, TokenFuture, TokenSource, USER_AGENT};
 
 use super::config::GeminiVertexConfig;
@@ -26,28 +30,28 @@ impl TokenSource for Identity {
     }
 }
 
-/// The identity `config` names: its service-account key, read now.
+/// The identity `config` names, Application Default Credentials read in
+/// `environment`.
 ///
 /// # Errors
 ///
-/// A key that is no service-account key; an identity this version does not
-/// take yet: Application Default Credentials (no key) and a borrowed
-/// service account.
-pub(crate) fn of(config: &GeminiVertexConfig) -> Result<GoogleCloud, Failure> {
+/// A key that is no service-account key.
+pub(crate) fn of(
+    config: &GeminiVertexConfig,
+    environment: &Environment,
+) -> Result<GoogleCloud, Failure> {
     let given = |text: &Option<String>| {
         let text = text.as_deref().map(str::trim);
         text.filter(|text| !text.is_empty()).map(str::to_owned)
     };
-    let key = given(&config.service_account_json);
-    let borrowed = given(&config.impersonate_service_account);
-    match (key, borrowed) {
-        (Some(key), None) => GoogleCloud::service_account(&key, USER_AGENT)
-            .map_err(|_| Failure::unbuilt("its service-account key is no key")),
-        (None, _) => Err(Failure::unbuilt(
-            "it names no service-account key: Application Default Credentials are not taken yet",
-        )),
-        (Some(_), Some(_)) => Err(Failure::unbuilt(
-            "a borrowed service account is not taken yet",
-        )),
+    let unbuilt = |_| Failure::unbuilt("its identity cannot be built");
+    let identity = match given(&config.service_account_json) {
+        Some(key) => GoogleCloud::service_account(&key, USER_AGENT)
+            .map_err(|_| Failure::unbuilt("its service-account key is no key"))?,
+        None => GoogleCloud::application_default_in(environment, USER_AGENT).map_err(unbuilt)?,
+    };
+    match given(&config.impersonate_service_account) {
+        Some(target) => identity.borrowing(&target).map_err(unbuilt),
+        None => Ok(identity),
     }
 }

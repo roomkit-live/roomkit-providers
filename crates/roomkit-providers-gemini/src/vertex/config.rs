@@ -50,7 +50,8 @@ pub struct GeminiVertexConfig {
     /// multi-region (`us`, `eu`): required, so that where the data goes is
     /// a choice.
     pub location: String,
-    /// A service-account key file's contents, to call as that account.
+    /// A service-account key file's contents, to call as that account;
+    /// `None` calls as Application Default Credentials.
     pub service_account_json: Option<String>,
     /// The email of a service account to borrow, with the identity above.
     pub impersonate_service_account: Option<String>,
