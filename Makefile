@@ -33,6 +33,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	python-mistral-config python-mistral-cases python-mistral-catalogue \
 	python-ollama-config python-ollama-cases python-ollama-catalogue python-ollama-images \
 	python-polargrid-config python-polargrid-cases python-polargrid-catalogue \
+	python-vertex-config python-vertex-cases \
 	named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
@@ -357,6 +358,18 @@ python-polargrid-catalogue:
 python-polargrid-cases:
 	$(PYTHON) scripts/generate_polargrid_cases.py
 
+# Rewrites the fixture of the JSON forms of RoomKit's Python
+# `GeminiVertexConfig`, its billing labels by Google's rules among them.
+python-vertex-config:
+	$(PYTHON) scripts/generate_vertex_config_forms.py
+
+# Rewrites the fixture of what RoomKit's Python Gemini provider on Vertex AI
+# sends and reads: google-auth's token request for a service-account key,
+# then Vertex AI's, case by case. PYTHON needs roomkit's `gemini` extra. The
+# script answers its own requests: nothing is sent to a network.
+python-vertex-cases:
+	$(PYTHON) scripts/generate_vertex_cases.py
+
 # Rewrites, for each provider, the data file of the cases it answers
 # otherwise than Python, from the replay's own list: a replay outside the
 # crate reads it, and a test of the crate fails while the two differ.
@@ -373,6 +386,8 @@ named-cases:
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-ollama --lib the_named_cases_file
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-polargrid/tests/fixtures/named_cases.json) \
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-polargrid --lib the_named_cases_file
+	VERTEX_NAMED_CASES_OUT=$(abspath crates/roomkit-providers-gemini/tests/fixtures/vertex_named_cases.json) \
+		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-gemini --lib vertex::replay::the_named_cases_file
 
 .PHONY: python-llamacpp-cases
 python-llamacpp-cases:

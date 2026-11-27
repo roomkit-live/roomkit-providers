@@ -1,0 +1,3238 @@
+{
+ "generator": "scripts/generate_vertex_cases.py",
+ "roomkit_version": "0.117.0.dev0",
+ "roomkit_commit": "d08b9cd0a314fa463ec533491b6a0cd7a7aaf9c6",
+ "roomkit_dirty": false,
+ "google.genai_version": "3.2.0",
+ "pydantic_version": "2.13.5",
+ "httpx_version": "0.28.1",
+ "python_version": "3.13.3",
+ "clock": "2026-01-01T00:00:00Z",
+ "notes": {
+  "environment": "Every GOOGLE_*, GEMINI_*, CLOUDSDK_* and GCE_* variable of the environment is removed before a case runs: google-genai and google-auth read a project, a location and credentials from them.",
+  "versions": "The versions the fixture was written from.",
+  "config": "The keyword arguments of GeminiVertexConfig. service_account_json is written {\"KEYED\": members}: the members of a key file but its private key, which is the PEM of test-only-rsa-pkcs8.der beside this fixture. A replay builds the same key: json.dumps(members + private_key).",
+  "request": "AIContext dumped with model_dump(mode='json'), its ten request fields.",
+  "exchanges.request": "What Python sent, in order, on either client: the method, the whole URL, the body (JSON with its members in the order sent, or {form: [[name, value], ...]} for a form, in order), and four headers: authorization, content-type, accept and metadata-flavor, null when not sent. The token request of a key comes from google-auth, on requests; its other headers (x-goog-api-client, which names Python's version, user-agent) are left out, as are google-genai's. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool. The assertion of a key is signed at the fixture's clock, 2026-01-01T00:00:00Z, with the test key: a replay signs the same.",
+  "exchanges.wait": "Where google-auth tried a token request again, the wait it took first, in seconds, its random part drawn at the centre of its range (it draws within 10% of it).",
+  "exchanges.response": "What the fake answered: status and headers with a body under json, under text for a body that is no JSON, or under chunks for a body read in several reads. A failure in place of a response is under failure: no answer came.",
+  "expected": "What Python returned: response for generate, events for generate_structured_stream, models for list_models. A failure is under error: its class, its message, its text, the attributes of a ProviderError, and raised_from, the class of the error it was raised from, if any.",
+  "compare": "On a call that fails, how a replay compares the failure: exactly lists what it reproduces as written; message says whose words the message holds: roomkit (compared), server (compared), sdk (google-genai's words: not compared), auth (google-auth's words: not compared), python_json, transport, python (not compared).",
+  "sdk": "Where a case says sdk, google-genai decided the behaviour, not RoomKit: here the host a location is asked on."
+ },
+ "questioned": [],
+ "cases": [
+  {
+   "name": "regional",
+   "kinds": [
+    "host"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "regional_stream",
+   "kinds": [
+    "host",
+    "stream"
+   ],
+   "call": "generate_structured_stream",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hel\"}]},\"index\":0}],\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n",
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"lo.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "events": [
+     {
+      "type": "text_delta",
+      "text": "Hel"
+     },
+     {
+      "type": "usage",
+      "usage": {
+       "input_tokens": 12
+      }
+     },
+     {
+      "type": "text_delta",
+      "text": "lo."
+     },
+     {
+      "type": "done",
+      "finish_reason": "stop",
+      "usage": {
+       "input_tokens": 12,
+       "output_tokens": 5
+      },
+      "metadata": {
+       "model": "gemini-3.8-flash-001"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "global",
+   "kinds": [
+    "host",
+    "sdk"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "global",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "multi_region_eu",
+   "kinds": [
+    "host",
+    "sdk"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "eu",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/proj-1/locations/eu/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "multi_region_us",
+   "kinds": [
+    "host",
+    "sdk"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "us",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://aiplatform.us.rep.googleapis.com/v1beta1/projects/proj-1/locations/us/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "another_model",
+   "kinds": [
+    "host"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "model": "gemini-2.5-flash",
+    "max_tokens": 256
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 256
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "a_publisher_s_model",
+   "kinds": [
+    "host",
+    "sdk"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "model": "mistralai/mistral-small-2503"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/mistralai/models/mistral-small-2503:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "a_model_named_as_a_resource",
+   "kinds": [
+    "host",
+    "sdk"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "model": "models/gemini-2.5-flash"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/models/gemini-2.5-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "a_model_of_a_project",
+   "kinds": [
+    "host",
+    "sdk"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "model": "projects/proj-1/locations/northamerica-northeast1/endpoints/42"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/endpoints/42:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "labels",
+   "kinds": [
+    "labels"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "labels": {
+     "tenant": "acme",
+     "\u00e9quipe": "nord-1",
+     "empty": ""
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "labels": {
+        "tenant": "acme",
+        "\u00e9quipe": "nord-1",
+        "empty": ""
+       },
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "labels_none",
+   "kinds": [
+    "labels"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "labels": {}
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "labels_beside_a_system_prompt_and_tools",
+   "kinds": [
+    "labels",
+    "tools"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "labels": {
+     "tenant": "acme"
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": "You answer in one sentence.",
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [
+     {
+      "name": "lookup_order",
+      "description": "Find an order by its number",
+      "parameters": {
+       "type": "object",
+       "properties": {
+        "number": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "number"
+       ]
+      },
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     },
+     {
+      "name": "clock",
+      "description": "Tell the time",
+      "parameters": {},
+      "tags": [],
+      "defer_loading": false,
+      "changes_state": false
+     }
+    ],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "systemInstruction": {
+        "parts": [
+         {
+          "text": "You answer in one sentence."
+         }
+        ],
+        "role": "user"
+       },
+       "tools": [
+        {
+         "functionDeclarations": [
+          {
+           "description": "Find an order by its number",
+           "name": "lookup_order",
+           "parameters": {
+            "properties": {
+             "number": {
+              "type": "STRING"
+             }
+            },
+            "required": [
+             "number"
+            ],
+            "type": "OBJECT"
+           }
+          },
+          {
+           "description": "Tell the time",
+           "name": "clock",
+           "parameters": {
+            "properties": {},
+            "type": "OBJECT"
+           }
+          }
+         ]
+        }
+       ],
+       "labels": {
+        "tenant": "acme"
+       },
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "key_with_its_own_token_uri",
+   "kinds": [
+    "identity"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.example/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.example/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "key_refused",
+   "kinds": [
+    "failure",
+    "identity"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": "invalid_grant",
+       "error_description": "Invalid JWT Signature."
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})",
+     "text": "gemini: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "RefreshError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "key_endpoint_down",
+   "kinds": [
+    "failure",
+    "identity"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 503,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": "internal_failure"
+      }
+     },
+     "wait": {
+      "seconds": 1.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 503,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": "internal_failure"
+      }
+     },
+     "wait": {
+      "seconds": 2.0,
+      "from": "google-auth's backoff"
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 503,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": "internal_failure"
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "('internal_failure: None', {'error': 'internal_failure'})",
+     "text": "gemini: ('internal_failure: None', {'error': 'internal_failure'})",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "RefreshError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "key_endpoint_unreachable",
+   "kinds": [
+    "failure",
+    "identity"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "failure": "connection refused"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "All connection attempts failed",
+     "text": "gemini: All connection attempts failed",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "TransportError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "auth"
+   }
+  },
+  {
+   "name": "key_token_page",
+   "kinds": [
+    "failure",
+    "identity"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/html"
+      },
+      "text": "<html>Hi</html>"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "string indices must be integers, not 'str'",
+     "text": "gemini: string indices must be integers, not 'str'",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "TypeError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "python"
+   }
+  },
+  {
+   "name": "key_token_without_a_lifetime",
+   "kinds": [
+    "identity"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"Hello there.\"}]},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":12,\"candidatesTokenCount\":5,\"totalTokenCount\":17},\"modelVersion\":\"gemini-3.8-flash-001\",\"responseId\":\"response-1\"}\r\n\r\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "response": {
+     "content": "Hello there.",
+     "thinking": null,
+     "thinking_signature": null,
+     "thinking_parts": null,
+     "finish_reason": "stop",
+     "usage": {
+      "input_tokens": 12,
+      "output_tokens": 5
+     },
+     "metadata": {
+      "model": "gemini-3.8-flash-001"
+     },
+     "tool_calls": []
+    }
+   }
+  },
+  {
+   "name": "permission_denied",
+   "kinds": [
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 403,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "code": 403,
+        "message": "Permission 'aiplatform.endpoints.predict' denied.",
+        "status": "PERMISSION_DENIED"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "403 PERMISSION_DENIED. {'error': {'code': 403, 'message': \"Permission 'aiplatform.endpoints.predict' denied.\", 'status': 'PERMISSION_DENIED'}}",
+     "text": "gemini (403): 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': \"Permission 'aiplatform.endpoints.predict' denied.\", 'status': 'PERMISSION_DENIED'}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": 403,
+     "raised_from": "ClientError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "model_not_found",
+   "kinds": [
+    "failure"
+   ],
+   "call": "generate",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    },
+    "model": "gemini-0-gone"
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [
+     {
+      "role": "user",
+      "content": "Hello",
+      "metadata": {}
+     }
+    ],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/projects/proj-1/locations/northamerica-northeast1/publishers/google/models/gemini-0-gone:streamGenerateContent?alt=sse",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": {
+       "contents": [
+        {
+         "parts": [
+          {
+           "text": "Hello"
+          }
+         ],
+         "role": "user"
+        }
+       ],
+       "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+       }
+      }
+     },
+     "response": {
+      "status": 404,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "code": 404,
+        "message": "Publisher Model was not found.",
+        "status": "NOT_FOUND"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "404 NOT_FOUND. {'error': {'code': 404, 'message': 'Publisher Model was not found.', 'status': 'NOT_FOUND'}}",
+     "text": "gemini (404): 404 NOT_FOUND. {'error': {'code': 404, 'message': 'Publisher Model was not found.', 'status': 'NOT_FOUND'}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": 404,
+     "raised_from": "ClientError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "models_listed",
+   "kinds": [
+    "listing"
+   ],
+   "call": "list_models",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/publishers/google/models",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "models": [
+        {
+         "name": "publishers/google/models/gemini-3.8-flash",
+         "version": "001"
+        },
+        {
+         "name": "publishers/google/models/gemini-11-new",
+         "version": "001"
+        },
+        {
+         "name": "publishers/google/models/text-embedding-005",
+         "version": "001"
+        },
+        {
+         "name": "publishers/google/models/imagen-5",
+         "version": "001"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": [
+     {
+      "id": "gemini-3.8-flash",
+      "display_name": "Gemini 3.8 Flash",
+      "context_window": 1048576,
+      "supports_vision": true,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": {
+       "input_per_million": 0.75,
+       "output_per_million": 3.75,
+       "cache_read_per_million": 0.075,
+       "cache_write_per_million": null,
+       "image_input_per_million": null,
+       "image_output_per_million": null,
+       "long_context_threshold_tokens": null,
+       "long_context_input_multiplier": 1.0,
+       "long_context_output_multiplier": 1.0,
+       "currency": "USD",
+       "verified": "2026-09-03"
+      }
+     },
+     {
+      "id": "gemini-11-new",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "models_listing_failed",
+   "kinds": [
+    "failure",
+    "listing"
+   ],
+   "call": "list_models",
+   "config": {
+    "project": "proj-1",
+    "location": "northamerica-northeast1",
+    "service_account_json": {
+     "KEYED": {
+      "type": "service_account",
+      "project_id": "proj-1",
+      "private_key_id": "test-only-key-1",
+      "client_email": "runner@proj-1.iam.gserviceaccount.com",
+      "client_id": "100000000000000000001",
+      "token_uri": "https://oauth2.googleapis.com/token"
+     }
+    }
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://oauth2.googleapis.com/token",
+      "headers": {
+       "authorization": null,
+       "content-type": "application/x-www-form-urlencoded",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 120,
+       "read": 120,
+       "write": 120,
+       "pool": 120
+      },
+      "body": {
+       "form": [
+        [
+         "assertion",
+         "eyJ0eXAiOiAiSldUIiwgImFsZyI6ICJSUzI1NiIsICJraWQiOiAidGVzdC1vbmx5LWtleS0xIn0.eyJpYXQiOiAxNzY3MjI1NjAwLCAiZXhwIjogMTc2NzIyOTIwMCwgImlzcyI6ICJydW5uZXJAcHJvai0xLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1ZCI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJzY29wZSI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9hdXRoL2Nsb3VkLXBsYXRmb3JtIn0.NAGO2XAumOamPiYA99r7DgYX3qRvNWgNpdwB0VcWQAyOce7CWaGsPjXnoCYXjZBJlU0ju7KIuxKxTQWrIzr2F5kaU1zixC0luNwsTSXOLK-vw72YBwT_e1IMIyrFhJH3Y0g_rA7CHjMUpjlFWmJt5SGh6VpW3GTjYPZNFaOypBYkzprr-0WHvlv1_IaMFPpA1Zk-kCEbspmF2mcUMAeMdbdM8zupfVoOBcBE1K8YHz9VKlEsEPgRvTrb6XRhkse0hwx2jAMWICj9KqY7DYOcQKGpGEjr_cGJlgW1tHzHtzbu-W_gr4fyPuvjyfVOY_-nxIhMZrXiyaunrmSacDYBJQ"
+        ],
+        [
+         "grant_type",
+         "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        ]
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "access_token": "ya29.placeholder-access-token",
+       "expires_in": 3599,
+       "token_type": "Bearer"
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://northamerica-northeast1-aiplatform.googleapis.com/v1beta1/publishers/google/models",
+      "headers": {
+       "authorization": "Bearer ya29.placeholder-access-token",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "metadata-flavor": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 403,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "error": {
+        "code": 403,
+        "message": "Permission denied.",
+        "status": "PERMISSION_DENIED"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ClientError",
+     "message": "403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Permission denied.', 'status': 'PERMISSION_DENIED'}}",
+     "text": "403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Permission denied.', 'status': 'PERMISSION_DENIED'}}",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [],
+    "message": "sdk"
+   }
+  }
+ ]
+}

@@ -1,0 +1,83 @@
+{
+  "notes": "The cases of python_vertex_cases.json the provider answers otherwise than Python, as src/vertex/replay.rs states them, for a replay outside the crate. 'differs' lists the differences from Python a replay finds, each by the words it starts with; 'requests' is how many requests the provider sends; 'does' is what the call gives. A test of the crate keeps this file equal to the source: run that test with VERTEX_NAMED_CASES_OUT naming the file to rewrite it.",
+  "cases": [
+    {
+      "name": "models_listing_failed",
+      "list": "only_python",
+      "reason": "Python's list_models wraps no error: the google-genai SDK's is raised as it is. The provider fails as it does for a generation.",
+      "differs": [
+        "a ClientError no provider reproduces"
+      ],
+      "requests": 2,
+      "does": {
+        "kind": "fails",
+        "status_code": 403,
+        "retryable": false,
+        "context_overflow": null,
+        "says": {
+          "exactly": "Permission denied."
+        }
+      }
+    },
+    {
+      "name": "key_refused",
+      "list": "by_its_own_rule",
+      "reason": "a token the identity could not get fails before the request to Vertex AI, as every failure of a host's token source fails (before_request), in the client's own words, never the endpoint's: google-auth's error says nothing of it",
+      "differs": [
+        "the failure's before_request"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails_before",
+        "says": {
+          "exactly": "provider credentials are unavailable; check the connection and account"
+        }
+      }
+    },
+    {
+      "name": "key_endpoint_down",
+      "list": "by_its_own_rule",
+      "reason": "a token the identity could not get fails before the request to Vertex AI, as every failure of a host's token source fails (before_request), in the client's own words, never the endpoint's: google-auth's error says nothing of it",
+      "differs": [
+        "the failure's before_request"
+      ],
+      "requests": 3,
+      "does": {
+        "kind": "fails_before",
+        "says": {
+          "exactly": "provider credentials are unavailable; check the connection and account"
+        }
+      }
+    },
+    {
+      "name": "key_endpoint_unreachable",
+      "list": "by_its_own_rule",
+      "reason": "a token the identity could not get fails before the request to Vertex AI, as every failure of a host's token source fails (before_request), in the client's own words, never the endpoint's: google-auth's error says nothing of it",
+      "differs": [
+        "the failure's before_request"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails_before",
+        "says": {
+          "exactly": "provider credentials are unavailable; check the connection and account"
+        }
+      }
+    },
+    {
+      "name": "key_token_page",
+      "list": "by_its_own_rule",
+      "reason": "a token the identity could not get fails before the request to Vertex AI, as every failure of a host's token source fails (before_request), in the client's own words, never the endpoint's: google-auth's error says nothing of it",
+      "differs": [
+        "the failure's before_request"
+      ],
+      "requests": 1,
+      "does": {
+        "kind": "fails_before",
+        "says": {
+          "exactly": "provider credentials are unavailable; check the connection and account"
+        }
+      }
+    }
+  ]
+}

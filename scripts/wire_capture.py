@@ -337,6 +337,11 @@ class Wire:
     http: ModuleType = httpx2
 
     async def __call__(self, request: Any) -> Any:
+        return self.answer(request)
+
+    def answer(self, request: Any) -> Any:
+        """What ``__call__`` answers, for a client that sends without
+        awaiting: google-auth's, on ``requests``."""
         asked = len(self.exchanges)
         if asked >= len(self.replies):
             raise AssertionError(f"{self.name}: a request more than the case answers")

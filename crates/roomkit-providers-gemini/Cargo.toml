@@ -34,8 +34,15 @@ roomkit-providers-client = { workspace = true }
 reqwest = { workspace = true, features = ["rustls-no-provider"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+# Who a provider on Vertex AI calls as: the identity of a service-account
+# key, and its token.
+roomkit-auth = { workspace = true }
+# The general category of a character, which Google's label rules read.
+unicode-properties = { workspace = true }
 
 [dev-dependencies]
+# The test key of the Vertex cases, written as a key file writes it.
+base64 = { version = "0.23", default-features = false, features = ["alloc"] }
 # The replay of the recorded cases, and the local fake of the endpoint it
 # and the other tests send to.
 roomkit-providers-client = { workspace = true, features = ["harness"] }

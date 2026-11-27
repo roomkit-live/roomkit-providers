@@ -60,7 +60,8 @@ allow-wildcard-paths = true
 unknown-registry = "deny"
 unknown-git = "deny"
 # RoomKit's Rust core, which is not on crates.io: what a provider is comes
-# from it. The Postgres client's temporary cancellation fix
+# from it. RoomKit Auth, at a revision its release does not hold yet: the
+# identities of Google Cloud. The Postgres client's temporary cancellation fix
 # (rust-postgres/rust-postgres#1409), at a revision.
 required-git-spec = "rev"
-allow-git = ["https://github.com/roomkit-live/roomkit-rs", "https://github.com/sboily/rust-postgres"]
+allow-git = ["https://github.com/roomkit-live/roomkit-rs", "https://github.com/roomkit-live/roomkit-auth", "https://github.com/sboily/rust-postgres"]

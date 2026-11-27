@@ -7,6 +7,9 @@
 //! - [`GeminiConfig`]: what the provider is configured with, the
 //!   `GeminiConfig` of `RoomKit`'s Python implementation: the same names,
 //!   the same defaults and the same JSON form.
+//! - [`GeminiVertex`]: the same models on Vertex AI, in a Google Cloud
+//!   project's region, as a service account: Python's
+//!   `GeminiVertexProvider`, configured with [`GeminiVertexConfig`].
 //!
 //! Every generation is asked as a stream, a whole answer too. A stream is
 //! pulled: nothing is sent before it is polled, and dropping it stops the
@@ -35,6 +38,7 @@ mod provider;
 mod replay;
 mod request;
 mod stream;
+mod vertex;
 
 pub use config::GeminiConfig;
 pub use provider::Gemini;
@@ -42,6 +46,7 @@ pub use provider::Gemini;
 #[doc(hidden)]
 pub use provider::ReplayWaits;
 pub use roomkit_providers_client::{TokenError, TokenFuture, TokenSource};
+pub use vertex::{GeminiVertex, GeminiVertexConfig};
 
 #[cfg(test)]
 mod oauth_tests;

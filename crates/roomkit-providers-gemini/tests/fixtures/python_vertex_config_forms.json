@@ -1,0 +1,711 @@
+{
+    "generator": "scripts/generate_vertex_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "GeminiVertexConfig",
+    "examples": [
+        {
+            "name": "project_and_location",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1"
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "api_key": "placeholder-not-a-key",
+                "model": "gemini-2.5-flash",
+                "max_tokens": 4096,
+                "thinking_level": "high",
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "service_account_json": "placeholder-not-a-key-file",
+                "impersonate_service_account": "runner@proj-1.iam.gserviceaccount.com",
+                "labels": {
+                    "tenant": "acme",
+                    "\u00e9quipe": "nord-1",
+                    "empty": ""
+                }
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-2.5-flash",
+                "max_tokens": 4096,
+                "thinking_level": "high",
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": "**********",
+                "impersonate_service_account": "runner@proj-1.iam.gserviceaccount.com",
+                "labels": {
+                    "tenant": "acme",
+                    "\u00e9quipe": "nord-1",
+                    "empty": ""
+                }
+            }
+        },
+        {
+            "name": "a_key",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": "placeholder-not-a-key-file"
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": "**********",
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        },
+        {
+            "name": "labels_none",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": null
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        },
+        {
+            "name": "labels_empty",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {}
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": {}
+            }
+        },
+        {
+            "name": "label_of_a_caseless_script",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "\u6771\u4eac": "\u5927\u962a-1"
+                }
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": {
+                    "\u6771\u4eac": "\u5927\u962a-1"
+                }
+            }
+        },
+        {
+            "name": "label_key_of_63",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": {
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+            }
+        },
+        {
+            "name": "labels_64",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "k0": "v",
+                    "k1": "v",
+                    "k2": "v",
+                    "k3": "v",
+                    "k4": "v",
+                    "k5": "v",
+                    "k6": "v",
+                    "k7": "v",
+                    "k8": "v",
+                    "k9": "v",
+                    "k10": "v",
+                    "k11": "v",
+                    "k12": "v",
+                    "k13": "v",
+                    "k14": "v",
+                    "k15": "v",
+                    "k16": "v",
+                    "k17": "v",
+                    "k18": "v",
+                    "k19": "v",
+                    "k20": "v",
+                    "k21": "v",
+                    "k22": "v",
+                    "k23": "v",
+                    "k24": "v",
+                    "k25": "v",
+                    "k26": "v",
+                    "k27": "v",
+                    "k28": "v",
+                    "k29": "v",
+                    "k30": "v",
+                    "k31": "v",
+                    "k32": "v",
+                    "k33": "v",
+                    "k34": "v",
+                    "k35": "v",
+                    "k36": "v",
+                    "k37": "v",
+                    "k38": "v",
+                    "k39": "v",
+                    "k40": "v",
+                    "k41": "v",
+                    "k42": "v",
+                    "k43": "v",
+                    "k44": "v",
+                    "k45": "v",
+                    "k46": "v",
+                    "k47": "v",
+                    "k48": "v",
+                    "k49": "v",
+                    "k50": "v",
+                    "k51": "v",
+                    "k52": "v",
+                    "k53": "v",
+                    "k54": "v",
+                    "k55": "v",
+                    "k56": "v",
+                    "k57": "v",
+                    "k58": "v",
+                    "k59": "v",
+                    "k60": "v",
+                    "k61": "v",
+                    "k62": "v",
+                    "k63": "v"
+                }
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": {
+                    "k0": "v",
+                    "k1": "v",
+                    "k2": "v",
+                    "k3": "v",
+                    "k4": "v",
+                    "k5": "v",
+                    "k6": "v",
+                    "k7": "v",
+                    "k8": "v",
+                    "k9": "v",
+                    "k10": "v",
+                    "k11": "v",
+                    "k12": "v",
+                    "k13": "v",
+                    "k14": "v",
+                    "k15": "v",
+                    "k16": "v",
+                    "k17": "v",
+                    "k18": "v",
+                    "k19": "v",
+                    "k20": "v",
+                    "k21": "v",
+                    "k22": "v",
+                    "k23": "v",
+                    "k24": "v",
+                    "k25": "v",
+                    "k26": "v",
+                    "k27": "v",
+                    "k28": "v",
+                    "k29": "v",
+                    "k30": "v",
+                    "k31": "v",
+                    "k32": "v",
+                    "k33": "v",
+                    "k34": "v",
+                    "k35": "v",
+                    "k36": "v",
+                    "k37": "v",
+                    "k38": "v",
+                    "k39": "v",
+                    "k40": "v",
+                    "k41": "v",
+                    "k42": "v",
+                    "k43": "v",
+                    "k44": "v",
+                    "k45": "v",
+                    "k46": "v",
+                    "k47": "v",
+                    "k48": "v",
+                    "k49": "v",
+                    "k50": "v",
+                    "k51": "v",
+                    "k52": "v",
+                    "k53": "v",
+                    "k54": "v",
+                    "k55": "v",
+                    "k56": "v",
+                    "k57": "v",
+                    "k58": "v",
+                    "k59": "v",
+                    "k60": "v",
+                    "k61": "v",
+                    "k62": "v",
+                    "k63": "v"
+                }
+            }
+        },
+        {
+            "name": "global",
+            "given": {
+                "project": "proj-1",
+                "location": "global"
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "global",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        },
+        {
+            "name": "label_of_other_digits",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "tenant": "\u0663\u0664-\u096a"
+                }
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": {
+                    "tenant": "\u0663\u0664-\u096a"
+                }
+            }
+        },
+        {
+            "name": "empty_key",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": "",
+                "api_key": ""
+            },
+            "form": {
+                "api_key": "",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": "",
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "base_url": "https://llm.example",
+                "x": 1
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_project",
+            "given": {
+                "location": "global"
+            }
+        },
+        {
+            "name": "no_location",
+            "given": {
+                "project": "proj-1"
+            }
+        },
+        {
+            "name": "project_null",
+            "given": {
+                "project": null,
+                "location": "northamerica-northeast1"
+            }
+        },
+        {
+            "name": "location_a_number",
+            "given": {
+                "project": "proj-1",
+                "location": 3
+            }
+        },
+        {
+            "name": "key_a_number",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": 3
+            }
+        },
+        {
+            "name": "labels_65",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "k0": "v",
+                    "k1": "v",
+                    "k2": "v",
+                    "k3": "v",
+                    "k4": "v",
+                    "k5": "v",
+                    "k6": "v",
+                    "k7": "v",
+                    "k8": "v",
+                    "k9": "v",
+                    "k10": "v",
+                    "k11": "v",
+                    "k12": "v",
+                    "k13": "v",
+                    "k14": "v",
+                    "k15": "v",
+                    "k16": "v",
+                    "k17": "v",
+                    "k18": "v",
+                    "k19": "v",
+                    "k20": "v",
+                    "k21": "v",
+                    "k22": "v",
+                    "k23": "v",
+                    "k24": "v",
+                    "k25": "v",
+                    "k26": "v",
+                    "k27": "v",
+                    "k28": "v",
+                    "k29": "v",
+                    "k30": "v",
+                    "k31": "v",
+                    "k32": "v",
+                    "k33": "v",
+                    "k34": "v",
+                    "k35": "v",
+                    "k36": "v",
+                    "k37": "v",
+                    "k38": "v",
+                    "k39": "v",
+                    "k40": "v",
+                    "k41": "v",
+                    "k42": "v",
+                    "k43": "v",
+                    "k44": "v",
+                    "k45": "v",
+                    "k46": "v",
+                    "k47": "v",
+                    "k48": "v",
+                    "k49": "v",
+                    "k50": "v",
+                    "k51": "v",
+                    "k52": "v",
+                    "k53": "v",
+                    "k54": "v",
+                    "k55": "v",
+                    "k56": "v",
+                    "k57": "v",
+                    "k58": "v",
+                    "k59": "v",
+                    "k60": "v",
+                    "k61": "v",
+                    "k62": "v",
+                    "k63": "v",
+                    "k64": "v"
+                }
+            }
+        },
+        {
+            "name": "label_key_empty",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "": "v"
+                }
+            }
+        },
+        {
+            "name": "label_key_of_64",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "v"
+                }
+            }
+        },
+        {
+            "name": "label_key_starting_with_a_digit",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "1tenant": "v"
+                }
+            }
+        },
+        {
+            "name": "label_key_starting_with_an_underscore",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "_tenant": "v"
+                }
+            }
+        },
+        {
+            "name": "label_key_in_capitals",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "Tenant": "v"
+                }
+            }
+        },
+        {
+            "name": "label_key_with_a_dot",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "a.b": "v"
+                }
+            }
+        },
+        {
+            "name": "label_value_of_64",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "tenant": "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+                }
+            }
+        },
+        {
+            "name": "label_value_in_capitals",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "tenant": "Acme"
+                }
+            }
+        },
+        {
+            "name": "label_value_with_a_space",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "tenant": "a b"
+                }
+            }
+        },
+        {
+            "name": "label_value_a_number",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "tenant": 1
+                }
+            }
+        },
+        {
+            "name": "label_key_with_a_modifier_letter",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "\u30c1\u30fc\u30e0": "v"
+                }
+            }
+        },
+        {
+            "name": "label_value_with_a_titlecase_letter",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": {
+                    "tenant": "\u01c5"
+                }
+            }
+        },
+        {
+            "name": "labels_a_list",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "labels": [
+                    "tenant"
+                ]
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                {
+                    "project": "proj-1",
+                    "location": "northamerica-northeast1"
+                }
+            ]
+        }
+    ],
+    "converted": [
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "timeout": "30"
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        },
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "max_tokens": "2048"
+            },
+            "form": {
+                "api_key": null,
+                "model": "gemini-3.8-flash",
+                "max_tokens": 2048,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0,
+                "project": "proj-1",
+                "location": "northamerica-northeast1",
+                "service_account_json": null,
+                "impersonate_service_account": null,
+                "labels": null
+            }
+        }
+    ]
+}

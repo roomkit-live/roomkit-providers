@@ -21,6 +21,8 @@ mod thinking;
 pub(crate) struct Asked<'a> {
     pub(crate) config: &'a GeminiConfig,
     pub(crate) provider: &'a str,
+    /// The billing labels the request carries, on Vertex AI.
+    pub(crate) labels: Option<&'a [(String, String)]>,
 }
 
 impl Asked<'_> {
@@ -67,7 +69,14 @@ impl Asked<'_> {
                 json!([{"functionDeclarations": declarations}]),
             );
         }
-        // The SDK writes the tools before the generation config.
+        // The SDK writes the tools, then the labels, before the generation
+        // config.
+        if let Some(labels) = self.labels {
+            let labels = labels
+                .iter()
+                .map(|(key, value)| (key.clone(), value.as_str().into()));
+            body.insert("labels".to_owned(), Value::Object(labels.collect()));
+        }
         body.insert("generationConfig".to_owned(), generation);
         Ok(body)
     }

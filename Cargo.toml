@@ -24,6 +24,12 @@ roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomk
 # MCP tools of one of them.
 roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "e6f92c6dba1cb158ff2cc8d734038a1100402ceb" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
+# The identities a server process calls Google Cloud as (Gemini on Vertex
+# AI): its `google-cloud` feature alone, which signs with ring, as rustls
+# does here.
+roomkit-auth = { version = "0.1.0", git = "https://github.com/roomkit-live/roomkit-auth", rev = "dda65d29ea56d1deb95b17509ec2d215e9220002", default-features = false, features = ["google-cloud"] }
+# The general category of a character, which Google's label rules read.
+unicode-properties = { version = "0.1.5", default-features = false, features = ["general-category"] }
 # The SQLite store, which the server examples run on (rust-examples).
 roomkit-providers-sqlite = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-sqlite" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }

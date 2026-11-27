@@ -28,7 +28,7 @@ use crate::request::Asked;
 use crate::stream;
 
 /// The provider its failures name.
-const LABEL: &str = "gemini";
+pub(crate) const LABEL: &str = "gemini";
 
 /// The provider's name, as Python's class names itself.
 const CLASS_NAME: &str = "GeminiAIProvider";
@@ -57,7 +57,24 @@ pub struct Gemini {
     pub(crate) headers: HeaderMap,
     pub(crate) client: Client,
     pub(crate) token_source: Option<Arc<dyn crate::TokenSource>>,
+    /// The name Python's class gives itself: the Developer API's, or
+    /// Vertex AI's.
+    pub(crate) class_name: &'static str,
+    /// The billing labels each request carries, on Vertex AI.
+    pub(crate) labels: Option<Vec<(String, String)>>,
     exit: Arc<Exit>,
+}
+
+/// What a provider on another endpoint than the Developer API is built
+/// from: its URLs, who it calls as, and what each request carries beside.
+pub(crate) struct Parts {
+    pub(crate) config: GeminiConfig,
+    pub(crate) class_name: &'static str,
+    pub(crate) generate: reqwest::Url,
+    pub(crate) models: reqwest::Url,
+    pub(crate) timeouts: Timeouts,
+    pub(crate) token_source: Arc<dyn crate::TokenSource>,
+    pub(crate) labels: Option<Vec<(String, String)>>,
 }
 
 impl Gemini {
@@ -125,13 +142,7 @@ impl Gemini {
         let mut key = key.map_err(|_| Failure::unbuilt("its key cannot go in a header"))?;
         key.set_sensitive(true);
         headers.insert(HeaderName::from_static(KEY_HEADER), key);
-        let client = Client::new(Settings {
-            timeouts: Timeouts::new(config.timeout, config.connect_timeout)?,
-            max_retries: 0,
-            retry: RETRY,
-            refused: failure::status,
-            tried_again: tried_again!("roomkit::providers::gemini"),
-        })?;
+        let client = client(Timeouts::new(config.timeout, config.connect_timeout)?)?;
         let exit = client.exit(LABEL, [config.api_key.clone()], [], &generate);
         Ok(Self {
             config: Arc::new(config),
@@ -139,6 +150,29 @@ impl Gemini {
             models,
             headers,
             token_source: None,
+            class_name: CLASS_NAME,
+            labels: None,
+            client,
+            exit: Arc::new(exit),
+        })
+    }
+
+    /// The provider `parts` make: no key, a token of its source on every
+    /// request.
+    pub(crate) fn of(parts: Parts) -> Result<Self, Failure> {
+        let mut headers = HeaderMap::new();
+        headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        let client = client(parts.timeouts)?;
+        let exit = client.exit(LABEL, [], [], &parts.generate);
+        Ok(Self {
+            config: Arc::new(parts.config),
+            generate: parts.generate,
+            models: parts.models,
+            headers,
+            token_source: Some(parts.token_source),
+            class_name: parts.class_name,
+            labels: parts.labels,
             client,
             exit: Arc::new(exit),
         })
@@ -154,6 +188,7 @@ impl Gemini {
         Asked {
             config: &self.config,
             provider: LABEL,
+            labels: self.labels.as_deref(),
         }
     }
 
@@ -220,6 +255,17 @@ impl Gemini {
     }
 }
 
+/// The client of a provider: no try again, as the SDK takes none.
+fn client(timeouts: Timeouts) -> Result<Client, Failure> {
+    Client::new(Settings {
+        timeouts,
+        max_retries: 0,
+        retry: RETRY,
+        refused: failure::status,
+        tried_again: tried_again!("roomkit::providers::gemini"),
+    })
+}
+
 /// A refusal the done event carries: Gemini's refusal stop reason, or why
 /// the prompt itself was blocked.
 fn refusal(done: &StreamDone) -> Option<String> {
@@ -229,7 +275,7 @@ fn refusal(done: &StreamDone) -> Option<String> {
 
 impl AiProvider for Gemini {
     fn name(&self) -> &'static str {
-        CLASS_NAME
+        self.class_name
     }
 
     fn model_name(&self) -> &str {
