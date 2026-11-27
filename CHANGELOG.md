@@ -16,12 +16,13 @@ nothing has been released yet.
   `GeminiVertexConfig` in the `roomkit-providers-gemini` crate, and
   `roomkit_providers.llm.vertex` (`GeminiVertex`, `GeminiVertexConfig`) as a
   RoomKit `AIProvider`, in place of RoomKit's `GeminiVertexProvider`. It is
-  held to the cases captured on RoomKit's Python provider, 22 wire cases, each
-  replayed as Python but four (a token that cannot be had fails before the
-  request), and to the JSON forms of its configuration. It calls as the
-  service account of a key file, through RoomKit Auth's `google-cloud`
-  identities; Application Default Credentials, the metadata server and a
-  borrowed account are refused for now.
+  held to the cases captured on RoomKit's Python provider, 39 wire cases, 27
+  replayed as Python, 12 named (a token that cannot be had fails before the
+  request; an external account is not taken; a failed listing), and to the JSON forms of its configuration. It calls as the
+  service account of a key file, or as Application Default Credentials
+  (the file GOOGLE_APPLICATION_CREDENTIALS names, gcloud's file, the
+  metadata server), a borrowed account too, through RoomKit Auth's
+  `google-cloud` identities; external accounts are not taken yet.
 
 - PolarGrid, on the chat completions of its edges, in Rust and in Python:
   the `roomkit-providers-polargrid` crate (`PolarGrid`, `PolarGridConfig`,

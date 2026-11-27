@@ -41,8 +41,9 @@ Gemini, on Google's Developer API, is in Python too: `Gemini` and
 
 Gemini on Vertex AI is in Python too: `GeminiVertex` and `GeminiVertexConfig`
 from `roomkit_providers.llm.vertex`, in place of RoomKit's
-`GeminiVertexProvider`, as a service account (a key file's contents) for
-now. It takes RoomKit's own `GeminiVertexConfig` as well.
+`GeminiVertexProvider`, as a key file's service account or as
+Application Default Credentials, a borrowed account too. It takes RoomKit's
+own `GeminiVertexConfig` as well.
 
 Mistral, on its chat completions, is in Python too: `Mistral` and
 `MistralConfig` from `roomkit_providers.llm.mistral`, in place of RoomKit's

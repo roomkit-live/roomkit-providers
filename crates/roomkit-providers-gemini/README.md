@@ -72,11 +72,15 @@ project's region.
   for a multi-region; at `v1beta1`, the project and the location in the
   path; a model named as the SDK names it (`publishers/google/models/…`, a
   publisher's model, a resource given whole).
-- It is sent as a service account: the identity of `service_account_json`,
-  from `roomkit-auth` (its `google-cloud` feature), whose token is asked of
-  Google's token endpoint with an assertion signed as google-auth signs it,
-  and kept until shortly before it expires. A token that cannot be had
-  fails before the request, in the client's closed words.
+- It is sent as the identity google-auth would give, from `roomkit-auth`
+  (its `google-cloud` feature): the key of `service_account_json`, its
+  assertion signed as google-auth signs it; else Application Default
+  Credentials (the file `GOOGLE_APPLICATION_CREDENTIALS` names, gcloud's
+  file, the metadata server), a user's credentials among them; and the
+  account `impersonate_service_account` names, borrowed with either. The
+  token is kept until shortly before it expires; the project a file bills
+  goes in `x-goog-user-project`. A token that cannot be had fails before
+  the request, in the client's closed words.
 - The billing labels go in every request, held to Google's rules when the
   configuration is read and when the provider is built.
 
@@ -100,9 +104,8 @@ for every host. Four cases are named: a token that cannot be had fails
 before the request (`before_request`), where Python's google-auth error says
 nothing of it.
 
-Application Default Credentials (no key), the metadata server and a
-borrowed service account (`impersonate_service_account`) are refused when
-the provider is built, for now: they come next.
+An external account (`external_account`, workload identity federation)
+and a GDCH service account are not taken yet; the first token fails.
 
 ## Not covered
 
