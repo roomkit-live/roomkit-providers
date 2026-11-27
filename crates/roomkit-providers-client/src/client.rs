@@ -13,7 +13,7 @@ use crate::endpoint::{has_user_information, percent_decoded};
 use crate::exchange::Pace;
 use crate::failure::{Exit, Failure, Secrets};
 use crate::proxy::{Credentials, Proxies, Route};
-use crate::retry::Rule;
+use crate::retry::{Backoff, Rule};
 
 /// For how long a request takes again a connection no request uses: the 5
 /// seconds the client of Python's providers keeps one (httpx's
@@ -134,6 +134,9 @@ pub struct Client {
     timeouts: Timeouts,
     pub(crate) max_retries: u32,
     pub(crate) retry: Rule,
+    /// The waits of an SDK that tries again only what got no answer, when
+    /// the provider's does.
+    pub(crate) unanswered_only: Option<Backoff>,
     pub(crate) refused: fn(u16, &[u8]) -> Failure,
     pub(crate) tried_again: fn(u32, Duration),
     pub(crate) pace: Pace,
@@ -214,6 +217,7 @@ impl Client {
             timeouts,
             max_retries: settings.max_retries,
             retry: settings.retry,
+            unanswered_only: None,
             refused: settings.refused,
             tried_again: settings.tried_again,
             pace: Pace::default(),
@@ -242,6 +246,14 @@ impl Client {
     #[cfg(any(test, feature = "harness"))]
     pub fn set_stream_limit(&mut self, limit: usize) {
         self.stream_limit = limit;
+    }
+
+    /// Tries a request again only when it got no answer, a lost connection
+    /// or a timeout, after `backoff`'s waits, and never one a server
+    /// answered, whatever its status: for a provider whose SDK tries again
+    /// that way. Up to the settings' `max_retries`, as any try.
+    pub fn try_again_only_unanswered(&mut self, backoff: Backoff) {
+        self.unanswered_only = Some(backoff);
     }
 
     /// Replaces the clock a `retry-after` date is read against and the wait

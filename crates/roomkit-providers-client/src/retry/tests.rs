@@ -175,3 +175,13 @@ fn a_backoff_is_drawn_anew_for_each_wait() {
     );
     assert!(drawn.iter().any(|wait| (wait - drawn[0]).abs() > 1e-9));
 }
+
+// Python: polargrid-sdk 0.10.0, PolarGrid._make_request: a request that got
+// no answer waits `2 ** attempt` seconds before its next try.
+#[test]
+fn a_backoff_doubles_its_first_wait_at_each_try() {
+    let backoff = Backoff { first: 1.0 };
+    let waits: Vec<f64> = (0..4).map(|n| backoff.delay(n).as_secs_f64()).collect();
+    assert_eq!(waits, [1.0, 2.0, 4.0, 8.0]);
+    assert_eq!(Backoff { first: 0.5 }.delay(1).as_secs_f64(), 1.0);
+}
