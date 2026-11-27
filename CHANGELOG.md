@@ -16,7 +16,8 @@ nothing has been released yet.
   moved as it was: the file of RoomKit's Python `SQLiteStore`, which
   either implementation reads. The store passes the core's store
   contract (`roomkit::testing::check_conversation_store`). The server
-  examples run on it. Rust only: RoomKit's Python keeps its own.
+  examples run on it. It needs Rust 1.92, as in RoomKit's core. Rust
+  only: RoomKit's Python keeps its own.
 - `roomkit-providers-postgres`: RoomKit's conversation store, room lock
   and knowledge source on Postgres, for a host built on RoomKit's Rust
   core. `PostgresStore`, `PostgresAdvisoryLockManager`,
@@ -26,7 +27,8 @@ nothing has been released yet.
   advisory keys, a store both implementations share. The store passes
   the core's store contract (`roomkit::testing::check_conversation_store`).
   An application that takes it repeats the root patch of the Postgres
-  driver its README names. Rust only: RoomKit's Python keeps its own.
+  driver its README names. It needs Rust 1.92, as in RoomKit's core.
+  Rust only: RoomKit's Python keeps its own.
 - `roomkit-providers-opentelemetry`: RoomKit's telemetry on OpenTelemetry,
   for a host built on RoomKit's Rust core. `OpenTelemetryProvider` and
   `OpenTelemetryProviderOptions` are the provider that was the core's
@@ -34,7 +36,8 @@ nothing has been released yet.
   the kit's spans and metrics handed to an OpenTelemetry SDK tracer and
   meter provider, a turn of another process in its owner's trace. It starts
   its spans under the current span's context, which the core gives by its
-  public `telemetry::get_current_telemetry_ctx`. Rust only: RoomKit's
+  public `telemetry::get_current_telemetry_ctx`. It needs Rust 1.92, as
+  in RoomKit's core. Rust only: RoomKit's
   Python keeps its own.
 - `roomkit-providers-redis`: RoomKit's turn backend across processes, on
   Redis, for a host built on RoomKit's Rust core. `RedisTurnBackend` is the

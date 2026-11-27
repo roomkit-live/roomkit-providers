@@ -1,5 +1,9 @@
 CARGO ?= cargo
 MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' Cargo.toml).0
+# The crates moved from RoomKit's Rust core keep the Rust release it
+# supports, below the workspace's: its stores and its telemetry provider.
+ENGINE_MSRV := $(shell sed -n 's/^rust-version = "\(.*\)"$$/\1/p' crates/roomkit-providers-sqlite/Cargo.toml).0
+ENGINE_MSRV_CRATES := -p roomkit-providers-sqlite -p roomkit-providers-postgres -p roomkit-providers-opentelemetry
 DENY_FLAGS ?=
 # The interpreter of the generated files: one with RoomKit's Python package
 # installed for python-public-urls, python-proxy-cases and the python-openai
@@ -187,9 +191,11 @@ deny:
 
 msrv:
 	$(CARGO) +$(MSRV) check --workspace --all-targets --all-features --locked
+	$(CARGO) +$(ENGINE_MSRV) check $(ENGINE_MSRV_CRATES) --all-targets --all-features --locked
 
 msrv-toolchain:
 	rustup toolchain install $(MSRV) --profile minimal
+	rustup toolchain install $(ENGINE_MSRV) --profile minimal
 
 hooks:
 	git config core.hooksPath .githooks

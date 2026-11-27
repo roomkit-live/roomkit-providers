@@ -3,7 +3,9 @@ name = "roomkit-providers-sqlite"
 description = "A SQLite conversation store for RoomKit, on the Python implementation's schema"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
+# The Rust release RoomKit's Rust core supports, which this crate had
+# there: a host on that release takes it (make msrv checks it).
+rust-version = "1.92"
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
