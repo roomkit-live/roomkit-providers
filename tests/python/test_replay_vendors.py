@@ -13,6 +13,7 @@ from __future__ import annotations
 import unittest
 
 from replay_cases import Replays, every_case
+from roomkit_providers.llm.azure import AzureAI, AzureAIConfig
 from roomkit_providers.llm.cerebras import Cerebras, CerebrasConfig
 from roomkit_providers.llm.deepseek import DeepSeek, DeepSeekConfig
 from roomkit_providers.llm.kimi import Kimi, KimiConfig
@@ -21,18 +22,21 @@ from roomkit_providers.llm.meta import Meta, MetaConfig
 from roomkit_providers.llm.minimax import MiniMax, MiniMaxConfig
 from roomkit_providers.llm.openrouter import OpenRouter, OpenRouterConfig
 from roomkit_providers.llm.qwen import Qwen, QwenConfig
+from roomkit_providers.llm.vllm import VLLM, VLLMConfig
 from roomkit_providers.llm.xai import XAI, XAIConfig
 
 
-def of_openai_s_wire(vendor: str, provider: type, config: type) -> Replays:
+def of_openai_s_wire(
+    vendor: str, provider: type, config: type, key_header: str = "authorization"
+) -> Replays:
     """A vendor of OpenAI's wire: its fixture among the OpenAI crate's, no
-    case named."""
+    case named, its key in `key_header`."""
     return Replays(
         vendor=vendor,
         provider=provider,
         config=config,
         cases=f"python_{vendor}_cases.json",
-        key_header="authorization",
+        key_header=key_header,
         crate="openai",
         named_cases=None,
     )
@@ -47,6 +51,8 @@ QWEN = of_openai_s_wire("qwen", Qwen, QwenConfig)
 META = of_openai_s_wire("meta", Meta, MetaConfig)
 OPENROUTER = of_openai_s_wire("openrouter", OpenRouter, OpenRouterConfig)
 LITELLM = of_openai_s_wire("litellm", LiteLLM, LiteLLMConfig)
+AZURE = of_openai_s_wire("azure", AzureAI, AzureAIConfig, key_header="api-key")
+VLLM_WIRE = of_openai_s_wire("vllm", VLLM, VLLMConfig)
 
 
 class ReplayTests(unittest.IsolatedAsyncioTestCase):
@@ -155,6 +161,30 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
                 ("generate", "as Python"): 48,
                 ("generate_structured_stream", "as Python"): 1,
                 ("list_models", "as Python"): 4,
+            },
+        )
+
+    async def test_every_azure_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(AZURE)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 51,
+                ("generate_structured_stream", "as Python"): 2,
+                ("list_models", "as Python"): 2,
+            },
+        )
+
+    async def test_every_vllm_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(VLLM_WIRE)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 52,
+                ("generate_structured_stream", "as Python"): 2,
+                ("list_models", "as Python"): 1,
             },
         )
 

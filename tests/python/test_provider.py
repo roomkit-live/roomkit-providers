@@ -1075,6 +1075,12 @@ class ConstructionTests(unittest.TestCase):
             class Deciding(Config, vendor="scripted", decided=("no_such_member",)):
                 model: str = "mock"
 
+        for keyword in ("rewritten", "urls"):
+            with self.subTest(keyword=keyword), self.assertRaises(TypeError):
+
+                class Naming(Config, vendor="scripted", **{keyword: ("no_such_member",)}):
+                    model: str = "mock"
+
         # A class derived from a provider's is that provider's.
         class Derived(Scripted):
             pass

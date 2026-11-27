@@ -14,7 +14,7 @@ from collections.abc import Iterator, Mapping
 from typing import Any, ClassVar, get_args
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, SecretStr
+from pydantic import BaseModel, ConfigDict, SecretStr, model_validator
 
 from .. import _native, _process
 from ._failure import failing_as_roomkit
@@ -43,7 +43,7 @@ class Config(BaseModel):
     A provider's module derives its configuration from this class and
     states its members, its key among them where it has one: ``api_key``, a
     ``SecretStr``, which may be optional. A provider that takes no key
-    states no such member. The class statement says three things beside
+    states no such member. The class statement says what follows beside
     the members::
 
         class VendorConfig(
@@ -51,25 +51,34 @@ class Config(BaseModel):
             vendor="vendor",
             stands_for=RoomKitVendorConfig,
             decided=("a_switch",),
+            rewritten=("an_endpoint",),
+            urls=("an_endpoint",),
         ):
 
     ``vendor`` is the name the native module holds the provider under;
     ``stands_for``, RoomKit's configuration of the same provider, which the
-    provider takes in place of this one; and ``decided``, the switches the
-    vendor decides from the model on its own endpoint.
+    provider takes in place of this one; ``decided``, the switches the
+    vendor decides from the model on its own endpoint; ``rewritten``, the
+    members the provider reads its own way, which take what its reading
+    makes of them (an endpoint reduced to the one it asks); and ``urls``,
+    the members beside ``base_url`` that hold a URL. The last three may
+    be left out.
 
     What every configuration then does:
 
     - ``repr`` never shows a key, which is a ``SecretStr`` or the class is
       refused, the value of any member of a mapping (a header, a member of
-      a request's body), nor more of ``base_url`` than its scheme, its host
-      and its port;
+      a request's body), nor more of ``base_url`` or of a member of
+      ``urls`` than its scheme, its host and its port;
     - a refusal says what is refused and never shows the value given,
       which may be a secret;
     - a ``base_url`` Python's URL reader refuses is refused when the
       configuration is built, as RoomKit's configurations refuse it;
     - each switch of ``_decided`` left unset is decided when the
       configuration is built, by the provider's own rule, in native code;
+    - each member of ``_rewritten`` takes, when the configuration is
+      built, what the provider's own reading makes of it, in native code;
+      a value the reading refuses is refused;
     - a process forked after its parent's first call is refused before
       anything is read.
     """
@@ -79,6 +88,8 @@ class Config(BaseModel):
     _vendor: ClassVar[str]
     _stands_for: ClassVar[type[BaseModel] | None] = None
     _decided: ClassVar[frozenset[str]] = frozenset()
+    _rewritten: ClassVar[frozenset[str]] = frozenset()
+    _urls: ClassVar[frozenset[str]] = frozenset({"base_url"})
 
     def __init__(self, /, **data: Any) -> None:
         if _process.forked():
@@ -94,6 +105,8 @@ class Config(BaseModel):
         vendor: str | None = None,
         stands_for: type[BaseModel] | None = None,
         decided: tuple[str, ...] = (),
+        rewritten: tuple[str, ...] = (),
+        urls: tuple[str, ...] = (),
         **kwargs: Any,
     ) -> None:
         # What the class statement says is read once the members are known,
@@ -107,6 +120,8 @@ class Config(BaseModel):
         vendor: str | None = None,
         stands_for: type[BaseModel] | None = None,
         decided: tuple[str, ...] = (),
+        rewritten: tuple[str, ...] = (),
+        urls: tuple[str, ...] = (),
         **kwargs: Any,
     ) -> None:
         super().__pydantic_init_subclass__(**kwargs)
@@ -125,7 +140,11 @@ class Config(BaseModel):
         unknown = sorted(set(decided) - set(cls.model_fields))
         if unknown:
             raise TypeError(f"a configuration decides only its own members, not {unknown}")
+        unknown = sorted((set(rewritten) | set(urls)) - set(cls.model_fields))
+        if unknown:
+            raise TypeError(f"a configuration names only its own members, not {unknown}")
         cls._vendor, cls._stands_for, cls._decided = vendor, stands_for, frozenset(decided)
+        cls._rewritten, cls._urls = frozenset(rewritten), frozenset({"base_url", *urls})
 
     def model_post_init(self, context: Any, /) -> None:
         """Refuse a base URL that does not read, then decide the switches
@@ -140,6 +159,25 @@ class Config(BaseModel):
         unset = type(self)._decided - self.model_fields_set
         if unset:
             self._decide(unset)
+
+    @model_validator(mode="after")
+    def _rewrite(self) -> Config:
+        """Take from the native module what the provider's own reading makes
+        of the members of `_rewritten`. A value it refuses raises the
+        reader's ValueError, which never repeats the value."""
+        rewritten = type(self)._rewritten
+        if not rewritten:
+            return self
+        _process.enter()
+        asked = self.model_dump(mode="json")
+        if "api_key" in asked:
+            # The key is no member the reading rewrites, and is not sent.
+            asked["api_key"] = ""
+        read = json.loads(_native.config_form(type(self)._vendor, json.dumps(asked)))
+        for name in sorted(rewritten):
+            if getattr(self, name) != read[name]:
+                setattr(self, name, read[name])
+        return self
 
     def _decide(self, unset: frozenset[str]) -> None:
         """Take from the native module what the vendor decides of `unset`,
@@ -160,7 +198,7 @@ class Config(BaseModel):
         for name, value in super().__repr_args__():
             if isinstance(value, Mapping):
                 value = dict.fromkeys(value, MASK)
-            elif name == "base_url" and isinstance(value, str):
+            elif name in type(self)._urls and isinstance(value, str):
                 value = shown_url(value)
             yield name, value
 

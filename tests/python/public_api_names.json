@@ -3,6 +3,10 @@
     "Anthropic",
     "AnthropicConfig"
   ],
+  "roomkit_providers.llm.azure": [
+    "AzureAI",
+    "AzureAIConfig"
+  ],
   "roomkit_providers.llm.cerebras": [
     "Cerebras",
     "CerebrasConfig"
@@ -42,6 +46,10 @@
   "roomkit_providers.llm.qwen": [
     "Qwen",
     "QwenConfig"
+  ],
+  "roomkit_providers.llm.vllm": [
+    "VLLM",
+    "VLLMConfig"
   ],
   "roomkit_providers.llm.xai": [
     "XAI",

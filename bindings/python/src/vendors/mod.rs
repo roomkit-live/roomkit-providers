@@ -9,6 +9,7 @@
 use super::vendor::Entries;
 
 mod anthropic;
+mod azure;
 mod cerebras;
 mod deepseek;
 mod kimi;
@@ -19,6 +20,7 @@ mod minimax;
 mod openai;
 mod openrouter;
 mod qwen;
+mod vllm;
 mod xai;
 
 /// The entries of every vendor.
@@ -35,4 +37,6 @@ pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<meta::Meta>(),
     Entries::of::<openrouter::OpenRouter>(),
     Entries::of::<litellm::LiteLlm>(),
+    Entries::of::<azure::AzureAi>(),
+    Entries::of::<vllm::Vllm>(),
 ];
