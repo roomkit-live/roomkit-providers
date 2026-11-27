@@ -7,6 +7,16 @@ nothing has been released yet.
 
 ### Added
 
+- OpenRouter, LiteLLM, Azure and vLLM, in Rust and in Python: `OpenRouter`,
+  `LiteLlm`, `AzureAi` and `Vllm` with their configurations in the OpenAI
+  crate, and `roomkit_providers.llm.openrouter` (`OpenRouter`,
+  `OpenRouterConfig`), `.litellm` (`LiteLLM`, `LiteLLMConfig`), `.azure`
+  (`AzureAI`, `AzureAIConfig`) and `.vllm` (`VLLM`, `VLLMConfig`, in place
+  of RoomKit's `create_vllm_provider`) as RoomKit `AIProvider`s. Each is
+  held to the cases captured on RoomKit's Python provider of the vendor,
+  220 wire cases, every one replayed as Python, and to the JSON forms of its
+  configuration. LiteLLM's listing dates the proxy's prices in UTC; an
+  Azure call with an empty key is refused before any request.
 - xAI, Cerebras, Qwen and Meta, in Rust and in Python: `Xai`, `Cerebras`,
   `Qwen` and `Meta` with their configurations in the OpenAI crate, and
   `roomkit_providers.llm.xai` (`XAI`, `XAIConfig`), `.cerebras`
