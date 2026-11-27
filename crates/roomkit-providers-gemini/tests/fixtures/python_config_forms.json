@@ -1,0 +1,314 @@
+{
+    "generator": "scripts/generate_gemini_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "GeminiConfig",
+    "examples": [
+        {
+            "name": "key_alone",
+            "given": {
+                "api_key": "placeholder-not-a-key"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gemini-2.5-flash",
+                "max_tokens": 4096,
+                "thinking_level": "high",
+                "timeout": 120.0,
+                "connect_timeout": 2.5
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-2.5-flash",
+                "max_tokens": 4096,
+                "thinking_level": "high",
+                "timeout": 120.0,
+                "connect_timeout": 2.5
+            }
+        },
+        {
+            "name": "a_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "gemini-3.6-flash"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.6-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "empty_key",
+            "given": {
+                "api_key": ""
+            },
+            "form": {
+                "api_key": "",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "empty_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": ""
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "a_token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 2048
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 2048,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "a_thinking_level",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "thinking_level": "minimal"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": "minimal",
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "no_thinking_level",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "thinking_level": null
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "timeouts_as_integers",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "timeout": 120,
+                "connect_timeout": 2
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 120.0,
+                "connect_timeout": 2.0
+            }
+        },
+        {
+            "name": "timeouts_with_fractions",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "timeout": 0.25,
+                "connect_timeout": 1.5
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 0.25,
+                "connect_timeout": 1.5
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "base_url": "https://llm.example",
+                "x": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_key",
+            "given": {
+                "model": "gemini-3.8-flash"
+            }
+        },
+        {
+            "name": "key_null",
+            "given": {
+                "api_key": null
+            }
+        },
+        {
+            "name": "key_a_number",
+            "given": {
+                "api_key": 42
+            }
+        },
+        {
+            "name": "model_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": null
+            }
+        },
+        {
+            "name": "model_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": 3
+            }
+        },
+        {
+            "name": "token_bound_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": null
+            }
+        },
+        {
+            "name": "token_bound_a_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 2.5
+            }
+        },
+        {
+            "name": "thinking_level_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "thinking_level": 2
+            }
+        },
+        {
+            "name": "timeout_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "timeout": null
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                {
+                    "api_key": "placeholder-not-a-key"
+                }
+            ]
+        },
+        {
+            "name": "a_number",
+            "given": 42
+        }
+    ],
+    "converted": [
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "timeout": "30"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": "2048"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 2048,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "max_tokens_a_whole_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 2048.0
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 2048,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        },
+        {
+            "name": "connect_timeout_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "connect_timeout": "5"
+            },
+            "form": {
+                "api_key": "**********",
+                "model": "gemini-3.8-flash",
+                "max_tokens": 1024,
+                "thinking_level": null,
+                "timeout": 60.0,
+                "connect_timeout": 5.0
+            }
+        }
+    ]
+}
