@@ -92,7 +92,7 @@ NAMES_OF_A_CLASS = {"__name__", "__qualname__", "__module__", "__class__"}
 # The two classes a vendor's own derive from, each by the shared module that
 # defines it, and the keywords each takes in a class statement.
 SHARED_CLASSES = {"Config": "_config", "Provider": "_provider", "ManagedServer": "_provider"}
-OF_A_CONFIGURATION = {"vendor", "stands_for", "decided", "rewritten", "urls"}
+OF_A_CONFIGURATION = {"vendor", "stands_for", "decided", "rewritten", "urls", "key"}
 OF_A_PROVIDER = {"config"}
 # Where else a vendor's module of the package imports names from: for its
 # members' types, and RoomKit's configuration of the same provider, a name

@@ -24,6 +24,7 @@ mod openai;
 mod openrouter;
 mod polargrid;
 mod qwen;
+mod vertex;
 mod vllm;
 mod xai;
 
@@ -31,6 +32,7 @@ mod xai;
 pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<anthropic::Anthropic>(),
     Entries::of::<gemini::Gemini>(),
+    Entries::of::<vertex::GeminiVertex>(),
     Entries::of::<mistral::Mistral>(),
     Entries::of::<ollama::Ollama>(),
     Entries::of::<polargrid::PolarGrid>(),

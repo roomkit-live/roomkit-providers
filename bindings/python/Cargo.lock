@@ -978,6 +978,8 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "rustls-platform-verifier",
+ "serde",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
@@ -1045,6 +1047,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-auth"
+version = "0.1.0"
+source = "git+https://github.com/roomkit-live/roomkit-auth?rev=dda65d29ea56d1deb95b17509ec2d215e9220002#dda65d29ea56d1deb95b17509ec2d215e9220002"
+dependencies = [
+ "base64",
+ "reqwest",
+ "ring",
+ "rustls",
+ "rustls-pki-types",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "url",
+ "webpki-roots",
+ "zeroize",
+]
+
+[[package]]
 name = "roomkit-core"
 version = "0.3.0"
 source = "git+https://github.com/roomkit-live/roomkit-rs?rev=e6f92c6dba1cb158ff2cc8d734038a1100402ceb#e6f92c6dba1cb158ff2cc8d734038a1100402ceb"
@@ -1097,10 +1118,12 @@ dependencies = [
  "reqwest",
  "roomkit",
  "roomkit-ai",
+ "roomkit-auth",
  "roomkit-core",
  "roomkit-providers-client",
  "serde",
  "serde_json",
+ "unicode-properties",
 ]
 
 [[package]]
@@ -1327,6 +1350,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
+name = "ryu"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
+
+[[package]]
 name = "salsa20"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1448,6 +1477,18 @@ dependencies = [
  "serde",
  "serde_core",
  "zmij",
+]
+
+[[package]]
+name = "serde_urlencoded"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3491c14715ca2294c4d6a88f15e84739788c1d030eed8c110436aafdaa2f3fd"
+dependencies = [
+ "form_urlencoded",
+ "itoa",
+ "ryu",
+ "serde",
 ]
 
 [[package]]
@@ -1788,6 +1829,12 @@ checksum = "75cd3fb03d5288b3ba9a1ee103ac7e9cbb59f0b03d64f8ddfcc04dd42758a85d"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-properties"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "993ad287eb20e8ba755312801cfe1413e0f25d604075863acaddca10b04c1833"
 
 [[package]]
 name = "untrusted"

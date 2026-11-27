@@ -63,6 +63,10 @@
     "Qwen",
     "QwenConfig"
   ],
+  "roomkit_providers.llm.vertex": [
+    "GeminiVertex",
+    "GeminiVertexConfig"
+  ],
   "roomkit_providers.llm.vllm": [
     "VLLM",
     "VLLMConfig"

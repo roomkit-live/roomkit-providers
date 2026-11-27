@@ -42,9 +42,9 @@ class Config(BaseModel):
 
     A provider's module derives its configuration from this class and
     states its members, its key among them where it has one: ``api_key``, a
-    ``SecretStr``, which may be optional. A provider that takes no key
-    states no such member. The class statement says what follows beside
-    the members::
+    ``SecretStr``, which may be optional, or the member ``key`` names. A
+    provider that takes no key states no such member. The class statement
+    says what follows beside the members::
 
         class VendorConfig(
             Config,
@@ -53,6 +53,7 @@ class Config(BaseModel):
             decided=("a_switch",),
             rewritten=("an_endpoint",),
             urls=("an_endpoint",),
+            key="a_key_file",
         ):
 
     ``vendor`` is the name the native module holds the provider under;
@@ -60,9 +61,11 @@ class Config(BaseModel):
     provider takes in place of this one; ``decided``, the switches the
     vendor decides from the model on its own endpoint; ``rewritten``, the
     members the provider reads its own way, which take what its reading
-    makes of them (an endpoint reduced to the one it asks); and ``urls``,
-    the members beside ``base_url`` that hold a URL. The last three may
-    be left out.
+    makes of them (an endpoint reduced to the one it asks); ``urls``, the
+    members beside ``base_url`` that hold a URL; and ``key``, the member
+    whose secret crosses to the native module apart from the JSON form,
+    which writes it masked: ``api_key`` unless it says another. The last
+    four may be left out.
 
     What every configuration then does:
 
@@ -90,6 +93,7 @@ class Config(BaseModel):
     _decided: ClassVar[frozenset[str]] = frozenset()
     _rewritten: ClassVar[frozenset[str]] = frozenset()
     _urls: ClassVar[frozenset[str]] = frozenset({"base_url"})
+    _key: ClassVar[str] = "api_key"
 
     def __init__(self, /, **data: Any) -> None:
         if _process.forked():
@@ -107,6 +111,7 @@ class Config(BaseModel):
         decided: tuple[str, ...] = (),
         rewritten: tuple[str, ...] = (),
         urls: tuple[str, ...] = (),
+        key: str = "api_key",
         **kwargs: Any,
     ) -> None:
         # What the class statement says is read once the members are known,
@@ -122,16 +127,19 @@ class Config(BaseModel):
         decided: tuple[str, ...] = (),
         rewritten: tuple[str, ...] = (),
         urls: tuple[str, ...] = (),
+        key: str = "api_key",
         **kwargs: Any,
     ) -> None:
         super().__pydantic_init_subclass__(**kwargs)
-        key = cls.model_fields.get("api_key")
+        # A configuration derived from a provider's keeps that provider's key.
+        named = key if vendor is not None else cls._key
+        held = cls.model_fields.get(named)
         # A key masks itself wherever a configuration shows: stated, or left
         # out by one that states none.
-        if key is not None and key.annotation is not SecretStr:
-            stated = set(get_args(key.annotation))
+        if held is not None and held.annotation is not SecretStr:
+            stated = set(get_args(held.annotation))
             if stated != {SecretStr, type(None)}:
-                raise TypeError("a configuration holds its key as a SecretStr (api_key)")
+                raise TypeError(f"a configuration holds its key as a SecretStr ({named})")
         if vendor is None:
             # A configuration derived from a provider's is that provider's.
             if not hasattr(cls, "_vendor"):
@@ -140,11 +148,13 @@ class Config(BaseModel):
         unknown = sorted(set(decided) - set(cls.model_fields))
         if unknown:
             raise TypeError(f"a configuration decides only its own members, not {unknown}")
-        unknown = sorted((set(rewritten) | set(urls)) - set(cls.model_fields))
+        named_key = {key} - {"api_key"}
+        unknown = sorted((set(rewritten) | set(urls) | named_key) - set(cls.model_fields))
         if unknown:
             raise TypeError(f"a configuration names only its own members, not {unknown}")
         cls._vendor, cls._stands_for, cls._decided = vendor, stands_for, frozenset(decided)
         cls._rewritten, cls._urls = frozenset(rewritten), frozenset({"base_url", *urls})
+        cls._key = key
 
     def model_post_init(self, context: Any, /) -> None:
         """Refuse a base URL that does not read, then decide the switches
@@ -170,9 +180,9 @@ class Config(BaseModel):
             return self
         _process.enter()
         asked = self.model_dump(mode="json")
-        if "api_key" in asked:
+        if type(self)._key in asked:
             # The key is no member the reading rewrites, and is not sent.
-            asked["api_key"] = ""
+            asked[type(self)._key] = ""
         read = json.loads(_native.config_form(type(self)._vendor, json.dumps(asked)))
         for name in sorted(rewritten):
             if getattr(self, name) != read[name]:
@@ -185,9 +195,9 @@ class Config(BaseModel):
         _process.enter()
         members = type(self).model_fields
         asked = {name: getattr(self, name) for name in ("model", "base_url") if name in members}
-        if "api_key" in members:
+        if type(self)._key in members:
             # The key decides nothing, and is not sent to decide.
-            asked["api_key"] = ""
+            asked[type(self)._key] = ""
         with failing_as_roomkit():
             decided = json.loads(_native.config_form(type(self)._vendor, json.dumps(asked)))
         for name in sorted(unset):
@@ -246,5 +256,5 @@ class Veiled:
         """The native provider of the configuration, with the key it states,
         if it states one."""
         own = self.own()
-        key = getattr(own, "api_key", None)
+        key = getattr(own, type(own)._key, None)
         return _native.provider(self._own._vendor, own.model_dump_json(), key)

@@ -27,7 +27,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 from fake_endpoint import Fake, Reads, Refused, Reply, Seen, Silent, Whole
 from pydantic import BaseModel
@@ -111,6 +111,10 @@ class Replays:
     # The cases the Rust replay names, among the crate's fixtures; ``None``
     # where it names none.
     named_cases: str | None = "named_cases.json"
+    # What a case's configuration becomes before the provider is built from
+    # it, where the fixture writes a member in a form of its own (a key file
+    # built from the fixtures' test key); ``None`` takes it as it is.
+    prepared: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
     def _read(self, name: str) -> Any:
         crate = self.crate or self.vendor
@@ -208,8 +212,9 @@ def replaying(replays: Replays, provider: Any, fake: Fake) -> Any:
     fixtures', and its waits kept instead of taken. Gives those waits."""
     config = provider._config
     form = config.model_dump_json()
-    # A configuration that states no key has none to give.
-    key = getattr(config, "api_key", None)
+    # A configuration that states no key has none to give; one names the
+    # member that holds it.
+    key = getattr(config, type(config)._key, None)
     provider._native, waits = _native._replaying(
         replays.vendor, form, key, "127.0.0.1", fake.port, CLOCK
     )
@@ -313,6 +318,8 @@ async def replay(
     `read_timeout` replaces the configuration's timeout, for a case whose
     fake goes silent: nothing else ends a silence."""
     config = dict(case["config"])
+    if replays.prepared is not None:
+        config = replays.prepared(config)
     if read_timeout is not None:
         config["timeout"] = read_timeout
     replayed = Replayed(key=config.get("api_key") or "")
@@ -357,6 +364,17 @@ def _as_rust(value: str | None) -> str:
     return "None" if value is None else f"Some({json.dumps(value, ensure_ascii=False)})"
 
 
+def _body_of(seen: bytes, sent: Any) -> Any:
+    """The body `seen`, as the fixture writes the one Python sent: JSON, or,
+    where the fixture writes a form (``{"form": [[name, value], ...]}``), its
+    pairs decoded, in order."""
+    if not seen:
+        return None
+    if isinstance(sent, dict) and "form" in sent:
+        return {"form": [list(pair) for pair in parse_qsl(seen.decode())]}
+    return json.loads(seen)
+
+
 def _requests_differ(turn: dict[str, Any], key: str, called: Called, found: list[str]) -> None:
     exchanges = turn["exchanges"]
     if len(called.seen) != len(exchanges):
@@ -367,7 +385,7 @@ def _requests_differ(turn: dict[str, Any], key: str, called: Called, found: list
         target = url.path + (f"?{url.query}" if url.query else "")
         if (seen.method, seen.target) != (sent["method"], target):
             found.append(f"request {at}: {seen.method} {seen.target}")
-        body = json.loads(seen.body) if seen.body else None
+        body = _body_of(seen.body, sent.get("body"))
         if _text(body) != _text(sent.get("body")):
             found.append(f"request {at}: its body is {_text(body)}")
         _headers_differ(at, seen, sent, (key, called.request_key), found)
@@ -666,6 +684,17 @@ def _is_done(
         return refused and _says(unread, does["says"]) and not error.retryable
     if kind == "fails":
         return _fails(replayed.error, does)
+    if kind == "fails_before":
+        # A host's source of tokens gave none: final, before the request to
+        # the provider's endpoint, no status.
+        error = replayed.error
+        return (
+            error is not None
+            and error.before_request
+            and not error.retryable
+            and error.status_code is None
+            and _says(said(error), does["says"])
+        )
     if kind == "asks_without_a_key":
         nothing = {
             "says": {"exactly": "the provider answered HTTP 599: no message"},
