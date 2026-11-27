@@ -12,6 +12,17 @@ nothing has been released yet.
 
 ### Added
 
+- Gemini on Vertex AI, in Rust and in Python: `GeminiVertex` and
+  `GeminiVertexConfig` in the `roomkit-providers-gemini` crate, and
+  `roomkit_providers.llm.vertex` (`GeminiVertex`, `GeminiVertexConfig`) as a
+  RoomKit `AIProvider`, in place of RoomKit's `GeminiVertexProvider`. It is
+  held to the cases captured on RoomKit's Python provider, 22 wire cases, each
+  replayed as Python but four (a token that cannot be had fails before the
+  request), and to the JSON forms of its configuration. It calls as the
+  service account of a key file, through RoomKit Auth's `google-cloud`
+  identities; Application Default Credentials, the metadata server and a
+  borrowed account are refused for now.
+
 - PolarGrid, on the chat completions of its edges, in Rust and in Python:
   the `roomkit-providers-polargrid` crate (`PolarGrid`, `PolarGridConfig`,
   `PolarGridRegion`), and `roomkit_providers.llm.polargrid` (`PolarGrid`,

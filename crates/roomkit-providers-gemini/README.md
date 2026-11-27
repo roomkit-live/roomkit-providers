@@ -60,10 +60,53 @@ fn provider() -> Result<Gemini, roomkit_ai::ProviderError> {
   cache held, the thoughts counted as output and told as
   `reasoning_tokens`; the input told once, as the stream starts.
 
+## On Vertex AI
+
+`GeminiVertex` is Python's `GeminiVertexProvider`, with `GeminiVertexConfig`:
+the same generation, stream, thinking and catalogue, on a Google Cloud
+project's region.
+
+- A request goes to the host of the configuration's `location`, as the
+  google-genai SDK writes it: `{location}-aiplatform.googleapis.com`,
+  `aiplatform.googleapis.com` for `global`, `aiplatform.{us,eu}.rep.googleapis.com`
+  for a multi-region; at `v1beta1`, the project and the location in the
+  path; a model named as the SDK names it (`publishers/google/models/…`, a
+  publisher's model, a resource given whole).
+- It is sent as a service account: the identity of `service_account_json`,
+  from `roomkit-auth` (its `google-cloud` feature), whose token is asked of
+  Google's token endpoint with an assertion signed as google-auth signs it,
+  and kept until shortly before it expires. A token that cannot be had
+  fails before the request, in the client's closed words.
+- The billing labels go in every request, held to Google's rules when the
+  configuration is read and when the provider is built.
+
+```rust
+use roomkit_providers_gemini::{GeminiVertex, GeminiVertexConfig};
+
+fn provider(key_file: String) -> Result<GeminiVertex, roomkit_ai::ProviderError> {
+    GeminiVertex::new(GeminiVertexConfig {
+        service_account_json: Some(key_file),
+        labels: Some(vec![("tenant".to_owned(), "acme".to_owned())]),
+        ..GeminiVertexConfig::new("my-project", "northamerica-northeast1")
+    })
+}
+```
+
+Its wire cases (`tests/fixtures/python_vertex_cases.json`, captured with
+`scripts/vertex_cases.py`) are replayed through a local fake of the token
+endpoint and of Vertex AI, the assertion compared to its signature; the host
+of each location is checked against the fixture apart, the fake standing in
+for every host. Four cases are named: a token that cannot be had fails
+before the request (`before_request`), where Python's google-auth error says
+nothing of it.
+
+Application Default Credentials (no key), the metadata server and a
+borrowed service account (`impersonate_service_account`) are refused when
+the provider is built, for now: they come next.
+
 ## Not covered
 
-Vertex AI (`GeminiVertexProvider`), images, Gemini Live and the realtime
-voice stay RoomKit's Python's for now.
+Images, Gemini Live and the realtime voice stay RoomKit's Python's for now.
 
 One case is named: a listing that fails raises the SDK's own error in
 Python, which no provider reproduces; this one fails with a
