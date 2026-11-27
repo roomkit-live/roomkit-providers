@@ -22,6 +22,8 @@ pub use public_url::{ValidatePublicUrlOptions, validate_public_url};
 pub use trust::{CertificateRefused, TlsUnset, certificate_refused};
 
 #[doc(hidden)]
+pub mod lines;
+#[doc(hidden)]
 pub mod sse;
 
 /// A bounded event stream that could not be decoded.
