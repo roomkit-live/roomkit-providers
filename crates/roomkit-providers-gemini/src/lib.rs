@@ -41,3 +41,7 @@ pub use provider::Gemini;
 #[cfg(feature = "replay")]
 #[doc(hidden)]
 pub use provider::ReplayWaits;
+pub use roomkit_providers_client::{TokenError, TokenFuture, TokenSource};
+
+#[cfg(test)]
+mod oauth_tests;

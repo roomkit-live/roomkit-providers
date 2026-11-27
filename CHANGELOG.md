@@ -12,6 +12,8 @@ nothing has been released yet.
 
 ### Added
 
+- Rust hosts can supply a renewable OAuth bearer token and a Google Cloud quota project for Gemini model discovery and generation.
+
 - Ollama, on its native API, in Rust and in Python: the
   `roomkit-providers-ollama` crate (`Ollama`, `OllamaConfig`, with `Think`,
   `ThinkEffort` and `KeepAlive` for its two members of two kinds), and

@@ -38,7 +38,7 @@ async fn read(provider: &Gemini, request: &AiContext, out: &Yielder<Item>) -> Re
         url: &provider.generate,
         headers: &provider.headers,
         body: Some(&body),
-        token: None,
+        token: provider.token_source.as_deref(),
     };
     let mut answer = provider.client.stream(call).await?;
     let mut folding = Folding::new(&provider.config.model);

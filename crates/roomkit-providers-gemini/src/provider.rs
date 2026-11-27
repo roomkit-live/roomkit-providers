@@ -56,6 +56,7 @@ pub struct Gemini {
     pub(crate) models: reqwest::Url,
     pub(crate) headers: HeaderMap,
     pub(crate) client: Client,
+    pub(crate) token_source: Option<Arc<dyn crate::TokenSource>>,
     exit: Arc<Exit>,
 }
 
@@ -68,6 +69,48 @@ impl Gemini {
     /// model that cannot go in a URL, a timeout the clock cannot count.
     pub fn new(config: GeminiConfig) -> Result<Self, ProviderError> {
         Self::built(config).map_err(|failure| Exit::unbuilt(LABEL, &failure))
+    }
+
+    /// Authenticate each Developer API request with a fresh bearer token. The
+    /// quota project identifies the consumer of the API for Cloud billing.
+    ///
+    /// # Errors
+    ///
+    /// An API key in the configuration, an invalid quota project, or any
+    /// configuration error that [`Self::new`] returns.
+    pub fn with_oauth(
+        config: GeminiConfig,
+        quota_project: &str,
+        source: Arc<dyn crate::TokenSource>,
+    ) -> Result<Self, ProviderError> {
+        if !config.api_key.is_empty() {
+            return Err(Exit::unbuilt(
+                LABEL,
+                &Failure::unbuilt("OAuth and an API key cannot be combined"),
+            ));
+        }
+        if quota_project.is_empty()
+            || quota_project.len() > 63
+            || !quota_project
+                .bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+        {
+            return Err(Exit::unbuilt(
+                LABEL,
+                &Failure::unbuilt("invalid Google Cloud quota project"),
+            ));
+        }
+        let project = HeaderValue::from_str(quota_project).map_err(|_| {
+            Exit::unbuilt(
+                LABEL,
+                &Failure::unbuilt("invalid Google Cloud quota project"),
+            )
+        })?;
+        let mut provider = Self::new(config)?;
+        provider.headers.remove(KEY_HEADER);
+        provider.headers.insert("x-goog-user-project", project);
+        provider.token_source = Some(source);
+        Ok(provider)
     }
 
     fn built(config: GeminiConfig) -> Result<Self, Failure> {
@@ -95,6 +138,7 @@ impl Gemini {
             generate,
             models,
             headers,
+            token_source: None,
             client,
             exit: Arc::new(exit),
         })
@@ -157,7 +201,7 @@ impl Gemini {
                 url: &url,
                 headers: &self.headers,
                 body: None,
-                token: None,
+                token: self.token_source.as_deref(),
             };
             let (page, json) = self.client.send(call).await?;
             let page: Value = match serde_json::from_slice(past_mark(&page)) {
