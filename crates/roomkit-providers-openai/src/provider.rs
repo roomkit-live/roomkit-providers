@@ -225,7 +225,8 @@ impl OpenAi {
             | Vendor::Meta
             | Vendor::OpenRouter
             | Vendor::LiteLlm
-            | Vendor::Azure => Client::new(settings),
+            | Vendor::Azure
+            | Vendor::Vllm => Client::new(settings),
         }?;
         let exit = exit_of(&config, vendor, &client, &chat);
         Ok(Self {

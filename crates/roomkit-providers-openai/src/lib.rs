@@ -21,6 +21,11 @@
 //!   the API version in the query and the key in Azure's `api-key` header,
 //!   the endpoint a configuration states reduced to the resource's base.
 //!
+//! - [`Vllm`] and [`VllmConfig`]: a vLLM server's models, what Python's
+//!   `create_vllm_provider` builds: `OpenAI`'s wire, a reasoning setting in
+//!   the chat template's `chat_template_kwargs`, vLLM's sampling members in
+//!   the body.
+//!
 //! A stream is pulled: nothing is sent before it is polled, and dropping it
 //! stops the request and closes its connection. Every size a server
 //! controls is bounded, and a stream that stalls ends at the
@@ -67,6 +72,7 @@ mod stream;
 mod tests;
 mod think_tags;
 mod vendor;
+mod vllm;
 mod xai;
 
 pub use azure::{AzureAi, AzureAiConfig};
@@ -84,4 +90,5 @@ pub use provider::OpenAi;
 pub use provider::ReplayWaits;
 pub use qwen::{Qwen, QwenConfig};
 pub use roomkit_providers_client::{TokenError, TokenFuture, TokenSource};
+pub use vllm::{Vllm, VllmConfig};
 pub use xai::{Xai, XaiConfig};

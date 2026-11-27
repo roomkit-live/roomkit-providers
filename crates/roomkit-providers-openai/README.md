@@ -261,6 +261,17 @@ What a vendor's provider does that `OpenAi` does not:
   deployment. A call with an empty key is refused before any request with
   a `ProviderError`, where Python's openai SDK raises its own
   `OpenAIError` (`Missing credentials`).
+- **A vLLM server** (`Vllm`, `VllmConfig`: what Python's
+  `create_vllm_provider(VLLMConfig)` builds) is asked as `OpenAi` asks a
+  server behind a base URL, its key `none` by default and its `headers`
+  sent as default headers. Its configuration is no `OpenAiConfig`: vLLM's
+  sampling members (`top_p`, `top_k`, `min_p`, `presence_penalty`,
+  `repetition_penalty`) ride the body, under the configuration's
+  `extra_body`; its `enable_thinking` and `reasoning_effort` ride the chat
+  template's `chat_template_kwargs`, under the extra body's own, and a
+  turn's switch and effort (but `none`) over them, on a turn with tools as
+  on any other. No top-level `reasoning_effort` is sent: a local template
+  does not read it.
 - A vendor's provider speaks Chat Completions only, with the
   configuration's key: it has no `api`, no `token_source` and no `vision`.
 

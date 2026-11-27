@@ -1,4 +1,4 @@
-//! DeepSeek, Kimi, MiniMax, xAI, Cerebras, Qwen, Meta, OpenRouter, LiteLLM and Azure against the wire cases captured on their
+//! DeepSeek, Kimi, MiniMax, xAI, Cerebras, Qwen, Meta, OpenRouter, LiteLLM, Azure and vLLM against the wire cases captured on their
 //! `RoomKit` Python providers, each a derivative of `OpenAIAIProvider`:
 //! `tests/fixtures/python_<vendor>_cases.json`, written by
 //! `scripts/generate_openai_chat_cases.py` from `scripts/vendor_chat_cases.py`.
@@ -18,7 +18,7 @@ use serde_json::Value;
 use crate::{
     AzureAi, AzureAiConfig, Cerebras, CerebrasConfig, DeepSeek, DeepSeekConfig, Kimi, KimiConfig,
     LiteLlm, LiteLlmConfig, Meta, MetaConfig, MiniMax, MiniMaxConfig, OpenRouter, OpenRouterConfig,
-    Qwen, QwenConfig, Xai, XaiConfig,
+    Qwen, QwenConfig, Vllm, VllmConfig, Xai, XaiConfig,
 };
 
 /// The fixture's clock, in seconds since 1970: 2026-01-01T00:00:00Z.
@@ -58,8 +58,9 @@ replays!(Meta, MetaConfig);
 replays!(OpenRouter, OpenRouterConfig);
 replays!(LiteLlm, LiteLlmConfig);
 replays!(AzureAi, AzureAiConfig, "api-key");
+replays!(Vllm, VllmConfig);
 
-/// No case of the ten is answered otherwise than Python.
+/// No case of the eleven is answered otherwise than Python.
 const NONE_NAMED: Named = Named {
     questioned_otherwise: &[],
     only_python: &[],
@@ -88,6 +89,7 @@ const META: &str = include_str!("../../tests/fixtures/python_meta_cases.json");
 const OPENROUTER: &str = include_str!("../../tests/fixtures/python_openrouter_cases.json");
 const LITELLM: &str = include_str!("../../tests/fixtures/python_litellm_cases.json");
 const AZURE: &str = include_str!("../../tests/fixtures/python_azure_cases.json");
+const VLLM: &str = include_str!("../../tests/fixtures/python_vllm_cases.json");
 
 #[tokio::test]
 async fn every_deepseek_case_replays_as_python() {
@@ -167,4 +169,12 @@ async fn every_azure_case_replays_as_python() {
     let streamed = replayed::<AzureAi>(AZURE, "generate_structured_stream").await;
     let listed = replayed::<AzureAi>(AZURE, "list_models").await;
     assert_eq!((generated, streamed, listed), ((51, 0), (2, 0), (2, 0)));
+}
+
+#[tokio::test]
+async fn every_vllm_case_replays_as_python() {
+    let generated = replayed::<Vllm>(VLLM, "generate").await;
+    let streamed = replayed::<Vllm>(VLLM, "generate_structured_stream").await;
+    let listed = replayed::<Vllm>(VLLM, "list_models").await;
+    assert_eq!((generated, streamed, listed), ((52, 0), (2, 0), (1, 0)));
 }

@@ -34,9 +34,9 @@ impl Vendor {
         configured: Option<&str>,
     ) -> Sampling {
         match self {
-            // `OpenAI`'s, LiteLLM's and Azure's read the configuration's setting of a
-            // turn with tools, which the request applies.
-            Self::OpenAi | Self::LiteLlm | Self::Azure => Sampling::default(),
+            // `OpenAI`'s, LiteLLM's, Azure's and vLLM's read the configuration,
+            // which the request applies.
+            Self::OpenAi | Self::LiteLlm | Self::Azure | Self::Vllm => Sampling::default(),
             Self::OpenRouter => openrouter(request, configured),
             Self::LlamaCpp { enable_thinking } => local_template(request, enable_thinking),
             Self::DeepSeek { enable_thinking } => deepseek(request, configured, enable_thinking),

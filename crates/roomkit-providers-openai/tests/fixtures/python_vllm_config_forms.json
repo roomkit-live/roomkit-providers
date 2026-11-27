@@ -1,0 +1,922 @@
+{
+    "generator": "scripts/generate_openai_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "VLLMConfig",
+    "examples": [
+        {
+            "name": "required_alone",
+            "given": {
+                "model": "qwen3-8b"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "model": "qwen3-8b",
+                "base_url": "https://llm.example/v1",
+                "api_key": "placeholder-not-a-key",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "include_stream_usage": false,
+                "headers": {
+                    "X-Route": "blue"
+                },
+                "top_p": 0.9,
+                "top_k": 40,
+                "min_p": 0.05,
+                "presence_penalty": 1.5,
+                "repetition_penalty": 1.1,
+                "extra_body": {
+                    "guided_choice": [
+                        "yes",
+                        "no"
+                    ]
+                },
+                "enable_thinking": false,
+                "reasoning_effort": "low",
+                "supports_response_schema": true,
+                "supports_response_schema_with_tools": false
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "https://llm.example/v1",
+                "api_key": "**********",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "include_stream_usage": false,
+                "headers": {
+                    "X-Route": "blue"
+                },
+                "top_p": 0.9,
+                "top_k": 40,
+                "min_p": 0.05,
+                "presence_penalty": 1.5,
+                "repetition_penalty": 1.1,
+                "extra_body": {
+                    "guided_choice": [
+                        "yes",
+                        "no"
+                    ]
+                },
+                "enable_thinking": false,
+                "reasoning_effort": "low",
+                "supports_response_schema": true,
+                "supports_response_schema_with_tools": false
+            }
+        },
+        {
+            "name": "a_key",
+            "given": {
+                "model": "qwen3-8b",
+                "api_key": "placeholder-not-a-key"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "empty_key",
+            "given": {
+                "model": "qwen3-8b",
+                "api_key": ""
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "empty_model",
+            "given": {
+                "model": ""
+            },
+            "form": {
+                "model": "",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "behind_a_base_url",
+            "given": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:11434/v1"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:11434/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "a_token_bound",
+            "given": {
+                "model": "qwen3-8b",
+                "max_tokens": 2048
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "timeouts_as_integers",
+            "given": {
+                "model": "qwen3-8b",
+                "timeout": 120,
+                "connect_timeout": 2
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 120.0,
+                "connect_timeout": 2.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "retries",
+            "given": {
+                "model": "qwen3-8b",
+                "max_retries": 2
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 2,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "no_stream_usage",
+            "given": {
+                "model": "qwen3-8b",
+                "include_stream_usage": false
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": false,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "stream_usage",
+            "given": {
+                "model": "qwen3-8b",
+                "include_stream_usage": true
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "headers",
+            "given": {
+                "model": "qwen3-8b",
+                "headers": {
+                    "Authorization": "Basic placeholder"
+                }
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": {
+                    "Authorization": "Basic placeholder"
+                },
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "sampling_as_integers",
+            "given": {
+                "model": "qwen3-8b",
+                "top_p": 1,
+                "min_p": 0,
+                "presence_penalty": 2
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": 1.0,
+                "top_k": null,
+                "min_p": 0.0,
+                "presence_penalty": 2.0,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "top_k_disabled",
+            "given": {
+                "model": "qwen3-8b",
+                "top_k": -1
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": -1,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "penalties_below_zero",
+            "given": {
+                "model": "qwen3-8b",
+                "presence_penalty": -0.5
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": -0.5,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "extra_body",
+            "given": {
+                "model": "qwen3-8b",
+                "extra_body": {
+                    "chat_template_kwargs": {
+                        "custom": 1
+                    }
+                }
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": {
+                    "chat_template_kwargs": {
+                        "custom": 1
+                    }
+                },
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "thinking_on",
+            "given": {
+                "model": "qwen3-8b",
+                "enable_thinking": true
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": true,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "thinking_null",
+            "given": {
+                "model": "qwen3-8b",
+                "enable_thinking": null
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "effort",
+            "given": {
+                "model": "qwen3-8b",
+                "reasoning_effort": "xhigh"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": "xhigh",
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "response_schema_switches",
+            "given": {
+                "model": "qwen3-8b",
+                "supports_response_schema": false
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": false,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "model": "qwen3-8b",
+                "default_headers": {
+                    "X-A": "1"
+                },
+                "thinking_field": "reasoning"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_model",
+            "given": {
+                "api_key": "placeholder-not-a-key"
+            }
+        },
+        {
+            "name": "model_null",
+            "given": {
+                "model": null
+            }
+        },
+        {
+            "name": "key_null",
+            "given": {
+                "model": "qwen3-8b",
+                "api_key": null
+            }
+        },
+        {
+            "name": "key_a_number",
+            "given": {
+                "model": "qwen3-8b",
+                "api_key": 42
+            }
+        },
+        {
+            "name": "base_url_null",
+            "given": {
+                "model": "qwen3-8b",
+                "base_url": null
+            }
+        },
+        {
+            "name": "token_bound_null",
+            "given": {
+                "model": "qwen3-8b",
+                "max_tokens": null
+            }
+        },
+        {
+            "name": "timeout_null",
+            "given": {
+                "model": "qwen3-8b",
+                "timeout": null
+            }
+        },
+        {
+            "name": "headers_a_list",
+            "given": {
+                "model": "qwen3-8b",
+                "headers": [
+                    "X-A"
+                ]
+            }
+        },
+        {
+            "name": "header_a_number",
+            "given": {
+                "model": "qwen3-8b",
+                "headers": {
+                    "X-A": 1
+                }
+            }
+        },
+        {
+            "name": "top_k_a_float",
+            "given": {
+                "model": "qwen3-8b",
+                "top_k": 4.5
+            }
+        },
+        {
+            "name": "top_p_a_word",
+            "given": {
+                "model": "qwen3-8b",
+                "top_p": "high"
+            }
+        },
+        {
+            "name": "thinking_a_word",
+            "given": {
+                "model": "qwen3-8b",
+                "enable_thinking": "perhaps"
+            }
+        },
+        {
+            "name": "extra_body_a_list",
+            "given": {
+                "model": "qwen3-8b",
+                "extra_body": [
+                    1
+                ]
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                {
+                    "model": "qwen3-8b"
+                }
+            ]
+        },
+        {
+            "name": "a_number",
+            "given": 42
+        }
+    ],
+    "converted": [
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "model": "qwen3-8b",
+                "timeout": "30"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "model": "qwen3-8b",
+                "max_tokens": "2048"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "top_k_a_text",
+            "given": {
+                "model": "qwen3-8b",
+                "top_k": "40"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": 40,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "top_p_a_text",
+            "given": {
+                "model": "qwen3-8b",
+                "top_p": "0.9"
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": 0.9,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "stream_usage_a_number",
+            "given": {
+                "model": "qwen3-8b",
+                "include_stream_usage": 0
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": false,
+                "headers": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        },
+        {
+            "name": "top_k_a_whole_float",
+            "given": {
+                "model": "qwen3-8b",
+                "top_k": 40.0
+            },
+            "form": {
+                "model": "qwen3-8b",
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "**********",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "headers": null,
+                "top_p": null,
+                "top_k": 40,
+                "min_p": null,
+                "presence_penalty": null,
+                "repetition_penalty": null,
+                "extra_body": null,
+                "enable_thinking": null,
+                "reasoning_effort": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null
+            }
+        }
+    ]
+}

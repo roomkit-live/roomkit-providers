@@ -1,12 +1,13 @@
 //! The configurations of the vendors that speak `OpenAI`'s wire against the
 //! JSON forms of their `RoomKit` Python classes, derivatives of
-//! `OpenAIConfig`: `tests/fixtures/python_<vendor>_config_forms.json`,
+//! `OpenAIConfig` but Azure's and vLLM's:
+//! `tests/fixtures/python_<vendor>_config_forms.json`,
 //! written by `scripts/generate_openai_config_forms.py`
 //! (`make python-openai-config`).
 
 use roomkit_providers_openai::{
     AzureAiConfig, CerebrasConfig, DeepSeekConfig, KimiConfig, LiteLlmConfig, MetaConfig,
-    MiniMaxConfig, OpenRouterConfig, QwenConfig, XaiConfig,
+    MiniMaxConfig, OpenRouterConfig, QwenConfig, VllmConfig, XaiConfig,
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -81,8 +82,9 @@ fn holds_to_python<C: DeserializeOwned + Serialize>(
                 .unwrap_or_else(|error| panic!("{model}, {}: {error}", example.name));
             assert_eq!(written, form, "{model}, {}", example.name);
         }
-        let key = example.given["api_key"].as_str().unwrap();
-        let mask = if key.is_empty() { "" } else { "**********" };
+        // A key left out is the configuration's default: vLLM's, `none`.
+        let key = example.given.get("api_key").and_then(Value::as_str);
+        let mask = if key == Some("") { "" } else { "**********" };
         assert_eq!(example.form["api_key"], mask, "{model}, {}", example.name);
     }
     for rejected in &fixture.rejected {
@@ -222,5 +224,16 @@ fn azure_s_configuration_reads_and_writes_as_python_s() {
         "AzureAIConfig",
         16,
         (19, 6),
+    );
+}
+
+// vLLM's refusals are its own: no default headers, no thinking field.
+#[test]
+fn vllm_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<VllmConfig>(
+        include_str!("fixtures/python_vllm_config_forms.json"),
+        "VLLMConfig",
+        19,
+        (15, 6),
     );
 }

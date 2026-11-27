@@ -38,6 +38,7 @@ from roomkit.providers.minimax import MiniMaxConfig
 from roomkit.providers.openai import OpenAIConfig
 from roomkit.providers.openrouter import OpenRouterConfig
 from roomkit.providers.qwen import QwenConfig
+from roomkit.providers.vllm import VLLMConfig
 from roomkit.providers.vendor_endpoint import OPENAI_BASE_URL, is_vendor_endpoint
 from roomkit.providers.xai import XAIConfig
 
@@ -689,6 +690,129 @@ def write_azure_fixture() -> None:
     )
 
 
+# -- vLLM ----------------------------------------------------------------------
+# vLLM's configuration is no derivative of OpenAIConfig either: a key that
+# defaults to `none`, headers in place of default headers, the sampling
+# members of vLLM and its chat template's switches.
+
+VLLM = {"model": "qwen3-8b"}
+
+
+def vllm_examples() -> list[tuple[str, dict[str, Any]]]:
+    """The examples of vLLM's configuration: its required member, every
+    member, and each one apart."""
+    every = {
+        **VLLM,
+        "base_url": "https://llm.example/v1",
+        "api_key": KEY,
+        "max_tokens": 4096,
+        "timeout": 120.0,
+        "connect_timeout": 2.5,
+        "max_retries": 3,
+        "include_stream_usage": False,
+        "headers": {"X-Route": "blue"},
+        "top_p": 0.9,
+        "top_k": 40,
+        "min_p": 0.05,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.1,
+        "extra_body": {"guided_choice": ["yes", "no"]},
+        "enable_thinking": False,
+        "reasoning_effort": "low",
+        "supports_response_schema": True,
+        "supports_response_schema_with_tools": False,
+    }
+    return [
+        ("required_alone", VLLM),
+        ("every_member", every),
+        ("a_key", {**VLLM, "api_key": KEY}),
+        ("empty_key", {**VLLM, "api_key": ""}),
+        ("empty_model", {**VLLM, "model": ""}),
+        ("behind_a_base_url", {**VLLM, "base_url": LOCAL}),
+        ("a_token_bound", {**VLLM, "max_tokens": 2048}),
+        ("timeouts_as_integers", {**VLLM, "timeout": 120, "connect_timeout": 2}),
+        ("retries", {**VLLM, "max_retries": 2}),
+        ("no_stream_usage", {**VLLM, "include_stream_usage": False}),
+        ("stream_usage", {**VLLM, "include_stream_usage": True}),
+        ("headers", {**VLLM, "headers": {"Authorization": "Basic placeholder"}}),
+        ("sampling_as_integers", {**VLLM, "top_p": 1, "min_p": 0, "presence_penalty": 2}),
+        ("top_k_disabled", {**VLLM, "top_k": -1}),
+        ("penalties_below_zero", {**VLLM, "presence_penalty": -0.5}),
+        ("extra_body", {**VLLM, "extra_body": {"chat_template_kwargs": {"custom": 1}}}),
+        ("thinking_on", {**VLLM, "enable_thinking": True}),
+        ("thinking_null", {**VLLM, "enable_thinking": None}),
+        ("effort", {**VLLM, "reasoning_effort": "xhigh"}),
+        ("response_schema_switches", {**VLLM, "supports_response_schema": False}),
+        (
+            "members_python_does_not_have",
+            {**VLLM, "default_headers": {"X-A": "1"}, "thinking_field": "reasoning"},
+        ),
+    ]
+
+
+VLLM_REJECTED: list[tuple[str, Any]] = [
+    ("no_model", {"api_key": KEY}),
+    ("model_null", {"model": None}),
+    ("key_null", {**VLLM, "api_key": None}),
+    ("key_a_number", {**VLLM, "api_key": 42}),
+    ("base_url_null", {**VLLM, "base_url": None}),
+    ("token_bound_null", {**VLLM, "max_tokens": None}),
+    ("timeout_null", {**VLLM, "timeout": None}),
+    ("headers_a_list", {**VLLM, "headers": ["X-A"]}),
+    ("header_a_number", {**VLLM, "headers": {"X-A": 1}}),
+    ("top_k_a_float", {**VLLM, "top_k": 4.5}),
+    ("top_p_a_word", {**VLLM, "top_p": "high"}),
+    ("thinking_a_word", {**VLLM, "enable_thinking": "perhaps"}),
+    ("extra_body_a_list", {**VLLM, "extra_body": [1]}),
+    ("a_list", [VLLM]),
+    ("a_number", 42),
+]
+
+VLLM_CONVERTED: list[tuple[str, dict[str, Any]]] = [
+    ("timeout_a_text", {**VLLM, "timeout": "30"}),
+    ("max_tokens_a_text", {**VLLM, "max_tokens": "2048"}),
+    ("top_k_a_text", {**VLLM, "top_k": "40"}),
+    ("top_p_a_text", {**VLLM, "top_p": "0.9"}),
+    ("stream_usage_a_number", {**VLLM, "include_stream_usage": 0}),
+    ("top_k_a_whole_float", {**VLLM, "top_k": 40.0}),
+]
+
+
+def write_vllm_fixture() -> None:
+    def dumped(given: Any) -> Any:
+        return VLLMConfig.model_validate(given).model_dump(mode="json")
+
+    def refused(given: Any) -> bool:
+        try:
+            VLLMConfig.model_validate(given)
+        except ValidationError:
+            return True
+        return False
+
+    for name, given in VLLM_REJECTED:
+        if not refused(given):
+            raise AssertionError(f"Python's VLLMConfig takes the input {name}")
+    fixture = {
+        "generator": "scripts/generate_openai_config_forms.py",
+        "roomkit_version": roomkit.__version__,
+        "python_version": platform.python_version(),
+        "model": "VLLMConfig",
+        "examples": [
+            {"name": name, "given": given, "form": dumped(given)} for name, given in vllm_examples()
+        ],
+        "rejected": [{"name": name, "given": given} for name, given in VLLM_REJECTED],
+        "converted": [
+            {"name": name, "given": given, "form": dumped(given)} for name, given in VLLM_CONVERTED
+        ],
+    }
+    path = FIXTURE.with_name("python_vllm_config_forms.json")
+    path.write_text(json.dumps(fixture, indent=4) + "\n", encoding="utf-8")
+    print(
+        f"Wrote {path.relative_to(REPOSITORY)}: {len(fixture['examples'])} examples, "
+        f"{len(fixture['rejected'])} rejected, {len(fixture['converted'])} converted"
+    )
+
+
 def main() -> None:
     for name, given in REJECTED:
         if not refuses(given):
@@ -718,6 +842,7 @@ def main() -> None:
     )
     write_vendor_fixtures()
     write_azure_fixture()
+    write_vllm_fixture()
 
 
 if __name__ == "__main__":

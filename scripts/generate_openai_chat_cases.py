@@ -48,6 +48,7 @@ from roomkit.providers.minimax import MiniMaxAIProvider, MiniMaxConfig
 from roomkit.providers.openai import OpenAIAIProvider, OpenAIConfig
 from roomkit.providers.openrouter import OpenRouterAIProvider, OpenRouterConfig
 from roomkit.providers.qwen import QwenAIProvider, QwenConfig
+from roomkit.providers.vllm import VLLMConfig, create_vllm_provider
 from roomkit.providers.xai import XAIAIProvider, XAIConfig
 from vendor_chat_cases import VENDOR_CASES
 from wire_capture import (
@@ -212,7 +213,9 @@ def sent(request: httpx2.Request, case: Case) -> dict[str, Any]:
         "content-type": request.headers.get("content-type"),
         "accept": request.headers.get("accept"),
     }
-    for name in case.config.get("default_headers") or {}:
+    # vLLM's configuration names its headers `headers`.
+    configured = {**(case.config.get("default_headers") or {}), **(case.config.get("headers") or {})}
+    for name in configured:
         if name.lower() not in headers:
             headers[name.lower()] = request.headers.get(name)
     for name in VENDOR_HEADERS:
@@ -313,6 +316,7 @@ VENDORS: dict[str, tuple[Any, Any]] = {
     "openrouter": (OpenRouterAIProvider, OpenRouterConfig),
     "litellm": (LiteLLMAIProvider, LiteLLMConfig),
     "azure": (AzureAIProvider, AzureAIConfig),
+    "vllm": (create_vllm_provider, VLLMConfig),
 }
 
 

@@ -19,6 +19,7 @@ use crate::models::{
 };
 use crate::names::NameRule;
 use crate::vendor::{Sampling, Vendor, litellm_sampling, require_parameters};
+use crate::vllm::template_of_the_turn;
 use crate::{reasoning, responses};
 
 /// What a request is written for: the configuration, and what the provider
@@ -190,6 +191,16 @@ impl Asked<'_> {
             };
         }
         let configured = self.config.reasoning_effort.as_deref();
+        if self.vendor == Vendor::Vllm {
+            let mut sampling = Sampling::default();
+            let extra_body = self.config.extra_body.as_ref();
+            if let Some(template) = template_of_the_turn(request, extra_body) {
+                sampling
+                    .extra
+                    .insert("chat_template_kwargs".to_owned(), template);
+            }
+            return sampling;
+        }
         if self.vendor == Vendor::LiteLlm {
             let says = self.config.supports_reasoning_effort_with_tools;
             let warned = |setting: &str| self.warn_left_out(setting);

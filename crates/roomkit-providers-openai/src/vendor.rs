@@ -79,6 +79,8 @@ pub(crate) enum Vendor {
     LiteLlm,
     /// Python's `AzureAIProvider`, an Azure resource's deployment.
     Azure,
+    /// What Python's `create_vllm_provider` builds, a vLLM server's.
+    Vllm,
 }
 
 /// What a request carries of the turn's reasoning beside `OpenAI`'s fields:
@@ -101,7 +103,8 @@ impl Vendor {
             | Self::Meta
             | Self::OpenRouter
             | Self::LiteLlm
-            | Self::Azure => OPENAI_CHAT,
+            | Self::Azure
+            | Self::Vllm => OPENAI_CHAT,
             Self::DeepSeek { .. } => DEEPSEEK_CHAT,
             Self::MiniMax => MINIMAX_CHAT,
             Self::Kimi => KIMI_CHAT,
@@ -124,6 +127,7 @@ impl Vendor {
             Self::OpenRouter => "OpenRouterAIProvider",
             Self::LiteLlm => "LiteLLMAIProvider",
             Self::Azure => "AzureAIProvider",
+            Self::Vllm => "vllm",
         }
     }
 
@@ -142,6 +146,7 @@ impl Vendor {
             Self::OpenRouter => "openrouter",
             Self::LiteLlm => "litellm",
             Self::Azure => "azure",
+            Self::Vllm => "vllm",
         }
     }
 
@@ -164,7 +169,8 @@ impl Vendor {
             | Self::Meta
             | Self::OpenRouter
             | Self::LiteLlm
-            | Self::Azure => true,
+            | Self::Azure
+            | Self::Vllm => true,
             Self::DeepSeek { .. } | Self::MiniMax | Self::Qwen { .. } => false,
         }
     }
@@ -173,7 +179,7 @@ impl Vendor {
     pub(crate) fn base_urls(self) -> &'static [&'static str] {
         match self {
             Self::OpenAi => &[OPENAI_BASE_URL],
-            Self::LlamaCpp { .. } | Self::Azure => &[],
+            Self::LlamaCpp { .. } | Self::Azure | Self::Vllm => &[],
             Self::DeepSeek { .. } => &DEEPSEEK_BASE_URLS,
             Self::MiniMax => &[MINIMAX_BASE_URL],
             Self::Kimi => &[KIMI_BASE_URL],
@@ -208,7 +214,8 @@ impl Vendor {
             | Self::Meta
             | Self::OpenRouter
             | Self::LiteLlm
-            | Self::Azure => None,
+            | Self::Azure
+            | Self::Vllm => None,
         }
     }
 
@@ -306,7 +313,8 @@ impl Vendor {
             | Self::Meta
             | Self::OpenRouter
             | Self::LiteLlm
-            | Self::Azure => true,
+            | Self::Azure
+            | Self::Vllm => true,
             Self::Cerebras { .. } => false,
             Self::OpenAi => {
                 !self.is_own_endpoint(base_url) || models::sees_images_by_its_name(model)

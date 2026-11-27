@@ -1187,6 +1187,132 @@ _azure(
     answer(listed("chat-prod", "embedding-prod")),
 )
 
+VLLM_CASES: list[Case] = []
+_vllm = registrar(VLLM_CASES)
+# A local vLLM server, its key the configuration's default, `none`.
+VLLM = {"model": "qwen3-8b"}
+common(_vllm, VLLM, {**VLLM, "base_url": PROXY})
+_vllm(
+    "a_key_of_its_own",
+    "endpoint",
+    GENERATE,
+    {**VLLM, "api_key": KEY},
+    HELLO,
+    answer(completion()),
+)
+_vllm(
+    "headers_of_the_configuration",
+    "endpoint",
+    GENERATE,
+    {**VLLM, "api_key": KEY, "headers": {"X-Route": "blue", "Authorization": "Basic placeholder"}},
+    HELLO,
+    answer(completion()),
+)
+_vllm(
+    "sampling_of_the_configuration",
+    "sampling",
+    GENERATE,
+    {
+        **VLLM,
+        "top_p": 0.9,
+        "top_k": 40,
+        "min_p": 0.05,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.1,
+    },
+    HELLO,
+    answer(completion()),
+)
+_vllm(
+    "the_extra_body_over_the_sampling",
+    "sampling",
+    GENERATE,
+    {**VLLM, "top_k": 40, "extra_body": {"top_k": 20, "guided_choice": ["yes", "no"]}},
+    HELLO,
+    answer(completion()),
+)
+for _enabled in (True, False):
+    _vllm(
+        f"thinking_of_the_configuration_{str(_enabled).lower()}",
+        "reasoning",
+        GENERATE,
+        {**VLLM, "enable_thinking": _enabled},
+        HELLO,
+        answer(completion()),
+    )
+_vllm(
+    "effort_of_the_configuration",
+    "reasoning",
+    GENERATE,
+    {**VLLM, "reasoning_effort": "low"},
+    HELLO,
+    answer(completion()),
+)
+_vllm(
+    "template_kwargs_of_the_extra_body_beside_the_configuration",
+    "reasoning",
+    GENERATE,
+    {
+        **VLLM,
+        "enable_thinking": True,
+        "reasoning_effort": "low",
+        "extra_body": {"chat_template_kwargs": {"reasoning_effort": "xhigh", "custom": 1}},
+    },
+    HELLO,
+    answer(completion()),
+)
+_vllm(
+    "the_turn_s_switch_over_the_configuration",
+    "reasoning",
+    GENERATE,
+    {**VLLM, "enable_thinking": True, "reasoning_effort": "low"},
+    asked(enable_thinking=False),
+    answer(completion()),
+)
+_vllm(
+    "the_turn_s_effort_over_the_configuration",
+    "reasoning",
+    GENERATE,
+    {**VLLM, "reasoning_effort": "low"},
+    asked(reasoning_effort="medium"),
+    answer(completion()),
+)
+_vllm(
+    "an_effort_of_none_over_the_configuration",
+    "reasoning",
+    GENERATE,
+    {**VLLM, "enable_thinking": True, "reasoning_effort": "low"},
+    asked(reasoning_effort="none"),
+    answer(completion()),
+)
+_vllm(
+    "a_budget_over_the_configuration_off",
+    "reasoning",
+    GENERATE,
+    {**VLLM, "enable_thinking": False},
+    asked(thinking_budget=512),
+    answer(completion()),
+)
+_vllm(
+    "reasoning_on_a_tool_turn_of_the_configuration",
+    "reasoning tools",
+    GENERATE,
+    {**VLLM, "enable_thinking": True},
+    {**TOOLS, "reasoning_effort": "low"},
+    answer(completion()),
+)
+_vllm(
+    "stream_usage_refused_by_the_configuration",
+    "plain stream",
+    STREAM,
+    {**VLLM, "include_stream_usage": False},
+    HELLO,
+    stream(said("Hello", " there.", usage=None)),
+)
+# An empty key is not captured: the openai SDK builds no client without one, as
+# for OpenAI's provider, whose replay names the case (empty_key): the Rust
+# provider is built and sends no Authorization.
+
 # The table of each vendor, by the name its fixture is written under.
 VENDOR_CASES: dict[str, list[Case]] = {
     "deepseek": DEEPSEEK_CASES,
@@ -1199,4 +1325,5 @@ VENDOR_CASES: dict[str, list[Case]] = {
     "openrouter": OPENROUTER_CASES,
     "litellm": LITELLM_CASES,
     "azure": AZURE_CASES,
+    "vllm": VLLM_CASES,
 }
