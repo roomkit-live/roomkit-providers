@@ -37,6 +37,7 @@ roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "../python-
 roomkit-providers-anthropic = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-anthropic", features = ["replay"] }
 roomkit-providers-llamacpp = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-llamacpp", features = ["replay"] }
 roomkit-providers-gemini = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-gemini", features = ["replay"] }
+roomkit-providers-mistral = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-mistral", features = ["replay"] }
 roomkit-providers-openai = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-openai", features = ["replay"] }
 # The waits of a provider a replay drives, which every vendor's replay seam
 # gives: named here once, for all of them.

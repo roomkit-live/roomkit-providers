@@ -18,6 +18,7 @@ mod litellm;
 mod llamacpp;
 mod meta;
 mod minimax;
+mod mistral;
 mod openai;
 mod openrouter;
 mod qwen;
@@ -28,6 +29,7 @@ mod xai;
 pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<anthropic::Anthropic>(),
     Entries::of::<gemini::Gemini>(),
+    Entries::of::<mistral::Mistral>(),
     Entries::of::<openai::OpenAi>(),
     Entries::of::<llamacpp::LlamaCpp>(),
     Entries::of::<deepseek::DeepSeek>(),

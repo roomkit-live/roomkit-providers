@@ -1137,6 +1137,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-mistral"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "reqwest",
+ "roomkit",
+ "roomkit-ai",
+ "roomkit-core",
+ "roomkit-providers-client",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "roomkit-providers-openai"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -1162,6 +1175,7 @@ dependencies = [
  "roomkit-providers-client",
  "roomkit-providers-gemini",
  "roomkit-providers-llamacpp",
+ "roomkit-providers-mistral",
  "roomkit-providers-openai",
  "roomkit-providers-python-forms",
  "serde",

@@ -39,6 +39,10 @@
     "MiniMax",
     "MiniMaxConfig"
   ],
+  "roomkit_providers.llm.mistral": [
+    "Mistral",
+    "MistralConfig"
+  ],
   "roomkit_providers.llm.openai": [
     "OpenAI",
     "OpenAIConfig"
