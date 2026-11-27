@@ -9,10 +9,14 @@
 //!   `ThinkTagParser`);
 //! - [`chat_finish_reason`]: how the dialect says an answer stopped, in the
 //!   vocabulary of the provider contract (RFC §6.7);
+//! - [`message_tool_calls`]: the calls of a whole answer's message;
 //! - [`truthy`]: whether Python reads a member of an answer as true.
 
-use roomkit_ai::FinishReason;
-use serde_json::Value;
+use roomkit_ai::{
+    AiToolCall, CallGarbledOptions, CallIds, CallPartialOptions, FinishReason, call_garbled,
+    call_partial, tool_arguments,
+};
+use serde_json::{Map, Value};
 
 pub mod call_slots;
 pub mod think_tags;
@@ -45,6 +49,72 @@ pub fn chat_finish_reason(word: Option<&str>) -> Option<FinishReason> {
         "content_filter" => Some(FinishReason::ContentFilter),
         "error" => Some(FinishReason::Error),
         _ => None,
+    }
+}
+
+/// The calls of a message, as the loop reads them (Python's
+/// `message_tool_calls`, RFC §6.4): each with an
+/// id of its own, its arguments read as text or as an object, cut or not.
+/// An entry with no function is no call; a call with no name keeps an
+/// empty one, for the loop to refuse.
+#[must_use]
+pub fn message_tool_calls(
+    entries: Option<&Value>,
+    finish_reason: Option<FinishReason>,
+) -> Vec<AiToolCall> {
+    let entries = entries
+        .and_then(Value::as_array)
+        .map_or(&[][..], Vec::as_slice);
+    let functions = entries.iter().filter_map(|entry| {
+        let function = entry
+            .get("function")
+            .filter(|function| !function.is_null())?;
+        Some((entry.get("id"), function))
+    });
+    let functions: Vec<(Option<&Value>, &Value)> = functions.collect();
+    let last = functions.len().checked_sub(1);
+    let mut ids = CallIds::new();
+    let mut calls = Vec::new();
+    for (position, (id, function)) in functions.into_iter().enumerate() {
+        let name = function
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let empty = Value::String(String::new());
+        let raw = function.get("arguments").unwrap_or(&empty);
+        let last = Some(position) == last;
+        let mut call = AiToolCall::new(ids.call(&id_text(id), name), name);
+        call.arguments = arguments_of(raw);
+        call.partial = call_partial(raw, finish_reason, CallPartialOptions { last });
+        call.garbled = call_garbled(raw, finish_reason, CallGarbledOptions { last });
+        calls.push(call);
+    }
+    calls
+}
+
+/// A call's id as its text, as Python's `str` writes one that is no text:
+/// none for an id Python reads as false (null, zero, empty), a number as
+/// its digits, `True`, and a list or an object as its JSON.
+fn id_text(id: Option<&Value>) -> String {
+    match id.filter(|id| truthy(id)) {
+        Some(Value::String(id)) => id.clone(),
+        Some(Value::Bool(_)) => "True".to_owned(),
+        Some(id @ (Value::Number(_) | Value::Array(_) | Value::Object(_))) => id.to_string(),
+        Some(Value::Null) | None => String::new(),
+    }
+}
+
+/// A call's arguments as a mapping: an object as it is, a text read, none
+/// as empty, and anything else kept whole under `raw` (Python's
+/// `tool_arguments`).
+fn arguments_of(raw: &Value) -> Map<String, Value> {
+    match raw {
+        Value::Object(arguments) => arguments.clone(),
+        Value::String(text) => tool_arguments(text),
+        Value::Null => Map::new(),
+        other @ (Value::Bool(_) | Value::Number(_) | Value::Array(_)) => {
+            Map::from_iter([("raw".to_owned(), other.clone())])
+        }
     }
 }
 
