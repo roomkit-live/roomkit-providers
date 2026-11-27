@@ -12,6 +12,7 @@ mod anthropic;
 mod azure;
 mod cerebras;
 mod deepseek;
+mod gemini;
 mod kimi;
 mod litellm;
 mod llamacpp;
@@ -26,6 +27,7 @@ mod xai;
 /// The entries of every vendor.
 pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<anthropic::Anthropic>(),
+    Entries::of::<gemini::Gemini>(),
     Entries::of::<openai::OpenAi>(),
     Entries::of::<llamacpp::LlamaCpp>(),
     Entries::of::<deepseek::DeepSeek>(),

@@ -15,6 +15,10 @@
     "DeepSeek",
     "DeepSeekConfig"
   ],
+  "roomkit_providers.llm.gemini": [
+    "Gemini",
+    "GeminiConfig"
+  ],
   "roomkit_providers.llm.kimi": [
     "Kimi",
     "KimiConfig"
