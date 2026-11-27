@@ -12,6 +12,15 @@ nothing has been released yet.
 
 ### Added
 
+- Mistral, on its chat completions, in Rust and in Python: the
+  `roomkit-providers-mistral` crate (`Mistral`, `MistralConfig`), and
+  `roomkit_providers.llm.mistral` (`Mistral`, `MistralConfig`) as a RoomKit
+  `AIProvider`, in place of RoomKit's `MistralAIProvider`. It is held to the
+  cases captured on RoomKit's Python provider, 115 wire cases, each replayed
+  as Python but two (a failed listing fails as a failed generation does; an
+  empty key goes in its header as written, which Python's HTTP client
+  refuses), and to the JSON forms of its configuration; it takes RoomKit's
+  own configuration.
 - Gemini, on Google's Developer API, in Rust and in Python: the
   `roomkit-providers-gemini` crate (`Gemini`, `GeminiConfig`), and
   `roomkit_providers.llm.gemini` (`Gemini`, `GeminiConfig`) as a RoomKit
