@@ -45,12 +45,6 @@ fn rewritten(value: &Value) -> serde_json::Result<String> {
 // Every example reads as the form Python dumps and the form as itself, the
 // key masked; what Python refuses or converts is refused here.
 #[test]
-#[expect(
-    clippy::unwrap_used,
-    clippy::panic,
-    clippy::indexing_slicing,
-    reason = "a test: a fixture that does not read fails it"
-)]
 fn the_configuration_reads_and_writes_as_python_s() {
     let fixture: Fixture =
         serde_json::from_str(include_str!("fixtures/python_config_forms.json")).unwrap();
