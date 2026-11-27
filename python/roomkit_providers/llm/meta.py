@@ -55,8 +55,8 @@ class MetaConfig(Config, vendor="meta", stands_for=RoomKitMetaConfig):
             answer.
         supports_reasoning_effort_with_tools: Left unset: the provider
             applies Meta's own rule on a turn with tools.
-        thinking_field: The field a server of one's own reads a round's reasoning
-            in; unset, no reasoning is sent back.
+        thinking_field: The field a server of one's own reads a round's
+            reasoning in; unset, no reasoning is sent back.
 
     ``repr`` never shows the key, the value of a default header or of a
     member of ``extra_body``, nor more of a base URL than its scheme, its

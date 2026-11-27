@@ -15,6 +15,10 @@
     "Kimi",
     "KimiConfig"
   ],
+  "roomkit_providers.llm.litellm": [
+    "LiteLLM",
+    "LiteLLMConfig"
+  ],
   "roomkit_providers.llm.llamacpp": [
     "LlamaCpp",
     "LlamaCppConfig"
@@ -30,6 +34,10 @@
   "roomkit_providers.llm.openai": [
     "OpenAI",
     "OpenAIConfig"
+  ],
+  "roomkit_providers.llm.openrouter": [
+    "OpenRouter",
+    "OpenRouterConfig"
   ],
   "roomkit_providers.llm.qwen": [
     "Qwen",

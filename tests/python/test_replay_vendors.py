@@ -16,8 +16,10 @@ from replay_cases import Replays, every_case
 from roomkit_providers.llm.cerebras import Cerebras, CerebrasConfig
 from roomkit_providers.llm.deepseek import DeepSeek, DeepSeekConfig
 from roomkit_providers.llm.kimi import Kimi, KimiConfig
+from roomkit_providers.llm.litellm import LiteLLM, LiteLLMConfig
 from roomkit_providers.llm.meta import Meta, MetaConfig
 from roomkit_providers.llm.minimax import MiniMax, MiniMaxConfig
+from roomkit_providers.llm.openrouter import OpenRouter, OpenRouterConfig
 from roomkit_providers.llm.qwen import Qwen, QwenConfig
 from roomkit_providers.llm.xai import XAI, XAIConfig
 
@@ -43,6 +45,8 @@ XAI_WIRE = of_openai_s_wire("xai", XAI, XAIConfig)
 CEREBRAS = of_openai_s_wire("cerebras", Cerebras, CerebrasConfig)
 QWEN = of_openai_s_wire("qwen", Qwen, QwenConfig)
 META = of_openai_s_wire("meta", Meta, MetaConfig)
+OPENROUTER = of_openai_s_wire("openrouter", OpenRouter, OpenRouterConfig)
+LITELLM = of_openai_s_wire("litellm", LiteLLM, LiteLLMConfig)
 
 
 class ReplayTests(unittest.IsolatedAsyncioTestCase):
@@ -127,6 +131,30 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
                 ("generate", "as Python"): 41,
                 ("generate_structured_stream", "as Python"): 1,
                 ("list_models", "as Python"): 2,
+            },
+        )
+
+    async def test_every_openrouter_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(OPENROUTER)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 51,
+                ("generate_structured_stream", "as Python"): 2,
+                ("list_models", "as Python"): 4,
+            },
+        )
+
+    async def test_every_litellm_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(LITELLM)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 48,
+                ("generate_structured_stream", "as Python"): 1,
+                ("list_models", "as Python"): 4,
             },
         )
 

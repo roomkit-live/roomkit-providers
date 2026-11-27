@@ -53,8 +53,8 @@ class QwenConfig(Config, vendor="qwen", stands_for=RoomKitQwenConfig):
             answer.
         supports_reasoning_effort_with_tools: Left unset: the provider
             applies Qwen's own rule on a turn with tools.
-        thinking_field: The field a server of one's own reads a round's reasoning
-            in; unset, no reasoning is sent back.
+        thinking_field: The field a server of one's own reads a round's
+            reasoning in; unset, no reasoning is sent back.
         enable_thinking: Qwen's thinking mode forced on or off for every
             turn; ``None`` leaves the model's default. The turn's switch
             outranks it.

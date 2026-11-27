@@ -12,10 +12,12 @@ mod anthropic;
 mod cerebras;
 mod deepseek;
 mod kimi;
+mod litellm;
 mod llamacpp;
 mod meta;
 mod minimax;
 mod openai;
+mod openrouter;
 mod qwen;
 mod xai;
 
@@ -31,4 +33,6 @@ pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<cerebras::Cerebras>(),
     Entries::of::<qwen::Qwen>(),
     Entries::of::<meta::Meta>(),
+    Entries::of::<openrouter::OpenRouter>(),
+    Entries::of::<litellm::LiteLlm>(),
 ];
