@@ -12,6 +12,17 @@ nothing has been released yet.
 
 ### Added
 
+- Ollama, on its native API, in Rust and in Python: the
+  `roomkit-providers-ollama` crate (`Ollama`, `OllamaConfig`, with `Think`,
+  `ThinkEffort` and `KeepAlive` for its two members of two kinds), and
+  `roomkit_providers.llm.ollama` (`Ollama`, `OllamaConfig`) as a RoomKit
+  `AIProvider`, in place of RoomKit's `OllamaAIProvider`. It is held to the
+  cases captured on RoomKit's Python provider, 114 wire cases, each replayed
+  as Python but one (a failed listing fails as a failed generation does),
+  to the JSON forms of its configuration and to what the ollama SDK makes
+  of 40 image texts; it takes RoomKit's own configuration. As Python's, it
+  reads an image a path names from the disk, and sends the key
+  `OLLAMA_API_KEY` holds where the configuration states no authorization.
 - Mistral, on its chat completions, in Rust and in Python: the
   `roomkit-providers-mistral` crate (`Mistral`, `MistralConfig`), and
   `roomkit_providers.llm.mistral` (`Mistral`, `MistralConfig`) as a RoomKit

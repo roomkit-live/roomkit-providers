@@ -12,8 +12,8 @@ implementation per service, written once in Rust, for RoomKit's Rust core
 and, behind a Python binding, for RoomKit's Python.
 
 > **Early development.** The HTTP client the providers are built on is
-> written, with providers for OpenAI, Anthropic, Gemini, Mistral and
-> managed local llama.cpp: whole answers, streams and the model listing. A Python package exposes them
+> written, with providers for OpenAI, Anthropic, Gemini, Mistral, Ollama
+> and managed local llama.cpp: whole answers, streams and the model listing. A Python package exposes them
 > behind a native extension, each as a RoomKit provider. Nothing is
 > released. The
 > [changelog](CHANGELOG.md) says what exists; the rest of this page says
@@ -42,6 +42,10 @@ Gemini, on Google's Developer API, is in Python too: `Gemini` and
 Mistral, on its chat completions, is in Python too: `Mistral` and
 `MistralConfig` from `roomkit_providers.llm.mistral`, in place of RoomKit's
 `MistralAIProvider`. It takes RoomKit's own `MistralConfig` as well.
+
+Ollama, on its native API, is in Python too: `Ollama` and `OllamaConfig`
+from `roomkit_providers.llm.ollama`, in place of RoomKit's
+`OllamaAIProvider`. It takes RoomKit's own `OllamaConfig` as well.
 
 ## Goals
 
@@ -122,16 +126,17 @@ provider.
 
 | Path | Contents |
 | --- | --- |
-| `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients, which trusts the certificate authorities the environment or the system names |
+| `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: bounded readers of server-sent events and of JSON lines, and the TLS configuration of their clients, which trusts the certificate authorities the environment or the system names |
 | `crates/roomkit-providers-client` | The HTTP client a provider is built on, written once for every provider: a request and its tries, the proxies it reads from the environment, the bounds of an answer and of a stream, the base URLs refused when a provider is built, the one exit of failures, and, for a provider's tests, the replay of its recorded wire cases against a local fake |
 | `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy; and the providers of eleven vendors on the same wire, `DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen`, `Meta`, `OpenRouter`, `LiteLlm`, `AzureAi` and `Vllm`, each with its configuration |
 | `crates/roomkit-providers-anthropic` | The Anthropic provider (`Anthropic`): whole answers, streams and the model listing on the Messages API, its configuration (`AnthropicConfig`), the wire cases it replays, and an example against a local server |
 | `crates/roomkit-providers-gemini` | The Gemini provider (`Gemini`): whole answers, streams and the model listing on Google's Developer API, its configuration (`GeminiConfig`), and the wire cases it replays |
 | `crates/roomkit-providers-mistral` | The Mistral provider (`Mistral`): whole answers, streams and the model listing on Mistral's chat completions, its configuration (`MistralConfig`), and the wire cases it replays |
+| `crates/roomkit-providers-ollama` | The Ollama provider (`Ollama`): whole answers, streams of JSON lines and the listing of the models a server holds, on Ollama's native API, its configuration (`OllamaConfig`), and the wire cases it replays |
 | `crates/roomkit-providers-redis` | RoomKit's turn backend across processes, on Redis (`RedisTurnBackend`): the broker and the registry of the core's distributed backend (`RedisTurnBroker`, `RedisTurnRegistry`), with the keys, the scripts and the messages of RoomKit's Python backend. Rust only. Its functional tests, its interop with RoomKit's Python and its example of two processes run on a Redis server (`make redis-test`) |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract, and the entries Python calls are written once for every vendor (`src/vendor.rs`); `src/vendors` holds each provider's own part, its configuration and how it is built |
 | `bindings/python-forms` | The JSON forms of RoomKit's Python models, read into and written from the types of RoomKit's Rust core: what crosses to Python, and what a recorded case holds. The conversion and nothing else |
-| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, `roomkit_providers.llm.gemini` holds `Gemini` and `GeminiConfig`, `roomkit_providers.llm.mistral` holds `Mistral` and `MistralConfig`, `roomkit_providers.llm.deepseek`, `.kimi`, `.minimax`, `.xai`, `.cerebras`, `.qwen`, `.meta`, `.openrouter`, `.litellm`, `.azure` and `.vllm` hold `DeepSeek`, `Kimi`, `MiniMax`, `XAI`, `Cerebras`, `Qwen`, `Meta`, `OpenRouter`, `LiteLLM`, `AzureAI`, `VLLM` and their configurations, a class statement each |
+| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, `roomkit_providers.llm.gemini` holds `Gemini` and `GeminiConfig`, `roomkit_providers.llm.mistral` holds `Mistral` and `MistralConfig`, `roomkit_providers.llm.ollama` holds `Ollama` and `OllamaConfig`, `roomkit_providers.llm.deepseek`, `.kimi`, `.minimax`, `.xai`, `.cerebras`, `.qwen`, `.meta`, `.openrouter`, `.litellm`, `.azure` and `.vllm` hold `DeepSeek`, `Kimi`, `MiniMax`, `XAI`, `Cerebras`, `Qwen`, `Meta`, `OpenRouter`, `LiteLLM`, `AzureAI`, `VLLM` and their configurations, a class statement each |
 | `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the criterion that adding a provider changes none of it; the replay of each provider's recorded wire cases through its class; a RoomKit agent over each; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
 | `examples/roomkit_agent.py` | A RoomKit agent over the provider: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |
