@@ -55,6 +55,10 @@
     "OpenRouter",
     "OpenRouterConfig"
   ],
+  "roomkit_providers.llm.polargrid": [
+    "PolarGrid",
+    "PolarGridConfig"
+  ],
   "roomkit_providers.llm.qwen": [
     "Qwen",
     "QwenConfig"

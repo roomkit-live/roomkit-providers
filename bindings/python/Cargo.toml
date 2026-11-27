@@ -40,6 +40,7 @@ roomkit-providers-gemini = { version = "0.1.0-alpha.1", path = "../../crates/roo
 roomkit-providers-mistral = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-mistral", features = ["replay"] }
 roomkit-providers-ollama = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-ollama", features = ["replay"] }
 roomkit-providers-openai = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-openai", features = ["replay"] }
+roomkit-providers-polargrid = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-polargrid", features = ["replay"] }
 # The waits of a provider a replay drives, which every vendor's replay seam
 # gives: named here once, for all of them.
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "../../crates/roomkit-providers-client", features = ["replay"] }
