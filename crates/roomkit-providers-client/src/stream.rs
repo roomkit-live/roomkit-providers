@@ -1,6 +1,7 @@
 //! A streamed answer read as it arrives: the events of the answer through
-//! the bounded reader of `roomkit-providers-http`, each handed on before
-//! the next bytes are read, and how a stream's failure leaves a provider.
+//! the bounded reader of `roomkit-providers-http`, or the lines of a stream
+//! of JSON lines through its reader of lines, each handed on before the
+//! next bytes are read, and how a stream's failure leaves a provider.
 //!
 //! The stream is pulled: the answer is read only as its events are taken,
 //! and dropping it drops the request with its connection, which closes it.
@@ -12,6 +13,7 @@ use roomkit_ai::{
     ThinkingBlocks, tool_call_of,
 };
 use roomkit_providers_http::SseError;
+use roomkit_providers_http::lines::Lines;
 use roomkit_providers_http::sse::Events;
 /// The most bytes read of a streamed answer, envelopes included.
 pub use roomkit_providers_http::sse::STREAM_LIMIT;
@@ -42,7 +44,7 @@ pub struct Streamed {
     response: reqwest::Response,
     /// What the answer is shown without: the token it was asked with.
     hidden: Hidden,
-    events: Events,
+    events: Framing,
     /// The events read and not given yet.
     ready: VecDeque<String>,
     /// Why the reading stopped, to say once what was read before is given.
@@ -69,6 +71,30 @@ impl std::fmt::Debug for Streamed {
     }
 }
 
+/// How a streamed answer cuts its bytes into the pieces it gives: server-sent
+/// events, or JSON lines.
+#[derive(Debug)]
+enum Framing {
+    Events(Events),
+    Lines(Lines),
+}
+
+impl Framing {
+    fn feed(&mut self, bytes: &[u8]) -> (Vec<String>, Option<SseError>) {
+        match self {
+            Self::Events(events) => events.feed(bytes),
+            Self::Lines(lines) => lines.feed(bytes),
+        }
+    }
+
+    fn finish(&mut self) -> Result<Option<String>, SseError> {
+        match self {
+            Self::Events(events) => events.finish(),
+            Self::Lines(lines) => lines.finish(),
+        }
+    }
+}
+
 impl Client {
     /// Sends `call` until the head of an answer comes or no try is left:
     /// the answer, to read as a stream of events. A try is taken again
@@ -80,12 +106,29 @@ impl Client {
     /// The failure that ended the request, as [`send`](Self::send) gives
     /// it, but for an answer's length: a stream is bounded as it is read.
     pub async fn stream(&self, call: Call<'_>) -> Result<Streamed, Failure> {
+        let framing = Framing::Events(Events::new(self.stream_limit()));
+        self.streamed(call, framing).await
+    }
+
+    /// As [`stream`](Self::stream), the answer read as a stream of JSON
+    /// lines, as Python's client splits one (`aiter_lines`): each piece
+    /// [`Streamed::next`] gives is a line, a blank one included.
+    ///
+    /// # Errors
+    ///
+    /// As [`stream`](Self::stream).
+    pub async fn stream_lines(&self, call: Call<'_>) -> Result<Streamed, Failure> {
+        let framing = Framing::Lines(Lines::new(self.stream_limit()));
+        self.streamed(call, framing).await
+    }
+
+    async fn streamed(&self, call: Call<'_>, events: Framing) -> Result<Streamed, Failure> {
         let Opened { response, hidden } = self.open(call).await?;
         let kept = is_json(response.headers()).then(Vec::new);
         Ok(Streamed {
             response,
             hidden,
-            events: Events::new(self.stream_limit()),
+            events,
             ready: VecDeque::new(),
             unread: None,
             ended: false,
