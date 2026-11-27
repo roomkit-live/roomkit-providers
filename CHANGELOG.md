@@ -12,6 +12,17 @@ nothing has been released yet.
 
 ### Added
 
+- PolarGrid, on the chat completions of its edges, in Rust and in Python:
+  the `roomkit-providers-polargrid` crate (`PolarGrid`, `PolarGridConfig`,
+  `PolarGridRegion`), and `roomkit_providers.llm.polargrid` (`PolarGrid`,
+  `PolarGridConfig`) as a RoomKit `AIProvider`, in place of RoomKit's
+  `PolarGridAIProvider`. It is held to the cases captured on RoomKit's
+  Python provider, 98 wire cases, each replayed as Python, and to the JSON
+  forms of its configuration; it takes RoomKit's own configuration. As
+  polargrid-sdk does, it asks the autorouter for an edge where no region is
+  pinned, keeps the pick for the whole process, and reads an empty key from
+  `POLARGRID_API_KEY`. `available_regions` and `connected_region` are on the
+  Rust provider only, for now.
 - Ollama, on its native API, in Rust and in Python: the
   `roomkit-providers-ollama` crate (`Ollama`, `OllamaConfig`, with `Think`,
   `ThinkEffort` and `KeepAlive` for its two members of two kinds), and

@@ -12,8 +12,8 @@ implementation per service, written once in Rust, for RoomKit's Rust core
 and, behind a Python binding, for RoomKit's Python.
 
 > **Early development.** The HTTP client the providers are built on is
-> written, with providers for OpenAI, Anthropic, Gemini, Mistral, Ollama
-> and managed local llama.cpp: whole answers, streams and the model listing. A Python package exposes them
+> written, with providers for OpenAI, Anthropic, Gemini, Mistral, Ollama,
+> PolarGrid and managed local llama.cpp: whole answers, streams and the model listing. A Python package exposes them
 > behind a native extension, each as a RoomKit provider. Nothing is
 > released. The
 > [changelog](CHANGELOG.md) says what exists; the rest of this page says
@@ -46,6 +46,12 @@ Mistral, on its chat completions, is in Python too: `Mistral` and
 Ollama, on its native API, is in Python too: `Ollama` and `OllamaConfig`
 from `roomkit_providers.llm.ollama`, in place of RoomKit's
 `OllamaAIProvider`. It takes RoomKit's own `OllamaConfig` as well.
+
+PolarGrid, on the chat completions of its edges, is in Python too:
+`PolarGrid` and `PolarGridConfig` from `roomkit_providers.llm.polargrid`, in
+place of RoomKit's `PolarGridAIProvider`. It takes RoomKit's own
+`PolarGridConfig` as well. RoomKit's `available_regions` and
+`connected_region` are on the Rust provider only, for now.
 
 ## Goals
 
@@ -133,10 +139,11 @@ provider.
 | `crates/roomkit-providers-gemini` | The Gemini provider (`Gemini`): whole answers, streams and the model listing on Google's Developer API, its configuration (`GeminiConfig`), and the wire cases it replays |
 | `crates/roomkit-providers-mistral` | The Mistral provider (`Mistral`): whole answers, streams and the model listing on Mistral's chat completions, its configuration (`MistralConfig`), and the wire cases it replays |
 | `crates/roomkit-providers-ollama` | The Ollama provider (`Ollama`): whole answers, streams of JSON lines and the listing of the models a server holds, on Ollama's native API, its configuration (`OllamaConfig`), and the wire cases it replays |
+| `crates/roomkit-providers-polargrid` | The PolarGrid provider (`PolarGrid`): whole answers, streams and the model listing on the chat completions of an edge, pinned or picked by the autorouter, its configuration (`PolarGridConfig`), and the wire cases it replays |
 | `crates/roomkit-providers-redis` | RoomKit's turn backend across processes, on Redis (`RedisTurnBackend`): the broker and the registry of the core's distributed backend (`RedisTurnBroker`, `RedisTurnRegistry`), with the keys, the scripts and the messages of RoomKit's Python backend. Rust only. Its functional tests, its interop with RoomKit's Python and its example of two processes run on a Redis server (`make redis-test`) |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract, and the entries Python calls are written once for every vendor (`src/vendor.rs`); `src/vendors` holds each provider's own part, its configuration and how it is built |
 | `bindings/python-forms` | The JSON forms of RoomKit's Python models, read into and written from the types of RoomKit's Rust core: what crosses to Python, and what a recorded case holds. The conversion and nothing else |
-| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, `roomkit_providers.llm.gemini` holds `Gemini` and `GeminiConfig`, `roomkit_providers.llm.mistral` holds `Mistral` and `MistralConfig`, `roomkit_providers.llm.ollama` holds `Ollama` and `OllamaConfig`, `roomkit_providers.llm.deepseek`, `.kimi`, `.minimax`, `.xai`, `.cerebras`, `.qwen`, `.meta`, `.openrouter`, `.litellm`, `.azure` and `.vllm` hold `DeepSeek`, `Kimi`, `MiniMax`, `XAI`, `Cerebras`, `Qwen`, `Meta`, `OpenRouter`, `LiteLLM`, `AzureAI`, `VLLM` and their configurations, a class statement each |
+| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, `roomkit_providers.llm.gemini` holds `Gemini` and `GeminiConfig`, `roomkit_providers.llm.mistral` holds `Mistral` and `MistralConfig`, `roomkit_providers.llm.ollama` holds `Ollama` and `OllamaConfig`, `roomkit_providers.llm.polargrid` holds `PolarGrid` and `PolarGridConfig`, `roomkit_providers.llm.deepseek`, `.kimi`, `.minimax`, `.xai`, `.cerebras`, `.qwen`, `.meta`, `.openrouter`, `.litellm`, `.azure` and `.vllm` hold `DeepSeek`, `Kimi`, `MiniMax`, `XAI`, `Cerebras`, `Qwen`, `Meta`, `OpenRouter`, `LiteLLM`, `AzureAI`, `VLLM` and their configurations, a class statement each |
 | `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the criterion that adding a provider changes none of it; the replay of each provider's recorded wire cases through its class; a RoomKit agent over each; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
 | `examples/roomkit_agent.py` | A RoomKit agent over the provider: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |
