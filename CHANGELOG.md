@@ -7,6 +7,15 @@ nothing has been released yet.
 
 ### Added
 
+- xAI, Cerebras, Qwen and Meta, in Rust and in Python: `Xai`, `Cerebras`,
+  `Qwen` and `Meta` with their configurations in the OpenAI crate, and
+  `roomkit_providers.llm.xai` (`XAI`, `XAIConfig`), `.cerebras`
+  (`Cerebras`, `CerebrasConfig`), `.qwen` (`Qwen`, `QwenConfig`) and
+  `.meta` (`Meta`, `MetaConfig`) as RoomKit `AIProvider`s. Each is held to
+  the cases captured on RoomKit's Python provider of the vendor, 202 wire
+  cases, every one replayed as Python, and to the JSON forms of its
+  configuration; each takes RoomKit's own configuration of the vendor, and
+  names itself as RoomKit's provider does.
 - DeepSeek, Kimi and MiniMax in Python: `roomkit_providers.llm.deepseek`
   (`DeepSeek`, `DeepSeekConfig`), `roomkit_providers.llm.kimi` (`Kimi`,
   `KimiConfig`) and `roomkit_providers.llm.minimax` (`MiniMax`,

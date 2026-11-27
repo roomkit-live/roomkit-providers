@@ -3,6 +3,10 @@
     "Anthropic",
     "AnthropicConfig"
   ],
+  "roomkit_providers.llm.cerebras": [
+    "Cerebras",
+    "CerebrasConfig"
+  ],
   "roomkit_providers.llm.deepseek": [
     "DeepSeek",
     "DeepSeekConfig"
@@ -15,6 +19,10 @@
     "LlamaCpp",
     "LlamaCppConfig"
   ],
+  "roomkit_providers.llm.meta": [
+    "Meta",
+    "MetaConfig"
+  ],
   "roomkit_providers.llm.minimax": [
     "MiniMax",
     "MiniMaxConfig"
@@ -22,5 +30,13 @@
   "roomkit_providers.llm.openai": [
     "OpenAI",
     "OpenAIConfig"
+  ],
+  "roomkit_providers.llm.qwen": [
+    "Qwen",
+    "QwenConfig"
+  ],
+  "roomkit_providers.llm.xai": [
+    "XAI",
+    "XAIConfig"
   ]
 }

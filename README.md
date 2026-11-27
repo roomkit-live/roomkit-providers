@@ -23,11 +23,13 @@ For local GGUF inference, the [managed llama.cpp provider](crates/roomkit-provid
 installs the pinned server or runs an explicit binary. In Python, import
 `LlamaCpp` and `LlamaCppConfig` from `roomkit_providers.llm.llamacpp`.
 
-DeepSeek, Kimi and MiniMax are in Python too: `DeepSeek` and `DeepSeekConfig`
-from `roomkit_providers.llm.deepseek`, `Kimi` and `KimiConfig` from
-`roomkit_providers.llm.kimi`, `MiniMax` and `MiniMaxConfig` from
-`roomkit_providers.llm.minimax`. Each takes RoomKit's own configuration of the
-vendor as well.
+DeepSeek, Kimi, MiniMax, xAI, Cerebras, Qwen and Meta are in Python too, each
+in its module of `roomkit_providers.llm`: `DeepSeek` and `DeepSeekConfig`
+from `.deepseek`, `Kimi` and `KimiConfig` from `.kimi`, `MiniMax` and
+`MiniMaxConfig` from `.minimax`, `XAI` and `XAIConfig` from `.xai`,
+`Cerebras` and `CerebrasConfig` from `.cerebras`, `Qwen` and `QwenConfig`
+from `.qwen`, `Meta` and `MetaConfig` from `.meta`. Each takes RoomKit's own
+configuration of the vendor as well.
 
 ## Goals
 
@@ -110,12 +112,12 @@ provider.
 | --- | --- |
 | `crates/roomkit-providers-http` | Outbound URL validation (`validate_public_url`), and the HTTP support the providers share: a bounded reader of server-sent events and the TLS configuration of their clients, which trusts the certificate authorities the environment or the system names |
 | `crates/roomkit-providers-client` | The HTTP client a provider is built on, written once for every provider: a request and its tries, the proxies it reads from the environment, the bounds of an answer and of a stream, the base URLs refused when a provider is built, the one exit of failures, and, for a provider's tests, the replay of its recorded wire cases against a local fake |
-| `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy; and the providers of three vendors on the same wire, `DeepSeek`, `Kimi` and `MiniMax`, each with its configuration |
+| `crates/roomkit-providers-openai` | The OpenAI provider (`OpenAi`): whole answers, streams and the model listing, its configuration (`OpenAiConfig`), the wire cases it replays, and two examples, against a local server and behind a local proxy; and the providers of seven vendors on the same wire, `DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen` and `Meta`, each with its configuration |
 | `crates/roomkit-providers-anthropic` | The Anthropic provider (`Anthropic`): whole answers, streams and the model listing on the Messages API, its configuration (`AnthropicConfig`), the wire cases it replays, and an example against a local server |
 | `crates/roomkit-providers-redis` | RoomKit's turn backend across processes, on Redis (`RedisTurnBackend`): the broker and the registry of the core's distributed backend (`RedisTurnBroker`, `RedisTurnRegistry`), with the keys, the scripts and the messages of RoomKit's Python backend. Rust only. Its functional tests, its interop with RoomKit's Python and its example of two processes run on a Redis server (`make redis-test`) |
 | `bindings/python` | The native extension of the Python package (PyO3), a workspace of its own: the Rust workspace builds without a Python interpreter. One class holds any provider of the contract, and the entries Python calls are written once for every vendor (`src/vendor.rs`); `src/vendors` holds each provider's own part, its configuration and how it is built |
 | `bindings/python-forms` | The JSON forms of RoomKit's Python models, read into and written from the types of RoomKit's Rust core: what crosses to Python, and what a recorded case holds. The conversion and nothing else |
-| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, `roomkit_providers.llm.deepseek`, `.kimi` and `.minimax` hold `DeepSeek`, `Kimi`, `MiniMax` and their configurations, a class statement each |
+| `python/roomkit_providers` | The Python package, by kind then by vendor: `roomkit_providers.llm` holds what every provider of a language model shares, a RoomKit `AIProvider` over a provider of the contract and what every configuration does, `roomkit_providers.llm.openai` holds `OpenAI` and `OpenAIConfig`, `roomkit_providers.llm.anthropic` holds `Anthropic` and `AnthropicConfig`, `roomkit_providers.llm.deepseek`, `.kimi`, `.minimax`, `.xai`, `.cerebras`, `.qwen` and `.meta` hold `DeepSeek`, `Kimi`, `MiniMax`, `XAI`, `Cerebras`, `Qwen`, `Meta` and their configurations, a class statement each |
 | `tests/python` | The Python tests: what every provider shares, against a scripted provider of no vendor; the criterion that adding a provider changes none of it; the replay of each provider's recorded wire cases through its class; a RoomKit agent over each; cancellation, event loops and threads, the interpreter's exit; and the snapshot of the public API |
 | `examples/local_server.py` | A Python program that asks a stand-in server on a local port, whole and streamed |
 | `examples/roomkit_agent.py` | A RoomKit agent over the provider: it answers a message, calls a tool and streams its answer, against a stand-in server on a local port |
@@ -126,7 +128,7 @@ provider.
 | `guide/python.md` | The Python guide |
 | `scripts/check-python.py` | Builds a wheel and a source distribution, installs each beside RoomKit and runs the Python tests and the examples on it (`scripts/artifact_files.py` holds what a distribution may contain, `scripts/native-notices.py` the notices of the extension's dependencies, `scripts/api-snapshot.py` rewrites the API snapshot, `scripts/roomkit_env.py` names the RoomKit of the environment) |
 | `scripts/no-network.sh` | Runs a command where no network is reachable but loopback, without the proxy and certificate variables of the machine: the tests, the examples and the benches go through it. Where the machine lets a user make no such place, it runs nothing and fails, unless `ROOMKIT_PROVIDERS_ALLOW_NETWORK=1` is set (`scripts/no-network-test.sh` checks it) |
-| `scripts/generate_openai_catalogue.py` | Writes the model catalogues of RoomKit's Python for OpenAI, DeepSeek, Kimi and MiniMax, which each provider reads its models' rules from |
+| `scripts/generate_openai_catalogue.py` | Writes the model catalogues of RoomKit's Python for OpenAI, DeepSeek, Kimi, MiniMax, xAI, Cerebras, Qwen and Meta, which each provider reads its models' rules from |
 | `scripts/generate_python_forms.py` | Writes what RoomKit's Python gives, which the contract's tests compare with: the JSON forms of its models and the decisions of its call rules |
 | `scripts/generate_python_public_urls.py` | Writes what RoomKit's Python `validate_public_url` decides of a table of URLs, which the HTTP crate's tests replay |
 | `scripts/generate_python_proxy_cases.py` | Writes which proxy the client of RoomKit's Python providers takes for a table of environments, which the client crate's tests replay |

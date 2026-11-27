@@ -1,5 +1,5 @@
-"""DeepSeek's, Kimi's and MiniMax's recorded wire cases, replayed through the
-package's providers.
+"""The recorded wire cases of the vendors of OpenAI's wire, replayed through
+the package's providers.
 
 Each case of ``python_<vendor>_cases.json``, captured on RoomKit's own
 provider of the vendor, is asked of the package's provider as RoomKit asks
@@ -13,9 +13,13 @@ from __future__ import annotations
 import unittest
 
 from replay_cases import Replays, every_case
+from roomkit_providers.llm.cerebras import Cerebras, CerebrasConfig
 from roomkit_providers.llm.deepseek import DeepSeek, DeepSeekConfig
 from roomkit_providers.llm.kimi import Kimi, KimiConfig
+from roomkit_providers.llm.meta import Meta, MetaConfig
 from roomkit_providers.llm.minimax import MiniMax, MiniMaxConfig
+from roomkit_providers.llm.qwen import Qwen, QwenConfig
+from roomkit_providers.llm.xai import XAI, XAIConfig
 
 
 def of_openai_s_wire(vendor: str, provider: type, config: type) -> Replays:
@@ -35,6 +39,10 @@ def of_openai_s_wire(vendor: str, provider: type, config: type) -> Replays:
 DEEPSEEK = of_openai_s_wire("deepseek", DeepSeek, DeepSeekConfig)
 KIMI = of_openai_s_wire("kimi", Kimi, KimiConfig)
 MINIMAX = of_openai_s_wire("minimax", MiniMax, MiniMaxConfig)
+XAI_WIRE = of_openai_s_wire("xai", XAI, XAIConfig)
+CEREBRAS = of_openai_s_wire("cerebras", Cerebras, CerebrasConfig)
+QWEN = of_openai_s_wire("qwen", Qwen, QwenConfig)
+META = of_openai_s_wire("meta", Meta, MetaConfig)
 
 
 class ReplayTests(unittest.IsolatedAsyncioTestCase):
@@ -71,6 +79,54 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
                 ("generate", "as Python"): 47,
                 ("generate_structured_stream", "as Python"): 1,
                 ("list_models", "as Python"): 1,
+            },
+        )
+
+    async def test_every_xai_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(XAI_WIRE)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 46,
+                ("generate_structured_stream", "as Python"): 1,
+                ("list_models", "as Python"): 1,
+            },
+        )
+
+    async def test_every_cerebras_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(CEREBRAS)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 56,
+                ("generate_structured_stream", "as Python"): 3,
+                ("list_models", "as Python"): 1,
+            },
+        )
+
+    async def test_every_qwen_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(QWEN)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 47,
+                ("generate_structured_stream", "as Python"): 1,
+                ("list_models", "as Python"): 2,
+            },
+        )
+
+    async def test_every_meta_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(META)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        self.assertEqual(
+            counts,
+            {
+                ("generate", "as Python"): 41,
+                ("generate_structured_stream", "as Python"): 1,
+                ("list_models", "as Python"): 2,
             },
         )
 

@@ -141,13 +141,27 @@ def letters(text: str) -> str:
     return "".join(character for character in text.lower() if character.isalnum())
 
 
+# The words of RoomKit's contract and of Python that hold a vendor's name:
+# read as the words they are, never as the name.
+WORDS_HOLDING_A_NAME = ("metadata", "metaclass")
+
+
+def unnamed(text: str) -> str:
+    """`text` as `letters` reads it, without the words that hold a vendor's
+    name."""
+    read = letters(text)
+    for word in WORDS_HOLDING_A_NAME:
+        read = read.replace(word, " ")
+    return read
+
+
 def named_in(files: list[Path], names: set[str]) -> list[str]:
     """Each of `names` each of `files` holds, as ``file: name``."""
     return [
         f"{path.name}: {name}"
         for path in files
         for name in sorted(names)
-        if letters(name) in letters(path.read_text(encoding="utf-8"))
+        if letters(name) in unnamed(path.read_text(encoding="utf-8"))
     ]
 
 
@@ -332,6 +346,20 @@ class GenericTests(unittest.TestCase):
             sample = Path(directory) / "sample.py"
             sample.write_text("if label == self.label:\n", encoding="utf-8")
             self.assertEqual(named_in([sample], vendors()), [])
+        # A word of the contract that holds a vendor's name is no name; the
+        # name beside it still is.
+        held = {
+            vendor
+            for vendor in vendors()
+            if any(letters(vendor) in word for word in WORDS_HOLDING_A_NAME)
+        }
+        for vendor in sorted(held):
+            with tempfile.TemporaryDirectory() as directory:
+                sample = Path(directory) / "sample.py"
+                sample.write_text("context.metadata[API_KEY_METADATA_KEY]\n", encoding="utf-8")
+                self.assertEqual(named_in([sample], {vendor}), [], vendor)
+                sample.write_text(f'context.metadata["{vendor}"]\n', encoding="utf-8")
+                self.assertEqual(named_in([sample], {vendor}), [f"sample.py: {vendor}"])
 
     def test_nothing_shared_reads_the_name_of_a_class(self) -> None:
         """A provider is told from another by nothing: no shared module of
