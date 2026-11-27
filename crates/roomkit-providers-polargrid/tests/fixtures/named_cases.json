@@ -1,0 +1,4 @@
+{
+  "notes": "The cases of python_polargrid_cases.json the provider answers otherwise than Python, as src/replay/mod.rs states them, for a replay outside the crate. 'differs' lists the differences from Python a replay finds, each by the words it starts with; 'requests' is how many requests the provider sends; 'does' is what the call gives. A test of the crate keeps this file equal to the source: run that test with NAMED_CASES_OUT naming the file to rewrite it.",
+  "cases": []
+}
