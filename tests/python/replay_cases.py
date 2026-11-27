@@ -115,6 +115,10 @@ class Replays:
     # it, where the fixture writes a member in a form of its own (a key file
     # built from the fixtures' test key); ``None`` takes it as it is.
     prepared: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+    # The cases this replay takes, where some are the Rust replay's alone: a
+    # case that runs in an environment of its own, which the native module
+    # reads from the process; ``None`` takes them all.
+    takes: Callable[[dict[str, Any]], bool] | None = None
 
     def _read(self, name: str) -> Any:
         crate = self.crate or self.vendor
@@ -741,6 +745,8 @@ async def every_case(replays: Replays) -> tuple[dict[tuple[str, str], int], list
     replays as Python, or one that does not differ or do as its entry
     states."""
     cases, stated = replays.fixture()["cases"], replays.named()
+    if replays.takes is not None:
+        cases = [case for case in cases if replays.takes(case)]
     counts: Counter[tuple[str, str]] = Counter()
     wrong = []
     async with Fake() as fake:

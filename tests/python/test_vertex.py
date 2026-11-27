@@ -60,6 +60,10 @@ GEMINI_VERTEX = Replays(
     crate="gemini",
     named_cases="vertex_named_cases.json",
     prepared=keyed,
+    # A case of Application Default Credentials runs in an environment of
+    # its own (its files, its variables), which the Rust replay gives the
+    # provider; the native module reads the process's.
+    takes=lambda case: "ENVIRONMENT" not in case["config"],
 )
 
 
@@ -102,8 +106,8 @@ class GeminiVertexReplayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             counts,
             {
-                ("generate", "as Python"): 15,
-                ("generate", "named"): 4,
+                ("generate", "as Python"): 16,
+                ("generate", "named"): 5,
                 ("generate_structured_stream", "as Python"): 1,
                 ("list_models", "as Python"): 1,
                 ("list_models", "named"): 1,

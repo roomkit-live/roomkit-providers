@@ -1049,7 +1049,7 @@ dependencies = [
 [[package]]
 name = "roomkit-auth"
 version = "0.1.0"
-source = "git+https://github.com/roomkit-live/roomkit-auth?rev=dda65d29ea56d1deb95b17509ec2d215e9220002#dda65d29ea56d1deb95b17509ec2d215e9220002"
+source = "git+https://github.com/roomkit-live/roomkit-auth?rev=46e6aa3810cd6a30c165ff8c124cba67385f2be3#46e6aa3810cd6a30c165ff8c124cba67385f2be3"
 dependencies = [
  "base64",
  "reqwest",

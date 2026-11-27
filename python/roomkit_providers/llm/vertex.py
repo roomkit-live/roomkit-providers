@@ -51,10 +51,12 @@ class GeminiVertexConfig(
             multi-region (``us``, ``eu``): required, so where the data goes
             is a choice.
         service_account_json: A service-account key file's contents, to call
-            as that account.
+            as that account; ``None`` calls as Application Default
+            Credentials, found as google-auth finds them (the file
+            ``GOOGLE_APPLICATION_CREDENTIALS`` names, gcloud's file, the
+            metadata server). An external account is not taken yet.
         impersonate_service_account: The email of a service account to
-            borrow; not taken yet, nor Application Default Credentials (no
-            key): both come in a later version.
+            borrow, with the identity above.
         labels: The billing labels every request carries, held to Google's
             rules, as RoomKit's are.
 
@@ -89,8 +91,9 @@ class GeminiVertex(
     clients.
 
     The environment of the process is read then too, for what RoomKit's
-    provider reads there of the host's network: the proxies and the
-    certificate authorities.
+    provider reads there of the host's network (the proxies and the
+    certificate authorities) and of Application Default Credentials (their
+    file is read then; the metadata server is asked at the first call).
 
     Cancelling the task that awaits a call stops its request and closes its
     connection; so does closing a stream, or leaving it unread.
