@@ -226,22 +226,34 @@ def read_bytes(chunk: str | bytes) -> bytes:
     return chunk if isinstance(chunk, bytes) else chunk.encode("utf-8")
 
 
-class Chunks(httpx2.AsyncByteStream):
-    """A body sent read by read; its reads then end, or fail as ``cut`` says."""
+# The streams of a body read by read, one class per HTTP module: each
+# module's response takes a stream of its own kind.
+_CHUNKS: dict[str, type] = {}
 
-    def __init__(self, chunks: list[str] | list[bytes], cut: str | None) -> None:
-        self._chunks = chunks
-        self._cut = cut
 
-    async def __aiter__(self) -> AsyncIterator[bytes]:
-        for chunk in self._chunks:
-            yield read_bytes(chunk)
-        if self._cut == LOST:
-            raise httpx2.RemoteProtocolError(
-                "peer closed connection without sending complete message body"
-            )
-        if self._cut is not None:
-            raise httpx2.ReadTimeout("The read operation timed out")
+def chunked(http: ModuleType, chunks: list[str] | list[bytes], cut: str | None) -> Any:
+    """A body sent read by read through ``http``'s client; its reads then
+    end, or fail as ``cut`` says, with ``http``'s own errors."""
+    kind = _CHUNKS.get(http.__name__)
+    if kind is None:
+
+        class Chunks(http.AsyncByteStream):  # type: ignore[name-defined,misc]
+            def __init__(self, chunks: list[str] | list[bytes], cut: str | None) -> None:
+                self._chunks = chunks
+                self._cut = cut
+
+            async def __aiter__(self) -> AsyncIterator[bytes]:
+                for chunk in self._chunks:
+                    yield read_bytes(chunk)
+                if self._cut == LOST:
+                    raise http.RemoteProtocolError(
+                        "peer closed connection without sending complete message body"
+                    )
+                if self._cut is not None:
+                    raise http.ReadTimeout("The read operation timed out")
+
+        kind = _CHUNKS[http.__name__] = Chunks
+    return kind(chunks, cut)
 
 
 def written_chunk(chunk: str | bytes) -> str | dict[str, str]:
@@ -267,19 +279,20 @@ def answered(reply: Reply) -> dict[str, Any]:
     return {**written, "json": reply.body}
 
 
-def response_of(reply: Reply, request: httpx2.Request) -> httpx2.Response:
-    """The response the fake gives for ``reply``, or the failure it raises."""
+def response_of(reply: Reply, request: Any, http: ModuleType = httpx2) -> Any:
+    """The response the fake gives for ``reply`` as ``http``'s client reads
+    it, or the failure it raises."""
     if reply.failure == "connection refused":
-        raise httpx2.ConnectError("All connection attempts failed", request=request)
+        raise http.ConnectError("All connection attempts failed", request=request)
     if reply.failure == "timeout":
-        raise httpx2.ReadTimeout("The read operation timed out", request=request)
+        raise http.ReadTimeout("The read operation timed out", request=request)
     if reply.chunks is not None:
-        body = Chunks(reply.chunks, reply.cut)
-        return httpx2.Response(reply.status, headers=reply.headers, stream=body)
+        body = chunked(http, reply.chunks, reply.cut)
+        return http.Response(reply.status, headers=reply.headers, stream=body)
     if reply.text is not None:
-        return httpx2.Response(reply.status, headers=reply.headers, text=reply.text)
+        return http.Response(reply.status, headers=reply.headers, text=reply.text)
     content = json.dumps(reply.body).encode("utf-8")
-    return httpx2.Response(reply.status, headers=reply.headers, content=content)
+    return http.Response(reply.status, headers=reply.headers, content=content)
 
 
 def named_key(value: str | None, request_key: str | None = REQUEST_KEY) -> str | None:
@@ -298,7 +311,7 @@ def named_key(value: str | None, request_key: str | None = REQUEST_KEY) -> str |
     return named
 
 
-def request_form(request: httpx2.Request, headers: dict[str, Any]) -> dict[str, Any]:
+def request_form(request: Any, headers: dict[str, Any]) -> dict[str, Any]:
     """``request`` as the fixture writes it, with the ``headers`` its
     generator keeps of it."""
     return {
@@ -317,16 +330,18 @@ class Wire:
 
     name: str
     replies: tuple[Reply, ...]
-    sent: Callable[[httpx2.Request], dict[str, Any]]
+    sent: Callable[[Any], dict[str, Any]]
     exchanges: list[dict[str, Any]] = field(default_factory=list)
+    # The HTTP module of the SDK's client, whose responses the fake gives.
+    http: ModuleType = httpx2
 
-    async def __call__(self, request: httpx2.Request) -> httpx2.Response:
+    async def __call__(self, request: Any) -> Any:
         asked = len(self.exchanges)
         if asked >= len(self.replies):
             raise AssertionError(f"{self.name}: a request more than the case answers")
         reply = self.replies[asked]
         self.exchanges.append({"request": self.sent(request), "response": answered(reply)})
-        return response_of(reply, request)
+        return response_of(reply, request, self.http)
 
     def record_waits(self, clients: Any, sdk: ModuleType) -> None:
         """Record the wait the SDK computes before each next try, and take
@@ -551,10 +566,15 @@ def unique_names(cases: list[Case]) -> None:
 
 
 def fixture_of(
-    generator: str, sdk: ModuleType, notes: dict[str, str], cases: list[dict[str, Any]]
+    generator: str,
+    sdk: ModuleType,
+    notes: dict[str, str],
+    cases: list[dict[str, Any]],
+    http: ModuleType = httpx2,
 ) -> dict[str, Any]:
     """The fixture: where it comes from, its notes, and its cases. ``sdk``
-    is the package of the vendor's SDK."""
+    is the package of the vendor's SDK, ``http`` the HTTP module it runs
+    on."""
     commit, dirty = roomkit_source()
     return {
         "generator": generator,
@@ -563,7 +583,7 @@ def fixture_of(
         "roomkit_dirty": dirty,
         f"{sdk.__name__}_version": sdk.__version__,
         "pydantic_version": pydantic.__version__,
-        "httpx2_version": httpx2.__version__,
+        f"{http.__name__}_version": http.__version__,
         "python_version": platform.python_version(),
         "clock": CLOCK,
         "notes": notes,
@@ -585,6 +605,7 @@ def write(
     fixture: dict[str, Any],
     sdk: ModuleType,
     request_keys: Iterable[str] = (REQUEST_KEY,),
+    http: ModuleType = httpx2,
 ) -> None:
     """Write ``fixture`` at ``path``, and say what was written."""
     # A number JSON does not name must not reach the fixture.
@@ -597,6 +618,6 @@ def write(
     print(
         f"Wrote {path.relative_to(repository)}: {len(cases)} cases, {failed} that fail, "
         f"{len(fixture['questioned'])} questioned, from roomkit {roomkit.__version__}, "
-        f"{sdk.__name__} {sdk.__version__}, httpx2 {httpx2.__version__}, "
+        f"{sdk.__name__} {sdk.__version__}, {http.__name__} {http.__version__}, "
         f"Python {platform.python_version()}"
     )
