@@ -56,7 +56,7 @@ pretty_assertions = "1"
 # serde_json. The client is the fork the root patch below names.
 tokio-postgres = { version = "=0.7.18", git = "https://github.com/sboily/rust-postgres", rev = "068bbab6cf2bd3867aa897d1e296126dfed650f8", default-features = false, features = ["runtime", "with-serde_json-1"] }
 deadpool-postgres = { version = "0.14", default-features = false, features = ["rt_tokio_1"] }
-tokio-postgres-rustls = "0.13"
+tokio-postgres-rustls = "0.14"
 # A TIMESTAMPTZ's wire form: the type the client's `ToSql` writes to.
 bytes = "1"
 # The user's name a connection string leaves out, as Python's
