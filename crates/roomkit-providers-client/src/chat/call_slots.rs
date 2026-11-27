@@ -7,7 +7,7 @@
 //! has an id from its opening and keeps it once a composition event names it.
 //!
 //! Folding a call costs what its bytes cost, not more: whether the
-//! arguments held are whole is asked of [`held::Held`], which read them as
+//! arguments held are whole is asked of what read them as
 //! they came, and what a server controls of a call is bounded, the number
 //! of calls ([`CALLS_LIMIT`]), a call's arguments ([`ARGUMENTS_LIMIT`]) and
 //! its id and its name ([`NAME_LIMIT`]): a stream past one of them fails.
@@ -25,20 +25,20 @@ mod held;
 mod odd_id;
 
 /// The most calls one streamed answer may hold.
-pub(crate) const CALLS_LIMIT: usize = 1024;
+pub const CALLS_LIMIT: usize = 1024;
 
 /// The most bytes of one call's arguments: what an answer read whole may
 /// weigh.
-pub(crate) const ARGUMENTS_LIMIT: usize = 4 * 1024 * 1024;
+pub const ARGUMENTS_LIMIT: usize = 4 * 1024 * 1024;
 
 /// The most bytes of a call's id or of its name, each of which every event
 /// of the call's composition repeats.
-pub(crate) const NAME_LIMIT: usize = 1024;
+pub const NAME_LIMIT: usize = 1024;
 
 /// Why the calls of a stream do not read: what is wrong, in the provider's
 /// words, and the value the server wrote, when one is to blame.
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Unread {
+pub struct Unread {
     what: &'static str,
     value: Option<String>,
 }
@@ -69,14 +69,18 @@ impl From<Unread> for Failure {
 /// A call as its stream gave it: its id, its tool and the text of its
 /// arguments, which is read once the stream ended.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct RawCall {
-    pub(crate) id: String,
-    pub(crate) name: String,
-    pub(crate) arguments: String,
+pub struct RawCall {
+    /// The call's id: the server's, or one minted for it.
+    pub id: String,
+    /// The tool it calls, empty when the stream named none.
+    pub name: String,
+    /// The text of its arguments, as the stream gave it.
+    pub arguments: String,
 }
 
 impl RawCall {
-    pub(crate) fn new(
+    /// A call of `name` under `id`, its arguments the text `arguments`.
+    pub fn new(
         id: impl Into<String>,
         name: impl Into<String>,
         arguments: impl Into<String>,
@@ -111,7 +115,7 @@ struct Slot {
 
 /// A fragment's id, as Python's `ToolCallSlots` reads what the server wrote.
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum FragmentId<'a> {
+pub enum FragmentId<'a> {
     /// None: absent, `null` or empty text (Python's `None` or `""`).
     None,
     /// The server's id.
@@ -132,22 +136,22 @@ impl FragmentId<'_> {
 
 /// One fragment of a call, as a chunk carries it.
 #[derive(Debug)]
-pub(crate) struct Fragment<'a> {
+pub struct Fragment<'a> {
     /// The stream index it names.
-    pub(crate) index: u64,
+    pub index: u64,
     /// The server's id, as it wrote it.
-    pub(crate) id: FragmentId<'a>,
+    pub id: FragmentId<'a>,
     /// The tool's name, when it gave one.
-    pub(crate) name: Option<&'a str>,
+    pub name: Option<&'a str>,
     /// The piece of its arguments' text.
-    pub(crate) arguments: &'a str,
+    pub arguments: &'a str,
     /// Whether it carried a function.
-    pub(crate) function: bool,
+    pub function: bool,
 }
 
 /// The calls of a streamed response, in the order they came.
 #[derive(Debug, Default)]
-pub(crate) struct CallSlots {
+pub struct CallSlots {
     slots: Vec<Slot>,
     by_index: HashMap<u64, usize>,
     taken: HashSet<String>,
@@ -156,7 +160,7 @@ pub(crate) struct CallSlots {
     /// How many bytes were looked at to tell whether held arguments are
     /// whole: each byte read as it came, and each byte given to the JSON
     /// parser.
-    pub(crate) examined: usize,
+    pub examined: usize,
 }
 
 impl CallSlots {
@@ -171,10 +175,7 @@ impl CallSlots {
     /// (a list, an object), where Python asks whether a call holds it; a call
     /// named under an id that is no text, as Python's composition event,
     /// which carries the id, fails as it is built.
-    pub(crate) fn fold(
-        &mut self,
-        fragment: &Fragment<'_>,
-    ) -> Result<Option<StreamToolCallDelta>, Unread> {
+    pub fn fold(&mut self, fragment: &Fragment<'_>) -> Result<Option<StreamToolCallDelta>, Unread> {
         let too_long = |text: Option<&str>| text.is_some_and(|text| text.len() > NAME_LIMIT);
         if too_long(fragment.name) {
             return Err(Unread::because("a call's name is longer than 1024 bytes"));
@@ -295,7 +296,7 @@ impl CallSlots {
     ///
     /// Why the read fails: a call that took an id that is no text, which
     /// Python's call refuses as its id.
-    pub(crate) fn finish(self) -> Result<Vec<RawCall>, Unread> {
+    pub fn finish(self) -> Result<Vec<RawCall>, Unread> {
         self.slots
             .into_iter()
             .filter(|slot| slot.function || !slot.name.is_empty() || !slot.arguments.is_empty())

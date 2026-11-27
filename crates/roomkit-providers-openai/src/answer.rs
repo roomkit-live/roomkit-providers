@@ -6,11 +6,14 @@ use roomkit_ai::{
     AiContext, AiResponse, AiToolCall, CallGarbledOptions, CallIds, CallPartialOptions,
     FinishReason, call_garbled, call_partial, check_schema_answer, tool_arguments,
 };
+use roomkit_providers_client::chat::think_tags::{
+    extract_think_tags, field_reasoning, merge_thinking,
+};
+use roomkit_providers_client::chat::truthy;
 use serde_json::{Map, Value};
 
 use crate::dialect::chat_finish_reason;
 use crate::failure::{self, Failure, past_mark};
-use crate::think_tags::{extract_think_tags, field_reasoning, merge_thinking};
 use crate::vendor::Vendor;
 
 /// The response of a 2xx answer: `body` as it came, `json` whether the
@@ -92,19 +95,6 @@ pub(crate) fn read(
     }
     response.tool_calls = calls;
     Ok(response)
-}
-
-/// Whether Python reads `value` as true: an error member that is null,
-/// false, zero or empty is none.
-pub(crate) fn truthy(value: &Value) -> bool {
-    match value {
-        Value::Null => false,
-        Value::Bool(held) => *held,
-        Value::Number(number) => number.as_f64() != Some(0.0),
-        Value::String(text) => !text.is_empty(),
-        Value::Array(items) => !items.is_empty(),
-        Value::Object(members) => !members.is_empty(),
-    }
 }
 
 /// The calls of a message, as the loop reads them (RFC §6.4): each with an

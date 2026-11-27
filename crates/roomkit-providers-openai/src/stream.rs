@@ -20,12 +20,12 @@ use roomkit_providers_client::items::{Yielder, items};
 use roomkit_providers_client::stream::Item;
 use serde_json::Value;
 
-use crate::answer::truthy;
 use crate::config::OpenAiApi;
 use crate::failure::{self, Failure};
 use crate::folding::{Folding, push_end};
 use crate::provider::OpenAi;
 use crate::responses;
+use roomkit_providers_client::chat::truthy;
 
 /// The mark that ends a stream of chunks.
 const END_MARK: &str = "[DONE]";

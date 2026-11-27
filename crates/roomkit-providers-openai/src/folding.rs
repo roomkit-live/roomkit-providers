@@ -22,12 +22,15 @@ use roomkit_ai::{
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::answer::{truthy, usage_of};
-use crate::call_slots::{ARGUMENTS_LIMIT, CallSlots, Fragment, FragmentId, RawCall};
+use crate::answer::usage_of;
 use crate::dialect::chat_finish_reason;
 use crate::failure::{self, Failure};
-use crate::think_tags::{Segment, ThinkTagParser, field_reasoning};
 use crate::vendor::Vendor;
+use roomkit_providers_client::chat::call_slots::{
+    ARGUMENTS_LIMIT, CallSlots, Fragment, FragmentId, RawCall,
+};
+use roomkit_providers_client::chat::think_tags::{Segment, ThinkTagParser, field_reasoning};
+use roomkit_providers_client::chat::truthy;
 
 /// A fragment of a call, which the call's `index` names across chunks.
 #[derive(Debug, Deserialize)]

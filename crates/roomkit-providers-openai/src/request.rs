@@ -18,9 +18,10 @@ use crate::models::{
     reasoning_floor, tagged,
 };
 use crate::names::NameRule;
+use crate::responses;
 use crate::vendor::{Sampling, Vendor, litellm_sampling, require_parameters};
 use crate::vllm::template_of_the_turn;
-use crate::{reasoning, responses};
+use roomkit_providers_client::reasoning::floored_effort;
 
 /// What a request is written for: the configuration, and what the provider
 /// knows of the endpoint.
@@ -260,7 +261,7 @@ impl Asked<'_> {
     /// `_turn_effort`).
     fn floored_effort<'a>(&'a self, request: &'a AiContext) -> Option<&'a str> {
         let configured = self.config.reasoning_effort.as_deref();
-        reasoning::floored_effort(request, configured, reasoning_floor(self.entry))
+        floored_effort(request, configured, reasoning_floor(self.entry))
     }
 
     /// Warns, once per provider, that a turn with tools left out `effort`.

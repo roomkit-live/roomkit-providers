@@ -6,12 +6,11 @@
 //! in capitals.
 
 use roomkit_ai::AiContext;
+use roomkit_providers_client::reasoning::{EFFORTS, nearest_level, thinking_switch};
 use serde_json::{Value, json};
 
 use crate::models::{CANNOT_STOP, TAKES_LEVELS, TAKES_MINIMAL};
 
-/// The efforts on the scale a model's levels are read on, least to most.
-const SCALE: [&str; 5] = ["minimal", "low", "medium", "high", "xhigh"];
 /// The levels of a Gemini 3 model.
 const LEVELS: [&str; 3] = ["low", "medium", "high"];
 /// The levels of a Gemini 3 model that takes `minimal`.
@@ -32,14 +31,14 @@ pub(crate) fn config(
     let switch = if dynamic {
         Some(true)
     } else {
-        switch(request, configured_on.then_some(true))
+        thinking_switch(request, configured_on.then_some(true))
     };
     let levels = levels(configured, capabilities);
     if switch == Some(false) {
         return Some(off(levels, capabilities));
     }
     let stated = configured.filter(|level| !level.is_empty());
-    let level = nearest_level(request.reasoning_effort.as_deref(), levels).or(stated);
+    let level = nearest_level(request.reasoning_effort.as_deref(), levels, &EFFORTS).or(stated);
     if let Some(level) = level {
         return Some(
             json!({"include_thoughts": true, "thinking_level": level.to_ascii_uppercase()}),
@@ -51,21 +50,6 @@ pub(crate) fn config(
     // Thinking on, the model sizing it: what turns it on for a model that
     // thinks by default not at all.
     (switch == Some(true)).then(|| json!({"include_thoughts": true, "thinking_budget": -1}))
-}
-
-/// Whether the model reasons on this turn, as the turn states it, else as
-/// `configured` does (Python's `thinking_switch`).
-fn switch(request: &AiContext, configured: Option<bool>) -> Option<bool> {
-    if let Some(budget) = request.thinking_budget {
-        return Some(budget > 0);
-    }
-    if request.enable_thinking.is_some() {
-        return request.enable_thinking;
-    }
-    if request.reasoning_effort.as_deref() == Some("none") {
-        return Some(false);
-    }
-    configured
 }
 
 /// The levels the model takes, least to most: from the catalogue, or the
@@ -93,18 +77,4 @@ fn off(levels: &[&str], capabilities: &[String]) -> Value {
         }
         _ => json!({"include_thoughts": false, "thinking_budget": 0}),
     }
-}
-
-/// The level of `levels` nearest to `effort` on the scale, the lower one on
-/// a tie; `None` for an effort outside the scale or a model without levels
-/// (Python's `nearest_level`).
-fn nearest_level<'a>(effort: Option<&str>, levels: &[&'a str]) -> Option<&'a str> {
-    let rank = |level: &str| SCALE.iter().position(|step| *step == level);
-    let wanted = rank(effort?)?;
-    levels
-        .iter()
-        .copied()
-        .filter_map(|level| rank(level).map(|at| (wanted.abs_diff(at), at, level)))
-        .min_by_key(|(distance, at, _)| (*distance, *at))
-        .map(|(_, _, level)| level)
 }

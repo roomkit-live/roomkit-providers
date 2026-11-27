@@ -5,8 +5,8 @@ use serde_json::{Value, json};
 
 use super::sampling::{KIMI_LEVELS, SCALE};
 use super::*;
-use crate::reasoning::nearest_level;
 use crate::{OpenAi, OpenAiConfig};
+use roomkit_providers_client::reasoning::nearest_level;
 
 /// Whether `vendor`'s provider at `base_url` refuses, before any request, a
 /// tool whose name holds a dot, which the rule of each vendor that has one

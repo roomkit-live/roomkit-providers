@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 
 use super::{Sampling, Vendor};
 use crate::models::reasoning_floor;
-use crate::reasoning::{floored_effort, nearest_level, thinking_switch};
+use roomkit_providers_client::reasoning::{floored_effort, nearest_level, thinking_switch};
 
 /// The least effort every Muse chat model takes: Meta's service cannot turn
 /// reasoning off, and answers `none` with a 400.
@@ -65,7 +65,7 @@ impl Vendor {
 /// Local chat templates consume thinking settings on tool turns as well.
 fn local_template(request: &AiContext, default: Option<bool>) -> Sampling {
     let mut template = serde_json::Map::new();
-    if let Some(enabled) = thinking_switch(request).or(default) {
+    if let Some(enabled) = thinking_switch(request, None).or(default) {
         template.insert("enable_thinking".into(), enabled.into());
     }
     if let Some(effort) = request.reasoning_effort.as_deref().filter(|s| *s != "none") {
@@ -163,7 +163,7 @@ fn cerebras(
 /// effort counts only as `none`, which turns thinking off.
 fn qwen(request: &AiContext, enable_thinking: Option<bool>) -> Sampling {
     let mut extra = Metadata::new();
-    if let Some(enabled) = thinking_switch(request).or(enable_thinking) {
+    if let Some(enabled) = thinking_switch(request, None).or(enable_thinking) {
         extra.insert("enable_thinking".to_owned(), Value::from(enabled));
         if let Some(budget) = request
             .thinking_budget
@@ -188,7 +188,7 @@ fn deepseek(
     configured: Option<&str>,
     enable_thinking: Option<bool>,
 ) -> Sampling {
-    let enabled = thinking_switch(request).or(enable_thinking);
+    let enabled = thinking_switch(request, None).or(enable_thinking);
     let effort = request.reasoning_effort.as_deref().or(configured);
     let thinking = match (enabled, effort) {
         (Some(false), _) => Some(json!({ "type": "disabled" })),
@@ -219,7 +219,7 @@ fn deepseek(
 /// over the configured one, else `{"enabled": true}` for a turn that states
 /// on; nothing when the turn states nothing, so that the model decides.
 fn openrouter(request: &AiContext, configured: Option<&str>) -> Sampling {
-    let switch = thinking_switch(request);
+    let switch = thinking_switch(request, None);
     let budget = request.thinking_budget.filter(|budget| *budget != 0);
     let effort = request.reasoning_effort.as_deref().or(configured);
     let reasoning = match (switch, budget, effort.filter(|effort| !effort.is_empty())) {
@@ -254,7 +254,7 @@ pub(crate) fn litellm_sampling(
     warned: impl FnOnce(&str),
 ) -> Sampling {
     let mut sampling = Sampling::default();
-    if thinking_switch(request) == Some(false) {
+    if thinking_switch(request, None) == Some(false) {
         return sampling;
     }
     let budget = request.thinking_budget.filter(|budget| *budget != 0);

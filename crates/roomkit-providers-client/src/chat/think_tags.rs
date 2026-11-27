@@ -6,11 +6,11 @@
 
 use serde_json::Value;
 
-use crate::answer::truthy;
+use super::truthy;
 
 /// A piece of an answer's text, as its tags class it.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum Segment {
+pub enum Segment {
     /// Text inside `<think>` tags, or from a reasoning field.
     Thinking(String),
     /// The answer's text.
@@ -43,14 +43,14 @@ enum Place {
 /// whole: a start that may still become `<think>`, and a suffix that may
 /// start `</think>`, wait for the next chunk.
 #[derive(Debug, Default)]
-pub(crate) struct ThinkTagParser {
+pub struct ThinkTagParser {
     place: Place,
     held: String,
 }
 
 impl ThinkTagParser {
     /// What `chunk` settles, in order.
-    pub(crate) fn feed(&mut self, chunk: &str) -> Vec<Segment> {
+    pub fn feed(&mut self, chunk: &str) -> Vec<Segment> {
         self.held.push_str(chunk);
         let mut segments = Vec::new();
         if self.place == Place::Start {
@@ -96,7 +96,7 @@ impl ThinkTagParser {
 
     /// What is still held once the stream is over: a start that never
     /// became the tag is text, the end of a block never closed reasoning.
-    pub(crate) fn flush(&mut self) -> Vec<Segment> {
+    pub fn flush(&mut self) -> Vec<Segment> {
         let held = std::mem::take(&mut self.held);
         let mut segments = Vec::new();
         push(
@@ -132,7 +132,7 @@ fn partial_tag_len(text: &str, tag: &str) -> usize {
 /// that it reads the same streamed or not (RFC §6.4, §6.7): a block it
 /// stopped before closing is reasoning too, and a tag the answer writes is
 /// answer. The reasoning is `None` for no opening block or an empty one.
-pub(crate) fn extract_think_tags(text: &str) -> (Option<String>, String) {
+pub fn extract_think_tags(text: &str) -> (Option<String>, String) {
     if !text.contains(OPEN) {
         return (None, text.to_owned());
     }
@@ -153,7 +153,7 @@ pub(crate) fn extract_think_tags(text: &str) -> (Option<String>, String) {
 /// `reasoning_content`, else `reasoning`, as compatible servers name the
 /// field; a value that is no text reads as none (Python's
 /// `field_reasoning`).
-pub(crate) fn field_reasoning(
+pub fn field_reasoning(
     reasoning_content: Option<&Value>,
     reasoning: Option<&Value>,
 ) -> Option<String> {
@@ -164,7 +164,7 @@ pub(crate) fn field_reasoning(
 
 /// The two conventions joined: a server uses one, and neither is dropped
 /// if it emits both (Python's `merge_thinking`).
-pub(crate) fn merge_thinking(inline: Option<String>, field: Option<String>) -> Option<String> {
+pub fn merge_thinking(inline: Option<String>, field: Option<String>) -> Option<String> {
     match (inline, field) {
         (inline, None) => inline,
         (Some(inline), Some(field)) => Some(inline + &field),

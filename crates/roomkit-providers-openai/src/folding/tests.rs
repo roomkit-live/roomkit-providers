@@ -8,10 +8,10 @@ use roomkit_ai::{FinishReason, ProviderError, StreamEvent};
 use serde_json::{Value, json};
 
 use super::Folding;
-use crate::call_slots::RawCall;
 use crate::failure::Failure;
 use crate::failure::test_exit;
 use crate::vendor::Vendor;
+use roomkit_providers_client::chat::call_slots::RawCall;
 
 fn folding() -> Folding<'static> {
     Folding::new("asked-model", Vendor::OpenAi)

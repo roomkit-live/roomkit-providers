@@ -194,7 +194,7 @@ pub(crate) fn template_of_the_turn(
         .and_then(Value::as_object)
         .cloned()
         .unwrap_or_default();
-    if let Some(enabled) = crate::reasoning::thinking_switch(request) {
+    if let Some(enabled) = roomkit_providers_client::reasoning::thinking_switch(request, None) {
         resolved.insert("enable_thinking".to_owned(), enabled.into());
     }
     let effort = request.reasoning_effort.as_deref();

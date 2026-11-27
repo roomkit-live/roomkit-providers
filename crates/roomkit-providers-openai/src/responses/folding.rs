@@ -4,8 +4,8 @@ use roomkit_ai::{CallIds, StreamDone, StreamEvent, StreamTextDelta, StreamThinki
 use serde_json::Value;
 
 use super::wire;
-use crate::call_slots::RawCall;
 use crate::failure::Failure;
+use roomkit_providers_client::chat::call_slots::RawCall;
 
 #[derive(Default)]
 pub(super) struct Folding {

@@ -45,7 +45,6 @@
 
 mod answer;
 mod azure;
-mod call_slots;
 mod cerebras;
 mod config;
 mod deepseek;
@@ -62,7 +61,6 @@ mod names;
 mod openrouter;
 mod provider;
 mod qwen;
-mod reasoning;
 #[cfg(test)]
 mod replay;
 mod request;
@@ -70,7 +68,6 @@ mod responses;
 mod stream;
 #[cfg(test)]
 mod tests;
-mod think_tags;
 mod vendor;
 mod vllm;
 mod xai;

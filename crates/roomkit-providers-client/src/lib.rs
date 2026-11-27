@@ -26,6 +26,10 @@
 //!   vendor's own endpoint.
 //! - [`catalogue`]: what every provider reads the same way of the model
 //!   catalogue its crate embeds, and of the page a model listing answers.
+//! - [`reasoning`]: the reasoning a turn asks of its model against what a
+//!   provider's configuration states.
+//! - [`chat`]: what the providers of a Chat Completions wire read alike:
+//!   a stream's calls folded slot by slot, a reasoning in `<think>` tags.
 //!
 //! Under its `harness` feature, for the tests of a provider crate, the
 //! crate also holds the replay of a fixture of recorded cases through a
@@ -39,6 +43,7 @@
 #![forbid(unsafe_code)]
 
 pub mod catalogue;
+pub mod chat;
 mod client;
 mod credential;
 pub mod endpoint;
@@ -50,6 +55,7 @@ pub mod items;
 mod key;
 mod object_only;
 mod proxy;
+pub mod reasoning;
 pub mod retry;
 pub mod stream;
 #[cfg(test)]

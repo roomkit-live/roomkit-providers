@@ -10,9 +10,9 @@ use serde_json::{Map, Value, json};
 
 use super::replay::{OUTPUT, append_message};
 use super::transcript::response_messages;
-use crate::call_slots::RawCall;
 use crate::config::OpenAiConfig;
 use crate::failure::Failure;
+use roomkit_providers_client::chat::call_slots::RawCall;
 
 /// A whole answer as the wire read it: its reasoning, its text, its calls,
 /// its end.
