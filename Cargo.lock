@@ -1990,6 +1990,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-gemini"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "reqwest",
+ "roomkit",
+ "roomkit-ai",
+ "roomkit-core",
+ "roomkit-providers-client",
+ "roomkit-providers-python-forms",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "roomkit-providers-http"
 version = "0.1.0-alpha.1"
 dependencies = [

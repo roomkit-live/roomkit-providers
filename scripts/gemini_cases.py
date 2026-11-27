@@ -815,6 +815,24 @@ case(
     answer({"models": [model("gemini-3.8-flash", "generateContent")], "nextPageToken": "page-2"}),
     answer({"models": [model("gemini-2.5-flash", "generateContent")]}),
 )
+case(
+    "models_listed_without_their_actions",
+    "listing",
+    LISTING,
+    GEMINI,
+    {},
+    answer(
+        {
+            "models": [
+                model("gemini-2.5-flash", displayName="Gemini 2.5 Flash"),
+                model("gemini-11-new"),
+                model("gemini-embedding-001"),
+                model("other-model"),
+                {"version": "001"},
+            ]
+        }
+    ),
+)
 case("models_listed_none", "listing", LISTING, GEMINI, {}, answer({}))
 case(
     "models_listing_failed",

@@ -29,6 +29,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	python-openai-chat-cases \
 	python-openai-catalogue \
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
+	python-gemini-config python-gemini-cases python-gemini-catalogue \
 	named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
@@ -284,6 +285,21 @@ python-anthropic-catalogue:
 python-anthropic-messages-cases:
 	$(PYTHON) scripts/generate_anthropic_messages_cases.py
 
+# Rewrites the fixture of the JSON forms of RoomKit's Python `GeminiConfig`.
+python-gemini-config:
+	$(PYTHON) scripts/generate_gemini_config_forms.py
+
+# Rewrites the catalogue of Gemini's models the provider reads, from
+# RoomKit's Python.
+python-gemini-catalogue:
+	$(PYTHON) scripts/generate_gemini_catalogue.py
+
+# Rewrites the fixture of what RoomKit's Python Gemini provider sends and
+# reads on the Developer API, case by case. PYTHON needs roomkit's `gemini`
+# extra. The script answers its own requests: nothing is sent to a network.
+python-gemini-cases:
+	$(PYTHON) scripts/generate_gemini_cases.py
+
 # Rewrites, for each provider, the data file of the cases it answers
 # otherwise than Python, from the replay's own list: a replay outside the
 # crate reads it, and a test of the crate fails while the two differ.
@@ -292,6 +308,8 @@ named-cases:
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-openai --lib the_named_cases_file
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-anthropic/tests/fixtures/named_cases.json) \
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-anthropic --lib the_named_cases_file
+	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-gemini/tests/fixtures/named_cases.json) \
+		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-gemini --lib the_named_cases_file
 
 .PHONY: python-llamacpp-cases
 python-llamacpp-cases:

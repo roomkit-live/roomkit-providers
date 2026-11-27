@@ -14762,6 +14762,120 @@
    }
   },
   {
+   "name": "models_listed_without_their_actions",
+   "kinds": [
+    "listing"
+   ],
+   "call": "list_models",
+   "config": {
+    "api_key": "placeholder-not-a-key"
+   },
+   "catalogue": {
+    "model": "gemini-3.8-flash",
+    "known": true,
+    "tags": [
+     "thinking_level"
+    ]
+   },
+   "supports_vision": true,
+   "request": {
+    "messages": [],
+    "system_prompt": null,
+    "temperature": 0.7,
+    "max_tokens": null,
+    "thinking_budget": null,
+    "enable_thinking": null,
+    "reasoning_effort": null,
+    "tools": [],
+    "response_schema": null,
+    "metadata": {}
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "GET",
+      "url": "https://generativelanguage.googleapis.com/v1beta/models",
+      "headers": {
+       "x-goog-api-key": "<config key>",
+       "content-type": "application/json",
+       "accept": "*/*"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 60.0,
+       "write": 60.0,
+       "pool": 60.0
+      },
+      "body": null
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "models": [
+        {
+         "name": "models/gemini-2.5-flash",
+         "version": "001",
+         "displayName": "Gemini 2.5 Flash"
+        },
+        {
+         "name": "models/gemini-11-new",
+         "version": "001"
+        },
+        {
+         "name": "models/gemini-embedding-001",
+         "version": "001"
+        },
+        {
+         "name": "models/other-model",
+         "version": "001"
+        },
+        {
+         "version": "001"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "models": [
+     {
+      "id": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash",
+      "context_window": 1048576,
+      "supports_vision": true,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": {
+       "input_per_million": 0.3,
+       "output_per_million": 2.5,
+       "cache_read_per_million": 0.03,
+       "cache_write_per_million": null,
+       "image_input_per_million": null,
+       "image_output_per_million": null,
+       "long_context_threshold_tokens": null,
+       "long_context_input_multiplier": 1.0,
+       "long_context_output_multiplier": 1.0,
+       "currency": "USD",
+       "verified": "2026-09-03"
+      }
+     },
+     {
+      "id": "gemini-11-new",
+      "display_name": null,
+      "context_window": null,
+      "supports_vision": null,
+      "deprecated": false,
+      "capabilities": [],
+      "pricing": null
+     }
+    ]
+   }
+  },
+  {
    "name": "models_listed_none",
    "kinds": [
     "listing"
