@@ -12,9 +12,9 @@ use roomkit_providers_client::chat::think_tags::{
 use roomkit_providers_client::chat::truthy;
 use serde_json::{Map, Value};
 
-use crate::dialect::chat_finish_reason;
 use crate::failure::{self, Failure, past_mark};
 use crate::vendor::Vendor;
+use roomkit_providers_client::chat::chat_finish_reason;
 
 /// The response of a 2xx answer: `body` as it came, `json` whether the
 /// server said it is JSON, for `request` asked of the model `asked` on
