@@ -58,6 +58,7 @@ impl Asked<'_> {
         streamed: bool,
     ) -> Result<Map<String, Value>, ProviderError> {
         self.check_model_serves(request)?;
+        self.vendor.check_credentials(&self.config.api_key)?;
         let field = self.config.thinking_field.as_deref();
         let dialect = self.vendor.dialect().with_thinking_field(field);
         let messages = dialect.messages(request, self.provider)?;
@@ -166,8 +167,10 @@ impl Asked<'_> {
     /// under the constraint.
     pub(crate) fn supports_response_schema_with_tools(&self) -> bool {
         let configured = self.config.supports_response_schema_with_tools;
-        let openai_s_own = self.vendor == Vendor::OpenAi && self.own_endpoint;
-        configured.unwrap_or_else(|| self.supports_response_schema() && openai_s_own)
+        // An Azure deployment of `OpenAI`'s models takes one as `OpenAI` does.
+        let openai_s = self.vendor == Vendor::OpenAi && self.own_endpoint;
+        let takes = openai_s || self.vendor == Vendor::Azure;
+        configured.unwrap_or_else(|| self.supports_response_schema() && takes)
     }
 
     /// The rule on the tool names the endpoint takes: its vendor's on the
@@ -180,7 +183,7 @@ impl Asked<'_> {
     /// What the request carries of the turn's reasoning: `OpenAI`'s effort
     /// as its endpoint takes it, or what the vendor's provider sends.
     fn sampling(&self, request: &AiContext) -> Sampling {
-        if self.vendor == Vendor::OpenAi {
+        if matches!(self.vendor, Vendor::OpenAi | Vendor::Azure) {
             return Sampling {
                 effort: self.reasoning_effort(request),
                 extra: Metadata::new(),

@@ -1097,6 +1097,96 @@ _litellm(
     answer(completion()),
 )
 
+AZURE_CASES: list[Case] = []
+_azure = registrar(AZURE_CASES)
+# A deployment of an Azure resource, its model a name its operator chose.
+AZURE = {"api_key": KEY, "azure_endpoint": "https://acme.openai.azure.com", "model": "chat-prod"}
+# The same resource behind an API Management gateway, whose route prefix
+# ends with /openai.
+GATEWAY = {**AZURE, "azure_endpoint": "https://gateway.example/llm/openai"}
+common(_azure, AZURE, GATEWAY)
+for _endpoint, _name in (
+    ("https://acme.openai.azure.com/", "a_trailing_slash"),
+    ("https://acme.openai.azure.com/openai/v1", "the_v1_api_s_url"),
+    ("https://acme.openai.azure.com/openai/v1/chat/completions", "the_v1_api_s_target"),
+    (
+        "https://acme.openai.azure.com/openai/deployments/chat-prod/chat/completions"
+        "?api-version=2024-10-21",
+        "a_deployment_s_target_uri",
+    ),
+    ("https://acme.services.ai.azure.com", "a_foundry_resource"),
+    ("  https://acme.cognitiveservices.azure.com  ", "a_cognitive_services_resource_in_spaces"),
+):
+    _azure(
+        f"endpoint_pasted_as_{_name}",
+        "endpoint",
+        GENERATE,
+        {**AZURE, "azure_endpoint": _endpoint},
+        HELLO,
+        answer(completion()),
+    )
+_azure(
+    "api_version_of_the_configuration",
+    "endpoint",
+    GENERATE,
+    {**AZURE, "api_version": "2025-04-01-preview"},
+    HELLO,
+    answer(completion()),
+)
+for _stated in (True, False):
+    _azure(
+        f"reasoning_on_a_tool_turn_stated_{str(_stated).lower()}",
+        "reasoning tools",
+        GENERATE,
+        {**AZURE, "supports_reasoning_effort_with_tools": _stated},
+        {**TOOLS, "reasoning_effort": "high"},
+        answer(completion()),
+    )
+_azure(
+    "response_schema_beside_tools",
+    "response_schema tools",
+    GENERATE,
+    AZURE,
+    {**TOOLS, "response_schema": CITY},
+    answer(completion('{"city": "Paris"}')),
+)
+_azure(
+    "extra_body_of_the_configuration",
+    "sampling",
+    GENERATE,
+    {**AZURE, "extra_body": {"data_sources": [{"type": "azure_search"}]}},
+    HELLO,
+    answer(completion()),
+)
+_azure(
+    "stream_usage_refused_by_the_configuration",
+    "plain stream",
+    STREAM,
+    {**AZURE, "include_stream_usage": False},
+    HELLO,
+    stream(said("Hello", " there.", usage=None)),
+)
+# An empty key is not captured: the openai SDK raises its own OpenAIError
+# ("Missing credentials") at each call, before any request, no ProviderError,
+# which no provider of the contract reproduces. The Rust provider refuses
+# each call there with a ProviderError in the same words.
+_azure(
+    "an_endpoint_with_user_information",
+    "endpoint",
+    GENERATE,
+    {**AZURE, "azure_endpoint": "https://user:secret@acme.openai.azure.com"},
+    HELLO,
+    answer(completion()),
+)
+_azure(
+    "deployments_listed",
+    "listing",
+    LISTING,
+    AZURE,
+    HELLO,
+    answer(listed("chat-prod", "embedding-prod")),
+)
+
 # The table of each vendor, by the name its fixture is written under.
 VENDOR_CASES: dict[str, list[Case]] = {
     "deepseek": DEEPSEEK_CASES,
@@ -1108,4 +1198,5 @@ VENDOR_CASES: dict[str, list[Case]] = {
     "meta": META_CASES,
     "openrouter": OPENROUTER_CASES,
     "litellm": LITELLM_CASES,
+    "azure": AZURE_CASES,
 }

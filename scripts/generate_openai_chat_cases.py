@@ -37,6 +37,7 @@ from openai import _base_client as sdk
 from openai_chat_cases import CASES
 from roomkit.providers.ai import AIContext, tool_calls
 from roomkit.providers.ai.reasoning import reasoning_floor
+from roomkit.providers.azure import AzureAIConfig, AzureAIProvider
 from roomkit.providers.cerebras import CerebrasAIProvider, CerebrasConfig
 from roomkit.providers.deepseek import DeepSeekAIProvider, DeepSeekConfig
 from roomkit.providers.kimi import KimiAIProvider, KimiConfig
@@ -199,8 +200,9 @@ NOTES = {
 
 
 # The headers a vendor's provider sets of its own, written where a request
-# carries one: OpenRouter's attribution.
+# carries one: OpenRouter's attribution, and Azure's key, which is named.
 VENDOR_HEADERS = ("http-referer", "x-title")
+KEY_HEADERS = ("api-key",)
 
 
 def sent(request: httpx2.Request, case: Case) -> dict[str, Any]:
@@ -216,6 +218,9 @@ def sent(request: httpx2.Request, case: Case) -> dict[str, Any]:
     for name in VENDOR_HEADERS:
         if name in request.headers and name not in headers:
             headers[name] = request.headers[name]
+    for name in KEY_HEADERS:
+        if name in request.headers:
+            headers[name] = named_key(request.headers[name])
     return request_form(request, headers)
 
 
@@ -307,6 +312,7 @@ VENDORS: dict[str, tuple[Any, Any]] = {
     "meta": (MetaAIProvider, MetaConfig),
     "openrouter": (OpenRouterAIProvider, OpenRouterConfig),
     "litellm": (LiteLLMAIProvider, LiteLLMConfig),
+    "azure": (AzureAIProvider, AzureAIConfig),
 }
 
 

@@ -1,0 +1,1794 @@
+{
+    "generator": "scripts/generate_openai_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "AzureAIConfig",
+    "examples": [
+        {
+            "name": "required_alone",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "api_version": "2025-04-01-preview",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": "high",
+                "extra_body": {
+                    "data_sources": [
+                        {
+                            "type": "azure_search"
+                        }
+                    ],
+                    "top_k": 40
+                },
+                "supports_response_schema": true,
+                "supports_response_schema_with_tools": false,
+                "supports_reasoning_effort_with_tools": true
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2025-04-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": "high",
+                "extra_body": {
+                    "data_sources": [
+                        {
+                            "type": "azure_search"
+                        }
+                    ],
+                    "top_k": 40
+                },
+                "supports_response_schema": true,
+                "supports_response_schema_with_tools": false,
+                "supports_reasoning_effort_with_tools": true
+            }
+        },
+        {
+            "name": "api_version",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "api_version": "2024-10-21"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-10-21",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "a_token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "max_tokens": 2048
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "empty_key",
+            "given": {
+                "api_key": "",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "empty_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": ""
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "timeouts_as_integers",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "timeout": 120,
+                "connect_timeout": 2
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 120.0,
+                "connect_timeout": 2.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "timeouts_with_fractions",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "timeout": 0.25,
+                "connect_timeout": 1.5
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 0.25,
+                "connect_timeout": 1.5,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "retries",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "max_retries": 2
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 2,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "no_stream_usage",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "include_stream_usage": false
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "stream_usage",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "include_stream_usage": true
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "switches_stated",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "reasoning_effort",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "reasoning_effort": "low"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": "low",
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "extra_body",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "extra_body": {
+                    "nested": {
+                        "b": 1,
+                        "a": 2
+                    }
+                }
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": {
+                    "nested": {
+                        "b": 1,
+                        "a": 2
+                    }
+                },
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "response_schema_switches",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "supports_response_schema": false
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": false,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "tool_turn_setting_true",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "supports_reasoning_effort_with_tools": true
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": true
+            }
+        },
+        {
+            "name": "tool_turn_setting_false",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "supports_reasoning_effort_with_tools": false
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": false
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "base_url": "https://llm.example/v1",
+                "default_headers": {
+                    "X-A": "1"
+                },
+                "thinking_field": "reasoning"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_0",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_1",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_2",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com///",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_3",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_4",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/v1/",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_5",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/OPENAI/V1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_6",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/v1/chat/completions",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_7",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/v1/responses",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_8",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/deployments/chat-prod",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_9",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/deployments/chat-prod/chat/completions",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_10",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/deployments/chat-prod/chat/completions?api-version=2024-10-21",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_11",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/deployments/chat-prod/chat/completions/",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_12",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/chat/completions/chat/completions",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_13",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai/v1/chat/completions/responses/chat/completions",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_14",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/openai",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com/openai",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_15",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://gateway.example/llm/openai",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://gateway.example/llm/openai",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_16",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://gateway.example/llm/openai/",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://gateway.example/llm/openai",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_17",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com?api-version=2024-10-21",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_18",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com/#fragment",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_19",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "  https://acme.openai.azure.com  ",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_20",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "\thttps://acme.openai.azure.com/openai/v1\n",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_21",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai\n.azure.com/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_22",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "HTTPS://Acme.OpenAI.Azure.com/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://Acme.OpenAI.Azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_23",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com:8443/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com:8443",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_24",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://user:secret@acme.openai.azure.com/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://user:secret@acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_25",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "http://[::1]:8080/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "http://[::1]:8080",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_26",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.services.ai.azure.com/api/projects/p/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.services.ai.azure.com/api/projects/p",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_27",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.cognitiveservices.azure.com/openai/responses",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.cognitiveservices.azure.com/openai",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_28",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "acme.openai.azure.com",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_29",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "acme.openai.azure.com/",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_30",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "acme.openai.azure.com/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "acme.openai.azure.com/openai/v1",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_31",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https:///openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https:///openai/v1",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_32",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "mailto:someone@example.com",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "mailto:someone@example.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_33",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_34",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "   ",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "endpoint_35",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://caf\u00e9.example/openai/v1",
+                "model": "chat-prod"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://caf\u00e9.example",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_key",
+            "given": {
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod"
+            }
+        },
+        {
+            "name": "no_endpoint",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "chat-prod"
+            }
+        },
+        {
+            "name": "no_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com"
+            }
+        },
+        {
+            "name": "key_null",
+            "given": {
+                "api_key": null,
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod"
+            }
+        },
+        {
+            "name": "key_a_number",
+            "given": {
+                "api_key": 42,
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod"
+            }
+        },
+        {
+            "name": "endpoint_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": null,
+                "model": "chat-prod"
+            }
+        },
+        {
+            "name": "endpoint_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": 1,
+                "model": "chat-prod"
+            }
+        },
+        {
+            "name": "endpoint_an_unclosed_ipv6_host",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "http://[::1/openai",
+                "model": "chat-prod"
+            }
+        },
+        {
+            "name": "model_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": null
+            }
+        },
+        {
+            "name": "api_version_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "api_version": null
+            }
+        },
+        {
+            "name": "token_bound_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "max_tokens": null
+            }
+        },
+        {
+            "name": "timeout_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "timeout": null
+            }
+        },
+        {
+            "name": "retries_a_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "max_retries": 1.5
+            }
+        },
+        {
+            "name": "stream_usage_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "include_stream_usage": "perhaps"
+            }
+        },
+        {
+            "name": "effort_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "reasoning_effort": 3
+            }
+        },
+        {
+            "name": "extra_body_a_list",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "extra_body": [
+                    1,
+                    2
+                ]
+            }
+        },
+        {
+            "name": "tool_turn_setting_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "supports_reasoning_effort_with_tools": "perhaps"
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                {
+                    "api_key": "placeholder-not-a-key",
+                    "azure_endpoint": "https://acme.openai.azure.com",
+                    "model": "chat-prod"
+                }
+            ]
+        },
+        {
+            "name": "a_number",
+            "given": 42
+        }
+    ],
+    "converted": [
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "timeout": "30"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "max_tokens": "2048"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "max_tokens_a_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "max_tokens": 2048.0
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "max_retries_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "max_retries": "2"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 2,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "stream_usage_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "include_stream_usage": 0
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        },
+        {
+            "name": "switch_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "model": "chat-prod",
+                "use_max_completion_tokens": "true"
+            },
+            "form": {
+                "api_key": "**********",
+                "azure_endpoint": "https://acme.openai.azure.com",
+                "api_version": "2024-12-01-preview",
+                "model": "chat-prod",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null
+            }
+        }
+    ]
+}

@@ -16,6 +16,11 @@
 //!   or behind a base URL; [`OpenAi`] sends no reasoning back unless its
 //!   configuration names the field.
 //!
+//! - [`AzureAi`] and [`AzureAiConfig`]: an Azure resource's deployments,
+//!   Python's `AzureAIProvider`: `OpenAI`'s wire at the deployment's path,
+//!   the API version in the query and the key in Azure's `api-key` header,
+//!   the endpoint a configuration states reduced to the resource's base.
+//!
 //! A stream is pulled: nothing is sent before it is polled, and dropping it
 //! stops the request and closes its connection. Every size a server
 //! controls is bounded, and a stream that stalls ends at the
@@ -34,6 +39,7 @@
 #![forbid(unsafe_code)]
 
 mod answer;
+mod azure;
 mod call_slots;
 mod cerebras;
 mod config;
@@ -63,6 +69,7 @@ mod think_tags;
 mod vendor;
 mod xai;
 
+pub use azure::{AzureAi, AzureAiConfig};
 pub use cerebras::{Cerebras, CerebrasConfig, CerebrasReasoningFormat};
 pub use config::{OpenAiApi, OpenAiConfig};
 pub use deepseek::{DeepSeek, DeepSeekConfig};

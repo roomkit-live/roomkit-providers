@@ -5,7 +5,7 @@ use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use reqwest::header::{AUTHORIZATION, HeaderMap};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderName, HeaderValue};
 use roomkit_ai::{
     AiContext, AiProvider, AiResponse, FinishReason, FirstToken, ModelInfo, ProviderError,
     ProviderStream, StreamDone, TextStream, checked_stream, listing,
@@ -28,6 +28,9 @@ use crate::stream;
 use crate::vendor::Vendor;
 
 mod build;
+
+/// The header an Azure resource reads its key from.
+const AZURE_KEY: HeaderName = HeaderName::from_static("api-key");
 
 /// Where the retry rule of Python's openai SDK stands: a server may ask for
 /// a wait of two minutes at most, and an answer that asks for more is
@@ -158,11 +161,51 @@ impl OpenAi {
         Self::built(config, vendor).map_err(|failure| Exit::unbuilt(vendor.provider(), &failure))
     }
 
+    /// An Azure deployment's provider (Python's `AzureAIProvider`):
+    /// `config`'s base URL the resource's, its model the deployment, each
+    /// request asking `api_version` and carrying the key in `api-key`.
+    pub(crate) fn for_azure(
+        config: OpenAiConfig,
+        api_version: &str,
+    ) -> Result<Self, ProviderError> {
+        let vendor = Vendor::Azure;
+        let built = Self::built_for_azure(config, api_version);
+        built.map_err(|failure| Exit::unbuilt(vendor.provider(), &failure))
+    }
+
     fn built(config: OpenAiConfig, vendor: Vendor) -> Result<Self, Failure> {
         let base_url = config.base_url.as_deref().unwrap_or(OPENAI_BASE_URL);
         let chat = joined(base_url, config.api.path())?;
         let models = joined(base_url, vendor.listing_path())?;
         let headers = headers_of(&config, &chat)?;
+        Self::assembled(config, vendor, chat, models, headers)
+    }
+
+    fn built_for_azure(config: OpenAiConfig, api_version: &str) -> Result<Self, Failure> {
+        let base_url = config.base_url.as_deref().unwrap_or_default();
+        let deployment = format!("/openai/deployments/{}/chat/completions", config.model);
+        let mut chat = joined(base_url, &deployment)?;
+        let mut models = joined(base_url, "/openai/models")?;
+        for url in [&mut chat, &mut models] {
+            url.query_pairs_mut()
+                .append_pair("api-version", api_version);
+        }
+        let mut headers = headers_of(&config, &chat)?;
+        headers.remove(AUTHORIZATION);
+        let key = HeaderValue::from_str(&config.api_key);
+        let mut key = key.map_err(|_| Failure::unbuilt("its key cannot go in a header"))?;
+        key.set_sensitive(true);
+        headers.insert(AZURE_KEY, key);
+        Self::assembled(config, Vendor::Azure, chat, models, headers)
+    }
+
+    fn assembled(
+        config: OpenAiConfig,
+        vendor: Vendor,
+        chat: reqwest::Url,
+        models: reqwest::Url,
+        headers: HeaderMap,
+    ) -> Result<Self, Failure> {
         let settings = Settings {
             timeouts: Timeouts::new(config.timeout, config.connect_timeout)?,
             max_retries: config.max_retries,
@@ -181,7 +224,8 @@ impl OpenAi {
             | Vendor::Qwen { .. }
             | Vendor::Meta
             | Vendor::OpenRouter
-            | Vendor::LiteLlm => Client::new(settings),
+            | Vendor::LiteLlm
+            | Vendor::Azure => Client::new(settings),
         }?;
         let exit = exit_of(&config, vendor, &client, &chat);
         Ok(Self {
@@ -409,6 +453,7 @@ impl AiProvider for OpenAi {
         if self.vendor.lists_its_catalogue() {
             return Ok(self.vendor.models().to_vec());
         }
+        self.vendor.check_credentials(&self.config.api_key)?;
         let live = self.live_models().await;
         let live = live.map_err(|failure| self.exit.leave(&failure))?;
         let listed = listing(live, self.vendor.models());

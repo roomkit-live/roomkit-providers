@@ -5,8 +5,8 @@
 //! (`make python-openai-config`).
 
 use roomkit_providers_openai::{
-    CerebrasConfig, DeepSeekConfig, KimiConfig, LiteLlmConfig, MetaConfig, MiniMaxConfig,
-    OpenRouterConfig, QwenConfig, XaiConfig,
+    AzureAiConfig, CerebrasConfig, DeepSeekConfig, KimiConfig, LiteLlmConfig, MetaConfig,
+    MiniMaxConfig, OpenRouterConfig, QwenConfig, XaiConfig,
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -66,7 +66,12 @@ fn rewritten<C: DeserializeOwned + Serialize>(value: &Value) -> serde_json::Resu
     clippy::panic,
     reason = "a test's helper: a fixture that does not read fails the test"
 )]
-fn holds_to_python<C: DeserializeOwned + Serialize>(text: &str, model: &str, members: usize) {
+fn holds_to_python<C: DeserializeOwned + Serialize>(
+    text: &str,
+    model: &str,
+    members: usize,
+    (refused, converted): (usize, usize),
+) {
     let fixture = fixture(text);
     assert_eq!(fixture.model, model);
     for example in &fixture.examples {
@@ -95,7 +100,8 @@ fn holds_to_python<C: DeserializeOwned + Serialize>(text: &str, model: &str, mem
             converted.name
         );
     }
-    // A regenerated fixture that lost a kind of example fails here: every
+    // A regenerated fixture that lost a kind of example fails here, and one
+    // that lost refusals or conversions below the vendor's counts: every
     // member is stated otherwise than its default by some example, but the
     // two the vendor's rule leaves unset.
     let defaults = &fixture.examples[0].form;
@@ -112,11 +118,8 @@ fn holds_to_python<C: DeserializeOwned + Serialize>(text: &str, model: &str, mem
             .any(|example| example.form[member] != defaults[member]);
         assert!(stated, "{model}: no example states {member}");
     }
-    // OpenAI's refusals, its missing model aside where the vendor names one,
-    // and a null base URL; the vendor's rule adds a thinking field and the
-    // setting of a turn with tools where it decides them: 25 at least.
     assert!(
-        fixture.rejected.len() >= 25 && fixture.converted.len() >= 11,
+        fixture.rejected.len() >= refused && fixture.converted.len() >= converted,
         "{model}"
     );
 }
@@ -127,6 +130,7 @@ fn deepseek_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_deepseek_config_forms.json"),
         "DeepSeekConfig",
         18,
+        (25, 11),
     );
 }
 
@@ -136,6 +140,7 @@ fn kimi_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_kimi_config_forms.json"),
         "KimiConfig",
         17,
+        (25, 11),
     );
 }
 
@@ -145,6 +150,7 @@ fn minimax_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_minimax_config_forms.json"),
         "MiniMaxConfig",
         17,
+        (25, 11),
     );
 }
 
@@ -154,6 +160,7 @@ fn xai_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_xai_config_forms.json"),
         "XAIConfig",
         17,
+        (25, 11),
     );
 }
 
@@ -163,6 +170,7 @@ fn cerebras_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_cerebras_config_forms.json"),
         "CerebrasConfig",
         19,
+        (25, 11),
     );
 }
 
@@ -172,6 +180,7 @@ fn qwen_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_qwen_config_forms.json"),
         "QwenConfig",
         18,
+        (25, 11),
     );
 }
 
@@ -181,6 +190,7 @@ fn meta_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_meta_config_forms.json"),
         "MetaConfig",
         17,
+        (25, 11),
     );
 }
 
@@ -190,6 +200,7 @@ fn openrouter_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_openrouter_config_forms.json"),
         "OpenRouterConfig",
         19,
+        (25, 11),
     );
 }
 
@@ -199,5 +210,17 @@ fn litellm_s_configuration_reads_and_writes_as_python_s() {
         include_str!("fixtures/python_litellm_config_forms.json"),
         "LiteLLMConfig",
         17,
+        (25, 11),
+    );
+}
+
+// Azure's refusals are its own: no base URL, no thinking field.
+#[test]
+fn azure_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<AzureAiConfig>(
+        include_str!("fixtures/python_azure_config_forms.json"),
+        "AzureAIConfig",
+        16,
+        (19, 6),
     );
 }

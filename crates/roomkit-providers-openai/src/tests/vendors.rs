@@ -14,8 +14,8 @@ use super::support::{KEY, body_of, chunk, ending, events, json_reply, saying};
 use crate::replay::drained;
 use crate::replay::fake::{Fake, Reply};
 use crate::{
-    DeepSeek, DeepSeekConfig, Kimi, KimiConfig, Meta, MetaConfig, MiniMax, MiniMaxConfig, OpenAi,
-    OpenAiConfig,
+    AzureAi, AzureAiConfig, DeepSeek, DeepSeekConfig, Kimi, KimiConfig, Meta, MetaConfig, MiniMax,
+    MiniMaxConfig, OpenAi, OpenAiConfig,
 };
 
 /// A round that reasons, says it looks and calls; a round that only calls;
@@ -439,6 +439,34 @@ fn meta_refuses_a_key_no_header_can_carry_without_saying_it() {
     let form = serde_json::from_value::<MetaConfig>(json!({"api_key": key}));
     let said = form.unwrap_err().to_string();
     assert!(said.contains("non-ASCII") && !said.contains("sk-secret"));
+}
+
+// Python: the openai SDK raises its own `OpenAIError` ("Missing credentials")
+// at each call of `AzureAIProvider` whose key is empty, before any request.
+/// An Azure deployment asked with an empty key: each call is refused before
+/// any request, with a `ProviderError` in place of the SDK's own error.
+#[tokio::test]
+async fn azure_refuses_each_call_with_an_empty_key_before_any_request() {
+    let fake = Fake::serving(vec![saying("Hello.")]).await;
+    let config = AzureAiConfig::new("", "https://acme.openai.azure.com", "chat-prod");
+    let mut provider = AzureAi::new(config).unwrap();
+    provider.openai_mut().point_at(fake.address);
+    let whole = provider.generate(&hello()).await.unwrap_err();
+    let streamed = drained(provider.generate_structured_stream(&hello())).await;
+    let listed = provider.list_models().await.unwrap_err();
+    let (events, Some(streamed)) = streamed else {
+        panic!("the stream fails");
+    };
+    assert_eq!(events.len(), 0);
+    for refused in [whole, streamed, listed] {
+        assert!(refused.before_request, "{refused:?}");
+        assert_eq!(refused.provider, "azure");
+        assert!(
+            refused.message.starts_with("Missing credentials"),
+            "{refused:?}"
+        );
+    }
+    assert!(fake.seen().is_empty());
 }
 
 // Python: tests/test_providers/test_chat_request.py::test_a_configured_thinking_field_carries_a_round_s_reasoning_to_the_server

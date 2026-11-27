@@ -5,11 +5,7 @@
 /// catalogue; every request and answer as `OpenAI`'s wire carries them.
 macro_rules! vendor_provider {
     ($(#[$doc:meta])* $provider:ident, $config:ident) => {
-        $(#[$doc])*
-        #[derive(Clone, Debug)]
-        pub struct $provider {
-            inner: $crate::OpenAi,
-        }
+        $crate::vendor::vendor_provider!(@shared $(#[$doc])* $provider, $config);
 
         impl $provider {
             /// The provider `config` configures.
@@ -45,6 +41,32 @@ macro_rules! vendor_provider {
                 Ok(Self { inner })
             }
 
+        }
+    };
+    ($(#[$doc:meta])* $provider:ident, $config:ident, built by its configuration) => {
+        $crate::vendor::vendor_provider!(@shared $(#[$doc])* $provider, $config);
+
+        impl $provider {
+            /// The provider `config` configures.
+            ///
+            /// # Errors
+            ///
+            /// A failure before any request: what the configuration and
+            /// [`OpenAi::new`]($crate::OpenAi::new) refuse.
+            pub fn new(config: $config) -> Result<Self, roomkit_ai::ProviderError> {
+                let inner = config.provider()?;
+                Ok(Self { inner })
+            }
+        }
+    };
+    (@shared $(#[$doc:meta])* $provider:ident, $config:ident) => {
+        $(#[$doc])*
+        #[derive(Clone, Debug)]
+        pub struct $provider {
+            inner: $crate::OpenAi,
+        }
+
+        impl $provider {
             /// The name the provider's failures carry: Python's `provider`.
             #[must_use]
             pub fn label(&self) -> &'static str {

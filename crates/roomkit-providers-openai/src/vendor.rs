@@ -5,7 +5,7 @@
 //! [`crate::OpenAi`] is `OpenAI`'s.
 
 use roomkit::model::Metadata;
-use roomkit_ai::ModelInfo;
+use roomkit_ai::{ModelInfo, ProviderError, ProviderErrorOptions};
 use roomkit_providers_client::endpoint::is_vendor_endpoint;
 
 use crate::dialect::{
@@ -77,6 +77,8 @@ pub(crate) enum Vendor {
     OpenRouter,
     /// Python's `LiteLLMAIProvider`, in front of a LiteLLM proxy.
     LiteLlm,
+    /// Python's `AzureAIProvider`, an Azure resource's deployment.
+    Azure,
 }
 
 /// What a request carries of the turn's reasoning beside `OpenAI`'s fields:
@@ -98,7 +100,8 @@ impl Vendor {
             | Self::Qwen { .. }
             | Self::Meta
             | Self::OpenRouter
-            | Self::LiteLlm => OPENAI_CHAT,
+            | Self::LiteLlm
+            | Self::Azure => OPENAI_CHAT,
             Self::DeepSeek { .. } => DEEPSEEK_CHAT,
             Self::MiniMax => MINIMAX_CHAT,
             Self::Kimi => KIMI_CHAT,
@@ -120,6 +123,7 @@ impl Vendor {
             Self::Meta => "MetaAIProvider",
             Self::OpenRouter => "OpenRouterAIProvider",
             Self::LiteLlm => "LiteLLMAIProvider",
+            Self::Azure => "AzureAIProvider",
         }
     }
 
@@ -137,6 +141,7 @@ impl Vendor {
             Self::Meta => "meta",
             Self::OpenRouter => "openrouter",
             Self::LiteLlm => "litellm",
+            Self::Azure => "azure",
         }
     }
 
@@ -158,7 +163,8 @@ impl Vendor {
             | Self::Cerebras { .. }
             | Self::Meta
             | Self::OpenRouter
-            | Self::LiteLlm => true,
+            | Self::LiteLlm
+            | Self::Azure => true,
             Self::DeepSeek { .. } | Self::MiniMax | Self::Qwen { .. } => false,
         }
     }
@@ -167,7 +173,7 @@ impl Vendor {
     pub(crate) fn base_urls(self) -> &'static [&'static str] {
         match self {
             Self::OpenAi => &[OPENAI_BASE_URL],
-            Self::LlamaCpp { .. } => &[],
+            Self::LlamaCpp { .. } | Self::Azure => &[],
             Self::DeepSeek { .. } => &DEEPSEEK_BASE_URLS,
             Self::MiniMax => &[MINIMAX_BASE_URL],
             Self::Kimi => &[KIMI_BASE_URL],
@@ -201,7 +207,8 @@ impl Vendor {
             | Self::Qwen { .. }
             | Self::Meta
             | Self::OpenRouter
-            | Self::LiteLlm => None,
+            | Self::LiteLlm
+            | Self::Azure => None,
         }
     }
 
@@ -245,6 +252,23 @@ impl Vendor {
         matches!(self, Self::OpenRouter)
     }
 
+    /// Refuses, before any request, a call the vendor asks with a key that
+    /// the configuration does not give: an Azure deployment, which Python's
+    /// client refuses to call without one (`Missing credentials`).
+    pub(crate) fn check_credentials(self, api_key: &str) -> Result<(), ProviderError> {
+        if self != Self::Azure || !api_key.is_empty() {
+            return Ok(());
+        }
+        let options = ProviderErrorOptions {
+            provider: self.provider().to_owned(),
+            before_request: true,
+            ..ProviderErrorOptions::default()
+        };
+        let missing = "Missing credentials: an Azure deployment is asked with a key, and the \
+                       configuration's is empty";
+        Err(ProviderError::new(missing, options))
+    }
+
     /// The path of the vendor's model listing under its base URL.
     pub(crate) fn listing_path(self) -> &'static str {
         if self == Self::LiteLlm {
@@ -281,7 +305,8 @@ impl Vendor {
             | Self::Qwen { .. }
             | Self::Meta
             | Self::OpenRouter
-            | Self::LiteLlm => true,
+            | Self::LiteLlm
+            | Self::Azure => true,
             Self::Cerebras { .. } => false,
             Self::OpenAi => {
                 !self.is_own_endpoint(base_url) || models::sees_images_by_its_name(model)

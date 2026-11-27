@@ -28,6 +28,7 @@ from typing import Any
 
 import roomkit
 from pydantic import ValidationError
+from roomkit.providers.azure import AzureAIConfig
 from roomkit.providers.cerebras import CerebrasConfig
 from roomkit.providers.deepseek import DeepSeekConfig
 from roomkit.providers.kimi import KimiConfig
@@ -514,6 +515,180 @@ def write_vendor_fixtures() -> None:
         )
 
 
+# -- Azure ---------------------------------------------------------------------
+# Azure's configuration is no derivative of OpenAIConfig: an endpoint of a
+# resource and an API version in place of a base URL, no default headers, no
+# thinking field. It reduces a pasted URL to the resource's base.
+
+AZURE = {"api_key": KEY, "azure_endpoint": "https://acme.openai.azure.com", "model": "chat-prod"}
+
+# The URLs Azure hands out, as they are pasted, and the texts around them.
+AZURE_ENDPOINTS: list[str] = [
+    "https://acme.openai.azure.com",
+    "https://acme.openai.azure.com/",
+    "https://acme.openai.azure.com///",
+    "https://acme.openai.azure.com/openai/v1",
+    "https://acme.openai.azure.com/openai/v1/",
+    "https://acme.openai.azure.com/OPENAI/V1",
+    "https://acme.openai.azure.com/openai/v1/chat/completions",
+    "https://acme.openai.azure.com/openai/v1/responses",
+    "https://acme.openai.azure.com/openai/deployments/chat-prod",
+    "https://acme.openai.azure.com/openai/deployments/chat-prod/chat/completions",
+    "https://acme.openai.azure.com/openai/deployments/chat-prod/chat/completions"
+    "?api-version=2024-10-21",
+    "https://acme.openai.azure.com/openai/deployments/chat-prod/chat/completions/",
+    "https://acme.openai.azure.com/chat/completions/chat/completions",
+    "https://acme.openai.azure.com/openai/v1/chat/completions/responses/chat/completions",
+    "https://acme.openai.azure.com/openai",
+    "https://gateway.example/llm/openai",
+    "https://gateway.example/llm/openai/",
+    "https://acme.openai.azure.com?api-version=2024-10-21",
+    "https://acme.openai.azure.com/#fragment",
+    "  https://acme.openai.azure.com  ",
+    "\thttps://acme.openai.azure.com/openai/v1\n",
+    "https://acme.openai\n.azure.com/openai/v1",
+    "HTTPS://Acme.OpenAI.Azure.com/openai/v1",
+    "https://acme.openai.azure.com:8443/openai/v1",
+    "https://user:secret@acme.openai.azure.com/openai/v1",
+    "http://[::1]:8080/openai/v1",
+    "https://acme.services.ai.azure.com/api/projects/p/openai/v1",
+    "https://acme.cognitiveservices.azure.com/openai/responses",
+    "acme.openai.azure.com",
+    "acme.openai.azure.com/",
+    "acme.openai.azure.com/openai/v1",
+    "https:///openai/v1",
+    "mailto:someone@example.com",
+    "",
+    "   ",
+    "https://café.example/openai/v1",
+]
+
+
+def azure_examples() -> list[tuple[str, dict[str, Any]]]:
+    """The examples of Azure's configuration: its required members, every
+    member, each one apart, and each pasted endpoint."""
+    every = {
+        **AZURE,
+        "api_version": "2025-04-01-preview",
+        "max_tokens": 4096,
+        "timeout": 120.0,
+        "connect_timeout": 2.5,
+        "max_retries": 3,
+        "include_stream_usage": False,
+        "use_max_completion_tokens": True,
+        "supports_custom_temperature": False,
+        "reasoning_effort": "high",
+        "extra_body": {"data_sources": [{"type": "azure_search"}], "top_k": 40},
+        "supports_response_schema": True,
+        "supports_response_schema_with_tools": False,
+        "supports_reasoning_effort_with_tools": True,
+    }
+    examples = [
+        ("required_alone", AZURE),
+        ("every_member", every),
+        ("api_version", {**AZURE, "api_version": "2024-10-21"}),
+        ("a_token_bound", {**AZURE, "max_tokens": 2048}),
+        ("empty_key", {**AZURE, "api_key": ""}),
+        ("empty_model", {**AZURE, "model": ""}),
+        ("timeouts_as_integers", {**AZURE, "timeout": 120, "connect_timeout": 2}),
+        ("timeouts_with_fractions", {**AZURE, "timeout": 0.25, "connect_timeout": 1.5}),
+        ("retries", {**AZURE, "max_retries": 2}),
+        ("no_stream_usage", {**AZURE, "include_stream_usage": False}),
+        ("stream_usage", {**AZURE, "include_stream_usage": True}),
+        (
+            "switches_stated",
+            {**AZURE, "use_max_completion_tokens": True, "supports_custom_temperature": False},
+        ),
+        ("reasoning_effort", {**AZURE, "reasoning_effort": "low"}),
+        ("extra_body", {**AZURE, "extra_body": {"nested": {"b": 1, "a": 2}}}),
+        ("response_schema_switches", {**AZURE, "supports_response_schema": False}),
+        ("tool_turn_setting_true", {**AZURE, "supports_reasoning_effort_with_tools": True}),
+        ("tool_turn_setting_false", {**AZURE, "supports_reasoning_effort_with_tools": False}),
+        (
+            "members_python_does_not_have",
+            {
+                **AZURE,
+                "base_url": "https://llm.example/v1",
+                "default_headers": {"X-A": "1"},
+                "thinking_field": "reasoning",
+            },
+        ),
+    ]
+    examples += [
+        (f"endpoint_{at}", {**AZURE, "azure_endpoint": endpoint})
+        for at, endpoint in enumerate(AZURE_ENDPOINTS)
+    ]
+    return examples
+
+
+AZURE_REJECTED: list[tuple[str, Any]] = [
+    ("no_key", {name: AZURE[name] for name in ("azure_endpoint", "model")}),
+    ("no_endpoint", {name: AZURE[name] for name in ("api_key", "model")}),
+    ("no_model", {name: AZURE[name] for name in ("api_key", "azure_endpoint")}),
+    ("key_null", {**AZURE, "api_key": None}),
+    ("key_a_number", {**AZURE, "api_key": 42}),
+    ("endpoint_null", {**AZURE, "azure_endpoint": None}),
+    ("endpoint_a_number", {**AZURE, "azure_endpoint": 1}),
+    ("endpoint_an_unclosed_ipv6_host", {**AZURE, "azure_endpoint": "http://[::1/openai"}),
+    ("model_null", {**AZURE, "model": None}),
+    ("api_version_null", {**AZURE, "api_version": None}),
+    ("token_bound_null", {**AZURE, "max_tokens": None}),
+    ("timeout_null", {**AZURE, "timeout": None}),
+    ("retries_a_float", {**AZURE, "max_retries": 1.5}),
+    ("stream_usage_a_word", {**AZURE, "include_stream_usage": "perhaps"}),
+    ("effort_a_number", {**AZURE, "reasoning_effort": 3}),
+    ("extra_body_a_list", {**AZURE, "extra_body": [1, 2]}),
+    ("tool_turn_setting_a_word", {**AZURE, "supports_reasoning_effort_with_tools": "perhaps"}),
+    ("a_list", [AZURE]),
+    ("a_number", 42),
+]
+
+AZURE_CONVERTED: list[tuple[str, dict[str, Any]]] = [
+    ("timeout_a_text", {**AZURE, "timeout": "30"}),
+    ("max_tokens_a_text", {**AZURE, "max_tokens": "2048"}),
+    ("max_tokens_a_float", {**AZURE, "max_tokens": 2048.0}),
+    ("max_retries_a_text", {**AZURE, "max_retries": "2"}),
+    ("stream_usage_a_number", {**AZURE, "include_stream_usage": 0}),
+    ("switch_a_text", {**AZURE, "use_max_completion_tokens": "true"}),
+]
+
+
+def write_azure_fixture() -> None:
+    def dumped(given: Any) -> Any:
+        return AzureAIConfig.model_validate(given).model_dump(mode="json")
+
+    def refused(given: Any) -> bool:
+        try:
+            AzureAIConfig.model_validate(given)
+        except (ValidationError, ValueError):
+            return True
+        return False
+
+    for name, given in AZURE_REJECTED:
+        if not refused(given):
+            raise AssertionError(f"Python's AzureAIConfig takes the input {name}")
+    fixture = {
+        "generator": "scripts/generate_openai_config_forms.py",
+        "roomkit_version": roomkit.__version__,
+        "python_version": platform.python_version(),
+        "model": "AzureAIConfig",
+        "examples": [
+            {"name": name, "given": given, "form": dumped(given)}
+            for name, given in azure_examples()
+        ],
+        "rejected": [{"name": name, "given": given} for name, given in AZURE_REJECTED],
+        "converted": [
+            {"name": name, "given": given, "form": dumped(given)} for name, given in AZURE_CONVERTED
+        ],
+    }
+    path = FIXTURE.with_name("python_azure_config_forms.json")
+    path.write_text(json.dumps(fixture, indent=4) + "\n", encoding="utf-8")
+    print(
+        f"Wrote {path.relative_to(REPOSITORY)}: {len(fixture['examples'])} examples, "
+        f"{len(fixture['rejected'])} rejected, {len(fixture['converted'])} converted"
+    )
+
+
 def main() -> None:
     for name, given in REJECTED:
         if not refuses(given):
@@ -542,6 +717,7 @@ def main() -> None:
         f"({own} OpenAI's), from roomkit {roomkit.__version__}"
     )
     write_vendor_fixtures()
+    write_azure_fixture()
 
 
 if __name__ == "__main__":

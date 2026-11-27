@@ -245,6 +245,22 @@ What a vendor's provider does that `OpenAi` does not:
 - **Cerebras's arrays are read back**: an array argument the model wrote as
   the JSON text of the array is read as the array where the tool's schema
   declares one, in a whole answer and in a stream's whole calls.
+- **An Azure deployment** (`AzureAi`, `AzureAiConfig`: Python's
+  `AzureAIProvider`, `AzureAIConfig`) is asked at
+  `{endpoint}/openai/deployments/{deployment}/chat/completions`, its listing
+  at `{endpoint}/openai/models`, each with the configuration's
+  `api-version`, the key in `api-key` and no bearer. Its configuration is
+  no `OpenAiConfig`: an `azure_endpoint` and an `api_version` in place of a
+  base URL, no default headers and no thinking field. The endpoint is
+  reduced to the resource's base as Python's `normalize_azure_endpoint`
+  does: the v1 API's URL, a deployment's target URI, a query, a fragment
+  and trailing slashes go, an API Management gateway's `/openai` prefix
+  stays. A reasoning setting goes on a turn with tools only where
+  `supports_reasoning_effort_with_tools` says so, a response schema beside
+  tools unless the configuration says otherwise, and images to any
+  deployment. A call with an empty key is refused before any request with
+  a `ProviderError`, where Python's openai SDK raises its own
+  `OpenAIError` (`Missing credentials`).
 - A vendor's provider speaks Chat Completions only, with the
   configuration's key: it has no `api`, no `token_source` and no `vision`.
 
