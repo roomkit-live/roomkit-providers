@@ -1,0 +1,186 @@
+{
+ "generator": "scripts/generate_ollama_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "llama3.1",
+   "display_name": "Llama 3.1",
+   "context_window": 128000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "deepseek-r1",
+   "display_name": "DeepSeek-R1",
+   "context_window": 128000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "llama3.2",
+   "display_name": "Llama 3.2",
+   "context_window": 128000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "gemma3",
+   "display_name": "Gemma 3",
+   "context_window": 128000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "qwen2.5",
+   "display_name": "Qwen2.5",
+   "context_window": 128000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "qwen3",
+   "display_name": "Qwen3",
+   "context_window": 40000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "mistral",
+   "display_name": "Mistral 7B",
+   "context_window": 32000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "gemma2",
+   "display_name": "Gemma 2",
+   "context_window": 8000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "llama3",
+   "display_name": "Llama 3",
+   "context_window": 8000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "phi3",
+   "display_name": "Phi-3",
+   "context_window": 128000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "qwen2.5-coder",
+   "display_name": "Qwen2.5 Coder",
+   "context_window": 32000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "llava",
+   "display_name": "LLaVA",
+   "context_window": 32000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "gemma4",
+   "display_name": "Gemma 4",
+   "context_window": 128000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "qwen3.5",
+   "display_name": "Qwen3.5",
+   "context_window": 256000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "gpt-oss",
+   "display_name": "gpt-oss",
+   "context_window": 128000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "phi4",
+   "display_name": "Phi-4",
+   "context_window": 16000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "qwen3-coder",
+   "display_name": "Qwen3 Coder",
+   "context_window": 256000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "qwen3-vl",
+   "display_name": "Qwen3-VL",
+   "context_window": 256000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "llama3.2-vision",
+   "display_name": "Llama 3.2 Vision",
+   "context_window": 128000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  },
+  {
+   "id": "llama3.3",
+   "display_name": "Llama 3.3",
+   "context_window": 128000,
+   "supports_vision": null,
+   "deprecated": false,
+   "capabilities": [],
+   "pricing": null
+  }
+ ]
+}

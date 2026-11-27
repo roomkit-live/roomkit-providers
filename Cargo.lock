@@ -2057,6 +2057,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "roomkit-providers-ollama"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "base64 0.23.1",
+ "reqwest",
+ "roomkit",
+ "roomkit-ai",
+ "roomkit-core",
+ "roomkit-providers-client",
+ "roomkit-providers-python-forms",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "roomkit-providers-openai"
 version = "0.1.0-alpha.1"
 dependencies = [

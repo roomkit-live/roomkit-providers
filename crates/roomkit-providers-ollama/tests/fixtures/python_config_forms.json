@@ -1,0 +1,559 @@
+{
+    "generator": "scripts/generate_ollama_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "OllamaConfig",
+    "examples": [
+        {
+            "name": "defaults",
+            "given": {},
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "host": "https://ollama.example/ollama/",
+                "model": "qwen3:8b",
+                "max_tokens": 512,
+                "timeout": 30.5,
+                "connect_timeout": 2,
+                "max_retries": 3,
+                "think": "high",
+                "keep_alive": "10m",
+                "num_ctx": 8192,
+                "top_p": 0.9,
+                "top_k": 40,
+                "min_p": 0.05,
+                "api_key": "placeholder-not-a-key",
+                "headers": {
+                    "X-Proxy-Token": "t-1",
+                    "X-Team": "core"
+                }
+            },
+            "form": {
+                "host": "https://ollama.example/ollama/",
+                "model": "qwen3:8b",
+                "max_tokens": 512,
+                "timeout": 30.5,
+                "connect_timeout": 2.0,
+                "max_retries": 3,
+                "think": "high",
+                "keep_alive": "10m",
+                "num_ctx": 8192,
+                "top_p": 0.9,
+                "top_k": 40,
+                "min_p": 0.05,
+                "api_key": "**********",
+                "headers": {
+                    "X-Proxy-Token": "t-1",
+                    "X-Team": "core"
+                }
+            }
+        },
+        {
+            "name": "think_on",
+            "given": {
+                "think": true
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": true,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "think_off",
+            "given": {
+                "think": false
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": false,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "think_low",
+            "given": {
+                "think": "low"
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": "low",
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "keep_alive_seconds",
+            "given": {
+                "keep_alive": 300
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": 300,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "keep_alive_text_of_seconds",
+            "given": {
+                "keep_alive": "-1"
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": -1,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "keep_alive_text_of_seconds_in_spaces",
+            "given": {
+                "keep_alive": " 0 "
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": 0,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "keep_alive_a_duration",
+            "given": {
+                "keep_alive": "5m"
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": "5m",
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "an_empty_key",
+            "given": {
+                "api_key": ""
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": "",
+                "headers": null
+            }
+        },
+        {
+            "name": "headers_empty",
+            "given": {
+                "headers": {}
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": {}
+            }
+        },
+        {
+            "name": "headers_in_their_order",
+            "given": {
+                "headers": {
+                    "b": "2",
+                    "a": "1"
+                }
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": {
+                    "b": "2",
+                    "a": "1"
+                }
+            }
+        },
+        {
+            "name": "probabilities_as_integers",
+            "given": {
+                "top_p": 1,
+                "min_p": 0
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": 1.0,
+                "top_k": null,
+                "min_p": 0.0,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "base_url": "https://llm.example",
+                "x": 1
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "host_null",
+            "given": {
+                "host": null
+            }
+        },
+        {
+            "name": "model_null",
+            "given": {
+                "model": null
+            }
+        },
+        {
+            "name": "max_tokens_a_float",
+            "given": {
+                "max_tokens": 2.5
+            }
+        },
+        {
+            "name": "think_another_level",
+            "given": {
+                "think": "xhigh"
+            }
+        },
+        {
+            "name": "think_a_number",
+            "given": {
+                "think": 2
+            }
+        },
+        {
+            "name": "keep_alive_a_float",
+            "given": {
+                "keep_alive": 1.5
+            }
+        },
+        {
+            "name": "keep_alive_a_list",
+            "given": {
+                "keep_alive": [
+                    1
+                ]
+            }
+        },
+        {
+            "name": "headers_a_list",
+            "given": {
+                "headers": [
+                    "a"
+                ]
+            }
+        },
+        {
+            "name": "header_a_number",
+            "given": {
+                "headers": {
+                    "a": 1
+                }
+            }
+        },
+        {
+            "name": "api_key_a_number",
+            "given": {
+                "api_key": 42
+            }
+        },
+        {
+            "name": "timeout_null",
+            "given": {
+                "timeout": null
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                {}
+            ]
+        },
+        {
+            "name": "a_number",
+            "given": 42
+        }
+    ],
+    "converted": [
+        {
+            "name": "think_a_text_of_true",
+            "given": {
+                "think": "true"
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": true,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "think_one",
+            "given": {
+                "think": 1
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": true,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "max_tokens": "512"
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": 512,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "timeout": "30"
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": null,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "keep_alive_a_whole_float",
+            "given": {
+                "keep_alive": 300.0
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": 300,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        },
+        {
+            "name": "keep_alive_true",
+            "given": {
+                "keep_alive": true
+            },
+            "form": {
+                "host": "http://localhost:11434",
+                "model": "llama3.2",
+                "max_tokens": null,
+                "timeout": 120.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "think": null,
+                "keep_alive": 1,
+                "num_ctx": null,
+                "top_p": null,
+                "top_k": null,
+                "min_p": null,
+                "api_key": null,
+                "headers": null
+            }
+        }
+    ]
+}

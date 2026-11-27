@@ -31,6 +31,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
 	python-gemini-config python-gemini-cases python-gemini-catalogue \
 	python-mistral-config python-mistral-cases python-mistral-catalogue \
+	python-ollama-config python-ollama-cases python-ollama-catalogue python-ollama-images \
 	named-cases \
 	python-wheel python-check python-msrv api-snapshot
 
@@ -317,6 +318,27 @@ python-mistral-catalogue:
 python-mistral-cases:
 	$(PYTHON) scripts/generate_mistral_cases.py
 
+# Rewrites the fixture of the JSON forms of RoomKit's Python `OllamaConfig`.
+python-ollama-config:
+	$(PYTHON) scripts/generate_ollama_config_forms.py
+
+# Rewrites the catalogue of Ollama's models the provider reads, from
+# RoomKit's Python.
+python-ollama-catalogue:
+	$(PYTHON) scripts/generate_ollama_catalogue.py
+
+# Rewrites the fixture of what the ollama SDK sends of an image text, or
+# refuses. PYTHON needs roomkit's `ollama` extra.
+python-ollama-images:
+	$(PYTHON) scripts/generate_ollama_images.py
+
+# Rewrites the fixture of what RoomKit's Python Ollama provider sends and
+# reads on Ollama's native API, case by case. PYTHON needs roomkit's
+# `ollama` extra. The script answers its own requests: nothing is sent to a
+# network.
+python-ollama-cases:
+	$(PYTHON) scripts/generate_ollama_cases.py
+
 # Rewrites, for each provider, the data file of the cases it answers
 # otherwise than Python, from the replay's own list: a replay outside the
 # crate reads it, and a test of the crate fails while the two differ.
@@ -329,6 +351,8 @@ named-cases:
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-gemini --lib the_named_cases_file
 	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-mistral/tests/fixtures/named_cases.json) \
 		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-mistral --lib the_named_cases_file
+	NAMED_CASES_OUT=$(abspath crates/roomkit-providers-ollama/tests/fixtures/named_cases.json) \
+		$(NO_NETWORK) $(CARGO) test --locked --offline -p roomkit-providers-ollama --lib the_named_cases_file
 
 .PHONY: python-llamacpp-cases
 python-llamacpp-cases:

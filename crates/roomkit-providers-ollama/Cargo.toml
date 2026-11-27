@@ -1,0 +1,54 @@
+[package]
+name = "roomkit-providers-ollama"
+description = "The Ollama model provider: the native chat API, whole and streamed, held to the wire cases of RoomKit's Python provider"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+readme = "README.md"
+include = ["/LICENSE", "/README.md", "/catalog", "/examples", "/src", "/tests"]
+keywords = ["llm", "ai", "provider", "ollama"]
+categories = ["api-bindings"]
+
+[features]
+# For a replay of recorded cases outside this crate's tests, a binding's:
+# a provider's requests are sent to a local fake of its endpoint, its clock
+# is set and its waits are kept instead of taken. Not for a host: nothing
+# of it shows in the documentation.
+replay = ["roomkit-providers-client/replay"]
+
+[dependencies]
+# RoomKit's core: what a provider is, the request it is given and what it
+# answers; and how a text from outside is fenced and a name written.
+roomkit = { workspace = true }
+roomkit-ai = { workspace = true }
+roomkit-core = { workspace = true }
+# The HTTP client the provider is built on: its requests and their tries,
+# the bounds of an answer, and the one exit of its failures.
+roomkit-providers-client = { workspace = true }
+# The URLs and the headers of a request, as the client takes them.
+# `rustls-no-provider` makes the HTTP client take the configuration given
+# it.
+reqwest = { workspace = true, features = ["rustls-no-provider"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# An image a path names, read from the disk without holding the runtime, and
+# its bytes written as the base64 the API takes: the version RoomKit's core
+# writes it with.
+base64 = { version = "0.23", default-features = false, features = ["alloc"] }
+tokio = { workspace = true, features = ["fs"] }
+
+[dev-dependencies]
+# The replay of the recorded cases, and the local fake of the endpoint it
+# and the other tests send to.
+roomkit-providers-client = { workspace = true, features = ["harness"] }
+# The JSON form a test writes a request or an answer in.
+roomkit-providers-python-forms = { workspace = true }
+# The fake of the wire the provider is replayed against, and the example's
+# stand-in server: local servers.
+tokio = { workspace = true, features = ["macros", "rt", "net", "io-util", "sync", "test-util"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,168 @@
+{
+ "generator": "scripts/generate_ollama_images.py",
+ "roomkit_version": "0.117.0.dev0",
+ "ollama_version": "0.6.3",
+ "python_version": "3.13.3",
+ "images": [
+  {
+   "given": "iVBORw0KGgo=",
+   "sent": "iVBORw0KGgo="
+  },
+  {
+   "given": "iVBORw0KGgo",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "iVBORw0KGg==",
+   "sent": "iVBORw0KGg=="
+  },
+  {
+   "given": "iVBORw0KGg=",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "QUJD",
+   "sent": "QUJD"
+  },
+  {
+   "given": "QUJDRA",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "QUJDRA=",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "QUJDRA==",
+   "sent": "QUJDRA=="
+  },
+  {
+   "given": "QUJDRA===",
+   "sent": "QUJDRA==="
+  },
+  {
+   "given": "QUJDR",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "Q",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "QU",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "QUJ",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "",
+   "sent": ""
+  },
+  {
+   "given": "====",
+   "sent": "===="
+  },
+  {
+   "given": "=QUJD",
+   "sent": "=QUJD"
+  },
+  {
+   "given": "QU=JD",
+   "sent": "QU=JD"
+  },
+  {
+   "given": "QUJD=QUJD",
+   "sent": "QUJD=QUJD"
+  },
+  {
+   "given": "QU==QUJD",
+   "sent": "QU==QUJD"
+  },
+  {
+   "given": "QUJDRA==QUJD",
+   "sent": "QUJDRA==QUJD"
+  },
+  {
+   "given": "QUJD\nREVG",
+   "sent": "QUJD\nREVG"
+  },
+  {
+   "given": "QU JD",
+   "sent": "QU JD"
+  },
+  {
+   "given": "QUJD!",
+   "sent": "QUJD!"
+  },
+  {
+   "given": "!!!!",
+   "sent": "!!!!"
+  },
+  {
+   "given": "QUJD-_",
+   "sent": "QUJD-_"
+  },
+  {
+   "given": "a.b.c.d",
+   "sent": "a.b.c.d"
+  },
+  {
+   "given": "https://images.example/cat",
+   "sent": "https://images.example/cat"
+  },
+  {
+   "given": "https://images.example/cat.jpg",
+   "refused": "ValueError: File https://images.example/cat.jpg does not exist"
+  },
+  {
+   "given": "https://images.example/cat.JPEG",
+   "refused": "ValueError: File https://images.example/cat.JPEG does not exist"
+  },
+  {
+   "given": "picture.PNG",
+   "refused": "ValueError: File picture.PNG does not exist"
+  },
+  {
+   "given": "picture.webp",
+   "refused": "ValueError: File picture.webp does not exist"
+  },
+  {
+   "given": "picture.gif",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "no/such/picture.png",
+   "refused": "ValueError: File no/such/picture.png does not exist"
+  },
+  {
+   "given": "abcde.jpg",
+   "refused": "ValueError: File abcde.jpg does not exist"
+  },
+  {
+   "given": "abcde.gif",
+   "sent": "abcde.gif"
+  },
+  {
+   "given": "Q===",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "QU==",
+   "sent": "QU=="
+  },
+  {
+   "given": "caf\u00e9",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "not an image at all",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  },
+  {
+   "given": "data:image/png;base64,iVBORw0KGgo=",
+   "refused": "ValueError: Invalid image data, expected base64 string or path to image file"
+  }
+ ]
+}
