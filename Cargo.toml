@@ -17,12 +17,12 @@ publish = false
 # its host's: the revision is the one a host pins. It is past the 0.3.0
 # release, whose contract ends a generation in a free word: this one ends
 # it in `FinishReason`, which no release holds yet.
-roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
-roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
-roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
+roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "e6f92c6dba1cb158ff2cc8d734038a1100402ceb" }
+roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "e6f92c6dba1cb158ff2cc8d734038a1100402ceb" }
+roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "e6f92c6dba1cb158ff2cc8d734038a1100402ceb" }
 # What the examples' agents run on beside a provider (rust-examples): the
 # MCP tools of one of them.
-roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
+roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "e6f92c6dba1cb158ff2cc8d734038a1100402ceb" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
 # The SQLite store, which the server examples run on (rust-examples).
 roomkit-providers-sqlite = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-sqlite" }
