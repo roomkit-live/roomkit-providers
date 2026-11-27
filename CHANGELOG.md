@@ -5,6 +5,11 @@ nothing has been released yet.
 
 ## Unreleased
 
+### Fixed
+
+- The managed llama.cpp provider sends the per-request reasoning token limit
+  to the server. Omitting the limit preserves the server default.
+
 ### Added
 
 - OpenRouter, LiteLLM, Azure and vLLM, in Rust and in Python: `OpenRouter`,

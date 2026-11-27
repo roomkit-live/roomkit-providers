@@ -18,6 +18,7 @@ async fn main() -> Result<()> {
     let dir = tempfile::tempdir()?;
     let fixture: Value = serde_json::from_str(include_str!("fixtures/python.json"))?;
     requests(&fixture, dir.path()).await?;
+    reasoning_budgets(dir.path()).await?;
     failures(dir.path()).await?;
     cancel_loading(dir.path()).await?;
     Ok(())
@@ -99,6 +100,45 @@ async fn requests(fixture: &Value, dir: &Path) -> Result<()> {
     assert!(tokio::net::TcpStream::connect(address).await.is_err());
     provider.start().await?;
     provider.close().await;
+    Ok(())
+}
+
+async fn reasoning_budgets(dir: &Path) -> Result<()> {
+    let record = dir.join("budgets");
+    let mut config = LlamaCppConfig::new("example/model");
+    config.binary = Some(env::current_exe()?);
+    config.extra_args = vec!["--record".into(), record.display().to_string()];
+    let provider = LlamaCpp::new(config)?;
+    let budgets = [Some(1024), Some(256), Some(0), Some(-1), None];
+    for thinking_budget in budgets {
+        let request = AiContext {
+            messages: vec![AiMessage::new(AiRole::User, "Hello")],
+            max_tokens: Some(4096),
+            thinking_budget,
+            ..Default::default()
+        };
+        provider
+            .generate_structured_stream(&request)
+            .try_collect::<Vec<_>>()
+            .await?;
+    }
+    provider.close().await;
+    let log = fs::read_to_string(record)?;
+    let mut lines = log.lines().skip(1);
+    for budget in budgets {
+        let body: Value = serde_json::from_str(lines.next().ok_or("missing request")?)?;
+        assert_eq!(body.get("max_tokens"), Some(&json!(4096)));
+        assert_eq!(
+            body.get("reasoning_budget_tokens").and_then(Value::as_i64),
+            budget.map(|n| n.max(0))
+        );
+        assert_eq!(
+            body.pointer("/chat_template_kwargs/enable_thinking")
+                .and_then(Value::as_bool),
+            budget.map(|n| n > 0)
+        );
+    }
+    assert!(lines.next().is_none());
     Ok(())
 }
 

@@ -72,6 +72,12 @@ fn local_template(request: &AiContext, default: Option<bool>) -> Sampling {
         template.insert("reasoning_effort".into(), effort.into());
     }
     let mut sampling = Sampling::default();
+    if let Some(budget) = request.thinking_budget {
+        // RoomKit treats nonpositive budgets as off. llama.cpp uses -1 for unlimited.
+        sampling
+            .extra
+            .insert("reasoning_budget_tokens".into(), budget.max(0).into());
+    }
     if !template.is_empty() {
         sampling
             .extra
