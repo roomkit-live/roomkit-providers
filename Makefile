@@ -20,7 +20,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 	scripts/roomkit_env.py scripts/wheel_paths.py scripts/check-postgres-consumer.py
 
 .PHONY: all fmt fmt-check clippy no-network-test test examples doc deny \
-	msrv msrv-toolchain hooks redis-test postgres-test postgres-fixture \
+	msrv msrv-toolchain hooks redis-test postgres-test postgres-fixture sqlite-fixture \
 	python-public-urls python-proxy-cases python-openai-config \
 	python-openai-chat-cases \
 	python-openai-catalogue \
@@ -88,6 +88,33 @@ postgres-test:
 	$(CARGO) test --locked --no-fail-fast -p roomkit-providers-postgres -- --test-threads=4
 	$(CARGO) run --locked -p roomkit-providers-postgres --example room_on_postgres
 
+# The SQLite store's cross-read fixture: a SQLite file the Python
+# implementation's SQLiteStore writes, which
+# crates/roomkit-providers-sqlite/tests/cross_read.rs reads and rewrites with
+# nothing lost. It is written by tests/fixtures/make_fixture.py with the
+# interpreter of a roomkit checkout (ROOMKIT_DIR, beside this repository's
+# main one), whose commit, on roomkit's origin/main, is recorded in
+# tests/fixtures/ROOMKIT_COMMIT, and the file's fingerprint in
+# tests/fixtures/FIXTURE_SHA256, which the test checks. The file is never
+# edited here: change the generator, and write it again.
+ROOMKIT_DIR ?= $(abspath $(dir $(shell git rev-parse --path-format=absolute --git-common-dir))../roomkit)
+export ROOMKIT_DIR
+SQLITE_FIXTURES := crates/roomkit-providers-sqlite/tests/fixtures
+
+sqlite-fixture:
+	@commit=$$(git -C "$$ROOMKIT_DIR" rev-parse --verify HEAD) && \
+	if ! git -C "$$ROOMKIT_DIR" diff --quiet HEAD -- src; then \
+		echo "roomkit at $$ROOMKIT_DIR has changes under src/: write the fixture from a commit"; exit 1; \
+	fi && \
+	if ! git -C "$$ROOMKIT_DIR" merge-base --is-ancestor "$$commit" origin/main; then \
+		echo "roomkit $$commit is not on origin/main: push it and fetch first"; exit 1; \
+	fi && \
+	PYTHONDONTWRITEBYTECODE=1 "$$ROOMKIT_DIR/.venv/bin/python" -I \
+		$(SQLITE_FIXTURES)/make_fixture.py $(SQLITE_FIXTURES)/python-v14.db && \
+	echo "$$commit" > $(SQLITE_FIXTURES)/ROOMKIT_COMMIT && \
+	sha256sum $(SQLITE_FIXTURES)/python-v14.db | cut -c1-64 > $(SQLITE_FIXTURES)/FIXTURE_SHA256 && \
+	echo "sqlite fixture written by roomkit $$commit"
+
 # The Postgres store's cross-read fixture: the rows the Python
 # implementation's PostgresStore writes, as JSON, which
 # crates/roomkit-providers-postgres/tests/cross_read.rs loads, reads and
@@ -141,6 +168,7 @@ examples:
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-openai --example behind_a_proxy
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-anthropic --example local_messages
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-opentelemetry --example one_trace
+	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-sqlite --example room_on_sqlite
 	$(NO_NETWORK) $(CARGO) run --locked --offline -p roomkit-providers-llamacpp --example managed_gguf
 	@for example in $(AGENT_EXAMPLES); do \
 		echo "== $$example"; \

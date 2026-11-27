@@ -21,10 +21,11 @@ roomkit = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs
 roomkit-ai = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
 roomkit-core = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
 # What the examples' agents run on beside a provider (rust-examples): the
-# SQLite store of the server examples and the MCP tools of one of them.
-roomkit-sqlite = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
+# MCP tools of one of them.
 roomkit-mcp = { version = "0.3.0", git = "https://github.com/roomkit-live/roomkit-rs", rev = "01cb7b7459501cf286e9f2be60775025454e421d" }
 roomkit-providers-http = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-http" }
+# The SQLite store, which the server examples run on (rust-examples).
+roomkit-providers-sqlite = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-sqlite" }
 roomkit-providers-client = { version = "0.1.0-alpha.1", path = "crates/roomkit-providers-client" }
 roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/python-forms" }
 # The WebSocket server of the server examples, and the client their checks
@@ -51,6 +52,10 @@ redis = { version = "1.8.2", default-features = false, features = ["connection-m
 opentelemetry = { version = "0.33", default-features = false, features = ["trace", "metrics"] }
 opentelemetry_sdk = { version = "0.33", default-features = false, features = ["trace", "metrics"] }
 pretty_assertions = "1"
+# The SQLite store (roomkit-providers-sqlite), as RoomKit's Rust core held
+# it: the SQLite library compiled in, with the JSON functions and the
+# full-text index of the Python implementation's schema.
+rusqlite = { version = "0.41", features = ["bundled"] }
 # The Postgres store (roomkit-providers-postgres), as RoomKit's Rust core
 # held it: the client, its pool, and TLS on rustls; JSONB through
 # serde_json. The client is the fork the root patch below names.

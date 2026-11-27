@@ -24,7 +24,7 @@ use roomkit::{
     AttachChannelOptions, Channel, ConversationStore, CreateRoomOptions, RoomKit, RoomKitOptions,
 };
 use roomkit_ai::{AiChannel, AiChannelOptions};
-use roomkit_sqlite::{SqliteStore, SqliteStoreOptions};
+use roomkit_providers_sqlite::{SqliteStore, SqliteStoreOptions};
 use tokio::net::TcpListener;
 use tokio::sync::{Mutex, watch};
 use tokio::task::JoinHandle;

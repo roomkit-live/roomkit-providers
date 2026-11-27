@@ -1982,7 +1982,7 @@ dependencies = [
  "roomkit-mcp",
  "roomkit-providers-anthropic",
  "roomkit-providers-openai",
- "roomkit-sqlite",
+ "roomkit-providers-sqlite",
  "serde",
  "serde_json",
  "tokio",
@@ -2106,15 +2106,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "roomkit-sqlite"
-version = "0.3.0"
-source = "git+https://github.com/roomkit-live/roomkit-rs?rev=01cb7b7459501cf286e9f2be60775025454e421d#01cb7b7459501cf286e9f2be60775025454e421d"
+name = "roomkit-providers-sqlite"
+version = "0.1.0-alpha.1"
 dependencies = [
+ "pretty_assertions",
  "roomkit",
+ "roomkit-ai",
  "roomkit-core",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror",
  "tokio",
  "tracing",

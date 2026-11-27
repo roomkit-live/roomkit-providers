@@ -2,7 +2,7 @@
 PostgresStore writes, holding every kind of record it stores, as JSON.
 
 roomkit-providers-postgres loads them, reads them back and rewrites them with nothing
-lost (tests/cross_read.rs). The records are those of roomkit-sqlite's generator,
+lost (tests/cross_read.rs). The records are those of roomkit-providers-sqlite's generator,
 through the kit and through the store, with what only this store's columns hold
 and verifications. `make postgres-fixture` runs this script
 with a roomkit checkout's interpreter, against POSTGRES_DSN, and records which
@@ -30,7 +30,7 @@ from roomkit.models.verification import Verification, VerificationRequest
 from roomkit.store.postgres import PostgresStore
 
 SQLITE_GENERATOR = (
-    Path(__file__).parents[3] / "roomkit-sqlite" / "tests" / "fixtures" / "make_fixture.py"
+    Path(__file__).parents[3] / "roomkit-providers-sqlite" / "tests" / "fixtures" / "make_fixture.py"
 )
 
 TABLES = {

@@ -1,0 +1,33 @@
+[package]
+name = "roomkit-providers-sqlite"
+description = "A SQLite conversation store for RoomKit, on the Python implementation's schema"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+keywords = ["roomkit", "sqlite", "store", "conversation"]
+categories = ["database"]
+
+[dependencies]
+roomkit.workspace = true
+roomkit-core.workspace = true
+rusqlite.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
+# The warning of a record the model cannot read.
+tracing = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+# The agent the tool rows' and the publications' tests run.
+roomkit-ai.workspace = true
+tokio = { workspace = true, features = ["net", "io-util"] }
+# The cross-read fixture's fingerprint (tests/cross_read.rs).
+sha2.workspace = true
+
+[lints]
+workspace = true
