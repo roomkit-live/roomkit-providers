@@ -36,10 +36,14 @@ from openai import _base_client as sdk
 from openai_chat_cases import CASES
 from roomkit.providers.ai import AIContext, tool_calls
 from roomkit.providers.ai.reasoning import reasoning_floor
+from roomkit.providers.cerebras import CerebrasAIProvider, CerebrasConfig
 from roomkit.providers.deepseek import DeepSeekAIProvider, DeepSeekConfig
 from roomkit.providers.kimi import KimiAIProvider, KimiConfig
+from roomkit.providers.meta import MetaAIProvider, MetaConfig
 from roomkit.providers.minimax import MiniMaxAIProvider, MiniMaxConfig
 from roomkit.providers.openai import OpenAIAIProvider, OpenAIConfig
+from roomkit.providers.qwen import QwenAIProvider, QwenConfig
+from roomkit.providers.xai import XAIAIProvider, XAIConfig
 from vendor_chat_cases import VENDOR_CASES
 from wire_capture import (
     Case,
@@ -284,6 +288,10 @@ VENDORS: dict[str, tuple[Any, Any]] = {
     "deepseek": (DeepSeekAIProvider, DeepSeekConfig),
     "kimi": (KimiAIProvider, KimiConfig),
     "minimax": (MiniMaxAIProvider, MiniMaxConfig),
+    "xai": (XAIAIProvider, XAIConfig),
+    "cerebras": (CerebrasAIProvider, CerebrasConfig),
+    "qwen": (QwenAIProvider, QwenConfig),
+    "meta": (MetaAIProvider, MetaConfig),
 }
 
 

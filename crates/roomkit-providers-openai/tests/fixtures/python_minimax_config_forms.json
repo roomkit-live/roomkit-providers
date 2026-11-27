@@ -333,6 +333,33 @@
             }
         },
         {
+            "name": "stream_usage",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "MiniMax-M3",
+                "include_stream_usage": true
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://api.minimax.io/v1",
+                "model": "MiniMax-M3",
+                "max_tokens": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null
+            }
+        },
+        {
             "name": "switches_stated",
             "given": {
                 "api_key": "placeholder-not-a-key",

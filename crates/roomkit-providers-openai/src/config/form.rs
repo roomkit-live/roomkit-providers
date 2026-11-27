@@ -185,3 +185,11 @@ pub(crate) fn left_null<'de, D: Deserializer<'de>>(deserializer: D) -> Result<()
         )),
     }
 }
+
+/// Reads a member a form states, `null` included: `Some` of what it holds,
+/// where a member left out takes its default (`None`).
+pub(crate) fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error> {
+    T::deserialize(deserializer).map(Some)
+}

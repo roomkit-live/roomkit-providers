@@ -28,11 +28,15 @@ from typing import Any
 
 import roomkit
 from pydantic import ValidationError
+from roomkit.providers.cerebras import CerebrasConfig
 from roomkit.providers.deepseek import DeepSeekConfig
 from roomkit.providers.kimi import KimiConfig
+from roomkit.providers.meta import MetaConfig
 from roomkit.providers.minimax import MiniMaxConfig
 from roomkit.providers.openai import OpenAIConfig
+from roomkit.providers.qwen import QwenConfig
 from roomkit.providers.vendor_endpoint import OPENAI_BASE_URL, is_vendor_endpoint
+from roomkit.providers.xai import XAIConfig
 
 REPOSITORY = Path(__file__).resolve().parent.parent
 FIXTURE = REPOSITORY / "crates/roomkit-providers-openai/tests/fixtures/python_config_forms.json"
@@ -272,10 +276,13 @@ def endpoint(base_url: str) -> dict[str, Any]:
     return {"base_url": base_url, "openai": own}
 
 
-def vendor_examples(model: str, extra: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+def vendor_examples(
+    model: str, extra: dict[str, Any], thinking_field: bool
+) -> list[tuple[str, dict[str, Any]]]:
     """The examples of a vendor's configuration: its required members, every
     member, and each one apart; ``extra`` holds the vendor's own members, each
-    given once."""
+    given once, and ``thinking_field`` says whether the vendor takes one (the
+    vendor whose provider sends reasoning where it reads it takes none)."""
     required = {"api_key": KEY, "model": model}
     every = {
         **required,
@@ -292,6 +299,7 @@ def vendor_examples(model: str, extra: dict[str, Any]) -> list[tuple[str, dict[s
         "extra_body": {"top_k": 40, "guided_choice": ["yes", "no"], "min_p": 0.05},
         "supports_response_schema": True,
         "supports_response_schema_with_tools": False,
+        **({"thinking_field": "reasoning_content"} if thinking_field else {}),
         **{member: values[0] for member, values in extra.items()},
     }
     examples = [
@@ -306,6 +314,7 @@ def vendor_examples(model: str, extra: dict[str, Any]) -> list[tuple[str, dict[s
         ("timeouts_with_fractions", {**required, "timeout": 0.25, "connect_timeout": 1.5}),
         ("retries", {**required, "max_retries": 2}),
         ("no_stream_usage", {**required, "include_stream_usage": False}),
+        ("stream_usage", {**required, "include_stream_usage": True}),
         (
             "switches_stated",
             {**required, "use_max_completion_tokens": False, "supports_custom_temperature": True},
@@ -324,6 +333,8 @@ def vendor_examples(model: str, extra: dict[str, Any]) -> list[tuple[str, dict[s
         ("thinking_field_left_null", {**required, "thinking_field": None}),
         ("members_python_does_not_have", {**required, "vision": True, "organization": "acme"}),
     ]
+    if thinking_field:
+        examples.append(("thinking_field", {**required, "thinking_field": "reasoning"}))
     for member, values in extra.items():
         examples += [
             (f"{member}_{json.dumps(value)}", {**required, member: value}) for value in values
@@ -339,23 +350,34 @@ def with_model(given: Any, model: str) -> Any:
     return given
 
 
-def vendor_rejected(model: str, extra_rejected: dict[str, Any]) -> list[tuple[str, Any]]:
-    """The inputs a vendor's configuration refuses: OpenAI's, the two members
-    the vendor's own rule makes moot, and ``extra_rejected``."""
+def vendor_rejected(
+    model: str, extra_rejected: dict[str, Any], thinking_field: bool
+) -> list[tuple[str, Any]]:
+    """The inputs a vendor's configuration refuses: OpenAI's, the members the
+    vendor's own rule makes moot (a thinking field where ``thinking_field``
+    is false), and ``extra_rejected``."""
     required = {"api_key": KEY, "model": model}
     rejected = [(name, with_model(given, model)) for name, given in REJECTED]
     return [
         *rejected,
         ("tool_turn_setting_stated", {**required, "supports_reasoning_effort_with_tools": True}),
         ("tool_turn_setting_off", {**required, "supports_reasoning_effort_with_tools": False}),
-        ("thinking_field_stated", {**required, "thinking_field": "reasoning_content"}),
+        *(
+            []
+            if thinking_field
+            else [("thinking_field_stated", {**required, "thinking_field": "reasoning_content"})]
+        ),
         ("base_url_null", {**required, "base_url": None}),
         *[(name, {**required, **given}) for name, given in extra_rejected.items()],
     ]
 
 
 def vendor_fixture(
-    config_class: Any, model: str, extra: dict[str, Any], extra_rejected: dict[str, Any]
+    config_class: Any,
+    model: str,
+    extra: dict[str, Any],
+    extra_rejected: dict[str, Any],
+    thinking_field: bool,
 ) -> dict[str, Any]:
     """The fixture of a vendor's configuration, the way OpenAI's is written
     but for its base URLs, which the vendor's provider reads otherwise."""
@@ -370,7 +392,10 @@ def vendor_fixture(
             return True
         return False
 
-    rejected = vendor_rejected(model, extra_rejected)
+    rejected = vendor_rejected(model, extra_rejected, thinking_field)
+    # A vendor whose configuration names a model of its own takes none.
+    if not config_class.model_fields["model"].is_required():
+        rejected = [(name, given) for name, given in rejected if name != "no_model"]
     for name, given in rejected:
         if not refused(given):
             raise AssertionError(f"Python's {config_class.__name__} takes the input {name}")
@@ -382,7 +407,12 @@ def vendor_fixture(
         "model": config_class.__name__,
         "examples": [
             {"name": name, "given": given, "form": dumped(given)}
-            for name, given in vendor_examples(model, extra)
+            for name, given in vendor_examples(model, extra, thinking_field)
+            + (
+                []
+                if config_class.model_fields["model"].is_required()
+                else [("model_left_out", {"api_key": KEY})]
+            )
         ],
         "rejected": [{"name": name, "given": given} for name, given in rejected],
         "converted": [
@@ -393,23 +423,59 @@ def vendor_fixture(
 
 # The vendors whose configuration is OpenAI's with the vendor's defaults:
 # their class, a model of theirs, their own members with the values each
-# example gives, and the inputs of their own members Python refuses.
-VENDORS: list[tuple[str, Any, str, dict[str, Any], dict[str, Any]]] = [
+# example gives, the inputs of their own members Python refuses, and whether
+# they take a thinking field.
+VENDORS: list[tuple[str, Any, str, dict[str, Any], dict[str, Any], bool]] = [
     (
         "deepseek",
         DeepSeekConfig,
         "deepseek-v4-pro",
         {"enable_thinking": [True, False, None]},
         {"enable_thinking_a_word": {"enable_thinking": "perhaps"}},
+        False,
     ),
-    ("kimi", KimiConfig, "kimi-k3.1-pro", {}, {}),
-    ("minimax", MiniMaxConfig, "MiniMax-M3", {}, {}),
+    ("kimi", KimiConfig, "kimi-k3.1-pro", {}, {}, False),
+    ("minimax", MiniMaxConfig, "MiniMax-M3", {}, {}, False),
+    ("xai", XAIConfig, "grok-4.7", {}, {}, True),
+    (
+        "cerebras",
+        CerebrasConfig,
+        "gpt-oss-120b",
+        {
+            "reasoning_format": ["raw", "hidden", "none", "parsed", None],
+            "clear_thinking": [True, False, None],
+        },
+        {
+            "reasoning_format_unknown": {"reasoning_format": "summary"},
+            "reasoning_format_a_number": {"reasoning_format": 1},
+            "clear_thinking_a_word": {"clear_thinking": "perhaps"},
+        },
+        False,
+    ),
+    (
+        "qwen",
+        QwenConfig,
+        "qwen3.7-max",
+        {"enable_thinking": [True, False, None]},
+        {"enable_thinking_a_word": {"enable_thinking": "perhaps"}},
+        True,
+    ),
+    # Meta's configuration refuses a key no HTTP header can carry: a
+    # placeholder's ellipsis copied as is.
+    (
+        "meta",
+        MetaConfig,
+        "muse-spark-1.3",
+        {},
+        {"key_not_ascii": {"api_key": "placeholder" + chr(0x2026)}},
+        True,
+    ),
 ]
 
 
 def write_vendor_fixtures() -> None:
-    for vendor, config_class, model, extra, extra_rejected in VENDORS:
-        fixture = vendor_fixture(config_class, model, extra, extra_rejected)
+    for vendor, config_class, model, extra, extra_rejected, thinking_field in VENDORS:
+        fixture = vendor_fixture(config_class, model, extra, extra_rejected, thinking_field)
         path = FIXTURE.with_name(f"python_{vendor}_config_forms.json")
         path.write_text(json.dumps(fixture, indent=4) + "\n", encoding="utf-8")
         print(

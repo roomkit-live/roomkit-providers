@@ -1,0 +1,197 @@
+{
+ "generator": "scripts/generate_openai_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "grok-4.7",
+   "display_name": "Grok 4.7",
+   "context_window": 500000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 2.0,
+    "output_per_million": 6.0,
+    "cache_read_per_million": 0.5,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  },
+  {
+   "id": "grok-4.6",
+   "display_name": "Grok 4.6",
+   "context_window": 500000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 2.0,
+    "output_per_million": 6.0,
+    "cache_read_per_million": 0.5,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  },
+  {
+   "id": "grok-4.5",
+   "display_name": "Grok 4.5",
+   "context_window": 500000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 2.0,
+    "output_per_million": 6.0,
+    "cache_read_per_million": 0.3,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  },
+  {
+   "id": "grok-4.3",
+   "display_name": "Grok 4.3",
+   "context_window": 1000000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 1.25,
+    "output_per_million": 2.5,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  },
+  {
+   "id": "grok-4.20-0309-reasoning",
+   "display_name": "Grok 4.20 (reasoning)",
+   "context_window": 1000000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 1.25,
+    "output_per_million": 2.5,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  },
+  {
+   "id": "grok-4.20-0309-non-reasoning",
+   "display_name": "Grok 4.20 (non-reasoning)",
+   "context_window": 1000000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools"
+   ],
+   "pricing": {
+    "input_per_million": 1.25,
+    "output_per_million": 2.5,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  },
+  {
+   "id": "grok-4.20-multi-agent-0309",
+   "display_name": "Grok 4.20 Multi-Agent",
+   "context_window": 1000000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 1.25,
+    "output_per_million": 2.5,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  },
+  {
+   "id": "grok-build-0.1",
+   "display_name": "Grok Build 0.1",
+   "context_window": 256000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 1.0,
+    "output_per_million": 2.0,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 200000,
+    "long_context_input_multiplier": 2.0,
+    "long_context_output_multiplier": 2.0,
+    "currency": "USD",
+    "verified": "2026-09-21"
+   }
+  }
+ ]
+}

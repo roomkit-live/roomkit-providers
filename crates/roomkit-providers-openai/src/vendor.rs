@@ -9,12 +9,18 @@ use roomkit_ai::{AiContext, ModelInfo};
 use roomkit_providers_client::endpoint::is_vendor_endpoint;
 use serde_json::{Value, json};
 
-use crate::dialect::{ChatDialect, DEEPSEEK_CHAT, KIMI_CHAT, MINIMAX_CHAT, OPENAI_CHAT};
+use crate::dialect::{
+    CEREBRAS_CHAT, ChatDialect, DEEPSEEK_CHAT, KIMI_CHAT, MINIMAX_CHAT, OPENAI_CHAT,
+};
 use crate::endpoint::OPENAI_BASE_URL;
 use crate::failure::Failure;
 use crate::models::{self, reasoning_floor};
 use crate::names::{self, NameRule};
 use crate::reasoning::{floored_effort, nearest_level, thinking_switch};
+
+mod arguments;
+
+pub(crate) use arguments::{repaired_response, repaired_stream};
 
 /// DeepSeek's endpoint, under the two bases its documentation gives.
 pub(crate) const DEEPSEEK_BASE_URLS: [&str; 2] =
@@ -23,6 +29,20 @@ pub(crate) const DEEPSEEK_BASE_URLS: [&str; 2] =
 pub(crate) const MINIMAX_BASE_URL: &str = "https://api.minimax.io/v1";
 /// Kimi's OpenAI-compatible endpoint.
 pub(crate) const KIMI_BASE_URL: &str = "https://api.moonshot.ai/v1";
+/// xAI's endpoint.
+pub(crate) const XAI_BASE_URL: &str = "https://api.x.ai/v1";
+/// Cerebras's endpoint.
+pub(crate) const CEREBRAS_BASE_URL: &str = "https://api.cerebras.ai/v1";
+/// Alibaba Model Studio's OpenAI-compatible endpoint, international.
+pub(crate) const QWEN_BASE_URL: &str = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
+/// Meta's endpoint.
+pub(crate) const META_BASE_URL: &str = "https://api.meta.ai/v1";
+/// The ids of Meta's chat models, among the image, speech and segmentation
+/// models its listing holds too (Python's `_CHAT_PREFIXES`).
+const META_CHAT_PREFIXES: [&str; 3] = ["muse-spark", "muse-wonder", "muse-ember"];
+/// The least effort every Muse chat model takes: Meta's service cannot turn
+/// reasoning off, and answers `none` with a 400.
+const META_FLOOR: &str = "minimal";
 
 /// The efforts on the scale a vendor's levels are read on, least to most.
 const SCALE: [&str; 6] = ["minimal", "low", "medium", "high", "xhigh", "max"];
@@ -45,6 +65,18 @@ pub(crate) enum Vendor {
     MiniMax,
     /// Python's `KimiAIProvider`.
     Kimi,
+    /// Python's `XAIAIProvider`.
+    Xai,
+    /// Python's `CerebrasAIProvider`, with its configuration's
+    /// `reasoning_format` and `clear_thinking`.
+    Cerebras {
+        reasoning_format: Option<&'static str>,
+        clear_thinking: Option<bool>,
+    },
+    /// Python's `QwenAIProvider`, with its configuration's `enable_thinking`.
+    Qwen { enable_thinking: Option<bool> },
+    /// Python's `MetaAIProvider`.
+    Meta,
 }
 
 /// What a request carries of the turn's reasoning beside `OpenAI`'s fields:
@@ -60,10 +92,13 @@ impl Vendor {
     /// Where the vendor reads a replayed round's reasoning.
     pub(crate) fn dialect(self) -> ChatDialect<'static> {
         match self {
-            Self::OpenAi | Self::LlamaCpp { .. } => OPENAI_CHAT,
+            Self::OpenAi | Self::LlamaCpp { .. } | Self::Xai | Self::Qwen { .. } | Self::Meta => {
+                OPENAI_CHAT
+            }
             Self::DeepSeek { .. } => DEEPSEEK_CHAT,
             Self::MiniMax => MINIMAX_CHAT,
             Self::Kimi => KIMI_CHAT,
+            Self::Cerebras { .. } => CEREBRAS_CHAT,
         }
     }
 
@@ -75,6 +110,10 @@ impl Vendor {
             Self::DeepSeek { .. } => "DeepSeekAIProvider",
             Self::MiniMax => "minimax",
             Self::Kimi => "kimi",
+            Self::Xai => "XAIAIProvider",
+            Self::Cerebras { .. } => "cerebras",
+            Self::Qwen { .. } => "QwenAIProvider",
+            Self::Meta => "MetaAIProvider",
         }
     }
 
@@ -86,6 +125,10 @@ impl Vendor {
             Self::DeepSeek { .. } => "deepseek",
             Self::MiniMax => "minimax",
             Self::Kimi => "kimi",
+            Self::Xai => "xai",
+            Self::Cerebras { .. } => "cerebras",
+            Self::Qwen { .. } => "qwen",
+            Self::Meta => "meta",
         }
     }
 
@@ -96,12 +139,17 @@ impl Vendor {
 
     /// Whether the vendor's endpoint honours a `json_schema` response format
     /// when the configuration does not say (Python's
-    /// `_response_schema_default`): DeepSeek's and MiniMax's do not
-    /// document one for their models, `OpenAI`'s and Kimi's do.
+    /// `_response_schema_default`): DeepSeek's, MiniMax's and Qwen's do not
+    /// document one for their models, the others' do.
     pub(crate) fn takes_response_schema(self) -> bool {
         match self {
-            Self::OpenAi | Self::Kimi | Self::LlamaCpp { .. } => true,
-            Self::DeepSeek { .. } | Self::MiniMax => false,
+            Self::OpenAi
+            | Self::Kimi
+            | Self::LlamaCpp { .. }
+            | Self::Xai
+            | Self::Cerebras { .. }
+            | Self::Meta => true,
+            Self::DeepSeek { .. } | Self::MiniMax | Self::Qwen { .. } => false,
         }
     }
 
@@ -113,6 +161,10 @@ impl Vendor {
             Self::DeepSeek { .. } => &DEEPSEEK_BASE_URLS,
             Self::MiniMax => &[MINIMAX_BASE_URL],
             Self::Kimi => &[KIMI_BASE_URL],
+            Self::Xai => &[XAI_BASE_URL],
+            Self::Cerebras { .. } => &[CEREBRAS_BASE_URL],
+            Self::Qwen { .. } => &[QWEN_BASE_URL],
+            Self::Meta => &[META_BASE_URL],
         }
     }
 
@@ -130,7 +182,12 @@ impl Vendor {
             Self::OpenAi => Some(&names::OPENAI),
             Self::DeepSeek { .. } => Some(&names::DEEPSEEK),
             Self::Kimi => Some(&names::KIMI),
-            Self::MiniMax | Self::LlamaCpp { .. } => None,
+            Self::MiniMax
+            | Self::LlamaCpp { .. }
+            | Self::Xai
+            | Self::Cerebras { .. }
+            | Self::Qwen { .. }
+            | Self::Meta => None,
         }
     }
 
@@ -138,6 +195,37 @@ impl Vendor {
     /// from `OpenAI`'s `prompt_tokens_details`.
     pub(crate) fn reads_cache_hits(self) -> bool {
         matches!(self, Self::DeepSeek { .. })
+    }
+
+    /// Whether the vendor may report reasoning beside its completion, billed
+    /// as output: xAI's total is the prompt, the completion and the
+    /// reasoning, where `OpenAI`'s reasoning sits inside the completion.
+    pub(crate) fn adds_reasoning_reported_apart(self) -> bool {
+        matches!(self, Self::Xai)
+    }
+
+    /// Whether the vendor has no listing to ask, its catalogue being what an
+    /// account reaches (Python's `QwenAIProvider.list_models`).
+    pub(crate) fn lists_its_catalogue(self) -> bool {
+        matches!(self, Self::Qwen { .. })
+    }
+
+    /// Whether a model the listing gives is one the vendor's provider
+    /// keeps: Meta's listing holds its image, speech and segmentation models
+    /// too, of which the provider keeps the chat ones.
+    pub(crate) fn keeps_listed(self, model: &str) -> bool {
+        if !matches!(self, Self::Meta) {
+            return true;
+        }
+        META_CHAT_PREFIXES
+            .iter()
+            .any(|prefix| model.starts_with(prefix))
+    }
+
+    /// Whether the vendor writes an array argument as the JSON text of the
+    /// array, which the provider reads back where the tool declares one.
+    pub(crate) fn repairs_arguments(self) -> bool {
+        matches!(self, Self::Cerebras { .. })
     }
 
     /// Whether the configured `model` reads images: as the vendor's
@@ -157,7 +245,8 @@ impl Vendor {
         }
         match self {
             Self::MiniMax | Self::Kimi => !self.is_own_endpoint(base_url),
-            Self::LlamaCpp { .. } => true,
+            Self::LlamaCpp { .. } | Self::Xai | Self::Qwen { .. } | Self::Meta => true,
+            Self::Cerebras { .. } => false,
             Self::OpenAi => {
                 !self.is_own_endpoint(base_url) || models::sees_images_by_its_name(model)
             }
@@ -183,6 +272,19 @@ impl Vendor {
             Self::MiniMax => minimax(entry, request, configured),
             Self::Kimi => Sampling {
                 effort: levelled(entry, request, configured, &KIMI_LEVELS),
+                extra: Metadata::new(),
+            },
+            Self::Xai => Sampling {
+                effort: xai(entry, request, configured),
+                extra: Metadata::new(),
+            },
+            Self::Cerebras {
+                reasoning_format,
+                clear_thinking,
+            } => cerebras(entry, request, configured, reasoning_format, clear_thinking),
+            Self::Qwen { enable_thinking } => qwen(request, enable_thinking),
+            Self::Meta => Sampling {
+                effort: floored_effort(request, configured, Some(META_FLOOR)).map(str::to_owned),
                 extra: Metadata::new(),
             },
         }
@@ -243,6 +345,62 @@ fn minimax(entry: Option<&ModelInfo>, request: &AiContext, configured: Option<&s
     }
 }
 
+/// xAI's: the turn's effort over the configured one, on a turn with tools
+/// as on any other, withheld from a model the catalogue describes without
+/// `thinking`, which would reject it (Python's
+/// `XAIAIProvider._supports_reasoning`); a model it does not know, or knows
+/// with no tags, reasons.
+fn xai(entry: Option<&ModelInfo>, request: &AiContext, configured: Option<&str>) -> Option<String> {
+    let reasons = entry.is_none_or(|entry| {
+        entry.capabilities.is_empty() || entry.capabilities.iter().any(|tag| tag == "thinking")
+    });
+    let effort = request.reasoning_effort.as_deref().or(configured);
+    effort.filter(|_| reasons).map(str::to_owned)
+}
+
+/// Cerebras's: the effort floored by the model's catalogue entry, on a turn
+/// with tools too, and the configuration's `reasoning_format` and
+/// `clear_thinking` where it states them.
+fn cerebras(
+    entry: Option<&ModelInfo>,
+    request: &AiContext,
+    configured: Option<&str>,
+    reasoning_format: Option<&'static str>,
+    clear_thinking: Option<bool>,
+) -> Sampling {
+    let effort = floored_effort(request, configured, reasoning_floor(entry)).map(str::to_owned);
+    let mut extra = Metadata::new();
+    if let Some(format) = reasoning_format {
+        extra.insert("reasoning_format".to_owned(), Value::from(format));
+    }
+    if let Some(clear) = clear_thinking {
+        extra.insert("clear_thinking".to_owned(), Value::from(clear));
+    }
+    Sampling { effort, extra }
+}
+
+/// Qwen's `enable_thinking` and `thinking_budget`, outside `OpenAI`'s
+/// schema (Python's `QwenAIProvider._resolve_thinking`): the turn's switch
+/// over the configured one, nothing when neither is stated; a positive
+/// budget caps the trace of a turn that thinks. Qwen has no effort tier: an
+/// effort counts only as `none`, which turns thinking off.
+fn qwen(request: &AiContext, enable_thinking: Option<bool>) -> Sampling {
+    let mut extra = Metadata::new();
+    if let Some(enabled) = thinking_switch(request).or(enable_thinking) {
+        extra.insert("enable_thinking".to_owned(), Value::from(enabled));
+        if let Some(budget) = request
+            .thinking_budget
+            .filter(|budget| enabled && *budget > 0)
+        {
+            extra.insert("thinking_budget".to_owned(), Value::from(budget));
+        }
+    }
+    Sampling {
+        effort: None,
+        extra,
+    }
+}
+
 /// DeepSeek's `thinking` object, its effort nested in it, never a top-level
 /// `reasoning_effort`, which DeepSeek ignores (Python's
 /// `DeepSeekAIProvider._resolve_thinking`): the turn's switch over the
@@ -290,6 +448,17 @@ pub(crate) fn refused_thinking_field(config: &str) -> Failure {
     Failure::before_request(format!(
         "{config} takes no thinking_field: its provider sends reasoning where its vendor reads it"
     ))
+}
+
+/// Why a key is refused where the configuration takes ASCII only: Python's
+/// `_header_safe`, the key itself never said.
+pub(crate) const NOT_ASCII: &str = "api_key holds a non-ASCII character (a placeholder such as '\u{2026}' \
+     copied as is?): an HTTP Authorization header cannot carry it";
+
+/// The failure a configuration that takes ASCII only is refused with when
+/// its key is not.
+pub(crate) fn refused_key() -> Failure {
+    Failure::before_request(NOT_ASCII.to_owned())
 }
 
 /// The failure a vendor's configuration is refused with: Python's validator

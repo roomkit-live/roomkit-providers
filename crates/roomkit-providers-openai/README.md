@@ -13,14 +13,15 @@ The OpenAI model provider of RoomKit Providers.
   `OpenAIConfig` of RoomKit's Python implementation: the same names, the same
   defaults, and the JSON it gives with `model_dump(mode="json")`, read and
   written;
-- `DeepSeek`, `Kimi` and `MiniMax`, the providers of three vendors that
-  speak Chat Completions with rules of their own, each with its
-  configuration (see [Three vendors on the same wire](#three-vendors-on-the-same-wire));
+- `DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen` and `Meta`, the
+  providers of seven vendors that speak Chat Completions with rules of their
+  own, each with its configuration (see
+  [Seven vendors on the same wire](#seven-vendors-on-the-same-wire));
 - the wire cases the provider is held to
   (`tests/fixtures/python_chat_cases.json`): what RoomKit's Python provider
   sends and reads on Chat Completions and on the model listing, case by
   case. Every case is replayed against the provider through a local fake of
-  the endpoint. The three vendors are held the same way to the cases
+  the endpoint. The seven vendors are held the same way to the cases
   captured on their own Python providers
   (`tests/fixtures/python_<vendor>_cases.json`, from
   `scripts/vendor_chat_cases.py`), and their configurations to the JSON
@@ -149,14 +150,18 @@ fn provider() -> Result<OpenAi, roomkit_ai::ProviderError> {
 RoomKit's Python implementation has no Responses API: this one is the
 Rust core's, and the wire cases do not cover it.
 
-## Three vendors on the same wire
+## Seven vendors on the same wire
 
-`DeepSeek`, `Kimi` and `MiniMax` are the providers of RoomKit's Python
-implementation for these vendors (`DeepSeekAIProvider`, `KimiAIProvider`,
-`MiniMaxAIProvider`). Each is `OpenAi` with its vendor's rules: every
-request and answer is Chat Completions', read and bounded as `OpenAi`'s
-are. Its configuration (`DeepSeekConfig`, `KimiConfig`, `MiniMaxConfig`)
-has `OpenAiConfig`'s members with its vendor's endpoint and defaults.
+`DeepSeek`, `Kimi`, `MiniMax`, `Xai`, `Cerebras`, `Qwen` and `Meta` are the
+providers of RoomKit's Python implementation for these vendors
+(`DeepSeekAIProvider`, `KimiAIProvider`, `MiniMaxAIProvider`,
+`XAIAIProvider`, `CerebrasAIProvider`, `QwenAIProvider`, `MetaAIProvider`).
+Each is `OpenAi` with its vendor's rules: every request and answer is Chat
+Completions', read and bounded as `OpenAi`'s are. Its configuration
+(`DeepSeekConfig`, `KimiConfig`, `MiniMaxConfig`, `XaiConfig`,
+`CerebrasConfig`, `QwenConfig`, `MetaConfig`) has `OpenAiConfig`'s members
+with its vendor's endpoint and defaults, and Cerebras's and Qwen's members
+of their own.
 
 ```rust
 use roomkit_providers_openai::{Kimi, KimiConfig};
@@ -180,6 +185,18 @@ What a vendor's provider does that `OpenAi` does not:
 | Temperature by default | sent | not sent | not sent |
 | Usage | cache hits read from `prompt_cache_hit_tokens`, not billed as input | as `OpenAi` | as `OpenAi` |
 
+| | xAI | Cerebras | Qwen | Meta |
+| --- | --- | --- | --- | --- |
+| A round's earlier reasoning goes back in | the field the configuration names, else nowhere | `reasoning`, on a round that reasoned | the field the configuration names, else nowhere | the field the configuration names, else nowhere |
+| A reasoning setting goes as | `reasoning_effort`, withheld from a model its catalogue lists without `thinking` | `reasoning_effort`, beside the configuration's `reasoning_format` (`parsed` by default) and `clear_thinking` | `enable_thinking`, and `thinking_budget` on a turn that thinks; no effort | `reasoning_effort`; `minimal` for a turn that states off |
+| On a turn with tools, the setting | is sent | is sent | is sent | is sent |
+| Tool names on its own endpoint | not checked | not checked | not checked | not checked |
+| A response schema, unless the configuration says | taken | taken | refused before the request | taken |
+| Token bound by default | 1024, as `max_completion_tokens` | 1024, as `max_completion_tokens` | 1024, as `max_tokens` | 1024, as `max_completion_tokens` |
+| Temperature by default | sent | sent | sent | sent |
+| Usage | reasoning reported beside the completion counts as output | as `OpenAi`; a stream asks for none by default | as `OpenAi` | as `OpenAi` |
+| `list_models` | the endpoint's | the endpoint's | its catalogue, as Model Studio lists none | the endpoint's chat models (`muse-spark`, `muse-wonder`, `muse-ember`) |
+
 - **A model the vendor's catalogue does not name** is sent what the turn
   states as it is, and reads images when it is served behind another base
   URL, where the server decides. DeepSeek's provider reads such a model's
@@ -187,17 +204,29 @@ What a vendor's provider does that `OpenAi` does not:
 - **A turn that states off** (a thinking budget of 0, `enable_thinking`
   false, or an effort of `none`) is sent the least its model takes: `low`
   on the models of Kimi's catalogue and on MiniMax-M3.1-Flash, which cannot
-  stop reasoning. DeepSeek and MiniMax-M3 are sent
-  `thinking: {"type": "disabled"}`.
-- **A failure names its vendor** (`deepseek`, `kimi`, `minimax`), and
-  `list_models` fills what its vendor's catalogue knows of a model.
-- **`thinking_field` and `supports_reasoning_effort_with_tools` are
-  refused** when the provider is built: the vendor's own rule decides both.
+  stop reasoning, the floor of Cerebras's catalogue entry (`low` on
+  `gpt-oss-120b`), `minimal` on every Muse chat model. DeepSeek and
+  MiniMax-M3 are sent `thinking: {"type": "disabled"}`, Qwen
+  `enable_thinking: false`.
+- **A failure names its vendor** (`deepseek`, `kimi`, `minimax`, `xai`,
+  `cerebras`, `qwen`, `meta`), and `list_models` fills what its vendor's
+  catalogue knows of a model.
+- **`supports_reasoning_effort_with_tools` is refused** when the provider
+  is built, and so is `thinking_field` by DeepSeek's, Kimi's, MiniMax's and
+  Cerebras's: the vendor's own rule decides. xAI's, Qwen's and Meta's take a
+  thinking field, for a server of one's own.
+- **xAI's and Meta's configurations name a model** for a form that leaves it
+  out (`grok-4.7`, `muse-spark-1.3`), as Python's do. Meta's refuses a key
+  that is not ASCII, which no header can carry, and never says the key.
+- **Cerebras's arrays are read back**: an array argument the model wrote as
+  the JSON text of the array is read as the array where the tool's schema
+  declares one, in a whole answer and in a stream's whole calls.
 - A vendor's provider speaks Chat Completions only, with the
   configuration's key: it has no `api`, no `token_source` and no `vision`.
 
-The wire cases do not cover these three providers yet: they are held to
-the tests of RoomKit's Rust core for them, which name Python's.
+Each is held to the cases captured on its Python provider
+(`tests/fixtures/python_<vendor>_cases.json`), every one replayed as
+Python, and its configuration to the JSON forms of Python's.
 
 ## A source of tokens
 

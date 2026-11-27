@@ -214,7 +214,38 @@ pub(crate) fn usage_of(raw: &Value, vendor: Vendor) -> Metadata {
     if written > 0 {
         usage.insert("cache_creation_input_tokens".to_owned(), written.into());
     }
-    with_reasoning(usage, raw)
+    let usage = with_reasoning(usage, raw);
+    if !vendor.adds_reasoning_reported_apart() {
+        return usage;
+    }
+    reasoning_apart(usage, raw, prompt, completion)
+}
+
+/// `usage` of a vendor that may report reasoning beside its completion
+/// (Python's `XAIAIProvider._usage_from`): the reasoning joins the output
+/// only when the total says it was reported apart, the prompt, the
+/// completion and the reasoning, so that a usage shaped like `OpenAI`'s,
+/// its reasoning inside the completion, is never counted twice. An output
+/// the server left out stays unknown.
+fn reasoning_apart(
+    mut usage: Metadata,
+    raw: &Value,
+    prompt: Option<u64>,
+    completion: Option<u64>,
+) -> Metadata {
+    let reasoning = usage
+        .get("reasoning_tokens")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let apart = prompt.unwrap_or_default() + completion.unwrap_or_default() + reasoning;
+    let total = count(raw.get("total_tokens"));
+    if reasoning == 0 || total != Some(apart) {
+        return usage;
+    }
+    if let Some(output) = usage.get("output_tokens").and_then(Value::as_u64) {
+        usage.insert("output_tokens".to_owned(), (output + reasoning).into());
+    }
+    usage
 }
 
 /// The usage of a server that reports `hit` cache hits as DeepSeek does

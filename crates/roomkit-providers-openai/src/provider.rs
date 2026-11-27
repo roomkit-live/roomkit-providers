@@ -175,9 +175,14 @@ impl OpenAi {
         };
         let client = match vendor {
             Vendor::LlamaCpp { .. } => Client::direct(settings),
-            Vendor::OpenAi | Vendor::Kimi | Vendor::MiniMax | Vendor::DeepSeek { .. } => {
-                Client::new(settings)
-            }
+            Vendor::OpenAi
+            | Vendor::Kimi
+            | Vendor::MiniMax
+            | Vendor::DeepSeek { .. }
+            | Vendor::Xai
+            | Vendor::Cerebras { .. }
+            | Vendor::Qwen { .. }
+            | Vendor::Meta => Client::new(settings),
         }?;
         let exit = exit_of(&config, vendor, &client, &chat);
         Ok(Self {
@@ -399,9 +404,16 @@ impl AiProvider for OpenAi {
     /// (embeddings, audio, a local server's own) pass through, the speech
     /// models tagged.
     async fn list_models(&self) -> Result<Vec<ModelInfo>, ProviderError> {
+        // A vendor that publishes no listing: its catalogue is what an
+        // account reaches, and nothing is asked.
+        if self.vendor.lists_its_catalogue() {
+            return Ok(self.vendor.models().to_vec());
+        }
         let live = self.live_models().await;
         let live = live.map_err(|failure| self.exit.leave(&failure))?;
-        Ok(listing(live, self.vendor.models()))
+        let listed = listing(live, self.vendor.models());
+        let kept = |model: &ModelInfo| self.vendor.keeps_listed(&model.id);
+        Ok(listed.into_iter().filter(kept).collect())
     }
 
     fn supports_streaming(&self) -> bool {

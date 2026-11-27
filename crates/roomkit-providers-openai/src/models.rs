@@ -29,6 +29,10 @@ const fn written(vendor: Vendor) -> &'static str {
         Vendor::DeepSeek { .. } => include_str!("../catalog/deepseek.json"),
         Vendor::Kimi => include_str!("../catalog/kimi.json"),
         Vendor::MiniMax => include_str!("../catalog/minimax.json"),
+        Vendor::Xai => include_str!("../catalog/xai.json"),
+        Vendor::Cerebras { .. } => include_str!("../catalog/cerebras.json"),
+        Vendor::Qwen { .. } => include_str!("../catalog/qwen.json"),
+        Vendor::Meta => include_str!("../catalog/meta.json"),
     }
 }
 
@@ -44,9 +48,24 @@ static OPENAI: Catalogue = LazyLock::new(|| read(Vendor::OpenAi).unwrap_or_defau
 static DEEPSEEK: Catalogue = LazyLock::new(|| read(DEEPSEEK_VENDOR).unwrap_or_default());
 static KIMI: Catalogue = LazyLock::new(|| read(Vendor::Kimi).unwrap_or_default());
 static MINIMAX: Catalogue = LazyLock::new(|| read(Vendor::MiniMax).unwrap_or_default());
+static XAI: Catalogue = LazyLock::new(|| read(Vendor::Xai).unwrap_or_default());
+static CEREBRAS: Catalogue = LazyLock::new(|| read(CEREBRAS_VENDOR).unwrap_or_default());
+static QWEN: Catalogue = LazyLock::new(|| read(QWEN_VENDOR).unwrap_or_default());
+static META: Catalogue = LazyLock::new(|| read(Vendor::Meta).unwrap_or_default());
 
 /// DeepSeek, whatever its configuration states: its catalogue is one.
 const DEEPSEEK_VENDOR: Vendor = Vendor::DeepSeek {
+    enable_thinking: None,
+};
+
+/// Cerebras, whatever its configuration states.
+const CEREBRAS_VENDOR: Vendor = Vendor::Cerebras {
+    reasoning_format: None,
+    clear_thinking: None,
+};
+
+/// Qwen, whatever its configuration states.
+const QWEN_VENDOR: Vendor = Vendor::Qwen {
     enable_thinking: None,
 };
 
@@ -58,6 +77,10 @@ pub(crate) fn of(vendor: Vendor) -> &'static [ModelInfo] {
         Vendor::DeepSeek { .. } => &DEEPSEEK,
         Vendor::Kimi => &KIMI,
         Vendor::MiniMax => &MINIMAX,
+        Vendor::Xai => &XAI,
+        Vendor::Cerebras { .. } => &CEREBRAS,
+        Vendor::Qwen { .. } => &QWEN,
+        Vendor::Meta => &META,
     }
 }
 

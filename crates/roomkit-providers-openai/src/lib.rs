@@ -7,8 +7,9 @@
 //! - [`OpenAiConfig`]: what the provider is configured with, the
 //!   `OpenAIConfig` of `RoomKit`'s Python implementation: the same names,
 //!   the same defaults and the same JSON form.
-//! - [`DeepSeek`], [`Kimi`] and [`MiniMax`]: the providers of three vendors
-//!   that speak Chat Completions with rules of their own (RFC §6.4, §6.7),
+//! - [`DeepSeek`], [`Kimi`], [`MiniMax`], [`Xai`], [`Cerebras`], [`Qwen`]
+//!   and [`Meta`]: the providers of seven vendors that speak Chat
+//!   Completions with rules of their own (RFC §6.4, §6.7),
 //!   each with its configuration: where a round's earlier reasoning goes
 //!   back, how a reasoning setting is sent, the tool names the vendor
 //!   takes. Each is the choice of its vendor's rules, on the vendor's API
@@ -34,6 +35,7 @@
 
 mod answer;
 mod call_slots;
+mod cerebras;
 mod config;
 mod deepseek;
 mod dialect;
@@ -41,10 +43,12 @@ mod endpoint;
 mod failure;
 mod folding;
 mod kimi;
+mod meta;
 mod minimax;
 mod models;
 mod names;
 mod provider;
+mod qwen;
 mod reasoning;
 #[cfg(test)]
 mod replay;
@@ -55,13 +59,18 @@ mod stream;
 mod tests;
 mod think_tags;
 mod vendor;
+mod xai;
 
+pub use cerebras::{Cerebras, CerebrasConfig, CerebrasReasoningFormat};
 pub use config::{OpenAiApi, OpenAiConfig};
 pub use deepseek::{DeepSeek, DeepSeekConfig};
 pub use kimi::{Kimi, KimiConfig};
+pub use meta::{Meta, MetaConfig};
 pub use minimax::{MiniMax, MiniMaxConfig};
 pub use provider::OpenAi;
 #[cfg(feature = "replay")]
 #[doc(hidden)]
 pub use provider::ReplayWaits;
+pub use qwen::{Qwen, QwenConfig};
 pub use roomkit_providers_client::{TokenError, TokenFuture, TokenSource};
+pub use xai::{Xai, XaiConfig};

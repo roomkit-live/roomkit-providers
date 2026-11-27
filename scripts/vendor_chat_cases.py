@@ -21,10 +21,12 @@ from openai_chat_cases import (
     LOOKUP,
     ROUND,
     TOOLS,
+    chunk,
     completion,
     failed,
     listed,
     said,
+    sse,
 )
 from wire_capture import (
     GENERATE,
@@ -511,9 +513,327 @@ _minimax(
     answer(completion()),
 )
 
+# A round that reasoned, its reasoning sent back where the configuration
+# names it (a vendor that takes a thinking field).
+EARLIER_REASONING = {**TOOLS, "messages": ROUND}
+
+
+def usage(prompt: int, completion_: int, total: int, **details: Any) -> dict[str, Any]:
+    """A usage object: its counts, and the details given."""
+    return {
+        "prompt_tokens": prompt,
+        "completion_tokens": completion_,
+        "total_tokens": total,
+        **details,
+    }
+
+
+REASONING_DETAILS = {"completion_tokens_details": {"reasoning_tokens": 30}}
+
+XAI_CASES: list[Case] = []
+_xai = registrar(XAI_CASES)
+XAI = {"api_key": KEY, "model": "grok-4.7"}
+common(_xai, XAI, {**XAI, "base_url": PROXY, "model": "grok-local"})
+_xai(
+    "model_left_out",
+    "catalogue",
+    GENERATE,
+    {"api_key": KEY},
+    asked(reasoning_effort="high"),
+    answer(completion()),
+)
+_xai(
+    "a_model_that_does_not_reason",
+    "reasoning catalogue",
+    GENERATE,
+    {**XAI, "model": "grok-4.20-0309-non-reasoning"},
+    asked(reasoning_effort="high"),
+    answer(completion()),
+)
+_xai(
+    "a_model_that_does_not_reason_on_a_tool_turn",
+    "reasoning catalogue tools",
+    GENERATE,
+    {**XAI, "model": "grok-4.20-0309-non-reasoning", "reasoning_effort": "low"},
+    TOOLS,
+    answer(completion()),
+)
+_xai(
+    "usage_with_reasoning_reported_apart",
+    "usage",
+    GENERATE,
+    XAI,
+    HELLO,
+    answer(completion(usage=usage(12, 10, 52, **REASONING_DETAILS))),
+)
+_xai(
+    "usage_with_reasoning_inside_the_completion",
+    "usage",
+    GENERATE,
+    XAI,
+    HELLO,
+    answer(completion(usage=usage(12, 40, 52, **REASONING_DETAILS))),
+)
+_xai(
+    "usage_with_reasoning_and_no_total",
+    "usage",
+    GENERATE,
+    XAI,
+    HELLO,
+    answer(
+        completion(
+            usage={"prompt_tokens": 12, "completion_tokens": 10, **REASONING_DETAILS},
+        )
+    ),
+)
+_xai(
+    "thinking_field_of_the_configuration",
+    "round_reasoning tools",
+    GENERATE,
+    {**XAI, "thinking_field": "reasoning_content"},
+    EARLIER_REASONING,
+    answer(completion()),
+)
+
+CEREBRAS_CASES: list[Case] = []
+_cerebras = registrar(CEREBRAS_CASES)
+CEREBRAS = {"api_key": KEY, "model": "gpt-oss-120b"}
+common(_cerebras, CEREBRAS, {**CEREBRAS, "base_url": PROXY, "model": "cerebras-local"})
+QWEN_ON_CEREBRAS = {**CEREBRAS, "model": "qwen-3.8-27b"}
+for _effort in ("none", "low", "high"):
+    _cerebras(
+        f"qwen_reasoning_effort_{_effort}",
+        "reasoning catalogue",
+        GENERATE,
+        QWEN_ON_CEREBRAS,
+        asked(reasoning_effort=_effort),
+        answer(completion()),
+    )
+for _format in ("raw", "hidden", "none", None):
+    _cerebras(
+        f"reasoning_format_{_format or 'null'}",
+        "reasoning",
+        GENERATE,
+        {**CEREBRAS, "reasoning_format": _format},
+        HELLO,
+        answer(completion()),
+    )
+for _clear in (True, False):
+    _cerebras(
+        f"clear_thinking_{str(_clear).lower()}",
+        "reasoning",
+        GENERATE,
+        {**QWEN_ON_CEREBRAS, "clear_thinking": _clear},
+        HELLO,
+        answer(completion()),
+    )
+_cerebras(
+    "stream_usage_asked_by_the_configuration",
+    "stream",
+    STREAM,
+    {**CEREBRAS, "include_stream_usage": True},
+    HELLO,
+    stream(said("Hello", " there.")),
+)
+TAGS = {
+    "name": "tag_order",
+    "description": "Tag an order",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "number": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}},
+            "lines": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {"codes": {"type": "array", "items": {"type": "integer"}}},
+                },
+            },
+            "note": {"type": "string"},
+        },
+    },
+}
+TAGGING = {**HELLO, "tools": [TAGS]}
+for _name, _arguments in (
+    ("an_array_written_as_text", '{"number": "A-1", "tags": "[\\"red\\", \\"urgent\\"]"}'),
+    ("an_array_already_an_array", '{"number": "A-1", "tags": ["red"]}'),
+    ("a_text_that_is_no_array", '{"number": "[1]", "note": "[not an array]"}'),
+    ("an_array_whose_text_does_not_read", '{"tags": "[red, urgent"}'),
+    ("a_text_that_reads_as_no_array", '{"tags": "{\\"a\\": 1}"}'),
+    ("arrays_nested_as_text", '{"lines": [{"codes": "[1, 2]"}, {"codes": [3]}]}'),
+    ("an_unknown_member_left_alone", '{"other": "[1, 2]"}'),
+):
+    _cerebras(
+        f"tool_call_with_{_name}",
+        "tools arguments",
+        GENERATE,
+        CEREBRAS,
+        TAGGING,
+        answer(
+            completion(
+                None,
+                finish="tool_calls",
+                tool_calls=[
+                    {
+                        "id": "call_1",
+                        "type": "function",
+                        "function": {"name": "tag_order", "arguments": _arguments},
+                    }
+                ],
+            )
+        ),
+    )
+_cerebras(
+    "streamed_tool_call_with_an_array_written_as_text",
+    "tools arguments stream",
+    STREAM,
+    CEREBRAS,
+    TAGGING,
+    stream(
+        sse(
+            chunk({"role": "assistant", "content": None}),
+            chunk(
+                {
+                    "tool_calls": [
+                        {
+                            "index": 0,
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                                "name": "tag_order",
+                                "arguments": '{"tags": "[\\"red\\"]"}',
+                            },
+                        }
+                    ]
+                }
+            ),
+            chunk({}, finish="tool_calls"),
+        )
+    ),
+)
+_cerebras(
+    "a_catalogued_model_that_sees_images",
+    "catalogue",
+    GENERATE,
+    {**CEREBRAS, "model": "gemma-4-31b"},
+    HELLO,
+    answer(completion()),
+)
+
+QWEN_CASES: list[Case] = []
+_qwen = refusing(
+    registrar(QWEN_CASES),
+    frozenset({"response_schema", "models_listed", "models_listed_behind_a_base_url"}),
+)
+QWEN = {"api_key": KEY, "model": "qwen3.7-max"}
+common(_qwen, QWEN, {**QWEN, "base_url": PROXY, "model": "qwen-local"})
+for _enabled in (True, False):
+    _qwen(
+        f"thinking_of_the_configuration_{str(_enabled).lower()}",
+        "reasoning",
+        GENERATE,
+        {**QWEN, "enable_thinking": _enabled},
+        HELLO,
+        answer(completion()),
+    )
+_qwen(
+    "thinking_budget_with_thinking_on",
+    "reasoning",
+    GENERATE,
+    {**QWEN, "enable_thinking": True},
+    asked(thinking_budget=512),
+    answer(completion()),
+)
+_qwen(
+    "thinking_budget_over_the_configuration_off",
+    "reasoning",
+    GENERATE,
+    {**QWEN, "enable_thinking": False},
+    asked(thinking_budget=512),
+    answer(completion()),
+)
+_qwen(
+    "thinking_of_the_request_over_the_configuration",
+    "reasoning",
+    GENERATE,
+    {**QWEN, "enable_thinking": True},
+    asked(enable_thinking=False),
+    answer(completion()),
+)
+_qwen(
+    "response_schema_stated_by_the_configuration",
+    "response_schema",
+    GENERATE,
+    {**QWEN, "supports_response_schema": True},
+    asked(response_schema=CITY),
+    answer(completion('{"city": "Paris"}')),
+)
+_qwen(
+    "models_listed_behind_a_base_url", "listing proxy", LISTING, {**QWEN, "base_url": PROXY}, HELLO
+)
+_qwen(
+    "a_catalogued_model_that_sees_images",
+    "catalogue",
+    GENERATE,
+    {**QWEN, "model": "qwen3.7-plus"},
+    HELLO,
+    answer(completion()),
+)
+_qwen(
+    "thinking_field_of_the_configuration",
+    "round_reasoning tools",
+    GENERATE,
+    {**QWEN, "thinking_field": "reasoning_content"},
+    EARLIER_REASONING,
+    answer(completion()),
+)
+
+META_CASES: list[Case] = []
+_meta = registrar(META_CASES)
+META = {"api_key": KEY, "model": "muse-spark-1.3"}
+common(_meta, META, {**META, "base_url": PROXY, "model": "muse-local"})
+_meta(
+    "model_left_out",
+    "catalogue",
+    GENERATE,
+    {"api_key": KEY},
+    asked(reasoning_effort="none"),
+    answer(completion()),
+)
+_meta(
+    "chat_models_of_the_listing",
+    "listing",
+    LISTING,
+    META,
+    HELLO,
+    answer(
+        listed(
+            "muse-spark-1.3",
+            "muse-wonder-1.0",
+            "muse-ember-1.0",
+            "muse-image-1.0",
+            "muse-voice-1.0",
+            "muse-spark-next",
+        )
+    ),
+)
+_meta(
+    "thinking_field_of_the_configuration",
+    "round_reasoning tools",
+    GENERATE,
+    {**META, "thinking_field": "reasoning_content"},
+    EARLIER_REASONING,
+    answer(completion()),
+)
+
 # The table of each vendor, by the name its fixture is written under.
 VENDOR_CASES: dict[str, list[Case]] = {
     "deepseek": DEEPSEEK_CASES,
     "kimi": KIMI_CASES,
     "minimax": MINIMAX_CASES,
+    "xai": XAI_CASES,
+    "cerebras": CEREBRAS_CASES,
+    "qwen": QWEN_CASES,
+    "meta": META_CASES,
 }

@@ -18,8 +18,10 @@ macro_rules! vendor_provider {
             ///
             /// A failure before any request: a configuration stating
             /// `supports_reasoning_effort_with_tools`, which the vendor's
-            /// own rule makes moot, or `thinking_field`, as the provider
-            /// sends reasoning where its vendor reads it; and what
+            /// own rule makes moot, or `thinking_field` where the
+            /// configuration takes none, as the provider sends reasoning
+            /// where its vendor reads it; a key that is
+            /// not ASCII, where the configuration refuses one; and what
             /// [`OpenAi::new`]($crate::OpenAi::new) refuses.
             pub fn new(config: $config) -> Result<Self, roomkit_ai::ProviderError> {
                 let vendor = config.vendor();
@@ -31,9 +33,12 @@ macro_rules! vendor_provider {
                     let config = stringify!($config);
                     return refused($crate::vendor::refused_tool_turn_setting(config));
                 }
-                if config.thinking_field.is_some() {
+                if config.thinking_field.is_some() && !$config::TAKES_THINKING_FIELD {
                     let config = stringify!($config);
                     return refused($crate::vendor::refused_thinking_field(config));
+                }
+                if $config::ASCII_KEY && !config.api_key.is_ascii() {
+                    return refused($crate::vendor::refused_key());
                 }
                 let inner = $crate::OpenAi::for_vendor(config.into_openai(), vendor)?;
                 Ok(Self { inner })
@@ -119,7 +124,11 @@ macro_rules! vendor_provider {
                 &self,
                 context: &roomkit_ai::AiContext,
             ) -> Result<roomkit_ai::AiResponse, roomkit_ai::ProviderError> {
-                self.inner.generate(context).await
+                let response = self.inner.generate(context).await?;
+                if !self.inner.vendor().repairs_arguments() {
+                    return Ok(response);
+                }
+                Ok($crate::vendor::repaired_response(response, &context.tools))
             }
 
             fn generate_stream<'a>(
@@ -133,7 +142,11 @@ macro_rules! vendor_provider {
                 &'a self,
                 context: &'a roomkit_ai::AiContext,
             ) -> roomkit_ai::ProviderStream<'a> {
-                self.inner.generate_structured_stream(context)
+                let stream = self.inner.generate_structured_stream(context);
+                if !self.inner.vendor().repairs_arguments() {
+                    return stream;
+                }
+                $crate::vendor::repaired_stream(stream, &context.tools)
             }
         }
     };
@@ -157,6 +170,7 @@ macro_rules! into_openai {
             use_max_completion_tokens: Some(config.use_max_completion_tokens),
             supports_custom_temperature: Some(config.supports_custom_temperature),
             reasoning_effort: config.reasoning_effort,
+            thinking_field: config.thinking_field,
             default_headers: config.default_headers,
             extra_body: config.extra_body,
             supports_response_schema: config.supports_response_schema,
@@ -171,22 +185,28 @@ pub(crate) use into_openai;
 /// A vendor's configuration read and written as the JSON form of its Python
 /// class, a derivative of `OpenAIConfig`: `OpenAIConfig`'s members in its
 /// order, the vendor's defaults for what a form leaves out, then the
-/// vendor's own switches (`Option<bool>`, `null` taken). The two members
-/// the vendor's own rule makes moot, `supports_reasoning_effort_with_tools`
-/// and `thinking_field`, are read only as `null`, as Python refuses any other
-/// value. Each rule of `OpenAiConfig`'s form holds otherwise: an object only,
-/// the timeouts in seconds, the key written masked.
+/// vendor's own members, each typed, its default the configuration's own
+/// when a form leaves it out, `null` read as `None`. The configuration says
+/// whether it takes a thinking field (`TAKES_THINKING_FIELD`), whether it
+/// refuses a key that is not ASCII (`ASCII_KEY`) and which model a form that
+/// names none asks (`MODEL`, `None` where one is required);
+/// `supports_reasoning_effort_with_tools`, which every vendor's own rule makes
+/// moot, is read only as `null`, as Python refuses any other value. Each rule
+/// of `OpenAiConfig`'s form holds otherwise: an object only, the timeouts in
+/// seconds, the key written masked.
 macro_rules! vendor_config_form {
-    ($config:ident, $expecting:literal $(, $own:ident)*) => {
+    ($config:ident, $expecting:literal $(, $own:ident: $ty:ty)*) => {
         const _: () = {
             use std::collections::BTreeMap;
             use std::time::Duration;
 
             use roomkit::model::Metadata;
             use roomkit_providers_client::ObjectOnly;
+            use serde::de::Error as _;
             use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-            use $crate::config::form::{MASK, left_null, seconds};
+            use $crate::config::form::{MASK, left_null, present, seconds};
+            use $crate::vendor::NOT_ASCII;
 
             fn defaults() -> $config {
                 $config::new("", "")
@@ -223,7 +243,9 @@ macro_rules! vendor_config_form {
                 api_key: String,
                 #[serde(default = "base_url")]
                 base_url: String,
-                model: String,
+                // Left out, the vendor's model; `null` is refused.
+                #[serde(default, deserialize_with = "present")]
+                model: Option<String>,
                 #[serde(default = "max_tokens")]
                 max_tokens: Option<u32>,
                 #[serde(default = "timeout", deserialize_with = "seconds")]
@@ -248,18 +270,19 @@ macro_rules! vendor_config_form {
                 supports_response_schema: Option<bool>,
                 #[serde(default)]
                 supports_response_schema_with_tools: Option<bool>,
-                // Read for their refusal of a value, never kept.
+                // Read for its refusal of a value, never kept.
                 #[serde(
                     default,
                     rename = "supports_reasoning_effort_with_tools",
                     deserialize_with = "left_null"
                 )]
                 _tool_turn_setting: (),
-                #[serde(default, rename = "thinking_field", deserialize_with = "left_null")]
-                _thinking_field: (),
+                #[serde(default)]
+                thinking_field: Option<String>,
                 $(
-                    #[serde(default)]
-                    $own: Option<bool>,
+                    // Left out, the configuration's default; `null`, `None`.
+                    #[serde(default, deserialize_with = "present")]
+                    $own: Option<$ty>,
                 )*
             }
 
@@ -268,10 +291,21 @@ macro_rules! vendor_config_form {
                 /// number.
                 fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
                     let form = Form::deserialize(ObjectOnly(deserializer))?;
+                    if form.thinking_field.is_some() && !$config::TAKES_THINKING_FIELD {
+                        return Err(D::Error::custom(
+                            "the vendor's own rule decides thinking_field: it is left unset",
+                        ));
+                    }
+                    if $config::ASCII_KEY && !form.api_key.is_ascii() {
+                        return Err(D::Error::custom(NOT_ASCII));
+                    }
+                    let Some(model) = form.model.or($config::MODEL.map(str::to_owned)) else {
+                        return Err(D::Error::missing_field("model"));
+                    };
                     Ok(Self {
                         api_key: form.api_key,
                         base_url: form.base_url,
-                        model: form.model,
+                        model,
                         max_tokens: form.max_tokens,
                         timeout: form.timeout,
                         connect_timeout: form.connect_timeout,
@@ -281,12 +315,12 @@ macro_rules! vendor_config_form {
                         supports_custom_temperature: form.supports_custom_temperature,
                         reasoning_effort: form.reasoning_effort,
                         supports_reasoning_effort_with_tools: None,
-                        thinking_field: None,
+                        thinking_field: form.thinking_field,
                         supports_response_schema: form.supports_response_schema,
                         supports_response_schema_with_tools: form.supports_response_schema_with_tools,
                         default_headers: form.default_headers,
                         extra_body: form.extra_body,
-                        $($own: form.$own,)*
+                        $($own: form.$own.unwrap_or_else(|| defaults().$own),)*
                     })
                 }
             }
@@ -312,7 +346,7 @@ macro_rules! vendor_config_form {
                 supports_response_schema_with_tools: Option<bool>,
                 supports_reasoning_effort_with_tools: Option<bool>,
                 thinking_field: Option<&'c str>,
-                $($own: Option<bool>,)*
+                $($own: &'c $ty,)*
             }
 
             impl Serialize for $config {
@@ -335,7 +369,7 @@ macro_rules! vendor_config_form {
                         supports_response_schema_with_tools: self.supports_response_schema_with_tools,
                         supports_reasoning_effort_with_tools: self.supports_reasoning_effort_with_tools,
                         thinking_field: self.thinking_field.as_deref(),
-                        $($own: self.$own,)*
+                        $($own: &self.$own,)*
                     }
                     .serialize(serializer)
                 }

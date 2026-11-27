@@ -71,6 +71,15 @@ pub(crate) const KIMI_CHAT: ChatDialect<'static> = ChatDialect {
     round_thinking_placeholder: " ",
 };
 
+/// Cerebras's: a model's earlier reasoning in a `reasoning` field beside its
+/// content, tool rounds included, none on a round that did not reason
+/// (Python's `CerebrasAIProvider._chat_dialect`).
+pub(crate) const CEREBRAS_CHAT: ChatDialect<'static> = ChatDialect {
+    thinking_field: Some("reasoning"),
+    round_thinking_required: false,
+    round_thinking_placeholder: "",
+};
+
 impl<'a> ChatDialect<'a> {
     /// This rendering, reasoning in the field the configuration names when
     /// it names one (Python's `OpenAIAIProvider._dialect`).

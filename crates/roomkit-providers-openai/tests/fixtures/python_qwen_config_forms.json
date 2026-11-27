@@ -1,0 +1,1272 @@
+{
+    "generator": "scripts/generate_openai_config_forms.py",
+    "roomkit_version": "0.117.0.dev0",
+    "python_version": "3.13.3",
+    "model": "QwenConfig",
+    "examples": [
+        {
+            "name": "required_alone",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "every_member",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "base_url": "https://llm.example/v1",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": "high",
+                "default_headers": {
+                    "X-Route": "blue",
+                    "X-Tenant": "acme"
+                },
+                "extra_body": {
+                    "top_k": 40,
+                    "guided_choice": [
+                        "yes",
+                        "no"
+                    ],
+                    "min_p": 0.05
+                },
+                "supports_response_schema": true,
+                "supports_response_schema_with_tools": false,
+                "thinking_field": "reasoning_content",
+                "enable_thinking": true
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://llm.example/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 4096,
+                "timeout": 120.0,
+                "connect_timeout": 2.5,
+                "max_retries": 3,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": false,
+                "reasoning_effort": "high",
+                "default_headers": {
+                    "X-Route": "blue",
+                    "X-Tenant": "acme"
+                },
+                "extra_body": {
+                    "top_k": 40,
+                    "guided_choice": [
+                        "yes",
+                        "no"
+                    ],
+                    "min_p": 0.05
+                },
+                "supports_response_schema": true,
+                "supports_response_schema_with_tools": false,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": "reasoning_content",
+                "enable_thinking": true
+            }
+        },
+        {
+            "name": "behind_a_base_url",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "base_url": "http://localhost:11434/v1"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "http://localhost:11434/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "no_token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": null
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": null,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "a_token_bound",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": 2048
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "empty_key",
+            "given": {
+                "api_key": "",
+                "model": "qwen3.7-max"
+            },
+            "form": {
+                "api_key": "",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "empty_model",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": ""
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "timeouts_as_integers",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "timeout": 120,
+                "connect_timeout": 2
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 120.0,
+                "connect_timeout": 2.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "timeouts_with_fractions",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "timeout": 0.25,
+                "connect_timeout": 1.5
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 0.25,
+                "connect_timeout": 1.5,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "retries",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_retries": 2
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 2,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "no_stream_usage",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "include_stream_usage": false
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "stream_usage",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "include_stream_usage": true
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "switches_stated",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "reasoning_effort",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "reasoning_effort": "low"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": "low",
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "headers",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "default_headers": {
+                    "Authorization": "Basic placeholder",
+                    "X-A": "1"
+                }
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": {
+                    "Authorization": "Basic placeholder",
+                    "X-A": "1"
+                },
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "extra_body",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "extra_body": {
+                    "repetition_penalty": 1.1,
+                    "nested": {
+                        "b": 1,
+                        "a": 2
+                    }
+                }
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": {
+                    "repetition_penalty": 1.1,
+                    "nested": {
+                        "b": 1,
+                        "a": 2
+                    }
+                },
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "response_schema_switches",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "supports_response_schema": false
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": false,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "tool_turn_setting_left_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "supports_reasoning_effort_with_tools": null
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "thinking_field_left_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "thinking_field": null
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "members_python_does_not_have",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "vision": true,
+                "organization": "acme"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "thinking_field",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "thinking_field": "reasoning"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": "reasoning",
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "enable_thinking_true",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "enable_thinking": true
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": true
+            }
+        },
+        {
+            "name": "enable_thinking_false",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "enable_thinking": false
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": false
+            }
+        },
+        {
+            "name": "enable_thinking_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "enable_thinking": null
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        }
+    ],
+    "rejected": [
+        {
+            "name": "no_key",
+            "given": {
+                "model": "qwen3.7-max"
+            }
+        },
+        {
+            "name": "no_model",
+            "given": {
+                "api_key": "placeholder-not-a-key"
+            }
+        },
+        {
+            "name": "key_null",
+            "given": {
+                "api_key": null,
+                "model": "qwen3.7-max"
+            }
+        },
+        {
+            "name": "key_a_number",
+            "given": {
+                "api_key": 42,
+                "model": "qwen3.7-max"
+            }
+        },
+        {
+            "name": "model_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": null
+            }
+        },
+        {
+            "name": "model_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": 4
+            }
+        },
+        {
+            "name": "base_url_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "base_url": 8080
+            }
+        },
+        {
+            "name": "timeout_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "timeout": null
+            }
+        },
+        {
+            "name": "timeout_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "timeout": "soon"
+            }
+        },
+        {
+            "name": "connect_timeout_a_list",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "connect_timeout": [
+                    5
+                ]
+            }
+        },
+        {
+            "name": "max_tokens_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": "many"
+            }
+        },
+        {
+            "name": "max_tokens_with_a_fraction",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": 10.5
+            }
+        },
+        {
+            "name": "max_retries_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_retries": null
+            }
+        },
+        {
+            "name": "stream_usage_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "include_stream_usage": null
+            }
+        },
+        {
+            "name": "switch_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "use_max_completion_tokens": null
+            }
+        },
+        {
+            "name": "other_switch_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "supports_custom_temperature": null
+            }
+        },
+        {
+            "name": "switch_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "supports_response_schema": "perhaps"
+            }
+        },
+        {
+            "name": "effort_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "reasoning_effort": 3
+            }
+        },
+        {
+            "name": "header_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "default_headers": {
+                    "X-A": 1
+                }
+            }
+        },
+        {
+            "name": "headers_a_list",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "default_headers": [
+                    [
+                        "X-A",
+                        "1"
+                    ]
+                ]
+            }
+        },
+        {
+            "name": "extra_body_a_list",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "extra_body": [
+                    1
+                ]
+            }
+        },
+        {
+            "name": "thinking_field_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "thinking_field": 1
+            }
+        },
+        {
+            "name": "a_list",
+            "given": [
+                "placeholder-not-a-key",
+                null,
+                "gpt-4o"
+            ]
+        },
+        {
+            "name": "a_text",
+            "given": "gpt-4o"
+        },
+        {
+            "name": "null",
+            "given": null
+        },
+        {
+            "name": "tool_turn_setting_stated",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "supports_reasoning_effort_with_tools": true
+            }
+        },
+        {
+            "name": "tool_turn_setting_off",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "supports_reasoning_effort_with_tools": false
+            }
+        },
+        {
+            "name": "base_url_null",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "base_url": null
+            }
+        },
+        {
+            "name": "enable_thinking_a_word",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "enable_thinking": "perhaps"
+            }
+        }
+    ],
+    "converted": [
+        {
+            "name": "timeout_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "timeout": "30"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "timeout_below_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "timeout": -1.0
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": -1.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "max_tokens_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": "2048"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "max_tokens_a_float",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": 2048.0
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 2048,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "max_tokens_below_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": -5
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": -5,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "max_tokens_past_32_bits",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_tokens": 4294967296
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 4294967296,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "max_retries_below_zero",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_retries": -1
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": -1,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "max_retries_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "max_retries": "2"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 2,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "stream_usage_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "include_stream_usage": 0
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": false,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "switch_a_text",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "use_max_completion_tokens": "true"
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": true,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": null,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        },
+        {
+            "name": "switch_a_number",
+            "given": {
+                "api_key": "placeholder-not-a-key",
+                "model": "qwen3.7-max",
+                "supports_response_schema": 1
+            },
+            "form": {
+                "api_key": "**********",
+                "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                "model": "qwen3.7-max",
+                "max_tokens": 1024,
+                "timeout": 30.0,
+                "connect_timeout": 5.0,
+                "max_retries": 0,
+                "include_stream_usage": true,
+                "use_max_completion_tokens": false,
+                "supports_custom_temperature": true,
+                "reasoning_effort": null,
+                "default_headers": null,
+                "extra_body": null,
+                "supports_response_schema": true,
+                "supports_response_schema_with_tools": null,
+                "supports_reasoning_effort_with_tools": null,
+                "thinking_field": null,
+                "enable_thinking": null
+            }
+        }
+    ]
+}

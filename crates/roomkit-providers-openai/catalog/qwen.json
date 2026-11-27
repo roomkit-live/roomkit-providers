@@ -1,0 +1,90 @@
+{
+ "generator": "scripts/generate_openai_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "qwen3.7-max",
+   "display_name": "Qwen3.7 Max",
+   "context_window": 1000000,
+   "supports_vision": false,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 2.5,
+    "output_per_million": 7.5,
+    "cache_read_per_million": 0.25,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-14"
+   }
+  },
+  {
+   "id": "qwen3.7-plus",
+   "display_name": "Qwen3.7 Plus",
+   "context_window": 1000000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 0.4,
+    "output_per_million": 1.6,
+    "cache_read_per_million": 0.04,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 256000,
+    "long_context_input_multiplier": 3.0,
+    "long_context_output_multiplier": 3.0,
+    "currency": "USD",
+    "verified": "2026-08-14"
+   }
+  },
+  {
+   "id": "qwen3.6-flash",
+   "display_name": "Qwen3.6 Flash",
+   "context_window": 1000000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": {
+    "input_per_million": 0.25,
+    "output_per_million": 1.5,
+    "cache_read_per_million": 0.025,
+    "cache_write_per_million": null,
+    "image_input_per_million": null,
+    "image_output_per_million": null,
+    "long_context_threshold_tokens": 256000,
+    "long_context_input_multiplier": 4.0,
+    "long_context_output_multiplier": 2.6666666666666665,
+    "currency": "USD",
+    "verified": "2026-08-14"
+   }
+  },
+  {
+   "id": "qwen3-vl-plus",
+   "display_name": "Qwen3 VL Plus",
+   "context_window": 256000,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "tools",
+    "thinking"
+   ],
+   "pricing": null
+  }
+ ]
+}

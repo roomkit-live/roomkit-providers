@@ -14,7 +14,8 @@ use super::support::{KEY, body_of, chunk, ending, events, json_reply, saying};
 use crate::replay::drained;
 use crate::replay::fake::{Fake, Reply};
 use crate::{
-    DeepSeek, DeepSeekConfig, Kimi, KimiConfig, MiniMax, MiniMaxConfig, OpenAi, OpenAiConfig,
+    DeepSeek, DeepSeekConfig, Kimi, KimiConfig, Meta, MetaConfig, MiniMax, MiniMaxConfig, OpenAi,
+    OpenAiConfig,
 };
 
 /// A round that reasons, says it looks and calls; a round that only calls;
@@ -416,6 +417,28 @@ fn a_vendor_s_config_refuses_a_thinking_field() {
         "DeepSeekConfig takes no thinking_field: its provider sends reasoning where its vendor \
          reads it"
     );
+}
+
+// Python: tests/test_providers/test_meta_ai.py::TestConfig::test_a_key_no_header_can_carry_is_refused_without_echoing_it
+/// Meta's configuration refuses a key no header can carry when it is built,
+/// behind a base URL whose credentials would leave the key unsent too, and
+/// never says the key.
+#[test]
+fn meta_refuses_a_key_no_header_can_carry_without_saying_it() {
+    let key = "sk-secret\u{2026}";
+    for base_url in ["https://api.meta.ai/v1", "https://user:pass@llm.example/v1"] {
+        let refused = Meta::new(MetaConfig {
+            base_url: base_url.to_owned(),
+            ..MetaConfig::new(key, "muse-spark-1.3")
+        })
+        .unwrap_err();
+        assert!(refused.before_request, "{base_url}");
+        assert!(refused.message.contains("non-ASCII"), "{base_url}");
+        assert!(!refused.message.contains("sk-secret"), "{base_url}");
+    }
+    let form = serde_json::from_value::<MetaConfig>(json!({"api_key": key}));
+    let said = form.unwrap_err().to_string();
+    assert!(said.contains("non-ASCII") && !said.contains("sk-secret"));
 }
 
 // Python: tests/test_providers/test_chat_request.py::test_a_configured_thinking_field_carries_a_round_s_reasoning_to_the_server

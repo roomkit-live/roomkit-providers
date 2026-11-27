@@ -67,6 +67,15 @@ pub struct KimiConfig {
 }
 
 impl KimiConfig {
+    /// Whether the configuration takes a thinking field: the provider sends
+    /// reasoning where its vendor reads it.
+    pub(crate) const TAKES_THINKING_FIELD: bool = false;
+    /// Whether the configuration refuses a key that is not ASCII: the provider
+    /// refuses one when it is built.
+    pub(crate) const ASCII_KEY: bool = false;
+    /// The model a form that names none asks: none, one is required.
+    pub(crate) const MODEL: Option<&'static str> = None;
+
     /// The vendor whose rules the provider applies.
     pub(crate) const VENDOR: Vendor = Vendor::Kimi;
 

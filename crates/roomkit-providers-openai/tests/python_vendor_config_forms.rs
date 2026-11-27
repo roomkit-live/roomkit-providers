@@ -4,7 +4,9 @@
 //! written by `scripts/generate_openai_config_forms.py`
 //! (`make python-openai-config`).
 
-use roomkit_providers_openai::{DeepSeekConfig, KimiConfig, MiniMaxConfig};
+use roomkit_providers_openai::{
+    CerebrasConfig, DeepSeekConfig, KimiConfig, MetaConfig, MiniMaxConfig, QwenConfig, XaiConfig,
+};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -109,8 +111,10 @@ fn holds_to_python<C: DeserializeOwned + Serialize>(text: &str, model: &str, mem
             .any(|example| example.form[member] != defaults[member]);
         assert!(stated, "{model}: no example states {member}");
     }
+    // A vendor that names a model of its own takes a form without one, and
+    // one that takes a thinking field refuses no thinking field: 27 at least.
     assert!(
-        fixture.rejected.len() >= 29 && fixture.converted.len() >= 11,
+        fixture.rejected.len() >= 27 && fixture.converted.len() >= 11,
         "{model}"
     );
 }
@@ -138,6 +142,42 @@ fn minimax_s_configuration_reads_and_writes_as_python_s() {
     holds_to_python::<MiniMaxConfig>(
         include_str!("fixtures/python_minimax_config_forms.json"),
         "MiniMaxConfig",
+        17,
+    );
+}
+
+#[test]
+fn xai_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<XaiConfig>(
+        include_str!("fixtures/python_xai_config_forms.json"),
+        "XAIConfig",
+        17,
+    );
+}
+
+#[test]
+fn cerebras_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<CerebrasConfig>(
+        include_str!("fixtures/python_cerebras_config_forms.json"),
+        "CerebrasConfig",
+        19,
+    );
+}
+
+#[test]
+fn qwen_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<QwenConfig>(
+        include_str!("fixtures/python_qwen_config_forms.json"),
+        "QwenConfig",
+        18,
+    );
+}
+
+#[test]
+fn meta_s_configuration_reads_and_writes_as_python_s() {
+    holds_to_python::<MetaConfig>(
+        include_str!("fixtures/python_meta_config_forms.json"),
+        "MetaConfig",
         17,
     );
 }
