@@ -93,6 +93,7 @@ case("a_wide_size", "generate answer size", IMAGE_GENERATE, FLASH, asked(size="2
 case("a_size_of_a_ratio_the_model_lacks", "refused size", IMAGE_GENERATE, PRO, asked(size="1024x4096"))
 case("a_size_past_the_largest_tier", "refused size", IMAGE_GENERATE, PRO, asked(size="8192x8192"))
 case("a_size_of_a_tier_the_model_lacks", "refused size", IMAGE_GENERATE, PRO, asked(size="512x512"))
+case("a_size_written_with_a_line_break", "refused size", IMAGE_GENERATE, PRO, asked(size="1024x4096\n"))
 case(
     "the_configuration_s_defaults",
     "generate answer options",
@@ -236,6 +237,45 @@ case(
     answer(interaction(image(None, "image/png", "https://example.com/fox.png"))),
 )
 
+# -- What the SDK reads of an answer it cannot validate --------------------------------
+#
+# google-genai refuses no JSON answer: one its models do not validate is built member
+# by member, as each validates (``construct_unvalidated``), and one that is no object
+# is kept as it is. The provider then reads it as an interaction.
+
+case("an_interaction_with_no_id", "generate answer", IMAGE_GENERATE, PRO, asked(), answer(
+    {key: value for key, value in interaction().items() if key != "id"}
+))
+case("an_interaction_with_no_steps", "failure answer", IMAGE_GENERATE, PRO, asked(), answer(
+    {"id": "int_1", "status": "failed"}
+))
+case("an_image_beside_the_steps", "generate answer", IMAGE_GENERATE, PRO, asked(), answer({
+    "id": "int_1",
+    "status": "completed",
+    "steps": [{"type": "model_output", "content": [{"type": "text", "text": "x"}]}],
+    "output_image": image(),
+}))
+case("a_step_the_sdk_cannot_read", "generate answer", IMAGE_GENERATE, PRO, asked(), answer({
+    "id": "int_1",
+    "status": "completed",
+    "steps": [
+        {"type": "model_output", "content": "oops"},
+        {"type": "model_output", "content": [image()]},
+    ],
+}))
+case("a_status_that_is_no_text", "generate answer", IMAGE_GENERATE, PRO, asked(), answer(
+    {**interaction(), "status": 5}
+))
+case(
+    "an_error_object_answered_with_200",
+    "failure answer progress",
+    IMAGE_WITH_OPTIONS,
+    PRO,
+    asked(progress="record"),
+    answer({"error": {"code": 429, "message": "Resource has been exhausted.", "status": "RESOURCE_EXHAUSTED"}}),
+)
+case("an_answer_that_is_no_object", "failure answer", IMAGE_GENERATE, PRO, asked(), answer([]))
+
 # -- An interaction continued ----------------------------------------------------------
 #
 # An interaction cut at the decode limit answers ``requires_continuation`` with a
@@ -295,6 +335,24 @@ case(
     asked(),
     answer(first_hop()),
     answer({**first_hop(), "id": "int_2"}),
+)
+case(
+    "a_last_hop_with_no_steps",
+    "failure answer continuation",
+    IMAGE_GENERATE,
+    PRO,
+    asked(),
+    answer({**first_hop(), "steps": [USER_INPUT, {"type": "model_output", "content": [image()]}]}),
+    answer({"id": "int_2", "status": "completed", "usage": USAGE}),
+)
+case(
+    "an_error_object_on_the_second_hop",
+    "failure answer continuation",
+    IMAGE_GENERATE,
+    PRO,
+    asked(),
+    answer(first_hop()),
+    answer({"error": {"code": 503, "message": "The model is overloaded.", "status": "UNAVAILABLE"}}),
 )
 case(
     "a_second_hop_refused",
