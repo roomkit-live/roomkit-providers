@@ -713,6 +713,36 @@ headers' values: Python's repeats the server's whole body in Python's
 `repr`. A multipart header that holds a control character is refused, as
 Python's client refuses it, and a body's boundary is drawn at random.
 
+### OpenRouter's images
+
+`OpenRouterImage` is OpenRouter's image provider, RoomKit's Python
+`OpenRouterImageProvider`, configured with `OpenRouterImageConfig`
+(`OpenAIImageConfig`'s members, OpenRouter's endpoint and its attribution
+headers, `site_url` as `HTTP-Referer` and `app_name` as `X-Title`). Its
+catalogue, `catalog/openrouter_images.json`, is Python's.
+
+- A request is OpenRouter's Image API's (`POST /api/v1/images`, the key as a
+  bearer): the size as pixels, the configuration's controls, the references
+  as `input_references`, inline ones written again as canonical data URIs.
+- `n` images are `n` requests made at once, at most ten; the first failure
+  stops the others, as Python's task group cancels them. Each image carries
+  its own request's usage: the prompt's tokens as the text input, the
+  completion's as the image's, and `cost`, what OpenRouter billed, in USD.
+- One try. A refusal is a `ProviderError` in Python's words, OpenRouter's
+  status then what it answered, tried again only where the vendor ran
+  nothing (408, 409, 429, 503); a request lost in transport only where it
+  never left. Its text is bounded to 500 characters, the provider's words
+  with the server's, where Python repeats the server's first 500 after its
+  own (`a_refusal_of_a_long_body`, named).
+- The controls of `generate_with_options`, a mask and a progress callback
+  are refused, as Python's provider refuses them: it answers `generate`
+  alone.
+
+It is held to 41 cases captured on RoomKit's Python provider
+(`tests/fixtures/python_openrouter_image_cases.json`, written by
+`scripts/generate_openrouter_image_cases.py`), 39 replayed as Python and 2
+named.
+
 ## The wire cases
 
 `tests/fixtures/python_chat_cases.json` is written by

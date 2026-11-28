@@ -26,7 +26,7 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 .PHONY: all fmt fmt-check clippy no-network-test test examples doc deny \
 	msrv msrv-toolchain hooks redis-test postgres-test postgres-fixture sqlite-fixture \
 	python-public-urls python-proxy-cases python-openai-config \
-	python-openai-chat-cases python-openai-image-cases \
+	python-openai-chat-cases python-openai-image-cases python-openrouter-image-cases \
 	python-openai-catalogue \
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
 	python-gemini-config python-gemini-cases python-gemini-catalogue \
@@ -280,6 +280,12 @@ python-openai-chat-cases:
 # answers its own requests: nothing is sent to a network.
 python-openai-image-cases:
 	$(PYTHON) scripts/generate_openai_image_cases.py
+
+# Rewrites the fixture of what RoomKit's Python OpenRouter image provider
+# sends and reads, case by case. PYTHON needs roomkit's `openrouter` extra.
+# The script answers its own requests: nothing is sent to a network.
+python-openrouter-image-cases:
+	$(PYTHON) scripts/generate_openrouter_image_cases.py
 
 # Rewrites the fixture of the JSON forms of RoomKit's Python `AnthropicConfig`.
 python-anthropic-config:

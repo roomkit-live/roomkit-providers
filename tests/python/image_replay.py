@@ -52,10 +52,14 @@ class ImageReplays:
     # The cases the Rust replay names, with the start of each difference
     # it states.
     named: dict[str, list[str]] = field(default_factory=dict)
+    # The fixture of the cases, and the crate that holds it, where they are
+    # not the vendor's own: a vendor of OpenAI's crate.
+    fixture_name: str = "python_image_cases.json"
+    crate: str | None = None
 
     def fixture(self) -> dict[str, Any]:
-        fixtures = ROOT / f"crates/roomkit-providers-{self.vendor}/tests/fixtures"
-        return json.loads((fixtures / "python_image_cases.json").read_text(encoding="utf-8"))
+        fixtures = ROOT / f"crates/roomkit-providers-{self.crate or self.vendor}/tests/fixtures"
+        return json.loads((fixtures / self.fixture_name).read_text(encoding="utf-8"))
 
 
 @dataclass

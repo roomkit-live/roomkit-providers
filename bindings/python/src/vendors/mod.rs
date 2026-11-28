@@ -26,6 +26,7 @@ mod ollama;
 mod openai;
 mod openai_image;
 mod openrouter;
+mod openrouter_image;
 mod polargrid;
 mod qwen;
 mod vertex;
@@ -59,4 +60,5 @@ pub(crate) static VENDORS: &[Entries] = &[
 pub(crate) static IMAGE_VENDORS: &[ImageEntries] = &[
     ImageEntries::of::<openai_image::OpenAiImage>(),
     ImageEntries::of::<gemini_image::GeminiImage>(),
+    ImageEntries::of::<openrouter_image::OpenRouterImage>(),
 ];

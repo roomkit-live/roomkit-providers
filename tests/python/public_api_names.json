@@ -7,6 +7,10 @@
     "OpenAIImage",
     "OpenAIImageConfig"
   ],
+  "roomkit_providers.image.openrouter": [
+    "OpenRouterImage",
+    "OpenRouterImageConfig"
+  ],
   "roomkit_providers.llm.anthropic": [
     "Anthropic",
     "AnthropicConfig"
