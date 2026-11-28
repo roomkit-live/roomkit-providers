@@ -9,6 +9,8 @@ nothing has been released yet.
 
 - The managed llama.cpp provider sends the per-request reasoning token limit
   to the server. Omitting the limit preserves the server default.
+- Managed llama.cpp and its GPU probe inherit only the environment needed for
+  model loading, hardware selection and the local runtime.
 
 ### Added
 
