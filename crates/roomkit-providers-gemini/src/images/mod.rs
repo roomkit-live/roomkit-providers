@@ -17,6 +17,7 @@ mod fields;
 mod geometry;
 mod hops;
 mod in_flight;
+mod repr;
 mod request;
 
 use std::sync::{Arc, LazyLock};
@@ -208,9 +209,10 @@ impl GeminiImage {
         let failed = match created {
             // An interaction that came back fails its attempt: the vendor
             // ran it.
+            // A `null` the SDK reads as no interaction at all.
             Ok(interaction) => answer::read(&interaction, &mut attempt)
                 .err()
-                .map(|error| (true, error)),
+                .map(|error| (!interaction.is_null(), error)),
             Err(error) => Some((false, error)),
         };
         if let Some((came, error)) = &failed {

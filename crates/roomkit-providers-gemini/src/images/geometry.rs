@@ -4,7 +4,7 @@
 
 use roomkit_ai::image::{ImageRequestError, parse_size};
 
-use super::answer::repr;
+use super::repr::repr;
 
 /// The aspect ratios the Interactions image format takes across Gemini's
 /// lineup (Python's `ASPECT_RATIOS`).

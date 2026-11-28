@@ -49,7 +49,7 @@ async fn every_generation_replays_as_python() {
     let fixture = Fixture::read(FIXTURE);
     let (as_python, named) =
         replayed_or_named::<GeminiImage>(&fixture, &NAMED, IMAGE_GENERATE).await;
-    assert_eq!((as_python, named), (38, 0));
+    assert_eq!((as_python, named), (44, 0));
 }
 
 #[tokio::test]

@@ -16,8 +16,8 @@ use serde::Serialize;
 use serde_json::{Map, Value, json};
 
 use super::GeminiImageConfig;
-use super::answer::repr;
 use super::geometry::{ASPECT_RATIOS, TIERS, size_geometry};
+use super::repr::repr;
 
 /// What a request asks.
 pub(crate) struct Asked<'a> {

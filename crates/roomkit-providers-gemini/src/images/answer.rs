@@ -4,14 +4,13 @@
 //! steps; the usage split into the counters RFC §25.5 names; and what the
 //! attempt keeps of it.
 
-use std::fmt::Write as _;
-
 use roomkit::model::Metadata;
 use roomkit_ai::image::{ImageAttempt, ImageResult, PayloadMimeTypeOptions, payload_mime_type};
 use roomkit_ai::{ProviderError, ProviderErrorOptions};
 use serde_json::{Map, Value};
 
 use super::fields;
+use super::repr::{repr, value_repr};
 
 /// The name of the provider's failures.
 pub(crate) const PROVIDER: &str = "gemini";
@@ -39,8 +38,8 @@ enum Built<'a> {
 impl<'a> Built<'a> {
     /// What the SDK makes of `answer`. An object is taken as validated when
     /// the members the provider reads are of the types the SDK's models
-    /// declare: its required `status` a text, its `steps` a list of steps
-    /// that each name their kind, its `id` and `output_text` texts, its
+    /// declare: its required `status` a text, its `steps` a list of objects
+    /// that each have a `type`, its `id` and `output_text` texts, its
     /// `usage` and `output_image` objects. The SDK checks every member;
     /// the provider reads only these.
     fn of(answer: &'a Value) -> Self {
@@ -56,9 +55,10 @@ impl<'a> Built<'a> {
             .get("steps")
             .and_then(Value::as_array)
             .is_none_or(|steps| {
-                steps
-                    .iter()
-                    .all(|step| step.get("type").is_some_and(Value::is_string))
+                steps.iter().all(|step| {
+                    step.as_object()
+                        .is_some_and(|step| step.contains_key("type"))
+                })
             });
         let validated = members.get("status").is_some_and(Value::is_string)
             && is("id", Value::is_string)
@@ -86,11 +86,12 @@ impl<'a> Built<'a> {
     }
 
     /// The interaction's id: an empty one when it states none, the SDK's
-    /// default.
+    /// default; none when it states `null`.
     fn id(&self) -> Option<String> {
         let members = self.members()?;
         match members.get("id") {
-            None | Some(Value::Null) => Some(String::new()),
+            None => Some(String::new()),
+            Some(Value::Null) => None,
             Some(id) => id.as_str().map(str::to_owned),
         }
     }
@@ -142,9 +143,7 @@ impl<'a> Built<'a> {
         match self.member("status") {
             None => "None".to_owned(),
             Some(Value::String(status)) => repr(status),
-            Some(Value::Bool(true)) => "True".to_owned(),
-            Some(Value::Bool(false)) => "False".to_owned(),
-            Some(other) => other.to_string(),
+            Some(other) => value_repr(other),
         }
     }
 }
@@ -344,35 +343,4 @@ fn by_modality(breakdown: &Value) -> Vec<(String, i64)> {
         }
     }
     counts
-}
-
-/// `text` as Python's `repr` writes a `str`: in single quotes, or double
-/// quotes when it holds a single one and no double one, its backslashes,
-/// its quote and its control characters escaped.
-pub(crate) fn repr(text: &str) -> String {
-    let quote = if text.contains('\'') && !text.contains('"') {
-        '"'
-    } else {
-        '\''
-    };
-    let mut written = String::from(quote);
-    for character in text.chars() {
-        match character {
-            '\\' => written.push_str("\\\\"),
-            '\n' => written.push_str("\\n"),
-            '\r' => written.push_str("\\r"),
-            '\t' => written.push_str("\\t"),
-            _ if character == quote => {
-                written.push('\\');
-                written.push(character);
-            }
-            _ if character.is_control() => {
-                // Writing to a string cannot fail.
-                write!(written, "\\x{:02x}", u32::from(character)).ok();
-            }
-            _ => written.push(character),
-        }
-    }
-    written.push(quote);
-    written
 }

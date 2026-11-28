@@ -165,13 +165,24 @@ member by member, its defaults where a member is missing (an empty `id`, no
 steps, no text), and one that is no object is kept as it is. The provider
 reads an answer the same way, so a 200 that carries an error object is an
 interaction with no image, failed. It takes an answer as validated from the
-members it reads (`status` a text, `steps` a list of steps that name their
-kind, `id`, `output_text`, `usage`, `output_image` of their types), where the
+members it reads (`status` a text, `steps` a list of objects that each have
+a `type`, `id`, `output_text`, `usage`, `output_image` of their types), where the
 SDK checks every member: an answer that breaks a member the provider does not
 read is validated here and not there, which changes only its `output_text`
-when its steps hold no text (empty here, what the answer states there).
+when its steps hold no text (empty here, what the answer states there). An
+answer of `null` is no interaction: its attempt is unknown.
 
-The provider is held to 57 cases captured on RoomKit's Python provider
+Where it differs from Python's otherwise:
+
+- A count of a usage past 64 bits saturates; Python's integers have no bound.
+- An interrupted continuation quotes its hop's failure in the provider's
+  words (`Error code: 429 - <message>`), where Python's quotes the SDK's
+  repr of the server's body.
+- A generation failed by its progress callback is raised from the
+  `ImageGenerationError` that names the callback's failure, itself raised
+  from it; Python's is raised from the callback's failure directly.
+
+The provider is held to 63 cases captured on RoomKit's Python provider
 (`tests/fixtures/python_image_cases.json`, written by
 `scripts/generate_gemini_image_cases.py` from `scripts/gemini_image_cases.py`),
 every one replayed as Python.

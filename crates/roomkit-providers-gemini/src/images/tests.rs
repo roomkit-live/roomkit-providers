@@ -279,3 +279,47 @@ async fn an_interrupted_continuation_says_its_hop_s_status() {
         .unwrap_or_default();
     assert!(error.starts_with(said), "{error}");
 }
+
+// An attempt that went in flight on a runtime since shut down, then dropped
+// inside another runtime, is told unknown on the runtime it is dropped on.
+#[test]
+fn an_attempt_dropped_after_its_runtime_ended_is_told_unknown() {
+    let serving = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let fake = serving.block_on(Fake::serving(vec![Reply::Silent]));
+    let polling = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let provider = polling.block_on(async { provider(&fake) });
+    let (callback, mut heard) = sending();
+    let mut generating = Box::pin(provider.generate_with_options("a fox", told(&callback, 1)));
+    polling.block_on(async {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            while fake.seen().is_empty() {
+                tokio::select! {
+                    biased;
+                    ended = &mut generating => panic!("a silent endpoint answered: {ended:?}"),
+                    () = tokio::task::yield_now() => {}
+                }
+            }
+        })
+        .await
+        .expect("the interaction reaches the fake");
+    });
+    drop(polling);
+    let statuses = serving.block_on(async move {
+        drop(generating);
+        let mut statuses = Vec::new();
+        for _ in 0..2 {
+            let attempt = tokio::time::timeout(Duration::from_secs(5), heard.recv()).await;
+            statuses.push(attempt.expect("each move is told").unwrap().status);
+        }
+        statuses
+    });
+    let expected = [ImageAttemptStatus::Started, ImageAttemptStatus::Unknown];
+    assert_eq!(statuses, expected);
+}

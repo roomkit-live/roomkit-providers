@@ -35,7 +35,7 @@ nothing has been released yet.
   interaction of the Interactions API per image, `n` made at once and each
   settled alone, a size asked as a ratio and a tier, an interaction cut at
   the decode limit continued hop after hop as Python's SDK continues it. It
-  is held to 57 cases captured on RoomKit's Python provider, every one
+  is held to 63 cases captured on RoomKit's Python provider, every one
   replayed as Python. The replay harness compares the attempts told of
   attempts made at once each in its own order.
 - Gemini on Vertex AI, in Rust and in Python: `GeminiVertex` and

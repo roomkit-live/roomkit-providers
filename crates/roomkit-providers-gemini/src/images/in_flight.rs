@@ -11,8 +11,8 @@ use roomkit_ai::image::{ImageAttempt, ImageAttemptStatus, ImageProgressCallback}
 pub(crate) struct InFlight {
     attempt: ImageAttempt,
     callback: Option<ImageProgressCallback>,
-    /// The runtime the attempt ran on, taken when it went in flight: the
-    /// future may be dropped off it.
+    /// The runtime the attempt went in flight on: the one it is told on when
+    /// it is dropped off any runtime.
     runtime: Option<tokio::runtime::Handle>,
 }
 
@@ -40,7 +40,10 @@ impl Drop for InFlight {
         let Some(callback) = self.callback.take() else {
             return;
         };
-        let Some(runtime) = self.runtime.take() else {
+        // The runtime it is dropped on, which runs; else the one it went in
+        // flight on.
+        let current = tokio::runtime::Handle::try_current().ok();
+        let Some(runtime) = current.or_else(|| self.runtime.take()) else {
             return;
         };
         let mut attempt = std::mem::take(&mut self.attempt);
