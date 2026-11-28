@@ -243,6 +243,10 @@ pub(super) fn differs(
             .map_or(Value::Null, Value::Array),
     ];
     let mut given_values = given_of(given, told);
+    // Attempts made at once tell their moves in the order they come: each
+    // attempt's moves are compared in their order, not their interleaving.
+    by_attempt(&mut expected_values[0]);
+    by_attempt(&mut given_values[0]);
     name_attempt_ids(&mut expected_values.iter_mut().collect::<Vec<_>>());
     name_attempt_ids(&mut given_values.iter_mut().collect::<Vec<_>>());
     // An attempt's error holds the failure's message: compared where the
@@ -289,6 +293,14 @@ pub(super) fn differs(
             ];
             failure_differs(case, failure, error, &outcomes, found);
         }
+    }
+}
+
+/// The attempts told, `told`, in the order of their attempts' indexes, each
+/// attempt's in the order it was told.
+fn by_attempt(told: &mut Value) {
+    if let Value::Array(attempts) = told {
+        attempts.sort_by_key(|attempt| attempt.get("index").and_then(Value::as_u64));
     }
 }
 
@@ -379,6 +391,24 @@ pub async fn refuses<P: Replays + ImageProvider>(fixture: &Fixture, name: &str, 
     }
 }
 
+/// Replays the image case `name` of `fixture`, requires that it is as
+/// Python, then that it stays so after each of `changes`: what an image
+/// replay does not compare.
+pub async fn allows<P: Replays + ImageProvider>(fixture: &Fixture, name: &str, changes: &[Wrong]) {
+    let case = fixture.case(name);
+    let door = Door::open().await;
+    for (what, _, change) in changes {
+        let mut replayed = replay::<P>(fixture, case, &door).await;
+        assert_eq!(differences(case, &replayed), Vec::<String>::new(), "{name}");
+        change(&mut replayed);
+        assert_eq!(
+            differences(case, &replayed),
+            Vec::<String>::new(),
+            "{name}, {what}"
+        );
+    }
+}
+
 /// The images and the attempts a replayed image case gave.
 fn given_mut(
     replayed: &mut Replayed,
@@ -431,14 +461,30 @@ pub const IMAGES: [Wrong; 3] = [
 ];
 
 /// Attempts told that are not Python's: one less, another status.
-pub const TOLD: [Wrong; 2] = [
+pub const TOLD: [Wrong; 3] = [
     ("an attempt told less", "the attempts told", |r| {
         given_mut(r).1.pop();
     }),
     ("another status told", "the attempts told", |r| {
         given_mut(r).1[0].status = ImageAttemptStatus::Unknown;
     }),
+    (
+        "an attempt's moves in another order",
+        "the attempts told",
+        |r| {
+            let told = given_mut(r).1;
+            let first = told.iter().position(|attempt| attempt.index == 0).unwrap();
+            let last = told.iter().rposition(|attempt| attempt.index == 0).unwrap();
+            told.swap(first, last);
+        },
+    ),
 ];
+
+/// What a replay does not compare: the attempts told of attempts made at
+/// once, each attempt's moves together.
+pub const INTERLEAVED: [Wrong; 1] = [("each attempt's moves together", "", |r| {
+    given_mut(r).1.sort_by_key(|attempt| attempt.index);
+})];
 
 /// A failed generation that is not Python's: another status, its attempt
 /// standing otherwise, an attempt more, an attempt that says no error, an
