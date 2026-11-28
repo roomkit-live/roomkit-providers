@@ -473,6 +473,39 @@ is `Anthropic`. What is Anthropic's own:
 - **The `anthropic` SDK is not needed.** The provider runs without
   RoomKit's `anthropic` extra.
 
+## Image providers
+
+`roomkit_providers.image` holds the image providers (RFC §25), one module per
+vendor, each a RoomKit `ImageProvider` that takes RoomKit's own configuration
+of the vendor as well:
+
+```python
+from roomkit_providers.image.gemini import GeminiImage, GeminiImageConfig
+from roomkit_providers.image.openai import OpenAIImage, OpenAIImageConfig
+
+# from roomkit.providers.gemini import GeminiImageProvider, GeminiImageConfig
+images = GeminiImage(GeminiImageConfig(api_key=...))
+drawn = await images.generate_with_options("an origami fox", n=2, on_progress=told)
+```
+
+| Module | Provider | In place of RoomKit's |
+| --- | --- | --- |
+| `roomkit_providers.image.openai` | `OpenAIImage`, `OpenAIImageConfig` | `OpenAIImageProvider` |
+| `roomkit_providers.image.gemini` | `GeminiImage`, `GeminiImageConfig` | `GeminiImageProvider` |
+
+- **Each attempt is told** to the progress callback as it moves, and the
+  provider waits for the callback before it goes on, as RoomKit's do. A
+  callback that raises fails the generation: an `ImageGenerationError` that
+  keeps the images drawn, raised from the callback's exception.
+- **Cancelling the task** that awaits a generation stops its requests. Each
+  attempt then in flight is told to the callback as `unknown` (the vendor may
+  still bill it) before the cancellation goes on.
+- **Failures** are RoomKit's: a `ValueError` for a request the model cannot
+  serve, refused before anything is sent; an `ImageGenerationError`, with
+  every attempt and the images kept, once a request was made; a
+  `ProviderError` otherwise. A paid generation is never tried again on its
+  own.
+
 ## What is private
 
 A name that starts with an underscore is private, the native module

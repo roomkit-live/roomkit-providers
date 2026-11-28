@@ -1,4 +1,12 @@
 {
+  "roomkit_providers.image.gemini": [
+    "GeminiImage",
+    "GeminiImageConfig"
+  ],
+  "roomkit_providers.image.openai": [
+    "OpenAIImage",
+    "OpenAIImageConfig"
+  ],
   "roomkit_providers.llm.anthropic": [
     "Anthropic",
     "AnthropicConfig"

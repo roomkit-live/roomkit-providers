@@ -59,9 +59,14 @@ SHARED_MODULES = {
     "python/roomkit_providers/llm/_config.py",
     "python/roomkit_providers/llm/_failure.py",
     "python/roomkit_providers/llm/_provider.py",
+    "python/roomkit_providers/image/__init__.py",
+    "python/roomkit_providers/image/_config.py",
+    "python/roomkit_providers/image/_provider.py",
     "bindings/python/src/dynamic.rs",
     "bindings/python/src/errors.rs",
     "bindings/python/src/fork.rs",
+    "bindings/python/src/image.rs",
+    "bindings/python/src/image_vendor.rs",
     "bindings/python/src/lib.rs",
     "bindings/python/src/provider.rs",
     "bindings/python/src/runtime.rs",
@@ -109,11 +114,22 @@ def kinds() -> list[Path]:
     return sorted(path for path in PACKAGE.iterdir() if (path / "__init__.py").is_file())
 
 
+# The kind of provider whose vendors the binding names by the vendor alone:
+# a vendor of another kind is ``<vendor>_<kind>`` there.
+LANGUAGE_MODELS = "llm"
+
+
 def package_modules() -> dict[str, Path]:
-    """The vendors' modules of the package, by vendor: the public modules of
-    each kind."""
+    """The vendors' modules of the package, by vendor as the binding names
+    it: the public modules of each kind."""
     modules = (module for kind in kinds() for module in kind.glob("*.py"))
-    return {module.stem: module for module in modules if not module.name.startswith("_")}
+    return {
+        module.stem
+        if module.parent.name == LANGUAGE_MODELS
+        else f"{module.stem}_{module.parent.name}": module
+        for module in modules
+        if not module.name.startswith("_")
+    }
 
 
 def binding_modules() -> dict[str, Path]:
@@ -264,14 +280,29 @@ def defined_in(node: ast.ClassDef) -> set[str]:
     return names
 
 
+def shared_class(kind: Path, module: str, name: str) -> ast.ClassDef | None:
+    """The class `name` the shared module `module` of `kind` defines, or
+    takes from another kind's, where it takes it; None where it holds no
+    such class."""
+    tree = ast.parse((kind / f"{module}.py").read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == name:
+            return node
+        taken = isinstance(node, ast.ImportFrom) and node.level == 2 and node.module
+        if taken and name in {alias.name for alias in node.names}:
+            other, _, taken_from = node.module.partition(".")
+            return shared_class(PACKAGE / other, taken_from, name)
+    return None
+
+
 def defined_by_the_shared_classes(kind: Path) -> dict[str, set[str]]:
-    """What each shared class of `kind` defines, by the class's name."""
+    """What each shared class of `kind` defines, by the class's name: the
+    classes its shared modules hold."""
     defined = {}
     for name, module in SHARED_CLASSES.items():
-        tree = ast.parse((kind / f"{module}.py").read_text(encoding="utf-8"))
-        classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
-        (shared,) = [node for node in classes if node.name == name]
-        defined[name] = defined_in(shared)
+        shared = shared_class(kind, module, name)
+        if shared is not None:
+            defined[name] = defined_in(shared)
     return defined
 
 
@@ -308,9 +339,14 @@ class GenericTests(unittest.TestCase):
     def test_a_test_of_the_shared_part_is_held_to_the_criterion(self) -> None:
         """A test that imports what every provider shares, and no vendor's
         module, is a test of the shared part."""
-        shared = {"roomkit_providers.llm._provider", "roomkit_providers.llm._config"}
+        shared = {
+            f"roomkit_providers.{kind.name}.{module}"
+            for kind in kinds()
+            for module in ("_provider", "_config")
+        }
         own = {
-            f"roomkit_providers.{kind.name}.{vendor}" for kind in kinds() for vendor in vendors()
+            f"roomkit_providers.{module.parent.name}.{module.stem}"
+            for module in package_modules().values()
         }
         of_the_shared_part = {
             f"tests/python/{test.name}"
@@ -341,7 +377,9 @@ class GenericTests(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as directory:
                     sample = Path(directory) / "sample.py"
                     sample.write_text(f"{line}\n", encoding="utf-8")
-                    self.assertEqual(len(named_in([sample], vendors())), 1, line)
+                    # A vendor's name may hold another vendor's name:
+                    # the vendor's own is found.
+                    self.assertIn(f"sample.py: {vendor}", named_in([sample], vendors()), line)
         with tempfile.TemporaryDirectory() as directory:
             sample = Path(directory) / "sample.py"
             sample.write_text("if label == self.label:\n", encoding="utf-8")
@@ -447,7 +485,8 @@ class GenericTests(unittest.TestCase):
                 defined = defined_by_the_shared_classes(module.parent)
                 for base in ("Config", "Provider"):
                     self.assertGreater(len(defined[base]), 5)
-                self.assertGreaterEqual(defined["ManagedServer"], {"base_url", "start"})
+                if module.parent.name == LANGUAGE_MODELS:
+                    self.assertGreaterEqual(defined["ManagedServer"], {"base_url", "start"})
                 tree = ast.parse(module.read_text(encoding="utf-8"))
                 self.assertEqual(taken_from_the_shared_class(tree, defined), [])
 
@@ -480,7 +519,7 @@ class GenericTests(unittest.TestCase):
         for module in sorted(binding_modules().values()):
             with self.subTest(module=module.name):
                 text = module.read_text(encoding="utf-8")
-                self.assertIn("impl Vendor for", text)
+                self.assertRegex(text, r"impl (Image)?Vendor for")
                 # Nothing Python calls is declared there.
                 self.assertNotIn("pyo3", text)
                 self.assertNotIn("catch_unwind", text)

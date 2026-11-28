@@ -4,8 +4,10 @@
 //! calls, and everything a built provider does, is written once for all of
 //! them, in `vendor` and in `provider`.
 //!
-//! Adding a provider adds its module here, and its line in [`VENDORS`].
+//! Adding a provider adds its module here, and its line in [`VENDORS`]; an
+//! image provider, its line in [`IMAGE_VENDORS`].
 
+use super::image_vendor::ImageEntries;
 use super::vendor::Entries;
 
 mod anthropic;
@@ -13,6 +15,7 @@ mod azure;
 mod cerebras;
 mod deepseek;
 mod gemini;
+mod gemini_image;
 mod kimi;
 mod litellm;
 mod llamacpp;
@@ -21,6 +24,7 @@ mod minimax;
 mod mistral;
 mod ollama;
 mod openai;
+mod openai_image;
 mod openrouter;
 mod polargrid;
 mod qwen;
@@ -49,4 +53,10 @@ pub(crate) static VENDORS: &[Entries] = &[
     Entries::of::<litellm::LiteLlm>(),
     Entries::of::<azure::AzureAi>(),
     Entries::of::<vllm::Vllm>(),
+];
+
+/// The entries of every image vendor (RFC §25).
+pub(crate) static IMAGE_VENDORS: &[ImageEntries] = &[
+    ImageEntries::of::<openai_image::OpenAiImage>(),
+    ImageEntries::of::<gemini_image::GeminiImage>(),
 ];

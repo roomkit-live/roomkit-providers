@@ -5,6 +5,7 @@ own is. The providers are filed by kind, then by vendor, one module each,
 and each module holds the provider's class and its configuration:
 
     roomkit_providers.llm        the providers of language models
+    roomkit_providers.image      the image providers
 """
 
 __version__ = "0.1.0a1"

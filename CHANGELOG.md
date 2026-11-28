@@ -31,6 +31,14 @@ nothing has been released yet.
   in a header refused), the headers of an answer, larger bounds for a
   provider that asks them, and whether a request that failed in transport
   had left.
+- The image providers in Python: `roomkit_providers.image.openai`
+  (`OpenAIImage`, `OpenAIImageConfig`) and `roomkit_providers.image.gemini`
+  (`GeminiImage`, `GeminiImageConfig`), each a RoomKit `ImageProvider` over
+  the Rust provider, in place of RoomKit's `OpenAIImageProvider` and
+  `GeminiImageProvider`, taking RoomKit's configuration as well. Each attempt
+  crosses to the host's progress callback, which the provider waits for; a
+  cancelled generation tells its attempts in flight unknown. The 116 recorded
+  image cases replay through them as Python.
 - Gemini's image provider, in Rust: `GeminiImage` and `GeminiImageConfig`
   in the `roomkit-providers-gemini` crate, RoomKit's Python
   `GeminiImageProvider` on the contract's `ImageProvider` (RFC §25): an

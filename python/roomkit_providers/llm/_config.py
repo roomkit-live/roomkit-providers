@@ -258,3 +258,10 @@ class Veiled:
         own = self.own()
         key = getattr(own, type(own)._key, None)
         return _native.provider(self._own._vendor, own.model_dump_json(), key)
+
+    def native_image(self) -> _native._ImageProvider:
+        """The native image provider of the configuration, with the key it
+        states."""
+        own = self.own()
+        key = getattr(own, type(own)._key, None)
+        return _native.image_provider(self._own._vendor, own.model_dump_json(), key)

@@ -17,6 +17,8 @@ use pyo3::prelude::*;
 mod dynamic;
 mod errors;
 mod fork;
+mod image;
+mod image_vendor;
 mod provider;
 mod runtime;
 mod stream;
@@ -31,6 +33,7 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<provider::PythonProvider>()?;
     module.add_class::<stream::PythonStream>()?;
     vendor::register(module)?;
+    image_vendor::register(module)?;
     #[cfg(feature = "testing")]
     testing::register(module)?;
     Ok(())

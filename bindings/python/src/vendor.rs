@@ -206,7 +206,7 @@ fn entries(vendor: &str) -> PyResult<&'static Entries> {
 /// asked (pydantic's `SecretStr`), or none for a configuration that states
 /// no key. It is opened here, so that no frame of Python holds it in clear
 /// when the provider is refused.
-fn key_of(secret: &Bound<'_, PyAny>) -> PyResult<Option<String>> {
+pub(crate) fn key_of(secret: &Bound<'_, PyAny>) -> PyResult<Option<String>> {
     if secret.is_none() {
         return Ok(None);
     }
@@ -253,8 +253,15 @@ fn catalogue(py: Python<'_>, vendor: &str) -> PyResult<String> {
 /// The waits of a provider a replay drives, which takes none.
 #[pyclass(name = "_ReplayWaits", frozen, module = "roomkit_providers._native")]
 #[derive(Debug)]
-struct PythonReplayWaits {
+pub(crate) struct PythonReplayWaits {
     waits: ReplayWaits,
+}
+
+impl PythonReplayWaits {
+    /// The waits `waits` keeps, as Python holds them.
+    pub(crate) const fn of(waits: ReplayWaits) -> Self {
+        Self { waits }
+    }
 }
 
 #[pymethods]
