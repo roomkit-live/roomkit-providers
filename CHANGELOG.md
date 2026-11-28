@@ -14,6 +14,8 @@ nothing has been released yet.
   written, as RoomKit's Python stores raise `EventIndexTakenError` (RFC
   §8.1); a second add of a stored event stays the database's refusal of
   its id. They pass the core's store contract on roomkit-rs 654b4298.
+- Managed llama.cpp and its GPU probe inherit only the environment needed for
+  model loading, hardware selection and the local runtime.
 
 ### Added
 
