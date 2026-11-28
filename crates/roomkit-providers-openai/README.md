@@ -698,9 +698,9 @@ capabilities.
 - A generation cancelled while its request is in flight (its future
   dropped once the attempt was told started) tells its callback the
   attempt unknown, as Python's provider does from its `CancelledError`.
-  The callback is told in a task of the runtime the generation ran on,
-  which the caller cannot await: a runtime that ends at once may end it
-  first.
+  The callback is told in a task of the runtime the generation is dropped
+  on, else, dropped off any, of the one it went in flight on, which the
+  caller cannot await: a runtime that ends at once may end it first.
 - An answer is read to 512 MiB, an event of a stream to 64 MiB: ten images
   of the largest size, one in an event. Python's client reads any length.
 - The usage is split as Python splits it: the image share of the input

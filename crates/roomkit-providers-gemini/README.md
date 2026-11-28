@@ -157,8 +157,9 @@ is Python's (`scripts/generate_gemini_catalogue.py`).
   thought tokens with the text output, cached tokens unclassified.
 - An attempt dropped while its interaction is in flight tells its callback it
   is unknown, as Python's provider does from its `CancelledError`, in a task
-  of the runtime it went in flight on, wherever it is dropped. An answer is
-  read to 128 MiB.
+  of the runtime it is dropped on, else, dropped off any, of the one it went
+  in flight on: a runtime that ends at once may end the task first. An
+  answer is read to 128 MiB.
 
 Python's SDK refuses no JSON answer: one its models do not validate is built
 member by member, its defaults where a member is missing (an empty `id`, no

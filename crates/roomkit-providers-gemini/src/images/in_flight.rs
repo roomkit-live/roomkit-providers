@@ -6,8 +6,9 @@ use roomkit_ai::image::{ImageAttempt, ImageAttemptStatus, ImageProgressCallback}
 /// An attempt while its interaction is in flight: an attempt dropped then,
 /// the call cancelled, tells its callback it is unknown, as Python's
 /// provider does from its `CancelledError` (RFC §25.2): the vendor may
-/// still bill it. The callback is told on the runtime the attempt ran on,
-/// which a dropped future cannot await.
+/// still bill it. The callback is told in a task, which a dropped future
+/// cannot await: on the runtime it is dropped on, else, dropped off any, on
+/// the one it went in flight on.
 pub(crate) struct InFlight {
     attempt: ImageAttempt,
     callback: Option<ImageProgressCallback>,

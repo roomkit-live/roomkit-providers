@@ -279,8 +279,8 @@ impl OpenAiImage {
 /// generation dropped then, the call cancelled, tells its callback the
 /// attempt unknown, as Python's provider does from its `CancelledError`
 /// (RFC §25.2): the vendor may still bill the request. The callback is
-/// told on the runtime the generation ran on, which a dropped future
-/// cannot await.
+/// told in a task, which a dropped future cannot await: on the runtime it
+/// is dropped on, else, dropped off any, on the one it went in flight on.
 struct InFlight {
     attempt: ImageAttempt,
     callback: Option<ImageProgressCallback>,
