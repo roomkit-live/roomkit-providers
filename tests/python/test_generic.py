@@ -144,11 +144,14 @@ def binding_modules() -> dict[str, Path]:
     return {module.stem: module for module in modules if module.stem != "mod"}
 
 
-def vendors() -> set[str]:
+def names_of(package: dict[str, Path], binding: dict[str, Path]) -> set[str]:
     """Every vendor's name as the shared part must not hold it: as the
     binding names it, and as its module of the package does."""
-    stems = {module.stem for module in package_modules().values()}
-    return set(package_modules()) | set(binding_modules()) | stems
+    return set(package) | set(binding) | {module.stem for module in package.values()}
+
+
+def vendors() -> set[str]:
+    return names_of(package_modules(), binding_modules())
 
 
 def found_shared() -> set[str]:
@@ -338,6 +341,11 @@ class GenericTests(unittest.TestCase):
     def test_the_package_and_the_binding_hold_the_same_vendors(self) -> None:
         self.assertEqual(set(package_modules()), set(binding_modules()))
         self.assertGreaterEqual(len(vendors()), 1)
+        # A vendor's module's own name is searched, as the binding's name of
+        # it is: an image vendor that is no language model's is found by its
+        # module's name too.
+        alone = {"acme_image": PACKAGE / "image/acme.py"}
+        self.assertIn("acme", names_of(alone, {"acme_image": BINDING / "vendors/acme_image.rs"}))
 
     def test_what_is_shared_is_every_file_that_is_no_vendor_s(self) -> None:
         self.assertEqual(found_shared(), SHARED_MODULES)

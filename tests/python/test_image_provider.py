@@ -9,16 +9,19 @@ The scripted provider is in the wheel built for the tests only (the
 
 from __future__ import annotations
 
+import asyncio
 import json
 import subprocess
 import sys
 import textwrap
 import unittest
 from typing import Any
+from unittest import mock
 
 from roomkit.providers.ai import ProviderError
 from roomkit.providers.image import ImageAttempt, ImageGenerationError
 from roomkit_providers import _native
+from roomkit_providers.image import _provider
 from roomkit_providers.image._provider import Provider
 
 PNG = "iVBORw0KGgo="
@@ -82,14 +85,42 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
     async def test_an_item_not_taken_is_given_again(self) -> None:
         call = _native.image_provider("scripted", json.dumps({"tells": ["started"]}), None)
         generation = call.generation(asked())
-        first = json.loads(await generation.next())
-        self.assertEqual(json.loads(await generation.next()), first)
-        generation.taken(first["token"])
-        generation.reply(first["token"], None)
-        outcome = json.loads(await generation.next())
-        self.assertEqual(outcome["outcome"], {"images": []})
-        generation.taken(outcome["token"])
-        self.assertIsNone(await generation.next())
+        async with asyncio.timeout(5):
+            first = json.loads(await generation.next())
+            self.assertEqual(json.loads(await generation.next()), first)
+            generation.taken(first["token"])
+            generation.reply(first["token"], None)
+            outcome = json.loads(await generation.next())
+            self.assertEqual(outcome["outcome"], {"images": []})
+            generation.taken(outcome["token"])
+            self.assertIsNone(await generation.next())
+
+    # An attempt told that does not read fails as a callback that raised:
+    # the provider, which waits for an answer, is answered.
+    async def test_an_attempt_that_does_not_read_fails_the_generation(self) -> None:
+        read: list[Any] = []
+
+        class Unread:
+            """Reads every attempt but the first: the one told."""
+
+            @staticmethod
+            def model_validate(written: Any) -> ImageAttempt:
+                read.append(written)
+                if len(read) == 1:
+                    raise ValueError("no attempt")
+                return ImageAttempt.model_validate(written)
+
+        async def recorded(attempt: ImageAttempt) -> None:
+            raise AssertionError("an unread attempt is told")
+
+        provider = scripted(tells=["started"], images=[IMAGE])
+        with (
+            mock.patch.object(_provider, "ImageAttempt", Unread),
+            self.assertRaises(ImageGenerationError) as raised,
+        ):
+            async with asyncio.timeout(5):
+                await provider.generate_with_options("a fox", on_progress=recorded)
+        self.assertIn("no attempt", raised.exception.args[0])
 
     # A panic of the generation is the provider's failure.
     async def test_a_panic_is_the_provider_s_failure(self) -> None:

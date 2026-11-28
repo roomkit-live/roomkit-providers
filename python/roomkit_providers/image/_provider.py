@@ -70,9 +70,12 @@ class _Generation:
     stays its first until it is taken: one a cancellation met on its way is
     given again."""
 
-    def __init__(self, call: _native._ImageCall, callback: ImageProgressCallback | None) -> None:
+    def __init__(
+        self, call: _native._ImageCall, callback: ImageProgressCallback | None, label: str
+    ) -> None:
         self._call = call
         self._callback = callback
+        self._label = label
         self._telling: set[asyncio.Task[None]] = set()
         # The failure of the host's callback, by the index of its attempt:
         # what a generation that attempt failed is raised from.
@@ -101,16 +104,19 @@ class _Generation:
         task.add_done_callback(self._telling.discard)
 
     async def _told(self, item: dict[str, Any]) -> None:
-        attempt = ImageAttempt.model_validate(item["told"])
+        index = item["told"].get("index", 0)
         failed: str | None = None
         try:
+            # An attempt that does not read fails as a callback that raised:
+            # the provider waits for an answer either way.
+            attempt = ImageAttempt.model_validate(item["told"])
             if self._callback is not None:
                 await self._callback(attempt)
         except Exception as exc:
             if self._stopping:
                 self._unreported.append(exc)
             else:
-                self._causes.setdefault(attempt.index, exc)
+                self._causes.setdefault(index, exc)
             failed = str(exc)
         except BaseException:
             # A callback that leaves otherwise fails its attempt, unless the
@@ -124,14 +130,14 @@ class _Generation:
     async def _told_all(self) -> None:
         await asyncio.gather(*self._telling, return_exceptions=True)
 
-    async def outcome(self, label: str) -> list[ImageResult]:
+    async def outcome(self) -> list[ImageResult]:
         while True:
             item = await self._next()
             if item is None:
                 raise ProviderError(
                     "the provider's generation ended without its outcome",
                     retryable=False,
-                    provider=label,
+                    provider=self._label,
                 )
             if "told" in item:
                 self._tell(item)
@@ -182,20 +188,37 @@ class _Generation:
             return []
         self._stopping = True
         self._call.close()
-        for task in self._telling:
-            task.cancel()
-        await self._told_all()
+        await self._cancel_tellings()
         notes: list[str] = []
         try:
             while (item := await self._next()) is not None:
                 told = item.get("told")
                 if told is not None and told["status"] != "started":
                     self._tell(item)
+        except asyncio.CancelledError:
+            # Cancelled again: the callbacks under way are cancelled too, and
+            # none is left running.
+            await self._cancel_tellings()
+            raise
         except Exception as exc:
             notes.append(f"Failed to report unknown image outcome: {exc}")
-        await self._told_all()
-        notes += [f"Failed to report unknown image outcome: {exc}" for exc in self._unreported]
+        try:
+            await self._told_all()
+        except asyncio.CancelledError:
+            await self._cancel_tellings()
+            raise
+        # In RoomKit's words: the callback's failure, as the generation's.
+        said = f"{self._label}: Image progress callback failed"
+        notes += [
+            f"Failed to report unknown image outcome: {said}: {exc}" for exc in self._unreported
+        ]
         return notes
+
+    async def _cancel_tellings(self) -> None:
+        """Cancels the callbacks under way, and waits for each to end."""
+        for task in self._telling:
+            task.cancel()
+        await asyncio.shield(self._told_all())
 
     def close(self) -> None:
         if not _process.forked():
@@ -342,9 +365,9 @@ class Provider[C: BaseModel](RoomKitImageProvider):
         _process.start()
         with failing_as_roomkit():
             call = self._native.generation(json.dumps(asked))
-        generation = _Generation(call, callback)
+        generation = _Generation(call, callback, self._label)
         try:
-            return await generation.outcome(self._label)
+            return await generation.outcome()
         except asyncio.CancelledError as cancelled:
             for note in await generation.cancelled():
                 cancelled.add_note(note)
