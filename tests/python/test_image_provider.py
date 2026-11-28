@@ -10,6 +10,7 @@ The scripted provider is in the wheel built for the tests only (the
 from __future__ import annotations
 
 import asyncio
+import gc
 import json
 import subprocess
 import sys
@@ -133,9 +134,13 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
             raise Unwritten
 
         provider = scripted(tells=["started"], images=[IMAGE])
-        with self.assertRaises(ImageGenerationError):
-            async with asyncio.timeout(5):
-                await provider.generate_with_options("a fox", on_progress=failing)
+        # The telling's failure is taken as it ends: asyncio, collecting the
+        # task, finds no exception left unread to log.
+        with self.assertNoLogs("asyncio", level="ERROR"):
+            with self.assertRaises(ImageGenerationError):
+                async with asyncio.timeout(5):
+                    await provider.generate_with_options("a fox", on_progress=failing)
+            gc.collect()
 
     # A panic of the generation is the provider's failure.
     async def test_a_panic_is_the_provider_s_failure(self) -> None:
