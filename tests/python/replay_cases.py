@@ -19,6 +19,7 @@ the cases of its own fixture.
 
 from __future__ import annotations
 
+import base64
 import copy
 import json
 import tomllib
@@ -368,15 +369,68 @@ def _as_rust(value: str | None) -> str:
     return "None" if value is None else f"Some({json.dumps(value, ensure_ascii=False)})"
 
 
-def _body_of(seen: bytes, sent: Any) -> Any:
+# The content type of a multipart body, as the fixture writes it: without
+# the boundary, which the client draws at random.
+MULTIPART = "multipart/form-data"
+
+
+def _parameter(value: str, wanted: str) -> str | None:
+    """The quoted parameter `wanted` of a header's value."""
+    for parameter in value.split(";"):
+        key, equals, quoted = parameter.strip().partition("=")
+        if equals and key.strip() == wanted:
+            return quoted.strip().strip('"')
+    return None
+
+
+def _multipart(body: bytes, content_type: str) -> list[dict[str, Any]] | None:
+    """The parts of a multipart body, as the fixture writes them, in order:
+    a file's name, media type and bytes (base64), a field's text; None for
+    a body that does not read so."""
+    boundary = _parameter(content_type, "boundary")
+    if boundary is None or not body.startswith(f"--{boundary}".encode()):
+        return None
+    between = f"\r\n--{boundary}".encode()
+    rest = body[len(boundary) + 2 :]
+    parts: list[dict[str, Any]] = []
+    while not rest.startswith(b"--"):
+        if not rest.startswith(b"\r\n") or (end := rest.find(between, 2)) < 0:
+            return None
+        raw, rest = rest[2:end], rest[end + len(between) :]
+        head, _, data = raw.partition(b"\r\n\r\n")
+        headers = dict(
+            (name.strip().lower(), value.strip())
+            for name, _, value in (line.partition(":") for line in head.decode().split("\r\n"))
+        )
+        disposition = headers.get("content-disposition", "")
+        name, filename = _parameter(disposition, "name"), _parameter(disposition, "filename")
+        if filename is None:
+            parts.append({"name": name, "text": data.decode(errors="replace")})
+        else:
+            parts.append(
+                {
+                    "name": name,
+                    "filename": filename,
+                    "content_type": headers.get("content-type"),
+                    "base64": base64.b64encode(data).decode(),
+                }
+            )
+    return parts
+
+
+def _body_of(seen: Seen, sent: Any) -> Any:
     """The body `seen`, as the fixture writes the one Python sent: JSON, or,
     where the fixture writes a form (``{"form": [[name, value], ...]}``), its
-    pairs decoded, in order."""
-    if not seen:
+    pairs decoded, in order, or a multipart body (``{"multipart": [...]}``),
+    its parts read with the boundary `seen` names, in order."""
+    if not seen.body:
         return None
+    if isinstance(sent, dict) and "multipart" in sent:
+        parts = _multipart(seen.body, seen.headers.get("content-type", ""))
+        return None if parts is None else {"multipart": parts}
     if isinstance(sent, dict) and "form" in sent:
-        return {"form": [list(pair) for pair in parse_qsl(seen.decode())]}
-    return json.loads(seen)
+        return {"form": [list(pair) for pair in parse_qsl(seen.body.decode())]}
+    return json.loads(seen.body)
 
 
 def _requests_differ(turn: dict[str, Any], key: str, called: Called, found: list[str]) -> None:
@@ -389,7 +443,7 @@ def _requests_differ(turn: dict[str, Any], key: str, called: Called, found: list
         target = url.path + (f"?{url.query}" if url.query else "")
         if (seen.method, seen.target) != (sent["method"], target):
             found.append(f"request {at}: {seen.method} {seen.target}")
-        body = _body_of(seen.body, sent.get("body"))
+        body = _body_of(seen, sent.get("body"))
         if _text(body) != _text(sent.get("body")):
             found.append(f"request {at}: its body is {_text(body)}")
         _headers_differ(at, seen, sent, (key, called.request_key), found)
@@ -456,7 +510,10 @@ def _headers_differ(
         found.append(f"request {at}: user-agent is {_as_rust(seen.headers.get('user-agent'))}")
     for name, value in sent["headers"].items():
         expected = None if value is None else _keyed(value, keys)
-        if seen.headers.get(name) != expected:
+        given = seen.headers.get(name)
+        if expected == MULTIPART and given is not None:
+            given = given.partition(";")[0]
+        if given != expected:
             found.append(f"request {at}: {name} is {_as_rust(seen.headers.get(name))}")
     names = [name for name, _ in seen.lines]
     for name in names:
