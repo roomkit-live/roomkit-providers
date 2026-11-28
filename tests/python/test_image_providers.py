@@ -210,10 +210,11 @@ class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(_tellings(), [])
 
     # Cancelled again while it tells the attempts it left in flight, a
-    # generation cancels those callbacks too: none is left running.
+    # generation cancels those callbacks too and waits for them to end:
+    # none is left running, its clean-up done.
     async def test_a_second_cancellation_leaves_no_callback_running(self) -> None:
         unknown = asyncio.Event()
-        cancelled: list[str] = []
+        cleaned: list[str] = []
 
         async def slow(attempt: ImageAttempt) -> None:
             if attempt.status != "unknown":
@@ -222,7 +223,8 @@ class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
             try:
                 await asyncio.sleep(5)
             except asyncio.CancelledError:
-                cancelled.append(attempt.status)
+                await asyncio.sleep(0.2)
+                cleaned.append(attempt.status)
                 raise
 
         async with Fake() as fake:
@@ -239,15 +241,88 @@ class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
             generating.cancel()
             await asyncio.wait({generating}, timeout=2)
             self.assertTrue(generating.cancelled(), "the cancelled generation did not end")
-        self.assertEqual(cancelled, ["unknown"])
-        self.assertEqual(_tellings(), [])
+            self.assertEqual(cleaned, ["unknown"])
+            self.assertEqual(_tellings(), [])
+
+    # Cancelled again while the callbacks it cancelled clean up, a generation
+    # cancels them again, as RoomKit's cancels its attempts again, and waits
+    # for them to end: none is left running.
+    async def test_a_cancellation_during_the_clean_up_waits_for_it(self) -> None:
+        entered: list[int] = []
+        both, cleaning = asyncio.Event(), asyncio.Event()
+        ended: list[int] = []
+
+        async def hanging(attempt: ImageAttempt) -> None:
+            entered.append(attempt.index)
+            if len(entered) == 2:
+                both.set()
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cleaning.set()
+                await asyncio.sleep(0.2)
+                raise
+            finally:
+                ended.append(attempt.index)
+
+        async with Fake() as fake:
+            provider = GeminiImage(GeminiImageConfig(api_key=KEY, model="gemini-3-pro-image"))
+            replaying(provider, "gemini", fake)
+            generating = asyncio.create_task(
+                provider.generate_with_options("a fox", n=2, on_progress=hanging)
+            )
+            async with asyncio.timeout(5):
+                await both.wait()
+                generating.cancel()
+                await cleaning.wait()
+            generating.cancel()
+            await asyncio.wait({generating}, timeout=2)
+            self.assertTrue(generating.cancelled(), "the cancelled generation did not end")
+            self.assertEqual(sorted(ended), [0, 1])
+            self.assertEqual(_tellings(), [])
+
+    # Cancelled again while it waits for what to tell, a generation still
+    # tells each attempt it left in flight unknown.
+    async def test_a_second_cancellation_still_tells_the_attempts_in_flight(self) -> None:
+        told: list[tuple[int, str]] = []
+
+        async def recorded(attempt: ImageAttempt) -> None:
+            told.append((attempt.index, attempt.status))
+
+        async with Fake() as fake:
+            provider = GeminiImage(GeminiImageConfig(api_key=KEY, model="gemini-3-pro-image"))
+            replaying(provider, "gemini", fake)
+            fake.answer(Silent(), Silent())
+            generating = asyncio.create_task(
+                provider.generate_with_options("a fox", n=2, on_progress=recorded)
+            )
+            async with asyncio.timeout(5):
+                await fake.received()
+                await fake.received()
+            generating.cancel()
+            await asyncio.sleep(0)
+            generating.cancel()
+            await asyncio.wait({generating}, timeout=2)
+            self.assertTrue(generating.cancelled(), "the cancelled generation did not end")
+        unknown = sorted(index for index, status in told if status == "unknown")
+        self.assertEqual(unknown, [0, 1])
 
     # A callback that fails while the cancelled generation tells it the
     # attempt left in flight is noted on the cancellation, in RoomKit's words.
     async def test_a_failure_to_report_is_noted(self) -> None:
+        for failure, said in [
+            ("store down", "gemini: Image progress callback failed: store down"),
+            # A failure that names the provider is not led by its name.
+            ("Gemini store down", "Image progress callback failed: Gemini store down"),
+        ]:
+            with self.subTest(failure=failure):
+                notes = await self._noted(failure)
+                self.assertEqual(notes, [f"Failed to report unknown image outcome: {said}"])
+
+    async def _noted(self, failure: str) -> list[str]:
         async def failing(attempt: ImageAttempt) -> None:
             if attempt.status == "unknown":
-                raise RuntimeError("store down")
+                raise RuntimeError(failure)
 
         async with Fake() as fake:
             provider = GeminiImage(GeminiImageConfig(api_key=KEY, model="gemini-3-pro-image"))
@@ -261,11 +336,7 @@ class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
                 generating.cancel()
                 with self.assertRaises(asyncio.CancelledError) as raised:
                     await generating
-        said = (
-            "Failed to report unknown image outcome: "
-            "gemini: Image progress callback failed: store down"
-        )
-        self.assertEqual(raised.exception.__notes__, [said])
+        return raised.exception.__notes__
 
     # Two callbacks that fail: the generation is raised from the failure of
     # the first attempt's, as RoomKit's.
@@ -274,6 +345,10 @@ class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
 
         async def failing(attempt: ImageAttempt) -> None:
             if attempt.status == "succeeded":
+                # The first attempt's fails last: the cause is the first by
+                # its index, not by its time.
+                if attempt.index == 0:
+                    await asyncio.sleep(0.1)
                 raise failures[attempt.index]
 
         json_headers = {"content-type": "application/json"}

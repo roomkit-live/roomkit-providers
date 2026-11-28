@@ -119,16 +119,15 @@ class _Generation:
                 self._causes.setdefault(index, exc)
             failed = str(exc)
         except BaseException:
-            # A callback that leaves otherwise fails its attempt, unless the
-            # generation is being cancelled, which drops the attempt.
-            if not self._stopping:
+            # A callback that leaves otherwise fails its attempt: the
+            # provider, which waits for an answer, has one, also when the
+            # generation is cancelled (an attempt in flight told unknown
+            # waits for it).
+            if not _process.forked():
                 self._call.reply(item["token"], "the progress callback did not return")
             raise
         _process.enter()
         self._call.reply(item["token"], failed)
-
-    async def _told_all(self) -> None:
-        await asyncio.gather(*self._telling, return_exceptions=True)
 
     async def outcome(self) -> list[ImageResult]:
         while True:
@@ -143,7 +142,7 @@ class _Generation:
                 self._tell(item)
                 continue
             # The provider ended once every callback answered.
-            await self._told_all()
+            await self._settle(cancel=False)
             return self._ended(item["outcome"])
 
     def _cause_of(self, attempts: list[ImageAttempt]) -> Exception | None:
@@ -183,42 +182,57 @@ class _Generation:
         it left in flight, unknown: the vendor may still bill it. An attempt
         the callback was being told of is dropped with its telling, and one
         told started is no more. Gives the notes the cancellation carries:
-        each failure of the callback then, and a crossing that failed."""
+        each failure of the callback then, and a crossing that failed.
+
+        A cancellation meanwhile, a second or a third, cancels the callbacks
+        then under way and the telling goes on, as RoomKit's provider goes
+        on waiting for each attempt it cancelled: nothing is left running
+        and no attempt in flight goes untold."""
         if _process.forked():
             return []
         self._stopping = True
         self._call.close()
-        await self._cancel_tellings()
+        await self._settle(cancel=True)
         notes: list[str] = []
-        try:
-            while (item := await self._next()) is not None:
-                told = item.get("told")
-                if told is not None and told["status"] != "started":
-                    self._tell(item)
-        except asyncio.CancelledError:
-            # Cancelled again: the callbacks under way are cancelled too, and
-            # none is left running.
-            await self._cancel_tellings()
-            raise
-        except Exception as exc:
-            notes.append(f"Failed to report unknown image outcome: {exc}")
-        try:
-            await self._told_all()
-        except asyncio.CancelledError:
-            await self._cancel_tellings()
-            raise
-        # In RoomKit's words: the callback's failure, as the generation's.
-        said = f"{self._label}: Image progress callback failed"
-        notes += [
-            f"Failed to report unknown image outcome: {said}: {exc}" for exc in self._unreported
-        ]
-        return notes
+        while True:
+            try:
+                item = await self._next()
+            except asyncio.CancelledError:
+                await self._settle(cancel=True)
+                continue
+            except Exception as exc:
+                notes.append(f"Failed to report unknown image outcome: {exc}")
+                break
+            if item is None:
+                break
+            told = item.get("told")
+            if told is not None and told["status"] != "started":
+                self._tell(item)
+        await self._settle(cancel=False)
+        return notes + [self._unreported_note(exc) for exc in self._unreported]
 
-    async def _cancel_tellings(self) -> None:
-        """Cancels the callbacks under way, and waits for each to end."""
-        for task in self._telling:
-            task.cancel()
-        await asyncio.shield(self._told_all())
+    def _unreported_note(self, exc: Exception) -> str:
+        """The note of a callback that failed on an attempt left in flight,
+        in RoomKit's words: the callback's failure as the generation's."""
+        failed = ImageGenerationError(
+            f"Image progress callback failed: {exc}", provider=self._label, attempts=[]
+        )
+        return f"Failed to report unknown image outcome: {failed}"
+
+    async def _settle(self, *, cancel: bool) -> None:
+        """Waits for every callback under way to end, cancelling each first
+        when `cancel` says so. A cancellation meanwhile cancels the
+        callbacks then under way, and the wait goes on: none is left
+        running."""
+        if cancel:
+            for task in self._telling:
+                task.cancel()
+        while running := [task for task in self._telling if not task.done()]:
+            try:
+                await asyncio.gather(*running, return_exceptions=True)
+            except asyncio.CancelledError:
+                for task in running:
+                    task.cancel()
 
     def close(self) -> None:
         if not _process.forked():
