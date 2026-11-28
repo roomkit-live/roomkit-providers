@@ -1,0 +1,4860 @@
+{
+ "generator": "scripts/generate_openai_image_cases.py",
+ "roomkit_version": "0.117.0.dev0",
+ "roomkit_commit": "e3842d3ff476e108f8f53ea475f533dcfd994fec",
+ "roomkit_dirty": false,
+ "openai_version": "3.57.0",
+ "pydantic_version": "2.13.5",
+ "httpx2_version": "2.13.1",
+ "python_version": "3.13.3",
+ "clock": "2026-01-01T00:00:00Z",
+ "notes": {
+  "environment": "Every OPENAI_* variable of the environment is removed before a case runs: the SDK reads a key and a base URL from it when its client is given none.",
+  "versions": "The versions the fixture was written from.",
+  "provenance": "roomkit_commit is the commit roomkit was imported at, and roomkit_dirty whether the package's files had changes not committed then.",
+  "config": "The keyword arguments of OpenAIImageConfig. The key is a placeholder.",
+  "request": "What the image surface was asked: prompt, size, n, reference_images and mask (AIImagePart dumps), options (ImageOptions keywords, null for none) and progress: null for no callback, record for one that records each attempt it is told of, fail for one that records it, then raises RuntimeError('storage unavailable') when told of a succeeded one. image_generate calls generate, image_generate_with_options calls generate_with_options.",
+  "exchanges.request": "What Python sent: the method, the whole URL, the body, and three headers: authorization, the key replaced by <config key>, content-type and accept. A JSON body is written as JSON, its members in the order sent. A multipart body is written under multipart as its parts, in order: each its name, a file's file name, media type and bytes (base64), a field's text; its content type is written without its boundary, which the client draws at random. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool.",
+  "exchanges.response": "What the fake answered: status and headers with a body under json, or under chunks for a body read in several reads, and then, how the reads end after them. A failure in place of a response is under failure: no answer came.",
+  "expected": "What Python returned: results, each ImageResult dumped, or error: its class, its message, its text, the attributes of a ProviderError, raised_from, the class of the error it was raised from, and for an ImageGenerationError its attempts and results, dumped. progress lists, in order, every attempt the callback was told of, dumped. An attempt's id is drawn in order from 00000000-0000-4000-8000-000000000001.",
+  "compare": "On a call that fails, how a replay compares the failure. exactly lists what it reproduces as written. message says whose words the message holds: roomkit (RoomKit's own: compared), python_repr (RoomKit's text of the server's body, 'Error code: <status> - ' and Python's repr of the JSON: compared as Python writes it), sdk (the SDK's words: not compared)."
+ },
+ "questioned": [],
+ "cases": [
+  {
+   "name": "one_image",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_revised_prompt",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "revised_prompt": "a paper fox, folded"
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": "a paper fox, folded",
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "two_images_at_a_size",
+   "kinds": [
+    "answer",
+    "generate",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": "1536X1024",
+    "n": 2,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 2,
+       "size": "1536x1024"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        },
+        {
+         "b64_json": "/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1536x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 2,
+       "size": "1536x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {},
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 2,
+       "size": "1536x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_auto_size",
+   "kinds": [
+    "answer",
+    "generate",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-1-mini"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": "auto",
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-1-mini",
+       "prompt": "an origami fox",
+       "n": 1,
+       "size": "auto"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1536",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-1-mini",
+       "n": 1,
+       "size": "1024x1536",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "the_controls",
+   "kinds": [
+    "answer",
+    "generate",
+    "options"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "quality": "low",
+     "background": "transparent",
+     "output_format": "webp",
+     "output_compression": 70,
+     "moderation": "low"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "background": "transparent",
+       "moderation": "low",
+       "n": 1,
+       "output_compression": 70,
+       "output_format": "webp",
+       "quality": "low"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "transparent",
+       "output_format": "webp",
+       "quality": "low",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/webp;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/webp",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "quality": "low",
+       "background": "transparent",
+       "output_format": "webp",
+       "output_compression": 70,
+       "moderation": "low",
+       "size": "1024x1024"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "the_configuration_s_defaults",
+   "kinds": [
+    "answer",
+    "generate",
+    "options"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2",
+    "quality": "high",
+    "background": "opaque",
+    "output_format": "webp"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "background": "opaque",
+       "n": 1,
+       "output_format": "webp",
+       "quality": "high"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "webp",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/webp;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/webp",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "webp",
+       "size": "1024x1024"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_option_over_a_default",
+   "kinds": [
+    "answer",
+    "generate",
+    "options"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2",
+    "quality": "high",
+    "background": "opaque",
+    "output_format": "webp"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "quality": "medium",
+     "output_format": "jpeg",
+     "background": "auto"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "background": "auto",
+       "n": 1,
+       "output_format": "jpeg",
+       "quality": "medium"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "jpeg",
+       "quality": "medium",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/jpeg",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "quality": "medium",
+       "background": "opaque",
+       "output_format": "jpeg",
+       "size": "1024x1024"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "no_format_said",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "no_usage_said",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024"
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {},
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_usage_with_no_details",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 30,
+        "output_tokens": 1056,
+        "total_tokens": 1086
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "unclassified_input_tokens": 30,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": null,
+      "raw_usage": {
+       "input_tokens": 30,
+       "output_tokens": 1056,
+       "total_tokens": 1086
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "progress_told",
+   "kinds": [
+    "answer",
+    "generate",
+    "progress"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ],
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "succeeded",
+      "provider_request_id": "req_image_1",
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {
+         "input_image_tokens": 40,
+         "input_tokens": 10,
+         "output_tokens": 0,
+         "output_image_tokens": 1056
+        },
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": "req_image_1",
+        "raw_usage": {
+         "input_tokens": 50,
+         "input_tokens_details": {
+          "image_tokens": 40,
+          "text_tokens": 10
+         },
+         "output_tokens": 1056,
+         "total_tokens": 1106
+        },
+        "effective_options": {
+         "model": "gpt-image-2",
+         "n": 1,
+         "size": "1024x1024",
+         "quality": "high",
+         "background": "opaque",
+         "output_format": "png"
+        },
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_edit_of_one_reference",
+   "kinds": [
+    "answer",
+    "edit",
+    "multipart"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/edits",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "multipart/form-data",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "multipart": [
+        {
+         "name": "prompt",
+         "text": "make it blue"
+        },
+        {
+         "name": "model",
+         "text": "gpt-image-2"
+        },
+        {
+         "name": "n",
+         "text": "1"
+        },
+        {
+         "name": "image[]",
+         "filename": "reference-0.png",
+         "content_type": "image/png",
+         "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_edit_of_ordered_references",
+   "kinds": [
+    "answer",
+    "edit",
+    "multipart"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "put them together",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     },
+     {
+      "url": "data:image/jpeg;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+      "mime_type": "image/jpeg"
+     }
+    ],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/edits",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "multipart/form-data",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "multipart": [
+        {
+         "name": "prompt",
+         "text": "put them together"
+        },
+        {
+         "name": "model",
+         "text": "gpt-image-2"
+        },
+        {
+         "name": "n",
+         "text": "1"
+        },
+        {
+         "name": "image[]",
+         "filename": "reference-0.png",
+         "content_type": "image/png",
+         "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        },
+        {
+         "name": "image[]",
+         "filename": "reference-1.jpg",
+         "content_type": "image/jpeg",
+         "base64": "/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc="
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_mask_and_a_moderation",
+   "kinds": [
+    "answer",
+    "edit",
+    "multipart",
+    "options"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "paint the sky",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": {
+     "moderation": "low",
+     "input_fidelity": null
+    },
+    "mask": {
+     "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+     "mime_type": "image/png"
+    },
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/edits",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "multipart/form-data",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "multipart": [
+        {
+         "name": "prompt",
+         "text": "paint the sky"
+        },
+        {
+         "name": "model",
+         "text": "gpt-image-2"
+        },
+        {
+         "name": "n",
+         "text": "1"
+        },
+        {
+         "name": "moderation",
+         "text": "low"
+        },
+        {
+         "name": "image[]",
+         "filename": "reference-0.png",
+         "content_type": "image/png",
+         "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        },
+        {
+         "name": "mask",
+         "filename": "reference-0.png",
+         "content_type": "image/png",
+         "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "moderation": "low",
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_faithful_edit",
+   "kinds": [
+    "answer",
+    "edit",
+    "multipart",
+    "options"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-1.5"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": {
+     "input_fidelity": "high"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/edits",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "multipart/form-data",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "multipart": [
+        {
+         "name": "prompt",
+         "text": "make it blue"
+        },
+        {
+         "name": "input_fidelity",
+         "text": "high"
+        },
+        {
+         "name": "model",
+         "text": "gpt-image-1.5"
+        },
+        {
+         "name": "n",
+         "text": "1"
+        },
+        {
+         "name": "image[]",
+         "filename": "reference-0.png",
+         "content_type": "image/png",
+         "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-1.5",
+       "n": 1,
+       "input_fidelity": "high",
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "previews_then_the_image",
+   "kinds": [
+    "progress",
+    "stream"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "partial_images": 2
+    },
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "stream": true,
+       "prompt": "an origami fox",
+       "n": 1,
+       "partial_images": 2
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream",
+       "x-request-id": "req_image_1"
+      },
+      "chunks": [
+       "data: {\"type\": \"image_generation.partial_image\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"partial_image_index\": 0, \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\"}\n\n",
+       "data: {\"type\": \"image_generation.partial_image\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"partial_image_index\": 1, \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\"}\n\n",
+       "data: {\"type\": \"image_generation.completed\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\", \"usage\": {\"input_tokens\": 50, \"input_tokens_details\": {\"image_tokens\": 40, \"text_tokens\": 10}, \"output_tokens\": 1056, \"total_tokens\": 1106}}\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 2,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ],
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 2
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "preview",
+      "provider_request_id": "req_image_1",
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 2
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {},
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": null,
+        "raw_usage": {},
+        "effective_options": {},
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "preview",
+      "provider_request_id": "req_image_1",
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 2
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {},
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": null,
+        "raw_usage": {},
+        "effective_options": {},
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "succeeded",
+      "provider_request_id": "req_image_1",
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 2,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {
+         "input_image_tokens": 40,
+         "input_tokens": 10,
+         "output_tokens": 0,
+         "output_image_tokens": 1056
+        },
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": "req_image_1",
+        "raw_usage": {
+         "input_tokens": 50,
+         "input_tokens_details": {
+          "image_tokens": 40,
+          "text_tokens": 10
+         },
+         "output_tokens": 1056,
+         "total_tokens": 1106
+        },
+        "effective_options": {
+         "model": "gpt-image-2",
+         "n": 1,
+         "partial_images": 2,
+         "size": "1024x1024",
+         "quality": "high",
+         "background": "opaque",
+         "output_format": "png"
+        },
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "previews_of_an_edit",
+   "kinds": [
+    "multipart",
+    "progress",
+    "stream"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": {
+     "partial_images": 1
+    },
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/edits",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "multipart/form-data",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "multipart": [
+        {
+         "name": "prompt",
+         "text": "make it blue"
+        },
+        {
+         "name": "model",
+         "text": "gpt-image-2"
+        },
+        {
+         "name": "n",
+         "text": "1"
+        },
+        {
+         "name": "partial_images",
+         "text": "1"
+        },
+        {
+         "name": "stream",
+         "text": "true"
+        },
+        {
+         "name": "image[]",
+         "filename": "reference-0.png",
+         "content_type": "image/png",
+         "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream",
+       "x-request-id": "req_image_1"
+      },
+      "chunks": [
+       "data: {\"type\": \"image_edit.partial_image\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"partial_image_index\": 0, \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\"}\n\n",
+       "data: {\"type\": \"image_edit.completed\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\", \"usage\": {\"input_tokens\": 50, \"input_tokens_details\": {\"image_tokens\": 40, \"text_tokens\": 10}, \"output_tokens\": 1056, \"total_tokens\": 1106}}\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ],
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "preview",
+      "provider_request_id": "req_image_1",
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {},
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": null,
+        "raw_usage": {},
+        "effective_options": {},
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "succeeded",
+      "provider_request_id": "req_image_1",
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {
+         "input_image_tokens": 40,
+         "input_tokens": 10,
+         "output_tokens": 0,
+         "output_image_tokens": 1056
+        },
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": "req_image_1",
+        "raw_usage": {
+         "input_tokens": 50,
+         "input_tokens_details": {
+          "image_tokens": 40,
+          "text_tokens": 10
+         },
+         "output_tokens": 1056,
+         "total_tokens": 1106
+        },
+        "effective_options": {
+         "model": "gpt-image-2",
+         "n": 1,
+         "partial_images": 1,
+         "size": "1024x1024",
+         "quality": "high",
+         "background": "opaque",
+         "output_format": "png"
+        },
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_stream_cut_after_its_image",
+   "kinds": [
+    "failure",
+    "progress",
+    "stream"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "partial_images": 1
+    },
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "stream": true,
+       "prompt": "an origami fox",
+       "n": 1,
+       "partial_images": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream"
+      },
+      "chunks": [
+       "data: {\"type\": \"image_generation.partial_image\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"partial_image_index\": 0, \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\"}\n\n",
+       "data: {\"type\": \"image_generation.completed\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\", \"usage\": {\"input_tokens\": 50, \"input_tokens_details\": {\"image_tokens\": 40, \"text_tokens\": 10}, \"output_tokens\": 1056, \"total_tokens\": 1106}}\n\n"
+      ],
+      "then": "the connection is lost"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Connection error.",
+     "text": "openai: Connection error.",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "APIConnectionError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "unknown",
+       "provider_request_id": null,
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1,
+        "partial_images": 1
+       },
+       "metadata": {},
+       "results": [
+        {
+         "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "mime_type": "image/png",
+         "revised_prompt": null,
+         "usage": {
+          "input_image_tokens": 40,
+          "input_tokens": 10,
+          "output_tokens": 0,
+          "output_image_tokens": 1056
+         },
+         "attempt_id": "00000000-0000-4000-8000-000000000001",
+         "provider_request_id": null,
+         "raw_usage": {
+          "input_tokens": 50,
+          "input_tokens_details": {
+           "image_tokens": 40,
+           "text_tokens": 10
+          },
+          "output_tokens": 1056,
+          "total_tokens": 1106
+         },
+         "effective_options": {
+          "model": "gpt-image-2",
+          "n": 1,
+          "partial_images": 1
+         },
+         "metadata": {},
+         "width": null,
+         "height": null
+        }
+       ],
+       "error": "Connection error.",
+       "status_code": null
+      }
+     ],
+     "results": [
+      {
+       "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+       "mime_type": "image/png",
+       "revised_prompt": null,
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "attempt_id": "00000000-0000-4000-8000-000000000001",
+       "provider_request_id": null,
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1,
+        "partial_images": 1
+       },
+       "metadata": {},
+       "width": null,
+       "height": null
+      }
+     ]
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "preview",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {},
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": null,
+        "raw_usage": {},
+        "effective_options": {},
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "unknown",
+      "provider_request_id": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {
+         "input_image_tokens": 40,
+         "input_tokens": 10,
+         "output_tokens": 0,
+         "output_image_tokens": 1056
+        },
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": null,
+        "raw_usage": {
+         "input_tokens": 50,
+         "input_tokens_details": {
+          "image_tokens": 40,
+          "text_tokens": 10
+         },
+         "output_tokens": 1056,
+         "total_tokens": 1106
+        },
+        "effective_options": {
+         "model": "gpt-image-2",
+         "n": 1,
+         "partial_images": 1
+        },
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": "Connection error.",
+      "status_code": null
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "too_many_images",
+   "kinds": [
+    "refused"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 11,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "n must be at least 1; model limit: 10",
+     "text": "n must be at least 1; model limit: 10",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "no_image",
+   "kinds": [
+    "refused"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 0,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "n must be at least 1; model limit: 10",
+     "text": "n must be at least 1; model limit: 10",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_size_unread",
+   "kinds": [
+    "refused",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": "huge",
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "size must be 'WIDTHxHEIGHT' (e.g. '1024x1024'), got 'huge'",
+     "text": "size must be 'WIDTHxHEIGHT' (e.g. '1024x1024'), got 'huge'",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_size_the_model_does_not_draw",
+   "kinds": [
+    "refused",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-1-mini"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": "2048x2048",
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "size must be one of auto, 1024x1024, 1536x1024, 1024x1536",
+     "text": "size must be one of auto, 1024x1024, 1536x1024, 1024x1536",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_control_the_model_does_not_take",
+   "kinds": [
+    "options",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "thinking_level": "high"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "Unsupported image options: thinking_level",
+     "text": "Unsupported image options: thinking_level",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "transparent_jpeg",
+   "kinds": [
+    "options",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "background": "transparent",
+     "output_format": "jpeg"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "Transparent output requires PNG or WebP",
+     "text": "Transparent output requires PNG or WebP",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_fidelity_the_model_does_not_take",
+   "kinds": [
+    "options",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "input_fidelity": "high"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "Unsupported image options: input_fidelity",
+     "text": "Unsupported image options: input_fidelity",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_fidelity_with_no_reference",
+   "kinds": [
+    "options",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-1.5"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "input_fidelity": "high"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "input_fidelity requires reference images",
+     "text": "input_fidelity requires reference images",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "previews_with_no_callback",
+   "kinds": [
+    "options",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "partial_images": 1
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "Streaming previews require on_progress",
+     "text": "Streaming previews require on_progress",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_mask_that_is_no_png",
+   "kinds": [
+    "multipart",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "paint the sky",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": null,
+    "mask": {
+     "url": "data:image/jpeg;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+     "mime_type": "image/jpeg"
+    },
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "A mask must be a PNG image",
+     "text": "A mask must be a PNG image",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_remote_reference",
+   "kinds": [
+    "multipart",
+    "refused"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "https://example.com/fox.png",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "reference image 0: expected a data: URI, got a https URL. OpenAI image editing uploads file content, so a reference must carry inline bytes as a data: URI.",
+     "text": "reference image 0: expected a data: URI, got a https URL. OpenAI image editing uploads file content, so a reference must carry inline bytes as a data: URI.",
+     "raised_from": "ValueError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "controls_on_an_unknown_model",
+   "kinds": [
+    "options",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "my-image-deployment"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "moderation": "low"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "Advanced controls require a model with known image capabilities",
+     "text": "Advanced controls require a model with known image capabilities",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "an_unknown_model_keeps_its_defaults",
+   "kinds": [
+    "answer",
+    "generate",
+    "options"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "my-image-deployment",
+    "quality": "high"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "my-image-deployment",
+       "prompt": "an origami fox",
+       "n": 1,
+       "quality": "high"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "my-image-deployment",
+       "n": 1,
+       "quality": "high",
+       "size": "1024x1024",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "refused_with_400",
+   "kinds": [
+    "failure",
+    "progress",
+    "status"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "error": {
+        "message": "Your request was rejected by the safety system.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": null
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Error code: 400 - {'error': {'message': 'Your request was rejected by the safety system.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "text": "openai (400): Error code: 400 - {'error': {'message': 'Your request was rejected by the safety system.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": 400,
+     "raised_from": "BadRequestError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "Error code: 400 - {'error': {'message': 'Your request was rejected by the safety system.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+       "status_code": 400
+      }
+     ],
+     "results": []
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "failed",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": "Error code: 400 - {'error': {'message': 'Your request was rejected by the safety system.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+      "status_code": 400
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "refused_with_429",
+   "kinds": [
+    "failure",
+    "progress",
+    "status"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 429,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "error": {
+        "message": "Rate limit reached for images.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": null
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Error code: 429 - {'error': {'message': 'Rate limit reached for images.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "text": "openai (429): Error code: 429 - {'error': {'message': 'Rate limit reached for images.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": 429,
+     "raised_from": "RateLimitError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "Error code: 429 - {'error': {'message': 'Rate limit reached for images.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+       "status_code": 429
+      }
+     ],
+     "results": []
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "failed",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": "Error code: 429 - {'error': {'message': 'Rate limit reached for images.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+      "status_code": 429
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "refused_with_500",
+   "kinds": [
+    "failure",
+    "progress",
+    "status"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 500,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "error": {
+        "message": "The server had an error while processing your request.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": null
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Error code: 500 - {'error': {'message': 'The server had an error while processing your request.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "text": "openai (500): Error code: 500 - {'error': {'message': 'The server had an error while processing your request.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": 500,
+     "raised_from": "InternalServerError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "Error code: 500 - {'error': {'message': 'The server had an error while processing your request.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+       "status_code": 500
+      }
+     ],
+     "results": []
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "failed",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": "Error code: 500 - {'error': {'message': 'The server had an error while processing your request.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+      "status_code": 500
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "refused_with_503",
+   "kinds": [
+    "failure",
+    "progress",
+    "status"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 503,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "error": {
+        "message": "The engine is currently overloaded.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": null
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Error code: 503 - {'error': {'message': 'The engine is currently overloaded.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "text": "openai (503): Error code: 503 - {'error': {'message': 'The engine is currently overloaded.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": 503,
+     "raised_from": "InternalServerError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "Error code: 503 - {'error': {'message': 'The engine is currently overloaded.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+       "status_code": 503
+      }
+     ],
+     "results": []
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "failed",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": "Error code: 503 - {'error': {'message': 'The engine is currently overloaded.', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+      "status_code": 503
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "python_repr"
+   }
+  },
+  {
+   "name": "never_connected",
+   "kinds": [
+    "failure",
+    "transport"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "failure": "connection refused"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Connection error.",
+     "text": "openai: Connection error.",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "APIConnectionError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "Connection error.",
+       "status_code": null
+      }
+     ],
+     "results": []
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "lost_once_sent",
+   "kinds": [
+    "failure",
+    "progress",
+    "transport"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "chunks": [
+       "{\"created\": 1767225600, \"data\": [{\"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\"}], \"background\": \"opaque\", \"output_format\":"
+      ],
+      "then": "the connection is lost"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Connection error.",
+     "text": "openai: Connection error.",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "APIConnectionError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "unknown",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "Connection error.",
+       "status_code": null
+      }
+     ],
+     "results": []
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "unknown",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": "Connection error.",
+      "status_code": null
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "timed_out_once_sent",
+   "kinds": [
+    "failure",
+    "transport"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "chunks": [
+       "{\"created\": 1767225600, \"data\": [{\"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\"}], \"background\": \"opaque\", \"output_format\":"
+      ],
+      "then": "the read times out"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Request timed out.",
+     "text": "openai: Request timed out.",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "APITimeoutError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "unknown",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "Request timed out.",
+       "status_code": null
+      }
+     ],
+     "results": []
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "sdk"
+   }
+  },
+  {
+   "name": "fewer_images_than_asked",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 2,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 2
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "openai returned 1 images for a request of 2",
+     "text": "openai returned 1 images for a request of 2",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ProviderError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": "req_image_1",
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 2,
+        "size": "1024x1024",
+        "quality": "high",
+        "background": "opaque",
+        "output_format": "png"
+       },
+       "metadata": {},
+       "results": [
+        {
+         "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "mime_type": "image/png",
+         "revised_prompt": null,
+         "usage": {
+          "input_image_tokens": 40,
+          "input_tokens": 10,
+          "output_tokens": 0,
+          "output_image_tokens": 1056
+         },
+         "attempt_id": "00000000-0000-4000-8000-000000000001",
+         "provider_request_id": "req_image_1",
+         "raw_usage": {
+          "input_tokens": 50,
+          "input_tokens_details": {
+           "image_tokens": 40,
+           "text_tokens": 10
+          },
+          "output_tokens": 1056,
+          "total_tokens": 1106
+         },
+         "effective_options": {
+          "model": "gpt-image-2",
+          "n": 2,
+          "size": "1024x1024",
+          "quality": "high",
+          "background": "opaque",
+          "output_format": "png"
+         },
+         "metadata": {},
+         "width": null,
+         "height": null
+        }
+       ],
+       "error": "openai returned 1 images for a request of 2",
+       "status_code": null
+      }
+     ],
+     "results": [
+      {
+       "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+       "mime_type": "image/png",
+       "revised_prompt": null,
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "attempt_id": "00000000-0000-4000-8000-000000000001",
+       "provider_request_id": "req_image_1",
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 2,
+        "size": "1024x1024",
+        "quality": "high",
+        "background": "opaque",
+        "output_format": "png"
+       },
+       "metadata": {},
+       "width": null,
+       "height": null
+      }
+     ]
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "an_image_with_no_bytes",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 2,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 2
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        },
+        {
+         "url": "https://example.com/fox.png"
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "openai returned image 1 without inline bytes",
+     "text": "openai returned image 1 without inline bytes",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ProviderError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": "req_image_1",
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 2,
+        "size": "1024x1024",
+        "quality": "high",
+        "background": "opaque",
+        "output_format": "png"
+       },
+       "metadata": {},
+       "results": [
+        {
+         "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "mime_type": "image/png",
+         "revised_prompt": null,
+         "usage": {
+          "input_image_tokens": 40,
+          "input_tokens": 10,
+          "output_tokens": 0,
+          "output_image_tokens": 1056
+         },
+         "attempt_id": "00000000-0000-4000-8000-000000000001",
+         "provider_request_id": "req_image_1",
+         "raw_usage": {
+          "input_tokens": 50,
+          "input_tokens_details": {
+           "image_tokens": 40,
+           "text_tokens": 10
+          },
+          "output_tokens": 1056,
+          "total_tokens": 1106
+         },
+         "effective_options": {
+          "model": "gpt-image-2",
+          "n": 2,
+          "size": "1024x1024",
+          "quality": "high",
+          "background": "opaque",
+          "output_format": "png"
+         },
+         "metadata": {},
+         "width": null,
+         "height": null
+        }
+       ],
+       "error": "openai returned image 1 without inline bytes",
+       "status_code": null
+      }
+     ],
+     "results": [
+      {
+       "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+       "mime_type": "image/png",
+       "revised_prompt": null,
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "attempt_id": "00000000-0000-4000-8000-000000000001",
+       "provider_request_id": "req_image_1",
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 2,
+        "size": "1024x1024",
+        "quality": "high",
+        "background": "opaque",
+        "output_format": "png"
+       },
+       "metadata": {},
+       "width": null,
+       "height": null
+      }
+     ]
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_callback_that_fails",
+   "kinds": [
+    "failure",
+    "progress"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "fail"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Image progress callback failed: storage unavailable",
+     "text": "openai: Image progress callback failed: storage unavailable",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "RuntimeError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "succeeded",
+       "provider_request_id": "req_image_1",
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1,
+        "size": "1024x1024",
+        "quality": "high",
+        "background": "opaque",
+        "output_format": "png"
+       },
+       "metadata": {},
+       "results": [
+        {
+         "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "mime_type": "image/png",
+         "revised_prompt": null,
+         "usage": {
+          "input_image_tokens": 40,
+          "input_tokens": 10,
+          "output_tokens": 0,
+          "output_image_tokens": 1056
+         },
+         "attempt_id": "00000000-0000-4000-8000-000000000001",
+         "provider_request_id": "req_image_1",
+         "raw_usage": {
+          "input_tokens": 50,
+          "input_tokens_details": {
+           "image_tokens": 40,
+           "text_tokens": 10
+          },
+          "output_tokens": 1056,
+          "total_tokens": 1106
+         },
+         "effective_options": {
+          "model": "gpt-image-2",
+          "n": 1,
+          "size": "1024x1024",
+          "quality": "high",
+          "background": "opaque",
+          "output_format": "png"
+         },
+         "metadata": {},
+         "width": null,
+         "height": null
+        }
+       ],
+       "error": null,
+       "status_code": null
+      }
+     ],
+     "results": [
+      {
+       "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+       "mime_type": "image/png",
+       "revised_prompt": null,
+       "usage": {
+        "input_image_tokens": 40,
+        "input_tokens": 10,
+        "output_tokens": 0,
+        "output_image_tokens": 1056
+       },
+       "attempt_id": "00000000-0000-4000-8000-000000000001",
+       "provider_request_id": "req_image_1",
+       "raw_usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       },
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1,
+        "size": "1024x1024",
+        "quality": "high",
+        "background": "opaque",
+        "output_format": "png"
+       },
+       "metadata": {},
+       "width": null,
+       "height": null
+      }
+     ]
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "succeeded",
+      "provider_request_id": "req_image_1",
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "results": [
+       {
+        "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "mime_type": "image/png",
+        "revised_prompt": null,
+        "usage": {
+         "input_image_tokens": 40,
+         "input_tokens": 10,
+         "output_tokens": 0,
+         "output_image_tokens": 1056
+        },
+        "attempt_id": "00000000-0000-4000-8000-000000000001",
+        "provider_request_id": "req_image_1",
+        "raw_usage": {
+         "input_tokens": 50,
+         "input_tokens_details": {
+          "image_tokens": 40,
+          "text_tokens": 10
+         },
+         "output_tokens": 1056,
+         "total_tokens": 1106
+        },
+        "effective_options": {
+         "model": "gpt-image-2",
+         "n": 1,
+         "size": "1024x1024",
+         "quality": "high",
+         "background": "opaque",
+         "output_format": "png"
+        },
+        "metadata": {},
+        "width": null,
+        "height": null
+       }
+      ],
+      "error": null,
+      "status_code": null
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "roomkit"
+   }
+  }
+ ]
+}

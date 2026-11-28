@@ -13,6 +13,9 @@ headers a request is written with, and whose words a failure's message holds.
 
 from __future__ import annotations
 
+import base64
+import email.parser
+import email.policy
 import importlib.metadata
 import json
 import logging
@@ -29,7 +32,13 @@ from typing import Any
 import httpx2
 import pydantic
 import roomkit
-from roomkit.providers.ai import AIContext, AIProvider, ProviderError
+from roomkit.providers.ai import AIContext, AIImagePart, AIProvider, ProviderError
+from roomkit.providers.image import (
+    ImageAttempt,
+    ImageGenerationError,
+    ImageOptions,
+    ImageProvider,
+)
 
 KEY = "placeholder-not-a-key"
 REQUEST_KEY = "placeholder-not-a-key-either"
@@ -42,6 +51,9 @@ GENERATE = "generate"
 TEXT = "generate_stream"
 STREAM = "generate_structured_stream"
 LISTING = "list_models"
+# The calls of an image provider a case may run (RFC §25).
+IMAGE_GENERATE = "image_generate"
+IMAGE_WITH_OPTIONS = "image_generate_with_options"
 
 # How the reads of a body fail after its chunks.
 LOST = "the connection is lost"
@@ -314,14 +326,45 @@ def named_key(value: str | None, request_key: str | None = REQUEST_KEY) -> str |
 
 def request_form(request: Any, headers: dict[str, Any]) -> dict[str, Any]:
     """``request`` as the fixture writes it, with the ``headers`` its
-    generator keeps of it."""
+    generator keeps of it. A multipart body is written as its parts, in
+    order (``multipart_form``), its content type without its boundary."""
+    content_type = request.headers.get("content-type") or ""
+    if content_type.startswith("multipart/form-data"):
+        if "content-type" in headers:
+            headers = {**headers, "content-type": "multipart/form-data"}
+        body: Any = {"multipart": multipart_form(request.content, content_type)}
+    else:
+        body = json.loads(request.content) if request.content else None
     return {
         "method": request.method,
         "url": str(request.url),
         "headers": headers,
         "timeouts": request.extensions["timeout"],
-        "body": json.loads(request.content) if request.content else None,
+        "body": body,
     }
+
+
+def multipart_form(content: bytes, content_type: str) -> list[dict[str, Any]]:
+    """The parts of a ``multipart/form-data`` body, in order: each its
+    name, its file name and media type when it is a file, and its value,
+    under ``text`` when it reads as UTF-8 text and is no file, else its
+    bytes under ``base64``."""
+    message = email.parser.BytesParser(policy=email.policy.HTTP).parsebytes(
+        b"Content-Type: " + content_type.encode() + b"\r\n\r\n" + content
+    )
+    parts = []
+    for item in message.iter_parts():
+        written: dict[str, Any] = {"name": item.get_param("name", header="content-disposition")}
+        filename = item.get_filename()
+        data = item.get_payload(decode=True) or b""
+        if filename is not None:
+            written["filename"] = filename
+            written["content_type"] = item.get_content_type()
+            written["base64"] = base64.b64encode(data).decode()
+        else:
+            written["text"] = data.decode("utf-8")
+        parts.append(written)
+    return parts
 
 
 @dataclass
@@ -413,6 +456,60 @@ async def outcome(provider: AIProvider, call: str, context: AIContext) -> dict[s
             return {"error": error_form(failed)}
         key = "text" if call == TEXT else "events"
         return {key: given, "error": error_form(failed)}
+
+
+def image_error_form(failed: BaseException) -> dict[str, Any]:
+    """An image generation's error as the fixture writes it: as
+    ``error_form``, an ``ImageGenerationError``'s attempts and images
+    dumped."""
+    if not isinstance(failed, ImageGenerationError):
+        return error_form(failed)
+    attempts, results = failed.attempts, failed.results
+    del failed.attempts, failed.results
+    try:
+        form = error_form(failed)
+    finally:
+        failed.attempts, failed.results = attempts, results
+    form["attempts"] = [attempt.model_dump(mode="json") for attempt in attempts]
+    form["results"] = [result.model_dump(mode="json") for result in results]
+    return form
+
+
+async def image_outcome(provider: ImageProvider, call: str, request: dict[str, Any]) -> dict[str, Any]:
+    """What ``call`` of an image provider returns for ``request``, or the
+    error it raised, and, for a request with a ``progress`` callback, every
+    attempt the callback was told of, in order (``record``), the callback
+    failing when told of a succeeded one (``fail``)."""
+    told: list[dict[str, Any]] = []
+
+    async def record(attempt: ImageAttempt) -> None:
+        told.append(attempt.model_dump(mode="json"))
+
+    async def fail(attempt: ImageAttempt) -> None:
+        await record(attempt)
+        if attempt.status == "succeeded":
+            raise RuntimeError("storage unavailable")
+
+    callbacks = {None: None, "record": record, "fail": fail}
+    references = [AIImagePart(**given) for given in request["reference_images"]] or None
+    mask = AIImagePart(**request["mask"]) if request["mask"] else None
+    options = ImageOptions(**request["options"]) if request["options"] is not None else None
+    asked = {"size": request["size"], "n": request["n"], "reference_images": references}
+    written: dict[str, Any]
+    try:
+        if call == IMAGE_GENERATE:
+            results = await provider.generate(request["prompt"], **asked)
+        else:
+            callback = callbacks[request["progress"]]
+            results = await provider.generate_with_options(
+                request["prompt"], **asked, options=options, mask=mask, on_progress=callback
+            )
+        written = {"results": [result.model_dump(mode="json") for result in results]}
+    except Exception as failed:
+        written = {"error": image_error_form(failed)}
+    if request["progress"] is not None:
+        written["progress"] = told
+    return written
 
 
 def texts_in(value: Any) -> list[str]:
