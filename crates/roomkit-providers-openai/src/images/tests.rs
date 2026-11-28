@@ -217,3 +217,45 @@ async fn a_stream_error_repeats_no_key() {
         "{attempt_error}"
     );
 }
+
+// A generation dropped off the runtime it ran on, its future moved to a
+// thread of no runtime, still tells its callback the attempt unknown: the
+// runtime is the one it went in flight on.
+#[test]
+fn a_generation_dropped_off_its_runtime_tells_unknown() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let fake = runtime.block_on(Fake::serving(vec![Reply::Silent]));
+    let provider = runtime.block_on(async { provider(format!("http://{}/v1", fake.address)) });
+    let (callback, mut heard) = sending();
+    let mut generating = Box::pin(provider.generate_with_options("a fox", told(&callback)));
+    runtime.block_on(async {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            while fake.seen().is_empty() {
+                tokio::select! {
+                    biased;
+                    ended = &mut generating => panic!("a silent endpoint answered: {ended:?}"),
+                    () = tokio::task::yield_now() => {}
+                }
+            }
+        })
+        .await
+        .expect("the request reaches the fake");
+    });
+    std::thread::scope(|scope| {
+        scope.spawn(move || drop(generating));
+    });
+    let statuses = runtime.block_on(async {
+        let mut statuses = Vec::new();
+        for _ in 0..2 {
+            let attempt = tokio::time::timeout(Duration::from_secs(5), heard.recv()).await;
+            statuses.push(attempt.expect("each move is told").unwrap().status);
+        }
+        statuses
+    });
+    let expected = [ImageAttemptStatus::Started, ImageAttemptStatus::Unknown];
+    assert_eq!(statuses, expected);
+}

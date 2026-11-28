@@ -284,6 +284,9 @@ impl OpenAiImage {
 struct InFlight {
     attempt: ImageAttempt,
     callback: Option<ImageProgressCallback>,
+    /// The runtime the attempt ran on, taken when it went in flight: the
+    /// future may be dropped off it.
+    runtime: Option<tokio::runtime::Handle>,
 }
 
 /// What a cancelled attempt says, as Python's.
@@ -294,6 +297,7 @@ impl InFlight {
         Self {
             attempt,
             callback: callback.cloned(),
+            runtime: tokio::runtime::Handle::try_current().ok(),
         }
     }
 
@@ -309,7 +313,7 @@ impl Drop for InFlight {
         let Some(callback) = self.callback.take() else {
             return;
         };
-        let Ok(runtime) = tokio::runtime::Handle::try_current() else {
+        let Some(runtime) = self.runtime.take() else {
             return;
         };
         let mut attempt = std::mem::take(&mut self.attempt);
