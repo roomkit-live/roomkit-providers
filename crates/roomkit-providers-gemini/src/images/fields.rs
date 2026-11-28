@@ -126,6 +126,11 @@ fn is_withheld(name: &str) -> bool {
     WITHHELD.contains(&name) || name.starts_with('_')
 }
 
+/// A member the SDK kept as it came, as Python's provider keeps it.
+pub(crate) fn raw(value: &Value) -> Value {
+    plain(value)
+}
+
 /// `value` as it came, its withheld members left out at every depth.
 fn plain(value: &Value) -> Value {
     match value {

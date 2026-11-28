@@ -49,7 +49,7 @@ async fn every_generation_replays_as_python() {
     let fixture = Fixture::read(FIXTURE);
     let (as_python, named) =
         replayed_or_named::<GeminiImage>(&fixture, &NAMED, IMAGE_GENERATE).await;
-    assert_eq!((as_python, named), (29, 0));
+    assert_eq!((as_python, named), (38, 0));
 }
 
 #[tokio::test]
@@ -57,7 +57,7 @@ async fn every_generation_with_its_controls_replays_as_python() {
     let fixture = Fixture::read(FIXTURE);
     let call = IMAGE_WITH_OPTIONS;
     let (as_python, named) = replayed_or_named::<GeminiImage>(&fixture, &NAMED, call).await;
-    assert_eq!((as_python, named), (18, 0));
+    assert_eq!((as_python, named), (19, 0));
 }
 
 // The replay compares what it says it compares: each wrong refused.

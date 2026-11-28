@@ -141,16 +141,9 @@ impl GeminiImage {
             token: None,
         };
         let (answer, _) = self.client.send(call).await?;
-        match serde_json::from_slice(&answer) {
-            // The one member the SDK requires of an interaction.
-            Ok(Value::Object(interaction))
-                if interaction.get("status").is_some_and(Value::is_string) =>
-            {
-                Ok(Value::Object(interaction))
-            }
-            Ok(_) => Err(Failure::unreadable("the answer is no interaction")),
-            Err(error) => Err(Failure::malformed(&error)),
-        }
+        // Any JSON is an interaction to the SDK, which builds what its
+        // models do not validate member by member.
+        serde_json::from_slice(&answer).map_err(|error| Failure::malformed(&error))
     }
 
     /// The interaction `checked` asks, continued hop after hop until it
@@ -178,7 +171,8 @@ impl GeminiImage {
                 Ok(hop) => hops.push(hop),
                 Err(failure) => {
                     let failed = self.exit.leave(&failure);
-                    return Err(own_failure(hops::interrupted(hops.len(), &failed.message)));
+                    let said = hops::interrupted(hops.len(), &failed);
+                    return Err(own_failure(said));
                 }
             }
             sent = Some(token);
@@ -197,7 +191,7 @@ impl GeminiImage {
         checked: &Checked,
         index: u32,
         callback: Option<&ImageProgressCallback>,
-    ) -> Result<ImageAttempt, ImageGenerationError> {
+    ) -> Result<ImageAttempt, Box<AttemptFailed>> {
         let attempt = ImageAttempt {
             index,
             effective_options: checked.effective.clone(),
@@ -205,7 +199,9 @@ impl GeminiImage {
         };
         // The interaction is in flight once the attempt is told started: a
         // failure or a cancellation of that first telling sent nothing.
-        notify_image_progress(callback, &attempt, PROVIDER).await?;
+        notify_image_progress(callback, &attempt, PROVIDER)
+            .await
+            .map_err(AttemptFailed::told)?;
         let in_flight = InFlight::new(attempt, callback);
         let created = self.created(checked).await;
         let mut attempt = in_flight.settled();
@@ -229,12 +225,17 @@ impl GeminiImage {
         } else {
             attempt.status = ImageAttemptStatus::Succeeded;
         }
-        notify_image_progress(callback, &attempt, PROVIDER).await?;
+        notify_image_progress(callback, &attempt, PROVIDER)
+            .await
+            .map_err(AttemptFailed::told)?;
         let Some((_, error)) = failed else {
             return Ok(attempt);
         };
         let generation = ImageGenerationError::new(error.to_string(), PROVIDER, vec![attempt]);
-        Err(generation.with_source(error))
+        Err(Box::new(AttemptFailed {
+            generation: generation.with_source(error.clone()),
+            cause: Some(error),
+        }))
     }
 
     /// Generates the images `options` asks of `prompt`: `n` attempts at
@@ -262,19 +263,43 @@ impl GeminiImage {
             match outcome {
                 Ok(attempt) => attempts_made.push(attempt),
                 Err(failure) => {
-                    attempts_made.extend(failure.attempts.iter().cloned());
+                    attempts_made.extend(failure.generation.attempts.iter().cloned());
                     failures.push(failure);
                 }
             }
         }
         if let Some(first) = failures.into_iter().next() {
-            let generation = ImageGenerationError::new(first.to_string(), PROVIDER, attempts_made);
-            return Err(generation.with_source(first).into());
+            let message = first.generation.to_string();
+            let generation = ImageGenerationError::new(message, PROVIDER, attempts_made);
+            // Raised from what the first failure was raised from, as
+            // Python's `from first.__cause__ or first`.
+            let generation = match first.cause {
+                Some(cause) => generation.with_source(cause),
+                None => generation.with_source(first.generation),
+            };
+            return Err(generation.into());
         }
         Ok(attempts_made
             .into_iter()
             .flat_map(|attempt| attempt.results)
             .collect())
+    }
+}
+
+/// An attempt that failed: its failure, holding the attempt, and the
+/// provider's failure it was raised from, where the callback did not fail.
+struct AttemptFailed {
+    generation: ImageGenerationError,
+    cause: Option<ProviderError>,
+}
+
+impl AttemptFailed {
+    /// The callback's failure, which holds the attempt it was told of.
+    fn told(generation: ImageGenerationError) -> Box<Self> {
+        Box::new(Self {
+            generation,
+            cause: None,
+        })
     }
 }
 

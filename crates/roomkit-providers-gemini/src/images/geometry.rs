@@ -4,6 +4,8 @@
 
 use roomkit_ai::image::{ImageRequestError, parse_size};
 
+use super::answer::repr;
+
 /// The aspect ratios the Interactions image format takes across Gemini's
 /// lineup (Python's `ASPECT_RATIOS`).
 pub(crate) const ASPECT_RATIOS: [&str; 14] = [
@@ -55,8 +57,9 @@ pub(crate) fn size_geometry(
     if !ratios.iter().any(|ratio| ratio.as_ref() == aspect_ratio) {
         let offered = listed(ratios);
         return Err(ImageRequestError::new(format!(
-            "size '{size}' reduces to aspect ratio {aspect_ratio}, which {owner} does not offer \
-             (its ratios: {offered})"
+            "size {} reduces to aspect ratio {aspect_ratio}, which {owner} does not offer \
+             (its ratios: {offered})",
+            repr(size)
         )));
     }
     let offered = tier.filter(|tier| tiers.iter().any(|offered| offered.as_ref() == *tier));
@@ -69,7 +72,8 @@ pub(crate) fn size_geometry(
     );
     let offered = listed(tiers);
     Err(ImageRequestError::new(format!(
-        "size '{size}' needs {needed}, which {owner} does not offer (its tiers: {offered})"
+        "size {} needs {needed}, which {owner} does not offer (its tiers: {offered})",
+        repr(size)
     )))
 }
 

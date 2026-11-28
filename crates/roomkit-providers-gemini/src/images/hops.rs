@@ -5,6 +5,7 @@
 //! one interaction (`merge_unary_hops`): the last hop, with the steps of
 //! every hop and the usage of them all.
 
+use roomkit_ai::ProviderError;
 use serde_json::Value;
 
 /// The token `hop` asks to be continued from, unless it is the one `sent`
@@ -26,8 +27,14 @@ pub(crate) fn owner(hop: &Value) -> Option<&str> {
 }
 
 /// The words of the SDK for a hop that failed after `hops` hops completed,
-/// and `failure`, what failed it.
-pub(crate) fn interrupted(hops: usize, failure: &str) -> String {
+/// and `failure`, what failed it, written as the SDK writes an error of a
+/// status (`Error code: 429 - ...`).
+pub(crate) fn interrupted(hops: usize, failure: &ProviderError) -> String {
+    let said = failure.message.trim_end_matches('.');
+    let failure = match failure.status_code {
+        Some(status) => format!("Error code: {status} - {said}"),
+        None => said.to_owned(),
+    };
     format!(
         "Automatic continuation was interrupted after {hops} completed hop(s): {failure}. The \
          partial interaction (status 'requires_continuation') and its continuation_token can \
@@ -37,8 +44,13 @@ pub(crate) fn interrupted(hops: usize, failure: &str) -> String {
 
 /// `hops`, in order, as one interaction: the last, with the steps of every
 /// hop, a later hop's leading user inputs left out (it repeats the input),
-/// and their usage summed.
+/// and their usage summed. A last hop that states no list of steps is no
+/// interaction the SDK merges: it is the interaction, as it came.
 pub(crate) fn merged(mut hops: Vec<Value>) -> Value {
+    let last_steps = hops.last().and_then(|hop| hop.get("steps"));
+    if !last_steps.is_some_and(Value::is_array) {
+        return hops.pop().unwrap_or_default();
+    }
     let first_usage = hops.first().and_then(|hop| hop.get("usage")).cloned();
     let usages: Vec<Value> = hops
         .iter()

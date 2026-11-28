@@ -135,7 +135,7 @@ is Python's (`scripts/generate_gemini_catalogue.py`).
 - One try: a paid interaction is never tried again on its own. An attempt is
   failed once an interaction came back or the vendor answered with a status,
   unknown otherwise (a connection lost or never made, a timeout, an answer
-  that is no interaction), as Python's provider reads it.
+  that is no JSON), as Python's provider reads it.
 - An interaction cut at the decode limit (`requires_continuation`, with a
   token) is continued hop after hop, as Python's SDK continues it: a hop
   continues the interaction that gave its token, or sends the input again
@@ -157,13 +157,21 @@ is Python's (`scripts/generate_gemini_catalogue.py`).
   thought tokens with the text output, cached tokens unclassified.
 - An attempt dropped while its interaction is in flight tells its callback it
   is unknown, as Python's provider does from its `CancelledError`, in a task
-  of the runtime it ran on. An answer is read to 128 MiB.
+  of the runtime it went in flight on, wherever it is dropped. An answer is
+  read to 128 MiB.
 
-The SDK checks every member of an interaction against its models; the
-provider requires only its one required member, `status`, and reads the
-others as it can.
+Python's SDK refuses no JSON answer: one its models do not validate is built
+member by member, its defaults where a member is missing (an empty `id`, no
+steps, no text), and one that is no object is kept as it is. The provider
+reads an answer the same way, so a 200 that carries an error object is an
+interaction with no image, failed. It takes an answer as validated from the
+members it reads (`status` a text, `steps` a list of steps that name their
+kind, `id`, `output_text`, `usage`, `output_image` of their types), where the
+SDK checks every member: an answer that breaks a member the provider does not
+read is validated here and not there, which changes only its `output_text`
+when its steps hold no text (empty here, what the answer states there).
 
-The provider is held to 47 cases captured on RoomKit's Python provider
+The provider is held to 57 cases captured on RoomKit's Python provider
 (`tests/fixtures/python_image_cases.json`, written by
 `scripts/generate_gemini_image_cases.py` from `scripts/gemini_image_cases.py`),
 every one replayed as Python.
