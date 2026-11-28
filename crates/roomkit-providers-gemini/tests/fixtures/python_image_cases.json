@@ -682,6 +682,42 @@
    }
   },
   {
+   "name": "a_size_written_with_a_no_break_space",
+   "kinds": [
+    "refused",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gemini-3-pro-image"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": "1024x4096\u00a0",
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "size '1024x4096\\xa0' reduces to aspect ratio 1:4, which gemini-3-pro-image does not offer (its ratios: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9)",
+     "text": "size '1024x4096\\xa0' reduces to aspect ratio 1:4, which gemini-3-pro-image does not offer (its ratios: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9)",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
    "name": "the_configuration_s_defaults",
    "kinds": [
     "answer",
@@ -5175,6 +5211,547 @@
    }
   },
   {
+   "name": "an_answer_of_null",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gemini-3-pro-image"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+      "headers": {
+       "x-goog-api-key": "<config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gemini-3-pro-image",
+       "input": [
+        {
+         "content": [
+          {
+           "text": "an origami fox",
+           "type": "text"
+          }
+         ],
+         "type": "user_input"
+        }
+       ],
+       "response_format": {
+        "type": "image"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": null
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Gemini returned an interaction with no image; status=None",
+     "text": "Gemini returned an interaction with no image; status=None",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ProviderError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "unknown",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gemini-3-pro-image",
+        "response_format": {
+         "type": "image"
+        }
+       },
+       "metadata": {
+        "steps": [],
+        "output_text": null
+       },
+       "results": [],
+       "error": "Gemini returned an interaction with no image; status=None",
+       "status_code": null
+      }
+     ],
+     "results": []
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "an_interaction_with_a_null_id",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gemini-3-pro-image"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+      "headers": {
+       "x-goog-api-key": "<config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gemini-3-pro-image",
+       "input": [
+        {
+         "content": [
+          {
+           "text": "an origami fox",
+           "type": "text"
+          }
+         ],
+         "type": "user_input"
+        }
+       ],
+       "response_format": {
+        "type": "image"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": null,
+       "status": "completed",
+       "steps": [
+        {
+         "type": "model_output",
+         "content": [
+          {
+           "type": "text",
+           "text": "a paper fox"
+          },
+          {
+           "type": "image",
+           "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+           "mime_type": "image/png"
+          }
+         ]
+        }
+       ],
+       "usage": {
+        "total_input_tokens": 12,
+        "input_tokens_by_modality": [
+         {
+          "modality": "text",
+          "tokens": 12
+         }
+        ],
+        "total_output_tokens": 1300,
+        "output_tokens_by_modality": [
+         {
+          "modality": "image",
+          "tokens": 1290
+         },
+         {
+          "modality": "text",
+          "tokens": 10
+         }
+        ],
+        "total_thought_tokens": 5
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 0,
+       "input_tokens": 12,
+       "output_image_tokens": 1290,
+       "output_tokens": 15
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": null,
+      "raw_usage": {
+       "initial_input_tokens": 12,
+       "input_tokens_by_modality": [
+        {
+         "modality": "text",
+         "tokens": 12
+        }
+       ],
+       "output_tokens_by_modality": [
+        {
+         "modality": "image",
+         "tokens": 1290
+        },
+        {
+         "modality": "text",
+         "tokens": 10
+        }
+       ],
+       "total_input_tokens": 12,
+       "total_output_tokens": 1300,
+       "total_thought_tokens": 5
+      },
+      "effective_options": {
+       "model": "gemini-3-pro-image",
+       "response_format": {
+        "type": "image"
+       }
+      },
+      "metadata": {
+       "steps": [
+        {
+         "content": [
+          {
+           "text": "a paper fox",
+           "type": "text"
+          },
+          {
+           "mime_type": "image/png",
+           "type": "image"
+          }
+         ],
+         "type": "model_output"
+        }
+       ],
+       "output_text": "a paper fox"
+      },
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_step_of_no_kind",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gemini-3-pro-image"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+      "headers": {
+       "x-goog-api-key": "<config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gemini-3-pro-image",
+       "input": [
+        {
+         "content": [
+          {
+           "text": "an origami fox",
+           "type": "text"
+          }
+         ],
+         "type": "user_input"
+        }
+       ],
+       "response_format": {
+        "type": "image"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "int_1",
+       "status": "completed",
+       "steps": [
+        {
+         "type": null,
+         "content": [
+          {
+           "type": "text",
+           "text": "x"
+          }
+         ]
+        },
+        {
+         "type": "model_output",
+         "content": [
+          {
+           "type": "image",
+           "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+           "mime_type": "image/png"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {},
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "int_1",
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gemini-3-pro-image",
+       "response_format": {
+        "type": "image"
+       }
+      },
+      "metadata": {
+       "steps": [
+        {
+         "type": null,
+         "content": [
+          {
+           "type": "text",
+           "text": "x"
+          }
+         ]
+        },
+        {
+         "content": [
+          {
+           "mime_type": "image/png",
+           "type": "image"
+          }
+         ],
+         "type": "model_output"
+        }
+       ],
+       "output_text": ""
+      },
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_status_that_is_an_object",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gemini-3-pro-image"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+      "headers": {
+       "x-goog-api-key": "<config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gemini-3-pro-image",
+       "input": [
+        {
+         "content": [
+          {
+           "text": "an origami fox",
+           "type": "text"
+          }
+         ],
+         "type": "user_input"
+        }
+       ],
+       "response_format": {
+        "type": "image"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "int_1",
+       "status": {
+        "a": [
+         1,
+         2
+        ],
+        "b": null,
+        "c": true,
+        "d": "it's"
+       },
+       "steps": []
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Gemini returned an interaction with no image; status={'a': [1, 2], 'b': None, 'c': True, 'd': \"it's\"}",
+     "text": "Gemini returned an interaction with no image; status={'a': [1, 2], 'b': None, 'c': True, 'd': \"it's\"}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ProviderError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": "int_1",
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gemini-3-pro-image",
+        "response_format": {
+         "type": "image"
+        }
+       },
+       "metadata": {
+        "steps": [],
+        "output_text": null
+       },
+       "results": [],
+       "error": "Gemini returned an interaction with no image; status={'a': [1, 2], 'b': None, 'c': True, 'd': \"it's\"}",
+       "status_code": null
+      }
+     ],
+     "results": []
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
    "name": "a_generation_in_two_hops",
    "kinds": [
     "answer",
@@ -6221,6 +6798,193 @@
        },
        "results": [],
        "error": "Gemini returned an interaction with no image; status='completed'",
+       "status_code": null
+      }
+     ],
+     "results": []
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_null_last_hop",
+   "kinds": [
+    "answer",
+    "continuation",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gemini-3-pro-image"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+      "headers": {
+       "x-goog-api-key": "<config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gemini-3-pro-image",
+       "input": [
+        {
+         "content": [
+          {
+           "text": "an origami fox",
+           "type": "text"
+          }
+         ],
+         "type": "user_input"
+        }
+       ],
+       "response_format": {
+        "type": "image"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "id": "int_1",
+       "status": "requires_continuation",
+       "continuation_token": "tok_1",
+       "steps": [
+        {
+         "type": "user_input",
+         "content": [
+          {
+           "type": "text",
+           "text": "an origami fox"
+          }
+         ]
+        },
+        {
+         "type": "model_output",
+         "content": [
+          {
+           "type": "text",
+           "text": "drawing"
+          }
+         ]
+        }
+       ],
+       "usage": {
+        "total_input_tokens": 12,
+        "input_tokens_by_modality": [
+         {
+          "modality": "text",
+          "tokens": 12
+         }
+        ],
+        "total_output_tokens": 40,
+        "output_tokens_by_modality": [
+         {
+          "modality": "text",
+          "tokens": 40
+         }
+        ]
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+      "headers": {
+       "x-goog-api-key": "<config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gemini-3-pro-image",
+       "continuation_token": "tok_1",
+       "previous_interaction_id": "int_1",
+       "response_format": {
+        "type": "image"
+       }
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": null
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "Gemini returned an interaction with no image; status=None",
+     "text": "Gemini returned an interaction with no image; status=None",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "gemini",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ProviderError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "unknown",
+       "provider_request_id": null,
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gemini-3-pro-image",
+        "response_format": {
+         "type": "image"
+        }
+       },
+       "metadata": {
+        "steps": [],
+        "output_text": null
+       },
+       "results": [],
+       "error": "Gemini returned an interaction with no image; status=None",
        "status_code": null
       }
      ],

@@ -94,6 +94,7 @@ case("a_size_of_a_ratio_the_model_lacks", "refused size", IMAGE_GENERATE, PRO, a
 case("a_size_past_the_largest_tier", "refused size", IMAGE_GENERATE, PRO, asked(size="8192x8192"))
 case("a_size_of_a_tier_the_model_lacks", "refused size", IMAGE_GENERATE, PRO, asked(size="512x512"))
 case("a_size_written_with_a_line_break", "refused size", IMAGE_GENERATE, PRO, asked(size="1024x4096\n"))
+case("a_size_written_with_a_no_break_space", "refused size", IMAGE_GENERATE, PRO, asked(size="1024x4096\u00a0"))
 case(
     "the_configuration_s_defaults",
     "generate answer options",
@@ -275,6 +276,21 @@ case(
     answer({"error": {"code": 429, "message": "Resource has been exhausted.", "status": "RESOURCE_EXHAUSTED"}}),
 )
 case("an_answer_that_is_no_object", "failure answer", IMAGE_GENERATE, PRO, asked(), answer([]))
+case("an_answer_of_null", "failure answer", IMAGE_GENERATE, PRO, asked(), answer(None))
+case("an_interaction_with_a_null_id", "generate answer", IMAGE_GENERATE, PRO, asked(), answer(
+    {**interaction(), "id": None}
+))
+case("a_step_of_no_kind", "generate answer", IMAGE_GENERATE, PRO, asked(), answer({
+    "id": "int_1",
+    "status": "completed",
+    "steps": [
+        {"type": None, "content": [{"type": "text", "text": "x"}]},
+        {"type": "model_output", "content": [image()]},
+    ],
+}))
+case("a_status_that_is_an_object", "failure answer", IMAGE_GENERATE, PRO, asked(), answer(
+    {"id": "int_1", "status": {"a": [1, 2], "b": None, "c": True, "d": "it's"}, "steps": []}
+))
 
 # -- An interaction continued ----------------------------------------------------------
 #
@@ -344,6 +360,15 @@ case(
     asked(),
     answer({**first_hop(), "steps": [USER_INPUT, {"type": "model_output", "content": [image()]}]}),
     answer({"id": "int_2", "status": "completed", "usage": USAGE}),
+)
+case(
+    "a_null_last_hop",
+    "failure answer continuation",
+    IMAGE_GENERATE,
+    PRO,
+    asked(),
+    answer(first_hop()),
+    answer(None),
 )
 case(
     "an_error_object_on_the_second_hop",
