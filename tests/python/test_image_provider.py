@@ -122,6 +122,21 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
                 await provider.generate_with_options("a fox", on_progress=recorded)
         self.assertIn("no attempt", raised.exception.args[0])
 
+    # A callback whose failure has no words still fails the generation: the
+    # provider, which waits for an answer, has one.
+    async def test_a_callback_failing_without_words_fails_the_generation(self) -> None:
+        class Unwritten(Exception):
+            def __str__(self) -> str:
+                raise RuntimeError("no words")
+
+        async def failing(attempt: ImageAttempt) -> None:
+            raise Unwritten
+
+        provider = scripted(tells=["started"], images=[IMAGE])
+        with self.assertRaises(ImageGenerationError):
+            async with asyncio.timeout(5):
+                await provider.generate_with_options("a fox", on_progress=failing)
+
     # A panic of the generation is the provider's failure.
     async def test_a_panic_is_the_provider_s_failure(self) -> None:
         with self.assertRaises(ProviderError) as raised:
@@ -156,12 +171,17 @@ class TellingTests(unittest.IsolatedAsyncioTestCase):
             def reply(self, token: int, failed: str | None) -> None:
                 self.answers.append((token, failed))
 
+        entered: list[str] = []
+
         async def waiting(attempt: ImageAttempt) -> None:
+            entered.append(attempt.status)
             await asyncio.Event().wait()
 
         call = Call()
         generation = _provider._Generation(call, waiting, "scripted")  # type: ignore[arg-type]
         generation._tell({"told": {"index": 0, "status": "unknown"}, "token": 7})
+        # The callback is told at once, as RoomKit's attempts tell it.
+        self.assertEqual(entered, ["unknown"])
         for task in list(generation._telling):
             task.cancel()
         async with asyncio.timeout(5):
