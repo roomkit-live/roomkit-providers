@@ -36,7 +36,7 @@ nothing has been released yet.
   `roomkit_providers.image.openrouter`, RoomKit's Python
   `OpenRouterImageProvider` on OpenRouter's Image API: `n` requests made at
   once, at most ten, each image with its usage and its cost. It is held to
-  41 cases captured on RoomKit's Python provider, 39 replayed as Python and
+  43 cases captured on RoomKit's Python provider, 41 replayed as Python and
   2 named, in Rust and through the Python binding.
 - The image providers in Python: `roomkit_providers.image.openai`
   (`OpenAIImage`, `OpenAIImageConfig`) and `roomkit_providers.image.gemini`

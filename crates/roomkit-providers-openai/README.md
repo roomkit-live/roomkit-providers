@@ -738,9 +738,9 @@ catalogue, `catalog/openrouter_images.json`, is Python's.
   are refused, as Python's provider refuses them: it answers `generate`
   alone.
 
-It is held to 41 cases captured on RoomKit's Python provider
+It is held to 43 cases captured on RoomKit's Python provider
 (`tests/fixtures/python_openrouter_image_cases.json`, written by
-`scripts/generate_openrouter_image_cases.py`), 39 replayed as Python and 2
+`scripts/generate_openrouter_image_cases.py`), 41 replayed as Python and 2
 named.
 
 ## The wire cases
