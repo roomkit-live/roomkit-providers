@@ -245,6 +245,8 @@ pub(super) fn differs(
     let mut given_values = given_of(given, told);
     // Attempts made at once tell their moves in the order they come: each
     // attempt's moves are compared in their order, not their interleaving.
+    // So the replay proves no attempts were made at once: a provider that
+    // makes them so proves it by a test of its own.
     by_attempt(&mut expected_values[0]);
     by_attempt(&mut given_values[0]);
     name_attempt_ids(&mut expected_values.iter_mut().collect::<Vec<_>>());
@@ -481,7 +483,8 @@ pub const TOLD: [Wrong; 3] = [
 ];
 
 /// What a replay does not compare: the attempts told of attempts made at
-/// once, each attempt's moves together.
+/// once, each attempt's moves together. Attempts made one after another
+/// replay as attempts made at once.
 pub const INTERLEAVED: [Wrong; 1] = [("each attempt's moves together", "", |r| {
     given_mut(r).1.sort_by_key(|attempt| attempt.index);
 })];
