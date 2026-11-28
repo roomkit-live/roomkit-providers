@@ -202,6 +202,18 @@ impl Client {
     /// is left, a redirect, a status the provider reads as a refusal, or an
     /// answer past [`ANSWER_LIMIT`].
     pub async fn send(&self, call: Call<'_>) -> Result<(Vec<u8>, bool), Failure> {
+        let (body, json, _) = self.send_headed(call).await?;
+        Ok((body, json))
+    }
+
+    /// As [`send`](Self::send), with the headers of the answer: what a
+    /// provider reads of it beside its body, the vendor's id of the request
+    /// (`x-request-id`).
+    ///
+    /// # Errors
+    ///
+    /// As [`send`](Self::send).
+    pub async fn send_headed(&self, call: Call<'_>) -> Result<(Vec<u8>, bool, HeaderMap), Failure> {
         let mut retries_taken = 0;
         loop {
             match self.whole(call, retries_taken).await {
@@ -290,11 +302,16 @@ impl Client {
     }
 
     /// One try, its answer read whole.
-    async fn whole(&self, call: Call<'_>, retries_taken: u32) -> Result<(Vec<u8>, bool), Failed> {
+    async fn whole(
+        &self,
+        call: Call<'_>,
+        retries_taken: u32,
+    ) -> Result<(Vec<u8>, bool, HeaderMap), Failed> {
         let Opened { response, hidden } = self.head(call, retries_taken, true).await?;
         let json = is_json(response.headers());
+        let headers = response.headers().clone();
         match read_body(response).await {
-            Ok(body) => Ok((hidden.bytes(body), json)),
+            Ok(body) => Ok((hidden.bytes(body), json, headers)),
             Err(Unread::Lost(error)) => Err(self.lost(&error, retries_taken)),
             Err(Unread::TooLong) => {
                 let said = format!("the provider's answer is longer than {ANSWER_LIMIT} bytes");

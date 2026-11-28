@@ -140,6 +140,14 @@ impl Client {
 }
 
 impl Streamed {
+    /// The answer's header `name`, when it holds one that is text: what a
+    /// provider reads of it beside its events, the vendor's id of the
+    /// request (`x-request-id`).
+    #[must_use]
+    pub fn header(&self, name: &str) -> Option<&str> {
+        self.response.headers().get(name)?.to_str().ok()
+    }
+
     /// The data of the answer's next event, `None` once the answer ended.
     /// An event the answer ends on with no blank line after it is given all
     /// the same, with what came of its data: [`was_cut`](Self::was_cut)
