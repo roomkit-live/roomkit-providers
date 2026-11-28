@@ -129,3 +129,36 @@ async fn the_wait_an_answer_asks_for_is_the_one_taken() {
     client.send(call).await.unwrap();
     assert_eq!(*waits.lock().unwrap(), [Duration::from_secs(3)]);
 }
+
+// What a failed transport was is kept for the provider: a request whose
+// connection could not be made never left; one whose answer was lost had
+// left (RFC §25.2).
+#[tokio::test]
+async fn a_transport_failure_says_whether_its_request_left() {
+    let fake = Fake::serving(vec![lost(200)]).await;
+    let (client, _) = keeping_its_waits(0);
+    let (url, headers) = (url_on(&fake, PATH), HeaderMap::new());
+    let call = |url| Call {
+        url,
+        headers: &headers,
+        body: Some(b"{}"),
+        token: None,
+    };
+    let lost = client.send(call(&url)).await.unwrap_err();
+    let left = crate::Transport {
+        unsent: false,
+        timed_out: false,
+    };
+    assert_eq!(lost.transport_of(), Some(left));
+    // A port nothing listens on refuses the connection.
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let closed = listener.local_addr().unwrap();
+    drop(listener);
+    let refused_url = reqwest::Url::parse(&format!("http://{closed}{PATH}")).unwrap();
+    let refused = client.send(call(&refused_url)).await.unwrap_err();
+    let unsent = crate::Transport {
+        unsent: true,
+        timed_out: false,
+    };
+    assert_eq!(refused.transport_of(), Some(unsent));
+}

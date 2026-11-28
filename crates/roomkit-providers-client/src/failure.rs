@@ -109,9 +109,20 @@ enum Built {
         status: Option<u16>,
         context_overflow: Option<bool>,
         before_request: bool,
+        /// What the transport's failure was, for one.
+        transport: Option<Transport>,
     },
     /// By the contract: its text is one piece.
     Elsewhere(ProviderError),
+}
+
+/// What a failed transport was.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Transport {
+    /// Whether the request never left: the connection could not be made.
+    pub unsent: bool,
+    /// Whether a time ran out: to connect, or to read.
+    pub timed_out: bool,
 }
 
 /// A failure inside a provider. It becomes the contract's error only where
@@ -177,6 +188,7 @@ impl Failure {
             status,
             context_overflow: None,
             before_request: false,
+            transport: None,
         })
     }
 
@@ -217,6 +229,7 @@ impl Failure {
             status: None,
             context_overflow: None,
             before_request: true,
+            transport: None,
         })
     }
 
@@ -347,7 +360,25 @@ impl Failure {
                 None => "the connection to the provider failed",
             }
         };
-        Self::said(vec![own(said)], true, None)
+        let mut failure = Self::said(vec![own(said)], true, None);
+        if let Built::Here { transport, .. } = &mut failure.0 {
+            *transport = Some(Transport {
+                unsent: error.is_connect(),
+                timed_out: error.is_timeout(),
+            });
+        }
+        failure
+    }
+
+    /// What the failure of the transport was, for one: an image provider
+    /// tells a request that never left, which the vendor did not run, from
+    /// one lost once sent, which it may have run and billed (RFC §25.2).
+    #[must_use]
+    pub fn transport_of(&self) -> Option<Transport> {
+        match &self.0 {
+            Built::Here { transport, .. } => *transport,
+            Built::Elsewhere(_) => None,
+        }
     }
 
     /// The failure of an answer that says it is JSON and does not read as

@@ -244,6 +244,13 @@ pub(super) fn differs(
     let mut given_values = given_of(given, told);
     name_attempt_ids(&mut expected_values.iter_mut().collect::<Vec<_>>());
     name_attempt_ids(&mut given_values.iter_mut().collect::<Vec<_>>());
+    // An attempt's error holds the failure's message: compared where the
+    // message is.
+    if !message_compared(case) {
+        for value in expected_values.iter_mut().chain(given_values.iter_mut()) {
+            unworded(value);
+        }
+    }
     let [
         expected_told,
         expected_images,
@@ -281,6 +288,27 @@ pub(super) fn differs(
             ];
             failure_differs(case, failure, error, &outcomes, found);
         }
+    }
+}
+
+/// Whether the case compares its failure's message: RoomKit's words, or the
+/// server's handed on, never a client's nor Python's repr of a body.
+fn message_compared(case: &Case) -> bool {
+    let compare = case.compare.as_ref();
+    compare.is_some_and(|compare| matches!(compare.message.as_str(), "roomkit" | "server"))
+}
+
+/// `value` with every attempt's error left out.
+fn unworded(value: &mut Value) {
+    match value {
+        Value::Object(members) => {
+            if members.contains_key("status") && members.contains_key("error") {
+                members.insert("error".to_owned(), Value::Null);
+            }
+            members.values_mut().for_each(unworded);
+        }
+        Value::Array(items) => items.iter_mut().for_each(unworded),
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {}
     }
 }
 
@@ -324,11 +352,7 @@ fn failure_differs(
             found.push(format!("the failure's {attribute} differs: {error:?}"));
         }
     }
-    let compared = matches!(
-        compare.message.as_str(),
-        "roomkit" | "server" | "python_repr"
-    );
-    if compared && message != failure.message {
+    if message_compared(case) && message != failure.message {
         found.push(format!("the failure says {message:?}"));
     }
 }

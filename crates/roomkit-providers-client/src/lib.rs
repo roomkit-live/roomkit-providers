@@ -67,7 +67,7 @@ pub use self::client::{Client, Settings, Timeouts};
 pub use self::client::{ReplayWaits, replayed_at};
 pub use self::credential::{TokenError, TokenFuture, TokenSource};
 pub use self::exchange::{ANSWER_LIMIT, Call, Pace, USER_AGENT, Wait, configured_header, is_json};
-pub use self::failure::{Exit, Failure, Secrets};
+pub use self::failure::{Exit, Failure, Secrets, Transport};
 pub use self::key::request_api_key;
 pub use self::object_only::ObjectOnly;
 
