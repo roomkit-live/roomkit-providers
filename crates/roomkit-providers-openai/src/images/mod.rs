@@ -196,7 +196,14 @@ impl OpenAiImage {
             .map_err(|failure| self.failed(&failure))?
         {
             let event = previews.read(&data, attempt, callback.is_some());
-            match event.map_err(|failure| self.failed(&failure))? {
+            // An error the stream sends carries no status, as Python's SDK
+            // raises it (`APIError`): its type or its code says none.
+            let event = event.map_err(|failure| {
+                let mut failed = self.failed(&failure);
+                failed.error.status_code = None;
+                failed
+            });
+            match event? {
                 Event::Preview(told) => {
                     answer::preview(callback, *told).await.map_err(Failed::of)?;
                 }
@@ -245,8 +252,10 @@ impl OpenAiImage {
             effective_options: checked.effective.clone(),
             ..ImageAttempt::default()
         };
+        // The request is in flight once the attempt is told started: a
+        // failure or a cancellation of that first telling sent nothing.
+        notify_image_progress(callback, &attempt, PROVIDER).await?;
         let mut in_flight = InFlight::new(attempt, callback);
-        notify_image_progress(callback, &in_flight.attempt, PROVIDER).await?;
         let attempted = self
             .attempted(&checked, options.n, &mut in_flight.attempt, callback)
             .await;

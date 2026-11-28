@@ -3360,6 +3360,149 @@
    }
   },
   {
+   "name": "a_stream_error_with_a_type_and_a_code",
+   "kinds": [
+    "failure",
+    "progress",
+    "stream"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "partial_images": 1
+    },
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "stream": true,
+       "prompt": "an origami fox",
+       "n": 1,
+       "partial_images": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "text/event-stream",
+       "x-request-id": "req_image_1"
+      },
+      "chunks": [
+       "data: {\"error\": {\"message\": \"slow down\", \"type\": \"server_error\", \"code\": \"rate_limit_exceeded\"}}\n\n"
+      ],
+      "then": "the stream ends"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ImageGenerationError",
+     "message": "slow down",
+     "text": "openai: slow down",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openai",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "APIError",
+     "attempts": [
+      {
+       "id": "00000000-0000-4000-8000-000000000001",
+       "index": 0,
+       "status": "failed",
+       "provider_request_id": "req_image_1",
+       "usage": {},
+       "raw_usage": {},
+       "effective_options": {
+        "model": "gpt-image-2",
+        "n": 1,
+        "partial_images": 1
+       },
+       "metadata": {},
+       "results": [],
+       "error": "slow down",
+       "status_code": null
+      }
+     ],
+     "results": []
+    },
+    "progress": [
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "started",
+      "provider_request_id": null,
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": null,
+      "status_code": null
+     },
+     {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "index": 0,
+      "status": "failed",
+      "provider_request_id": "req_image_1",
+      "usage": {},
+      "raw_usage": {},
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "partial_images": 1
+      },
+      "metadata": {},
+      "results": [],
+      "error": "slow down",
+      "status_code": null
+     }
+    ]
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request",
+     "attempts",
+     "results"
+    ],
+    "message": "server"
+   }
+  },
+  {
    "name": "a_typed_stream_error",
    "kinds": [
     "failure",
@@ -3557,7 +3700,8 @@
       },
       "chunks": [
        "data: {\"type\": \"image_generation.partial_image\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"partial_image_index\": 0, \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\"}\n\n",
-       "data: not json\n\n"
+       "data: not json\n\n",
+       "data: {\"type\": \"image_generation.completed\", \"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\", \"created_at\": 1767225600, \"background\": \"opaque\", \"output_format\": \"png\", \"quality\": \"high\", \"size\": \"1024x1024\", \"usage\": {\"input_tokens\": 50, \"input_tokens_details\": {\"image_tokens\": 40, \"text_tokens\": 10}, \"output_tokens\": 1056, \"total_tokens\": 1106}}\n\n"
       ],
       "then": "the stream ends"
      }

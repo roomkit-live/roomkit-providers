@@ -50,9 +50,9 @@ impl Part {
     }
 }
 
-/// Why a body cannot be written: a part's name, file name or media type
-/// holds a control character, which would end its header and start
-/// another, as Python's client refuses one.
+/// Why a body cannot be written: a part's media type holds a character
+/// that would end its header and start another, which Python's client
+/// refuses in a header's value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Unwritable;
 
@@ -75,15 +75,10 @@ pub fn encoded(parts: &[Part]) -> Result<(String, Vec<u8>), Unwritable> {
     let boundary = boundary();
     let mut body = Vec::new();
     for part in parts {
-        let values = [
-            Some(&part.name),
-            part.filename.as_ref(),
-            part.content_type.as_ref(),
-        ];
-        if values
-            .into_iter()
-            .flatten()
-            .any(|value| value.chars().any(char::is_control))
+        if part
+            .content_type
+            .as_deref()
+            .is_some_and(|value| value.chars().any(forbidden))
         {
             return Err(Unwritable);
         }
@@ -109,10 +104,28 @@ pub fn encoded(parts: &[Part]) -> Result<(String, Vec<u8>), Unwritable> {
     Ok((format!("multipart/form-data; boundary={boundary}"), body))
 }
 
-/// A name within its quotes: a quote escaped as HTML forms escape it (RFC
-/// 7578 §4.2).
+/// A name or a file name within its quotes, as Python's client writes it
+/// (HTML's form encoding): a quote as `%22`, a backslash doubled, and a
+/// control character but the escape as `%XX`.
 fn quoted(name: &str) -> String {
-    name.replace('"', "%22")
+    let mut quoted = String::with_capacity(name.len());
+    for c in name.chars() {
+        match c {
+            '"' => quoted.push_str("%22"),
+            '\\' => quoted.push_str("\\\\"),
+            '\u{0}'..='\u{1a}' | '\u{1c}'..='\u{1f}' => {
+                let _ = write!(quoted, "%{:02X}", u32::from(c));
+            }
+            other => quoted.push(other),
+        }
+    }
+    quoted
+}
+
+/// Whether `c` is refused in a header's value, as Python's client refuses
+/// it: a control character but a tab.
+fn forbidden(c: char) -> bool {
+    matches!(c, '\u{0}'..='\u{8}' | '\u{a}'..='\u{1f}' | '\u{7f}')
 }
 
 /// A boundary of 128 bits drawn at random, as Python's client draws one
@@ -224,19 +237,29 @@ mod tests {
         assert_ne!(first, second);
     }
 
-    // A header value that would end its line and start another is refused,
-    // as Python's client refuses it.
+    // A media type that would end its header and start another is refused,
+    // as Python's client refuses one; a tab is kept.
     #[test]
-    fn a_control_character_in_a_header_is_refused() {
+    fn a_control_character_in_a_media_type_is_refused() {
         let injected =
             "image/png\r\n\r\nx\r\n--boundary\r\nContent-Disposition: form-data; name=\"n\"";
-        for part in [
-            Part::file("image[]", "reference-0.png", injected, b"x".to_vec()),
-            Part::file("image[]", "a\nb.png", "image/png", b"x".to_vec()),
-            Part::field("a\rb", "1"),
-        ] {
-            assert_eq!(encoded(&[part]), Err(Unwritable));
-        }
+        let part =
+            |media_type: &str| Part::file("image[]", "reference-0.png", media_type, b"x".to_vec());
+        assert_eq!(encoded(&[part(injected)]), Err(Unwritable));
+        assert_eq!(encoded(&[part("image/png\u{7f}")]), Err(Unwritable));
+        assert!(encoded(&[part("image/png;\tq=1")]).is_ok());
+    }
+
+    // A name and a file name are written as Python's client writes them: a
+    // quote, a backslash and a control character encoded, never a line
+    // break that would start a header.
+    #[test]
+    fn a_name_is_encoded_as_python_s_client_encodes_it() {
+        assert_eq!(quoted("a\"b\\c\r\nd\u{1b}"), "a%22b\\\\c%0D%0Ad\u{1b}");
+        let part = Part::file("image[]", "a\r\nb.png", "image/png", b"x".to_vec());
+        let (content_type, body) = encoded(std::slice::from_ref(&part)).unwrap();
+        let read = parsed(&body, &content_type).unwrap();
+        assert_eq!(read[0].filename.as_deref(), Some("a%0D%0Ab.png"));
     }
 
     #[test]

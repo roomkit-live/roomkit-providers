@@ -319,6 +319,18 @@ case(
     Reply(status=200, headers=STREAMED, chunks=["data: " + json.dumps({"error": {"message": "boom from the stream"}}) + "\n\n"]),
 )
 case(
+    "a_stream_error_with_a_type_and_a_code",
+    "stream failure progress",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"partial_images": 1}, progress="record"),
+    Reply(
+        status=200,
+        headers=STREAMED,
+        chunks=["data: " + json.dumps({"error": {"message": "slow down", "type": "server_error", "code": "rate_limit_exceeded"}}) + "\n\n"],
+    ),
+)
+case(
     "a_typed_stream_error",
     "stream failure progress",
     IMAGE_WITH_OPTIONS,
@@ -332,7 +344,7 @@ case(
     IMAGE_WITH_OPTIONS,
     CONFIG,
     asked(options={"partial_images": 1}, progress="record"),
-    Reply(status=200, headers=STREAMED, chunks=[*previews("image_generation", 1)[:1], "data: not json\n\n"]),
+    Reply(status=200, headers=STREAMED, chunks=[*previews("image_generation", 1)[:1], "data: not json\n\n", *previews("image_generation", 1)[1:]]),
 )
 case(
     "done_before_its_image",

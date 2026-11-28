@@ -696,9 +696,11 @@ capabilities.
   left, or where the vendor answered with a status, a 500, 502 or 504 of
   which may still follow a run it billed (RFC §25.2): the host decides.
 - A generation cancelled while its request is in flight (its future
-  dropped) tells its callback the attempt unknown, as Python's provider
-  does from its `CancelledError`: the callback is told on the runtime the
-  generation ran on.
+  dropped once the attempt was told started) tells its callback the
+  attempt unknown, as Python's provider does from its `CancelledError`.
+  The callback is told in a task of the runtime the generation ran on,
+  which the caller cannot await: a runtime that ends at once may end it
+  first.
 - An answer is read to 512 MiB, an event of a stream to 64 MiB: ten images
   of the largest size, one in an event. Python's client reads any length.
 - The usage is split as Python splits it: the image share of the input

@@ -22,7 +22,7 @@ use crate::items::{Yielder, items, next};
 use serde_json::Value;
 
 use crate::client::Client;
-use crate::exchange::{ANSWER_LIMIT, Call, Hidden, Opened, is_json};
+use crate::exchange::{Call, Hidden, Opened, is_json};
 use crate::failure::{Exit, Failure, past_mark};
 
 /// What a stream of events hands next.
@@ -59,6 +59,9 @@ pub struct Streamed {
     /// Whether the answer was cut inside the event given last: said at the
     /// answer's end, of its last event, which is given next.
     cut: bool,
+    /// The most bytes kept of an answer in place of a stream: the
+    /// client's bound of a whole answer.
+    answer_limit: usize,
 }
 
 impl std::fmt::Debug for Streamed {
@@ -136,6 +139,7 @@ impl Client {
             given: false,
             kept,
             cut: false,
+            answer_limit: self.answer_limit,
         })
     }
 }
@@ -235,7 +239,7 @@ impl Streamed {
         let Some(kept) = &mut self.kept else {
             return;
         };
-        if kept.len().saturating_add(bytes.len()) > ANSWER_LIMIT {
+        if kept.len().saturating_add(bytes.len()) > self.answer_limit {
             self.kept = None;
         } else {
             kept.extend_from_slice(bytes);

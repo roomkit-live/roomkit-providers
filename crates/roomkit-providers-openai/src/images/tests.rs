@@ -154,3 +154,66 @@ async fn a_cancelled_generation_tells_its_attempt_unknown() {
     let said = "Cancelled locally; the provider may still bill this request";
     assert_eq!(told.error.as_deref(), Some(said));
 }
+
+// A callback that fails when told the attempt started fails the generation
+// before any request, as Python's: nothing is in flight, so nothing is told
+// unknown.
+#[tokio::test]
+async fn a_callback_failing_when_told_started_sends_nothing() {
+    let fake = Fake::serving(Vec::new()).await;
+    let provider = provider(format!("http://{}/v1", fake.address));
+    let (tell, mut heard) = mpsc::unbounded_channel();
+    let callback: ImageProgressCallback = Arc::new(move |attempt: ImageAttempt| {
+        let tell = tell.clone();
+        Box::pin(async move {
+            tell.send(attempt.status).ok();
+            Err("storage unavailable".into())
+        })
+    });
+    let failed = provider
+        .generate_with_options("a fox", told(&callback))
+        .await;
+    assert!(failed.is_err());
+    for _ in 0..8 {
+        tokio::task::yield_now().await;
+    }
+    assert_eq!(heard.recv().await, Some(ImageAttemptStatus::Started));
+    assert!(
+        heard.try_recv().is_err(),
+        "an attempt told after its failed start"
+    );
+    assert!(fake.seen().is_empty());
+}
+
+// An error a stream sends leaves through the provider's exit: what it
+// repeats of the key is cleaned out, of the failure and of its attempt.
+#[tokio::test]
+async fn a_stream_error_repeats_no_key() {
+    let error = serde_json::json!({ "error": { "message": "refused for placeholder-not-a-key" } });
+    let event = format!("data: {error}\n\n").into_bytes();
+    let fake = Fake::serving(vec![Reply::stream(vec![event], Ending::Ends)]).await;
+    let provider = provider(format!("http://{}/v1", fake.address));
+    let (callback, _heard) = sending();
+    let options = GenerateWithOptionsOptions {
+        options: Some(roomkit_ai::image::ImageOptions {
+            partial_images: Some(1),
+            ..Default::default()
+        }),
+        ..told(&callback)
+    };
+    let failed = provider
+        .generate_with_options("a fox", options)
+        .await
+        .unwrap_err();
+    let generation = generation(&failed);
+    assert!(
+        !generation.message.contains("placeholder-not-a-key"),
+        "{}",
+        generation.message
+    );
+    let attempt_error = generation.attempts[0].error.as_deref().unwrap_or_default();
+    assert!(
+        !attempt_error.contains("placeholder-not-a-key"),
+        "{attempt_error}"
+    );
+}
