@@ -132,6 +132,29 @@ impl GeminiImage {
         assert!(moved, "the endpoint is pointed at the fake");
     }
 
+    /// The provider as a replay of recorded cases drives it, outside this
+    /// crate's tests: its requests go to `fake`, a local fake of its
+    /// endpoint, over plain HTTP, each to the path it had; its clock is set
+    /// to `clock`, in seconds since 1970. It makes one try, so it keeps no
+    /// wait.
+    ///
+    /// # Errors
+    ///
+    /// A `fake` that is no loopback address: a replay sends nothing off the
+    /// machine.
+    #[cfg(feature = "replay")]
+    #[doc(hidden)]
+    pub fn replaying(
+        mut self,
+        fake: std::net::SocketAddr,
+        clock: f64,
+    ) -> Result<(Self, roomkit_providers_client::ReplayWaits), ProviderError> {
+        let moved = roomkit_providers_client::replayed_at([&mut self.interactions], fake);
+        moved.map_err(|failure| self.exit.leave(&failure))?;
+        let waits = self.client.replaying(clock);
+        Ok((self, waits))
+    }
+
     /// One hop of an interaction: the interaction `body` asks, as it came
     /// back.
     async fn hop(&self, body: &[u8]) -> Result<Value, Failure> {
