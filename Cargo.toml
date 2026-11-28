@@ -38,7 +38,7 @@ roomkit-providers-python-forms = { version = "0.1.0-alpha.1", path = "bindings/p
 # connect with (rust-examples).
 axum = { version = "0.8", default-features = false, features = ["http1", "query", "tokio", "ws"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
-tokio-tungstenite = { version = "0.29", default-features = false, features = ["connect"] }
+tokio-tungstenite = { version = "0.30", default-features = false, features = ["connect"] }
 futures-core = { version = "0.3", default-features = false }
 # An HTTP date a server's `retry-after` names.
 jiff = { version = "0.2", default-features = false, features = ["std"] }
