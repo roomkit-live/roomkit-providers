@@ -34,6 +34,7 @@
 
 mod compare;
 pub mod fake;
+pub mod images;
 #[cfg(test)]
 mod least;
 mod lent;
@@ -54,6 +55,7 @@ use std::task::Poll;
 use std::time::Duration;
 
 use crate::items::next;
+use roomkit_ai::image::{ImageAttempt, ImageError, ImageResult};
 use roomkit_ai::{
     API_KEY_METADATA_KEY, AiContext, AiProvider, AiResponse, ModelInfo, ProviderError, StreamEvent,
 };
@@ -72,7 +74,7 @@ const ROUNDS: usize = 4096;
 
 /// A provider the replay drives: built from a case's configuration on a
 /// [`Client`], whose clock the replay sets and whose waits it keeps.
-pub trait Replays: AiProvider + Sized {
+pub trait Replays: Sized {
     /// The header that carries the provider's key, in lower case: what a
     /// provider built without a key does not send.
     const KEY_HEADER: &'static str;
@@ -305,6 +307,10 @@ struct Expected {
     events: Option<Vec<Value>>,
     text: Option<Vec<String>>,
     models: Option<Vec<Value>>,
+    /// An image provider's images.
+    results: Option<Vec<Value>>,
+    /// Every attempt an image provider's progress callback was told of.
+    progress: Option<Vec<Value>>,
     error: Option<Failure>,
 }
 
@@ -318,6 +324,10 @@ struct Failure {
     context_overflow: Option<bool>,
     before_request: Option<bool>,
     reason: Option<String>,
+    /// A failed image generation's attempts.
+    attempts: Option<Vec<Value>>,
+    /// A failed image generation's images.
+    results: Option<Vec<Value>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -342,6 +352,9 @@ pub enum Outcome {
     Text(Vec<String>, Option<ProviderError>),
     /// `list_models`: the models, or the failure.
     Models(Result<Vec<ModelInfo>, ProviderError>),
+    /// An image provider's call: the images, or the failure, and every
+    /// attempt its progress callback was told of, in order.
+    Images(Result<Vec<ImageResult>, ImageError>, Vec<ImageAttempt>),
 }
 
 /// What replaying a case gave.
@@ -514,30 +527,23 @@ async fn driven<T>(
 /// configuration, its endpoint pointed at a fake behind `door` that answers
 /// with the case's exchanges, its clock set to the fixture's and its waits
 /// kept instead of taken.
-pub async fn replay<P: Replays>(fixture: &Fixture, case: &Case, door: &Door) -> Replayed {
+pub async fn replay<P: Replays + AiProvider>(
+    fixture: &Fixture,
+    case: &Case,
+    door: &Door,
+) -> Replayed {
     replay_served::<P>(fixture, case, door, &reply_of).await
 }
 
 /// As [`replay`], the fake answering each exchange with what `reply` makes
 /// of its answer.
-async fn replay_served<P: Replays>(
+async fn replay_served<P: Replays + AiProvider>(
     fixture: &Fixture,
     case: &Case,
     door: &Door,
     reply: &(dyn Fn(&Answered) -> Reply + Sync),
 ) -> Replayed {
-    let mut replayed = Replayed {
-        key: case.key(),
-        request_key: case.request_key(),
-        unread: None,
-        unbuilt: None,
-        outcome: None,
-        seen: Vec::new(),
-        waits: Vec::new(),
-        timeouts: None,
-        timeouts_by_path: Vec::new(),
-        vision: None,
-    };
+    let mut replayed = Replayed::of(case);
     let request = match case.read_request() {
         Ok(request) => request,
         Err(error) => {
@@ -545,6 +551,76 @@ async fn replay_served<P: Replays>(
             return replayed;
         }
     };
+    served::<P, _>(fixture, case, door, reply, replayed, &AiCalls(&request)).await
+}
+
+/// A future of what a call gave.
+type Called<'a> = Pin<Box<dyn Future<Output = Outcome> + Send + 'a>>;
+
+/// The call a case makes of its provider, once it is built and pointed at
+/// the fake: a model's calls, or an image provider's.
+trait Caller<P>: Sync {
+    /// What the provider is asked, `given` counting the items of a stream
+    /// as they come.
+    fn call<'a>(&'a self, provider: &'a P, case: &'a Case, given: &'a Mutex<usize>) -> Called<'a>;
+
+    /// What a stream gives, as Python read it, before the fake goes silent.
+    fn before(&self, _case: &Case) -> usize {
+        0
+    }
+
+    /// What the replay keeps of the provider itself, once built.
+    fn observe(&self, _provider: &P, _replayed: &mut Replayed) {}
+}
+
+/// A model's calls of a case's request.
+struct AiCalls<'r>(&'r AiContext);
+
+impl<P: Replays + AiProvider> Caller<P> for AiCalls<'_> {
+    fn call<'a>(&'a self, provider: &'a P, case: &'a Case, given: &'a Mutex<usize>) -> Called<'a> {
+        let request = self.0;
+        Box::pin(async move {
+            match case.call.as_str() {
+                "generate" => Outcome::Response(provider.generate(request).await),
+                "generate_structured_stream" => {
+                    let events = provider.generate_structured_stream(request);
+                    let (events, failure) = counted(events, given).await;
+                    Outcome::Events(events, failure)
+                }
+                "generate_stream" => {
+                    let text = provider.generate_stream(request);
+                    let (text, failure) = counted(text, given).await;
+                    Outcome::Text(text, failure)
+                }
+                "list_models" => Outcome::Models(provider.list_models().await),
+                other => panic!("{}: an unknown call {other}", case.name),
+            }
+        })
+    }
+
+    fn before(&self, case: &Case) -> usize {
+        let expected = &case.expected;
+        let before = expected.events.as_ref().map_or(0, Vec::len);
+        before.max(expected.text.as_ref().map_or(0, Vec::len))
+    }
+
+    fn observe(&self, provider: &P, replayed: &mut Replayed) {
+        replayed.vision = Some(provider.supports_vision());
+    }
+}
+
+/// `case` served to the provider it builds: its endpoint pointed at a fake
+/// behind `door` that answers each exchange with what `reply` makes of it,
+/// its clock set to the fixture's and its waits kept, then what `caller`
+/// asks of it.
+async fn served<P: Replays, C: Caller<P>>(
+    fixture: &Fixture,
+    case: &Case,
+    door: &Door,
+    reply: &(dyn Fn(&Answered) -> Reply + Sync),
+    mut replayed: Replayed,
+    caller: &C,
+) -> Replayed {
     let mut provider = match P::built(&case.config) {
         Ok(provider) => provider,
         Err(error) => {
@@ -555,7 +631,7 @@ async fn replay_served<P: Replays>(
     let timeouts = provider.client().timeouts();
     replayed.timeouts = Some(timeouts);
     replayed.timeouts_by_path = provider.timeouts_by_path();
-    replayed.vision = Some(provider.supports_vision());
+    caller.observe(&provider, &mut replayed);
     let replies = case.exchanges.iter().map(|e| reply(&e.response));
     let fake = Fake::behind(door, replies.collect());
     provider.point_at(fake.address);
@@ -569,38 +645,38 @@ async fn replay_served<P: Replays>(
             Box::pin(std::future::ready(()))
         }),
     });
-    // What a stream gives before a silence, as Python read it.
-    let expected = &case.expected;
-    let before = expected.events.as_ref().map_or(0, Vec::len);
-    let before = before.max(expected.text.as_ref().map_or(0, Vec::len));
     let given = Mutex::new(0);
-    let call = async {
-        match case.call.as_str() {
-            "generate" => Outcome::Response(provider.generate(&request).await),
-            "generate_structured_stream" => {
-                let events = provider.generate_structured_stream(&request);
-                let (events, failure) = counted(events, &given).await;
-                Outcome::Events(events, failure)
-            }
-            "generate_stream" => {
-                let text = provider.generate_stream(&request);
-                let (text, failure) = counted(text, &given).await;
-                Outcome::Text(text, failure)
-            }
-            "list_models" => Outcome::Models(provider.list_models().await),
-            other => panic!("{}: an unknown call {other}", case.name),
-        }
-    };
-    let outcome = driven(std::pin::pin!(call), &fake, &given, before, timeouts.read()).await;
+    let mut call = caller.call(&provider, case, &given);
+    let before = caller.before(case);
+    let outcome = driven(call.as_mut(), &fake, &given, before, timeouts.read()).await;
     replayed.outcome = Some(outcome);
     // The provider gone, every connection is closed, and the fake ends
     // serving each: what it saw then says how it wrote each answer.
+    drop(call);
     drop(provider);
     let served = tokio::time::timeout(Duration::from_secs(30), fake.served());
     served.await.expect("the fake still serves a connection");
     replayed.seen = fake.seen();
     replayed.waits.clone_from(&waits.lock().unwrap());
     replayed
+}
+
+impl Replayed {
+    /// Nothing replayed yet of `case`.
+    fn of(case: &Case) -> Self {
+        Self {
+            key: case.key(),
+            request_key: case.request_key(),
+            unread: None,
+            unbuilt: None,
+            outcome: None,
+            seen: Vec::new(),
+            waits: Vec::new(),
+            timeouts: None,
+            timeouts_by_path: Vec::new(),
+            vision: None,
+        }
+    }
 }
 
 /// How a replayed case stands: `Ok(true)` as Python, `Ok(false)` as its
@@ -629,7 +705,7 @@ fn judged<P: Replays>(
 /// Each case of a generation is then asked once more, its request lending
 /// a key that a 401 repeats: fails for a failure that holds that key, and
 /// for a call none of whose cases shows the key kept out.
-pub async fn replayed_or_named<P: Replays>(
+pub async fn replayed_or_named<P: Replays + AiProvider>(
     fixture: &Fixture,
     named: &Named,
     call: &str,

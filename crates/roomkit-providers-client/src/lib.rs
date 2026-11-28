@@ -53,6 +53,7 @@ pub mod failure;
 pub mod harness;
 pub mod items;
 mod key;
+pub mod multipart;
 mod object_only;
 mod proxy;
 pub mod reasoning;

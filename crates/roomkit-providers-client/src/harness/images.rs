@@ -1,0 +1,334 @@
+//! The replay of an image provider's cases (RFC §25): what a case asks the
+//! image surface, the call it makes, and where what the provider gave
+//! differs from what Python gave.
+//!
+//! A case's request is written as the image surface takes it: `prompt`,
+//! `size`, `n`, `reference_images` and `mask` (image parts), `options` (the
+//! controls) and `progress`: none, `record` (a callback that records every
+//! attempt it is told of) or `fail` (one that records it, then fails when
+//! told of a succeeded attempt). Python's provider draws an attempt's id at
+//! random; the replay names the ids each side gives in the order they come.
+
+use std::collections::BTreeMap;
+use std::error::Error as _;
+use std::sync::{Arc, Mutex};
+
+use roomkit_ai::image::{
+    GenerateOptions, GenerateWithOptionsOptions, ImageAttempt, ImageAttemptStatus, ImageError,
+    ImageGenerationError, ImageOptions, ImageProgressCallback, ImageProvider, ImageResult,
+};
+use roomkit_ai::{AiImagePart, ProviderError};
+use serde::Deserialize;
+use serde_json::Value;
+
+use super::compare::result_differs;
+use super::fake::Door;
+use super::named::Named;
+use super::{
+    Called, Caller, Case, Failure, Fixture, Outcome, Replayed, Replays, judged, reply_of, served,
+};
+
+/// The call of a generation, `generate`.
+pub const IMAGE_GENERATE: &str = "image_generate";
+
+/// The call of a generation with its controls, `generate_with_options`.
+pub const IMAGE_WITH_OPTIONS: &str = "image_generate_with_options";
+
+/// What a case asks the image surface.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Asked {
+    prompt: String,
+    size: Option<String>,
+    n: u32,
+    reference_images: Vec<Value>,
+    options: Option<ImageOptions>,
+    mask: Option<Value>,
+    progress: Option<String>,
+}
+
+/// An image part as the fixture writes Python's `AIImagePart`.
+fn part_of(written: &Value) -> AiImagePart {
+    AiImagePart {
+        url: written["url"].as_str().unwrap().to_owned(),
+        mime_type: written["mime_type"].as_str().map(str::to_owned),
+    }
+}
+
+/// The callback of a case's `progress`, and what it was told, in order.
+fn callback_of(
+    progress: Option<&str>,
+) -> (Option<ImageProgressCallback>, Arc<Mutex<Vec<ImageAttempt>>>) {
+    let told = Arc::new(Mutex::new(Vec::new()));
+    let fails = match progress {
+        None => return (None, told),
+        Some("record") => false,
+        Some("fail") => true,
+        Some(other) => panic!("an unknown progress {other}"),
+    };
+    let kept = Arc::clone(&told);
+    let callback: ImageProgressCallback = Arc::new(move |attempt: ImageAttempt| {
+        let succeeded = attempt.status == ImageAttemptStatus::Succeeded;
+        kept.lock().unwrap().push(attempt);
+        Box::pin(async move {
+            if fails && succeeded {
+                return Err("storage unavailable".into());
+            }
+            Ok(())
+        })
+    });
+    (Some(callback), told)
+}
+
+/// An image provider's call of a case's request.
+struct ImageCalls(Asked);
+
+impl<P: Replays + ImageProvider> Caller<P> for ImageCalls {
+    fn call<'a>(&'a self, provider: &'a P, case: &'a Case, _given: &'a Mutex<usize>) -> Called<'a> {
+        let asked = &self.0;
+        Box::pin(async move {
+            let reference_images = asked.reference_images.iter().map(part_of).collect();
+            let (size, n) = (asked.size.clone(), asked.n);
+            let (on_progress, told) = callback_of(asked.progress.as_deref());
+            let given = match case.call.as_str() {
+                IMAGE_GENERATE => {
+                    let options = GenerateOptions {
+                        size,
+                        n,
+                        reference_images,
+                    };
+                    provider.generate(&asked.prompt, options).await
+                }
+                IMAGE_WITH_OPTIONS => {
+                    let options = GenerateWithOptionsOptions {
+                        size,
+                        n,
+                        reference_images,
+                        options: asked.options.clone(),
+                        mask: asked.mask.as_ref().map(part_of),
+                        on_progress,
+                    };
+                    provider.generate_with_options(&asked.prompt, options).await
+                }
+                other => panic!("{}: an unknown call {other}", case.name),
+            };
+            let told = told.lock().unwrap().clone();
+            Outcome::Images(given, told)
+        })
+    }
+}
+
+/// Replays `case`, a case of `fixture` that calls an image provider: as
+/// [`replay`](super::replay) for a model's.
+pub async fn replay<P: Replays + ImageProvider>(
+    fixture: &Fixture,
+    case: &Case,
+    door: &Door,
+) -> Replayed {
+    let mut replayed = Replayed::of(case);
+    let asked = match serde_json::from_value::<Asked>(case.request.clone()) {
+        Ok(asked) => asked,
+        Err(error) => {
+            replayed.unread = Some(error.to_string());
+            return replayed;
+        }
+    };
+    served::<P, _>(fixture, case, door, &reply_of, replayed, &ImageCalls(asked)).await
+}
+
+/// Replays every case of `fixture` whose call is `call`, an image
+/// provider's: how many replayed as Python, and how many are among `named`
+/// and differ and do as their entry states. Fails for a case that is
+/// neither, and for a named case that replays as Python. No request of the
+/// image surface lends a key of its own.
+pub async fn replayed_or_named<P: Replays + ImageProvider>(
+    fixture: &Fixture,
+    named: &Named,
+    call: &str,
+) -> (usize, usize) {
+    let named = named.stated();
+    let (mut as_python, mut otherwise, mut failures) = (0, 0, Vec::new());
+    let door = Door::open().await;
+    for case in fixture.cases.iter().filter(|case| case.call == call) {
+        let replayed = replay::<P>(fixture, case, &door).await;
+        match judged::<P>(case, named.get(case.name.as_str()), &replayed) {
+            Ok(true) => as_python += 1,
+            Ok(false) => otherwise += 1,
+            Err(wrong) => failures.push(format!("{}: {wrong}", case.name)),
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    (as_python, otherwise)
+}
+
+/// The attempt ids of `values`, in the order they come, each named by its
+/// place: what a replay compares, Python and the provider drawing them at
+/// random.
+fn name_attempt_ids(values: &mut [&mut Value]) {
+    let mut named = BTreeMap::new();
+    for value in values {
+        name_ids(value, &mut named);
+    }
+}
+
+/// The ids of `value` named, as `named` names them, a new one by its place.
+fn name_ids(value: &mut Value, named: &mut BTreeMap<String, String>) {
+    match value {
+        Value::Object(members) => {
+            for (key, member) in members.iter_mut() {
+                if matches!(key.as_str(), "id" | "attempt_id")
+                    && let Value::String(id) = member
+                {
+                    let next = format!("<attempt {}>", named.len());
+                    let name = named.entry(id.clone()).or_insert(next).clone();
+                    *member = Value::String(name);
+                    continue;
+                }
+                name_ids(member, named);
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(|item| name_ids(item, named)),
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {}
+    }
+}
+
+/// What the image surface gave, as the fixture writes Python's: the images,
+/// the attempts the callback was told of, and the attempts and the images
+/// of a failed generation.
+fn given_of(given: &Result<Vec<ImageResult>, ImageError>, told: &[ImageAttempt]) -> [Value; 4] {
+    let images = match given {
+        Ok(images) => serde_json::to_value(images).unwrap(),
+        Err(_) => Value::Null,
+    };
+    let generation = match given {
+        Err(ImageError::Provider(error)) => generation_of(error),
+        Ok(_) | Err(ImageError::Value(_)) => None,
+    };
+    let (attempts, results) = generation.map_or((Value::Null, Value::Null), |failed| {
+        let attempts = serde_json::to_value(&failed.attempts).unwrap();
+        (attempts, serde_json::to_value(&failed.results).unwrap())
+    });
+    [
+        serde_json::to_value(told).unwrap(),
+        images,
+        attempts,
+        results,
+    ]
+}
+
+/// The generation failure `error` carries, when it carries one.
+fn generation_of(error: &ProviderError) -> Option<&ImageGenerationError> {
+    error.source()?.downcast_ref::<ImageGenerationError>()
+}
+
+/// Where what an image provider gave differs from what Python gave: its
+/// images or its failure, and the attempts its callback was told of.
+pub(super) fn differs(
+    case: &Case,
+    given: &Result<Vec<ImageResult>, ImageError>,
+    told: &[ImageAttempt],
+    found: &mut Vec<String>,
+) {
+    let expected = &case.expected;
+    let failure = expected.error.as_ref();
+    let mut expected_values = [
+        Value::Array(expected.progress.clone().unwrap_or_default()),
+        expected.results.clone().map_or(Value::Null, Value::Array),
+        failure
+            .and_then(|failure| failure.attempts.clone())
+            .map_or(Value::Null, Value::Array),
+        failure
+            .and_then(|failure| failure.results.clone())
+            .map_or(Value::Null, Value::Array),
+    ];
+    let mut given_values = given_of(given, told);
+    name_attempt_ids(&mut expected_values.iter_mut().collect::<Vec<_>>());
+    name_attempt_ids(&mut given_values.iter_mut().collect::<Vec<_>>());
+    let [
+        expected_told,
+        expected_images,
+        expected_attempts,
+        expected_results,
+    ] = expected_values;
+    let [given_told, given_images, given_attempts, given_results] = given_values;
+    if expected.progress.is_some() {
+        result_differs(
+            case,
+            "the attempts told",
+            Some(&expected_told),
+            &given_told,
+            found,
+        );
+    }
+    match (given, failure) {
+        (Ok(_), None) => {
+            result_differs(
+                case,
+                "the images",
+                Some(&expected_images),
+                &given_images,
+                found,
+            );
+        }
+        (Ok(_), Some(failure)) => {
+            found.push(format!("images where Python fails: {}", failure.message));
+        }
+        (Err(error), None) => found.push(format!("a failure where Python answers: {error:?}")),
+        (Err(error), Some(failure)) => {
+            let outcomes = [
+                (expected_attempts, given_attempts),
+                (expected_results, given_results),
+            ];
+            failure_differs(case, failure, error, &outcomes, found);
+        }
+    }
+}
+
+/// Where the failure of an image provider differs from Python's, by what
+/// the case says a replay reproduces: its class (`ValueError`,
+/// `ProviderError` or `ImageGenerationError`), the attributes of a
+/// provider's failure, and a failed generation's attempts and images.
+fn failure_differs(
+    case: &Case,
+    failure: &Failure,
+    error: &ImageError,
+    outcomes: &[(Value, Value); 2],
+    found: &mut Vec<String>,
+) {
+    let Some(compare) = &case.compare else {
+        return found.push("a failure with no rule to compare it".to_owned());
+    };
+    let (class, provider, message) = match error {
+        ImageError::Value(refused) => ("ValueError", None, refused.to_string()),
+        ImageError::Provider(error) if generation_of(error).is_some() => {
+            ("ImageGenerationError", Some(error), error.message.clone())
+        }
+        ImageError::Provider(error) => ("ProviderError", Some(error), error.message.clone()),
+    };
+    for attribute in &compare.exactly {
+        let same = match (attribute.as_str(), provider) {
+            ("class", _) => failure.class == class,
+            ("status_code", Some(error)) => failure.status_code == error.status_code,
+            ("retryable", Some(error)) => failure.retryable == Some(error.retryable),
+            ("provider", Some(error)) => {
+                failure.provider.as_deref() == Some(error.provider.as_str())
+            }
+            ("context_overflow", Some(error)) => failure.context_overflow == error.context_overflow,
+            ("before_request", Some(error)) => failure.before_request == Some(error.before_request),
+            ("attempts", _) => outcomes[0].0 == outcomes[0].1,
+            ("results", _) => outcomes[1].0 == outcomes[1].1,
+            (_, None) => false,
+            (other, Some(_)) => panic!("{}: {other} is not compared", case.name),
+        };
+        if !same {
+            found.push(format!("the failure's {attribute} differs: {error:?}"));
+        }
+    }
+    let compared = matches!(
+        compare.message.as_str(),
+        "roomkit" | "server" | "python_repr"
+    );
+    if compared && message != failure.message {
+        found.push(format!("the failure says {message:?}"));
+    }
+}

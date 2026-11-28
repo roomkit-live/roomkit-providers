@@ -24,6 +24,7 @@ replay = []
 # the cases a provider names. It panics where a test fails: never for a
 # host.
 harness = [
+    "dep:base64",
     "dep:rcgen",
     "dep:roomkit-providers-python-forms",
     "serde/derive",
@@ -52,6 +53,8 @@ roomkit-providers-http = { workspace = true }
 futures-core = { workspace = true }
 # An HTTP date a server's `retry-after` names.
 jiff = { workspace = true }
+# The bytes of a file a multipart body sends, as the harness writes them.
+base64 = { version = "0.23", default-features = false, features = ["alloc"], optional = true }
 # The authority a test makes for itself, and the certificates it signs for
 # the harness's fakes.
 rcgen = { workspace = true, optional = true }

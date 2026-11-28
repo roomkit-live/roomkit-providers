@@ -20,7 +20,7 @@
 
 use std::sync::Arc;
 
-use roomkit_ai::{API_KEY_METADATA_KEY, ProviderError};
+use roomkit_ai::{API_KEY_METADATA_KEY, AiProvider, ProviderError};
 
 use super::fake::{Door, Fake};
 use super::{Case, Replays, drained};
@@ -60,7 +60,10 @@ fn said_with_the_key() -> String {
 /// What is wrong: a failure that repeats the key, in its message or in its
 /// `Debug` form; a failure that says nothing of the 401, which then shows
 /// nothing; or no failure.
-pub(super) async fn kept_out<P: Replays>(case: &Case, door: &Door) -> Result<bool, String> {
+pub(super) async fn kept_out<P: Replays + AiProvider>(
+    case: &Case,
+    door: &Door,
+) -> Result<bool, String> {
     if case.call == "list_models" {
         return Ok(false);
     }

@@ -8,21 +8,50 @@ use roomkit_providers_python_forms::Form;
 use serde::Serialize;
 use serde_json::Value;
 
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
+
 use super::fake::Seen;
 use super::{Case, Failure, Outcome, Replayed, Sent, Wait};
+use crate::multipart;
 
-/// The body `seen`, as the fixture writes the one Python sent: JSON, or,
-/// where the fixture writes a form (`{"form": [[name, value], ...]}`), its
-/// pairs decoded, in order.
-fn read_body(seen: &[u8], sent: Option<&Value>) -> Option<Value> {
-    let form = sent.and_then(|sent| sent.get("form")).is_some();
-    if !form {
-        return serde_json::from_slice::<Value>(seen).ok();
+/// The body of the request `seen`, as the fixture writes the one Python
+/// sent: JSON; where the fixture writes a form (`{"form": [[name, value],
+/// ...]}`), its pairs decoded, in order; where it writes a multipart body
+/// (`{"multipart": [part, ...]}`), its parts read with the boundary `seen`
+/// names, in order.
+fn read_body(seen: &Seen, sent: Option<&Value>) -> Option<Value> {
+    let written = |kind: &str| sent.and_then(|sent| sent.get(kind)).is_some();
+    if written("multipart") {
+        let content_type = seen.headers.get("content-type")?;
+        let parts = multipart::parsed(&seen.body, content_type)?;
+        let parts: Vec<Value> = parts.iter().map(part_written).collect();
+        return Some(serde_json::json!({ "multipart": parts }));
     }
-    let pairs = url::form_urlencoded::parse(seen).map(|(name, value)| {
+    if !written("form") {
+        return serde_json::from_slice::<Value>(&seen.body).ok();
+    }
+    let pairs = url::form_urlencoded::parse(&seen.body).map(|(name, value)| {
         Value::Array(vec![name.into_owned().into(), value.into_owned().into()])
     });
     Some(serde_json::json!({"form": pairs.collect::<Vec<_>>()}))
+}
+
+/// A part of a multipart body as the fixture writes it: a file's name,
+/// media type and bytes (base64), a field's text.
+fn part_written(part: &multipart::Part) -> Value {
+    match &part.filename {
+        Some(filename) => serde_json::json!({
+            "name": part.name,
+            "filename": filename,
+            "content_type": part.content_type,
+            "base64": STANDARD.encode(&part.data),
+        }),
+        None => serde_json::json!({
+            "name": part.name,
+            "text": String::from_utf8_lossy(&part.data),
+        }),
+    }
 }
 
 /// Where the requests the provider sent differ from Python's.
@@ -41,7 +70,7 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
         if (seen.method.as_str(), seen.target.as_str()) != (sent.method.as_str(), target) {
             found.push(format!("request {at}: {} {}", seen.method, seen.target));
         }
-        let body = read_body(&seen.body, sent.body.as_ref());
+        let body = read_body(seen, sent.body.as_ref());
         let written = |body: Option<&Value>| body.map(Value::to_string);
         if written(body.as_ref()) != written(sent.body.as_ref()) {
             found.push(format!(
@@ -90,6 +119,9 @@ fn requests_differ(case: &Case, replayed: &Replayed, found: &mut Vec<String>) {
 /// one the provider must not send.
 const TRANSPORT_HEADERS: [&str; 2] = ["host", "content-length"];
 
+/// The content type of a multipart body, as the fixture writes it.
+const MULTIPART: &str = "multipart/form-data";
+
 /// The header a client names itself in.
 const USER_AGENT: &str = "user-agent";
 
@@ -125,7 +157,14 @@ fn headers_differ(
     };
     for (name, value) in &sent.headers {
         let expected = value.as_ref().map(keyed);
-        if seen.headers.get(name) != expected.as_ref() {
+        // A multipart body's boundary is drawn at random: the fixture
+        // writes its content type without it.
+        let without_boundary = |given: &String| match given.split_once(';') {
+            Some((kind, _)) if expected.as_deref() == Some(MULTIPART) => kind.to_owned(),
+            _ => given.clone(),
+        };
+        let given = seen.headers.get(name).map(without_boundary);
+        if given != expected {
             found.push(format!(
                 "request {at}: {name} is {:?}",
                 seen.headers.get(name)
@@ -236,7 +275,7 @@ fn name_minted_ids(
 /// Where what the provider gave differs from what Python gave: `given`
 /// against `expected`, as texts, so that the members come in the same order
 /// too.
-fn result_differs<T: Serialize>(
+pub(super) fn result_differs<T: Serialize>(
     case: &Case,
     what: &str,
     expected: Option<&Value>,
@@ -351,6 +390,9 @@ pub(super) fn differences(case: &Case, replayed: &Replayed) -> Vec<String> {
         Some(Outcome::Text(text, error)) => {
             result_differs(case, "the text", texts.as_ref(), text, &mut found);
             end_differs(case, error.as_ref(), &mut found);
+        }
+        Some(Outcome::Images(given, told)) => {
+            super::images::differs(case, given, told, &mut found);
         }
         None => found.push("nothing was asked".to_owned()),
     }

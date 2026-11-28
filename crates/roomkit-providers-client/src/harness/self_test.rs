@@ -8,8 +8,9 @@
 //! to the lists here, which hold whatever its wire, the wrongs of its own:
 //! another path, another key, a header it does not send.
 
+use roomkit_ai::image::ImageError;
 use roomkit_ai::{
-    FinishReason, ProviderError, ProviderErrorOptions, ResponseSchemaError,
+    AiProvider, FinishReason, ProviderError, ProviderErrorOptions, ResponseSchemaError,
     ResponseSchemaErrorOptions, ResponseSchemaFailure, StreamEvent,
 };
 
@@ -31,11 +32,13 @@ pub fn failure_of(replayed: &mut Replayed) -> &mut ProviderError {
         Outcome::Response(Err(error))
         | Outcome::Models(Err(error))
         | Outcome::Events(_, Some(error))
-        | Outcome::Text(_, Some(error)) => error,
+        | Outcome::Text(_, Some(error))
+        | Outcome::Images(Err(ImageError::Provider(error)), _) => error,
         other @ (Outcome::Response(Ok(_))
         | Outcome::Models(Ok(_))
         | Outcome::Events(_, None)
-        | Outcome::Text(_, None)) => panic!("no failure: {other:?}"),
+        | Outcome::Text(_, None)
+        | Outcome::Images(..)) => panic!("no provider's failure: {other:?}"),
     }
 }
 
@@ -43,9 +46,10 @@ pub fn failure_of(replayed: &mut Replayed) -> &mut ProviderError {
 pub fn events_of(replayed: &mut Replayed) -> &mut Vec<StreamEvent> {
     match replayed.outcome.as_mut().unwrap() {
         Outcome::Events(events, _) => events,
-        other @ (Outcome::Response(_) | Outcome::Text(..) | Outcome::Models(_)) => {
-            panic!("no events: {other:?}")
-        }
+        other @ (Outcome::Response(_)
+        | Outcome::Text(..)
+        | Outcome::Models(_)
+        | Outcome::Images(..)) => panic!("no events: {other:?}"),
     }
 }
 
@@ -66,7 +70,7 @@ fn no() -> ProviderError {
 /// Replays the case `name` of `fixture`, requires that it is as Python,
 /// then requires the replay to refuse each of `wrongs`, with its word in
 /// what is said.
-pub async fn refuses<P: Replays>(fixture: &Fixture, name: &str, wrongs: &[Wrong]) {
+pub async fn refuses<P: Replays + AiProvider>(fixture: &Fixture, name: &str, wrongs: &[Wrong]) {
     let case = fixture.case(name);
     let door = Door::open().await;
     for (what, word, wrong) in wrongs {
@@ -83,7 +87,7 @@ pub async fn refuses<P: Replays>(fixture: &Fixture, name: &str, wrongs: &[Wrong]
 /// reads its answer is recorded in, as it is recorded, then with its reads
 /// joined into one, which the provider reads to the same events: the replay
 /// must say that the answer was served in one read.
-pub async fn refuses_a_stream_served_in_one_piece<P: Replays>(
+pub async fn refuses_a_stream_served_in_one_piece<P: Replays + AiProvider>(
     fixture: &Fixture,
     streams: &[(&str, usize)],
 ) {
@@ -119,7 +123,7 @@ pub async fn refuses_a_stream_served_in_one_piece<P: Replays>(
 /// Replays the case `name` of `fixture`, one of `named`, requires that it
 /// differs and does as its entry states, then requires each of `wrongs` to
 /// be refused, with its word in what is said.
-pub async fn held_to_its_entry<P: Replays>(
+pub async fn held_to_its_entry<P: Replays + AiProvider>(
     fixture: &Fixture,
     named: &Named,
     name: &str,

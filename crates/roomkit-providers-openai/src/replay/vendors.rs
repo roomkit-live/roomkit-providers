@@ -75,7 +75,7 @@ fn fixture(text: &str) -> Fixture {
 
 /// Every case of `text`'s fixture whose call is `call`, replayed on `P`: how
 /// many replayed as Python, and how many are named.
-async fn replayed<P: Replays>(text: &str, call: &str) -> (usize, usize) {
+async fn replayed<P: Replays + roomkit_ai::AiProvider>(text: &str, call: &str) -> (usize, usize) {
     replayed_or_named::<P>(&fixture(text), &NONE_NAMED, call).await
 }
 
