@@ -29,6 +29,15 @@ nothing has been released yet.
   in a header refused), the headers of an answer, larger bounds for a
   provider that asks them, and whether a request that failed in transport
   had left.
+- Gemini's image provider, in Rust: `GeminiImage` and `GeminiImageConfig`
+  in the `roomkit-providers-gemini` crate, RoomKit's Python
+  `GeminiImageProvider` on the contract's `ImageProvider` (RFC §25): an
+  interaction of the Interactions API per image, `n` made at once and each
+  settled alone, a size asked as a ratio and a tier, an interaction cut at
+  the decode limit continued hop after hop as Python's SDK continues it. It
+  is held to 47 cases captured on RoomKit's Python provider, every one
+  replayed as Python. The replay harness compares the attempts told of
+  attempts made at once each in its own order.
 - Gemini on Vertex AI, in Rust and in Python: `GeminiVertex` and
   `GeminiVertexConfig` in the `roomkit-providers-gemini` crate, and
   `roomkit_providers.llm.vertex` (`GeminiVertex`, `GeminiVertexConfig`) as a

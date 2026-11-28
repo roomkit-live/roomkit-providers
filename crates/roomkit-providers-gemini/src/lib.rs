@@ -10,6 +10,10 @@
 //! - [`GeminiVertex`]: the same models on Vertex AI, in a Google Cloud
 //!   project's region, as a service account: Python's
 //!   `GeminiVertexProvider`, configured with [`GeminiVertexConfig`].
+//! - [`GeminiImage`]: Gemini's image models on the Interactions API,
+//!   Python's `GeminiImageProvider`, configured with
+//!   [`GeminiImageConfig`]: an image generated or edited, `n` interactions
+//!   for `n` images, each an attempt told to a progress callback.
 //!
 //! Every generation is asked as a stream, a whole answer too. A stream is
 //! pulled: nothing is sent before it is polled, and dropping it stops the
@@ -31,6 +35,7 @@ mod config;
 mod endpoint;
 mod failure;
 mod folding;
+mod images;
 mod models;
 mod names;
 mod provider;
@@ -41,6 +46,7 @@ mod stream;
 mod vertex;
 
 pub use config::GeminiConfig;
+pub use images::{GeminiImage, GeminiImageConfig};
 pub use provider::Gemini;
 #[cfg(feature = "replay")]
 #[doc(hidden)]

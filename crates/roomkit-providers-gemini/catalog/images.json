@@ -1,0 +1,374 @@
+{
+ "generator": "scripts/generate_gemini_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "gemini-nano-banana-2.1",
+   "display_name": "Gemini Nano Banana 2.1",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": {
+    "input_per_million": 1.5,
+    "output_per_million": 7.5,
+    "cache_read_per_million": null,
+    "cache_write_per_million": null,
+    "image_input_per_million": 1.5,
+    "image_output_per_million": 30.0,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-10-09"
+   },
+   "image": {
+    "options": [
+     "aspect_ratio",
+     "image_size",
+     "output_format",
+     "previous_interaction_id",
+     "store",
+     "search_types",
+     "thinking_level"
+    ],
+    "qualities": [],
+    "formats": [
+     "jpeg"
+    ],
+    "backgrounds": [],
+    "aspect_ratios": [
+     "1:1",
+     "2:3",
+     "3:2",
+     "3:4",
+     "4:3",
+     "4:5",
+     "5:4",
+     "9:16",
+     "16:9",
+     "21:9",
+     "1:4",
+     "4:1",
+     "1:8",
+     "8:1"
+    ],
+    "image_sizes": [
+     "1K",
+     "2K",
+     "4K"
+    ],
+    "thinking_levels": [
+     "minimal",
+     "medium",
+     "high"
+    ],
+    "sizes": [],
+    "flexible_size": false,
+    "max_images": null,
+    "max_references": 14,
+    "mask": false,
+    "continuity": true,
+    "search_types": [
+     "web_search",
+     "image_search"
+    ],
+    "streaming": false,
+    "retirement_date": null,
+    "verified": "2026-10-09"
+   },
+   "aliases": []
+  },
+  {
+   "id": "gemini-3-pro-image",
+   "display_name": "Gemini 3 Pro Image (Nano Banana Pro)",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": {
+    "input_per_million": 2.0,
+    "output_per_million": 12.0,
+    "cache_read_per_million": 0.2,
+    "cache_write_per_million": null,
+    "image_input_per_million": 2.0,
+    "image_output_per_million": 120.0,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-07"
+   },
+   "image": {
+    "options": [
+     "aspect_ratio",
+     "image_size",
+     "output_format",
+     "previous_interaction_id",
+     "store",
+     "search_types"
+    ],
+    "qualities": [],
+    "formats": [
+     "png",
+     "jpeg"
+    ],
+    "backgrounds": [],
+    "aspect_ratios": [
+     "1:1",
+     "2:3",
+     "3:2",
+     "3:4",
+     "4:3",
+     "4:5",
+     "5:4",
+     "9:16",
+     "16:9",
+     "21:9"
+    ],
+    "image_sizes": [
+     "1K",
+     "2K",
+     "4K"
+    ],
+    "thinking_levels": [],
+    "sizes": [],
+    "flexible_size": false,
+    "max_images": null,
+    "max_references": 14,
+    "mask": false,
+    "continuity": true,
+    "search_types": [
+     "web_search"
+    ],
+    "streaming": false,
+    "retirement_date": null,
+    "verified": "2026-09-15"
+   },
+   "aliases": []
+  },
+  {
+   "id": "gemini-3.1-flash-image",
+   "display_name": "Gemini 3.1 Flash Image (Nano Banana 2)",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": {
+    "input_per_million": 0.5,
+    "output_per_million": 3.0,
+    "cache_read_per_million": null,
+    "cache_write_per_million": null,
+    "image_input_per_million": 0.5,
+    "image_output_per_million": 60.0,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-07"
+   },
+   "image": {
+    "options": [
+     "aspect_ratio",
+     "image_size",
+     "output_format",
+     "previous_interaction_id",
+     "store",
+     "search_types",
+     "thinking_level"
+    ],
+    "qualities": [],
+    "formats": [
+     "png",
+     "jpeg"
+    ],
+    "backgrounds": [],
+    "aspect_ratios": [
+     "1:1",
+     "2:3",
+     "3:2",
+     "3:4",
+     "4:3",
+     "4:5",
+     "5:4",
+     "9:16",
+     "16:9",
+     "21:9",
+     "1:4",
+     "4:1",
+     "1:8",
+     "8:1"
+    ],
+    "image_sizes": [
+     "512",
+     "1K",
+     "2K",
+     "4K"
+    ],
+    "thinking_levels": [
+     "minimal",
+     "high"
+    ],
+    "sizes": [],
+    "flexible_size": false,
+    "max_images": null,
+    "max_references": 14,
+    "mask": false,
+    "continuity": true,
+    "search_types": [
+     "web_search",
+     "image_search"
+    ],
+    "streaming": false,
+    "retirement_date": null,
+    "verified": "2026-09-15"
+   },
+   "aliases": []
+  },
+  {
+   "id": "gemini-3.1-flash-lite-image",
+   "display_name": "Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite)",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": {
+    "input_per_million": 0.25,
+    "output_per_million": 1.5,
+    "cache_read_per_million": null,
+    "cache_write_per_million": null,
+    "image_input_per_million": 0.25,
+    "image_output_per_million": 30.0,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-07"
+   },
+   "image": {
+    "options": [
+     "aspect_ratio",
+     "image_size",
+     "output_format",
+     "previous_interaction_id",
+     "store",
+     "thinking_level"
+    ],
+    "qualities": [],
+    "formats": [
+     "png",
+     "jpeg"
+    ],
+    "backgrounds": [],
+    "aspect_ratios": [
+     "1:1",
+     "2:3",
+     "3:2",
+     "3:4",
+     "4:3",
+     "4:5",
+     "5:4",
+     "9:16",
+     "16:9",
+     "21:9"
+    ],
+    "image_sizes": [
+     "1K"
+    ],
+    "thinking_levels": [
+     "minimal",
+     "high"
+    ],
+    "sizes": [],
+    "flexible_size": false,
+    "max_images": null,
+    "max_references": 14,
+    "mask": false,
+    "continuity": true,
+    "search_types": [],
+    "streaming": false,
+    "retirement_date": null,
+    "verified": "2026-09-15"
+   },
+   "aliases": []
+  },
+  {
+   "id": "gemini-2.5-flash-image",
+   "display_name": "Gemini 2.5 Flash Image (Nano Banana)",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": true,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": {
+    "input_per_million": 0.3,
+    "output_per_million": 2.5,
+    "cache_read_per_million": 0.03,
+    "cache_write_per_million": null,
+    "image_input_per_million": 0.3,
+    "image_output_per_million": 30.0,
+    "long_context_threshold_tokens": null,
+    "long_context_input_multiplier": 1.0,
+    "long_context_output_multiplier": 1.0,
+    "currency": "USD",
+    "verified": "2026-08-07"
+   },
+   "image": {
+    "options": [
+     "aspect_ratio",
+     "image_size",
+     "output_format",
+     "previous_interaction_id",
+     "store"
+    ],
+    "qualities": [],
+    "formats": [
+     "png",
+     "jpeg"
+    ],
+    "backgrounds": [],
+    "aspect_ratios": [
+     "1:1",
+     "2:3",
+     "3:2",
+     "3:4",
+     "4:3",
+     "4:5",
+     "5:4",
+     "9:16",
+     "16:9",
+     "21:9"
+    ],
+    "image_sizes": [
+     "1K"
+    ],
+    "thinking_levels": [],
+    "sizes": [],
+    "flexible_size": false,
+    "max_images": null,
+    "max_references": 3,
+    "mask": false,
+    "continuity": true,
+    "search_types": [],
+    "streaming": false,
+    "retirement_date": "2027-03-15",
+    "verified": "2026-09-15"
+   },
+   "aliases": []
+  }
+ ]
+}

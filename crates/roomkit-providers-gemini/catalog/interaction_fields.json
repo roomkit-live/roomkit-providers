@@ -1,0 +1,1136 @@
+{
+ "generator": "scripts/generate_gemini_interaction_fields.py",
+ "google.genai_version": "3.2.0",
+ "steps": {
+  "list": {
+   "union": "Step"
+  }
+ },
+ "usage": {
+  "model": "Usage"
+ },
+ "unions": {
+  "Annotation": {
+   "key": "type",
+   "variants": {
+    "file_citation": "FileCitation",
+    "place_citation": "PlaceCitation",
+    "speech_metadata": "SpeechAnnotation",
+    "url_citation": "URLCitation",
+    "word_info": "WordInfo"
+   }
+  },
+  "Content": {
+   "key": "type",
+   "variants": {
+    "audio": "AudioContent",
+    "document": "DocumentContent",
+    "image": "ImageContent",
+    "text": "TextContent",
+    "video": "VideoContent"
+   }
+  },
+  "Step": {
+   "key": "type",
+   "variants": {
+    "code_execution_call": "CodeExecutionCallStep",
+    "code_execution_result": "CodeExecutionResultStep",
+    "file_search_call": "FileSearchCallStep",
+    "file_search_result": "FileSearchResultStep",
+    "function_call": "FunctionCallStep",
+    "function_result": "FunctionResultStep",
+    "google_maps_call": "GoogleMapsCallStep",
+    "google_maps_result": "GoogleMapsResultStep",
+    "google_search_call": "GoogleSearchCallStep",
+    "google_search_result": "GoogleSearchResultStep",
+    "mcp_server_tool_call": "MCPServerToolCallStep",
+    "mcp_server_tool_result": "MCPServerToolResultStep",
+    "model_output": "ModelOutputStep",
+    "processing_call": "ProcessingCallStep",
+    "processing_result": "ProcessingResultStep",
+    "retrieval_call": "RetrievalCallStep",
+    "retrieval_result": "RetrievalResultStep",
+    "thought": "ThoughtStep",
+    "url_context_call": "URLContextCallStep",
+    "url_context_result": "URLContextResultStep",
+    "user_input": "UserInputStep"
+   }
+  },
+  "ThoughtSummaryContent": {
+   "key": "type",
+   "variants": {
+    "image": "ImageContent",
+    "text": "TextContent"
+   }
+  }
+ },
+ "models": {
+  "AudioContent": [
+   [
+    "channels",
+    "channels",
+    null
+   ],
+   [
+    "data",
+    "data",
+    null
+   ],
+   [
+    "mime_type",
+    "mime_type",
+    null
+   ],
+   [
+    "sample_rate",
+    "sample_rate",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ],
+   [
+    "uri",
+    "uri",
+    null
+   ]
+  ],
+  "CodeExecutionCallArguments": [
+   [
+    "code",
+    "code",
+    null
+   ],
+   [
+    "language",
+    "language",
+    null
+   ]
+  ],
+  "CodeExecutionCallStep": [
+   [
+    "arguments",
+    "arguments",
+    {
+     "model": "CodeExecutionCallArguments"
+    }
+   ],
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "CodeExecutionResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "result",
+    "result",
+    null
+   ],
+   [
+    "is_error",
+    "is_error",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "DocumentContent": [
+   [
+    "data",
+    "data",
+    null
+   ],
+   [
+    "mime_type",
+    "mime_type",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ],
+   [
+    "uri",
+    "uri",
+    null
+   ]
+  ],
+  "FileCitation": [
+   [
+    "custom_metadata",
+    "custom_metadata",
+    null
+   ],
+   [
+    "document_uri",
+    "document_uri",
+    null
+   ],
+   [
+    "end_index",
+    "end_index",
+    null
+   ],
+   [
+    "file_name",
+    "file_name",
+    null
+   ],
+   [
+    "media_id",
+    "media_id",
+    null
+   ],
+   [
+    "page_number",
+    "page_number",
+    null
+   ],
+   [
+    "source",
+    "source",
+    null
+   ],
+   [
+    "start_index",
+    "start_index",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "FileSearchCallStep": [
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "FileSearchResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "FunctionCallStep": [
+   [
+    "arguments",
+    "arguments",
+    null
+   ],
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "name",
+    "name",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "FunctionResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "result",
+    "result",
+    null
+   ],
+   [
+    "is_error",
+    "is_error",
+    null
+   ],
+   [
+    "name",
+    "name",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "GoogleMapsCallArguments": [
+   [
+    "queries",
+    "queries",
+    {
+     "list": null
+    }
+   ]
+  ],
+  "GoogleMapsCallStep": [
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "arguments",
+    "arguments",
+    {
+     "model": "GoogleMapsCallArguments"
+    }
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "GoogleMapsResult": [
+   [
+    "places",
+    "places",
+    {
+     "list": {
+      "model": "GoogleMapsResultPlaces"
+     }
+    }
+   ],
+   [
+    "widget_context_token",
+    "widget_context_token",
+    null
+   ]
+  ],
+  "GoogleMapsResultPlaces": [
+   [
+    "name",
+    "name",
+    null
+   ],
+   [
+    "place_id",
+    "place_id",
+    null
+   ],
+   [
+    "review_snippets",
+    "review_snippets",
+    {
+     "list": {
+      "model": "ReviewSnippet"
+     }
+    }
+   ],
+   [
+    "url",
+    "url",
+    null
+   ]
+  ],
+  "GoogleMapsResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "result",
+    "result",
+    {
+     "list": {
+      "model": "GoogleMapsResult"
+     }
+    }
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "GoogleSearchCallArguments": [
+   [
+    "queries",
+    "queries",
+    {
+     "list": null
+    }
+   ]
+  ],
+  "GoogleSearchCallStep": [
+   [
+    "arguments",
+    "arguments",
+    {
+     "model": "GoogleSearchCallArguments"
+    }
+   ],
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "search_type",
+    "search_type",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "GoogleSearchResult": [
+   [
+    "search_suggestions",
+    "search_suggestions",
+    null
+   ]
+  ],
+  "GoogleSearchResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "result",
+    "result",
+    {
+     "list": {
+      "model": "GoogleSearchResult"
+     }
+    }
+   ],
+   [
+    "is_error",
+    "is_error",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "GroundingToolCount": [
+   [
+    "count",
+    "count",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "ImageContent": [
+   [
+    "data",
+    "data",
+    null
+   ],
+   [
+    "mime_type",
+    "mime_type",
+    null
+   ],
+   [
+    "resolution",
+    "resolution",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ],
+   [
+    "uri",
+    "uri",
+    null
+   ]
+  ],
+  "MCPServerToolCallStep": [
+   [
+    "arguments",
+    "arguments",
+    null
+   ],
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "name",
+    "name",
+    null
+   ],
+   [
+    "server_name",
+    "server_name",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "MCPServerToolResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "result",
+    "result",
+    null
+   ],
+   [
+    "name",
+    "name",
+    null
+   ],
+   [
+    "server_name",
+    "server_name",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "ModalityTokens": [
+   [
+    "modality",
+    "modality",
+    null
+   ],
+   [
+    "tokens",
+    "tokens",
+    null
+   ]
+  ],
+  "ModelOutputStep": [
+   [
+    "content",
+    "content",
+    {
+     "list": {
+      "union": "Content"
+     }
+    }
+   ],
+   [
+    "error",
+    "error",
+    {
+     "model": "Status"
+    }
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "PlaceCitation": [
+   [
+    "end_index",
+    "end_index",
+    null
+   ],
+   [
+    "name",
+    "name",
+    null
+   ],
+   [
+    "place_id",
+    "place_id",
+    null
+   ],
+   [
+    "review_snippets",
+    "review_snippets",
+    {
+     "list": {
+      "model": "ReviewSnippet"
+     }
+    }
+   ],
+   [
+    "start_index",
+    "start_index",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ],
+   [
+    "url",
+    "url",
+    null
+   ]
+  ],
+  "ProcessingCallStep": [
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "ProcessingResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "RetrievalCallArguments": [
+   [
+    "queries",
+    "queries",
+    {
+     "list": null
+    }
+   ]
+  ],
+  "RetrievalCallStep": [
+   [
+    "arguments",
+    "arguments",
+    {
+     "model": "RetrievalCallArguments"
+    }
+   ],
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "retrieval_type",
+    "retrieval_type",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "RetrievalResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "is_error",
+    "is_error",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "ReviewSnippet": [
+   [
+    "review_id",
+    "review_id",
+    null
+   ],
+   [
+    "title",
+    "title",
+    null
+   ],
+   [
+    "url",
+    "url",
+    null
+   ]
+  ],
+  "SpeechAnnotation": [
+   [
+    "end_index",
+    "end_index",
+    null
+   ],
+   [
+    "speaker",
+    "speaker",
+    null
+   ],
+   [
+    "start_index",
+    "start_index",
+    null
+   ],
+   [
+    "style",
+    "style",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "Status": [
+   [
+    "code",
+    "code",
+    null
+   ],
+   [
+    "details",
+    "details",
+    {
+     "list": null
+    }
+   ],
+   [
+    "message",
+    "message",
+    null
+   ]
+  ],
+  "TextContent": [
+   [
+    "text",
+    "text",
+    null
+   ],
+   [
+    "annotations",
+    "annotations",
+    {
+     "list": {
+      "union": "Annotation"
+     }
+    }
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "ThoughtStep": [
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "summary",
+    "summary",
+    {
+     "list": {
+      "union": "ThoughtSummaryContent"
+     }
+    }
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "URLCitation": [
+   [
+    "end_index",
+    "end_index",
+    null
+   ],
+   [
+    "start_index",
+    "start_index",
+    null
+   ],
+   [
+    "title",
+    "title",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ],
+   [
+    "url",
+    "url",
+    null
+   ]
+  ],
+  "URLContextCallArguments": [
+   [
+    "urls",
+    "urls",
+    {
+     "list": null
+    }
+   ]
+  ],
+  "URLContextCallStep": [
+   [
+    "arguments",
+    "arguments",
+    {
+     "model": "URLContextCallArguments"
+    }
+   ],
+   [
+    "id",
+    "id",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "URLContextResult": [
+   [
+    "status",
+    "status",
+    null
+   ],
+   [
+    "url",
+    "url",
+    null
+   ]
+  ],
+  "URLContextResultStep": [
+   [
+    "call_id",
+    "call_id",
+    null
+   ],
+   [
+    "result",
+    "result",
+    {
+     "list": {
+      "model": "URLContextResult"
+     }
+    }
+   ],
+   [
+    "is_error",
+    "is_error",
+    null
+   ],
+   [
+    "signature",
+    "signature",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "Usage": [
+   [
+    "cached_tokens_by_modality",
+    "cached_tokens_by_modality",
+    {
+     "list": {
+      "model": "ModalityTokens"
+     }
+    }
+   ],
+   [
+    "grounding_tool_count",
+    "grounding_tool_count",
+    {
+     "list": {
+      "model": "GroundingToolCount"
+     }
+    }
+   ],
+   [
+    "initial_input_tokens",
+    "initial_input_tokens",
+    null
+   ],
+   [
+    "input_tokens_by_modality",
+    "input_tokens_by_modality",
+    {
+     "list": {
+      "model": "ModalityTokens"
+     }
+    }
+   ],
+   [
+    "output_tokens_by_modality",
+    "output_tokens_by_modality",
+    {
+     "list": {
+      "model": "ModalityTokens"
+     }
+    }
+   ],
+   [
+    "tool_use_tokens_by_modality",
+    "tool_use_tokens_by_modality",
+    {
+     "list": {
+      "model": "ModalityTokens"
+     }
+    }
+   ],
+   [
+    "total_cached_tokens",
+    "total_cached_tokens",
+    null
+   ],
+   [
+    "total_input_tokens",
+    "total_input_tokens",
+    null
+   ],
+   [
+    "total_output_tokens",
+    "total_output_tokens",
+    null
+   ],
+   [
+    "total_thought_tokens",
+    "total_thought_tokens",
+    null
+   ],
+   [
+    "total_tokens",
+    "total_tokens",
+    null
+   ],
+   [
+    "total_tool_use_tokens",
+    "total_tool_use_tokens",
+    null
+   ]
+  ],
+  "UserInputStep": [
+   [
+    "content",
+    "content",
+    {
+     "list": {
+      "union": "Content"
+     }
+    }
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ],
+  "VideoContent": [
+   [
+    "data",
+    "data",
+    null
+   ],
+   [
+    "mime_type",
+    "mime_type",
+    null
+   ],
+   [
+    "name",
+    "name",
+    null
+   ],
+   [
+    "processing",
+    "processing",
+    null
+   ],
+   [
+    "resolution",
+    "resolution",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ],
+   [
+    "uri",
+    "uri",
+    null
+   ]
+  ],
+  "WordInfo": [
+   [
+    "end_index",
+    "end_index",
+    null
+   ],
+   [
+    "end_offset",
+    "end_offset",
+    null
+   ],
+   [
+    "speaker",
+    "speaker",
+    null
+   ],
+   [
+    "start_index",
+    "start_index",
+    null
+   ],
+   [
+    "start_offset",
+    "start_offset",
+    null
+   ],
+   [
+    "text",
+    "text",
+    null
+   ],
+   [
+    "type",
+    "type",
+    null
+   ]
+  ]
+ }
+}

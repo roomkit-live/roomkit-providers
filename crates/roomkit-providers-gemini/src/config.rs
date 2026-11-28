@@ -86,7 +86,7 @@ fn connect_timeout() -> Duration {
 }
 
 /// Reads a duration written in seconds, from zero up.
-fn seconds<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Duration, D::Error> {
+pub(crate) fn seconds<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Duration, D::Error> {
     let written = f64::deserialize(deserializer)?;
     Duration::try_from_secs_f64(written).map_err(|_| {
         D::Error::custom(format!(

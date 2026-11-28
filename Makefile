@@ -26,10 +26,11 @@ PYTHON_SOURCES := python tests/python examples benchmarks scripts/check-python.p
 .PHONY: all fmt fmt-check clippy no-network-test test examples doc deny \
 	msrv msrv-toolchain hooks redis-test postgres-test postgres-fixture sqlite-fixture \
 	python-public-urls python-proxy-cases python-openai-config \
-	python-openai-chat-cases \
+	python-openai-chat-cases python-openai-image-cases \
 	python-openai-catalogue \
 	python-anthropic-config python-anthropic-messages-cases python-anthropic-catalogue \
 	python-gemini-config python-gemini-cases python-gemini-catalogue \
+	python-gemini-image-cases python-gemini-interaction-fields \
 	python-mistral-config python-mistral-cases python-mistral-catalogue \
 	python-ollama-config python-ollama-cases python-ollama-catalogue python-ollama-images \
 	python-polargrid-config python-polargrid-cases python-polargrid-catalogue \
@@ -274,6 +275,12 @@ python-openai-catalogue:
 python-openai-chat-cases:
 	$(PYTHON) scripts/generate_openai_chat_cases.py
 
+# Rewrites the fixture of what RoomKit's Python OpenAI image provider sends
+# and reads, case by case. PYTHON needs roomkit's `openai` extra. The script
+# answers its own requests: nothing is sent to a network.
+python-openai-image-cases:
+	$(PYTHON) scripts/generate_openai_image_cases.py
+
 # Rewrites the fixture of the JSON forms of RoomKit's Python `AnthropicConfig`.
 python-anthropic-config:
 	$(PYTHON) scripts/generate_anthropic_config_forms.py
@@ -303,6 +310,18 @@ python-gemini-catalogue:
 # extra. The script answers its own requests: nothing is sent to a network.
 python-gemini-cases:
 	$(PYTHON) scripts/generate_gemini_cases.py
+
+# Rewrites the fixture of what RoomKit's Python Gemini image provider sends
+# and reads on the Interactions API, case by case. PYTHON needs roomkit's
+# `gemini` extra. The script answers its own requests: nothing is sent to a
+# network.
+python-gemini-image-cases:
+	$(PYTHON) scripts/generate_gemini_image_cases.py
+
+# Rewrites how google-genai writes an interaction's steps and usage back, which
+# the Gemini image provider writes them as. PYTHON needs google-genai.
+python-gemini-interaction-fields:
+	$(PYTHON) scripts/generate_gemini_interaction_fields.py
 
 # Rewrites the fixture of the JSON forms of RoomKit's Python `MistralConfig`.
 python-mistral-config:
