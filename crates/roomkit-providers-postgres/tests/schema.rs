@@ -947,11 +947,16 @@ async fn a_dedupe_repairs_and_enforces_unique() {
         store.dedupe_event_indices(run).await.unwrap()["action"],
         json!("noop")
     );
+    // Python: `pytest.raises(EventIndexTakenError)`, the constraint now
+    // enforced (RFC §8.1).
     let refused = store
         .add_event(event("r1", "same index"))
         .await
         .unwrap_err();
-    assert!(matches!(refused, StoreError::Unavailable(_)), "{refused:?}");
+    assert!(
+        matches!(refused, StoreError::EventIndexTaken { index: 0, .. }),
+        "{refused:?}"
+    );
 }
 
 /// Python: `test_a_dedupe_waiting_on_a_room_holds_nothing_its_commit_needs` (RMK-1394):

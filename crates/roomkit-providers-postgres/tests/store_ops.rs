@@ -381,6 +381,52 @@ async fn a_held_id_is_the_driver_s_refusal_whatever_the_index_order() {
     );
 }
 
+/// Python: `test_a_held_id_at_its_index_is_the_driver_s_refusal_whatever_the_index_order`
+/// (RFC §8.1, §14.3): after a reindex the primary key is checked last; a
+/// second add of a stored event at its own index stays the driver's refusal
+/// of the id, and another event at that index is a held index, nothing
+/// written.
+#[tokio::test]
+async fn a_held_id_at_its_index_is_the_driver_s_refusal_whatever_the_index_order() {
+    let Some((schema, store)) = fresh().await else {
+        return;
+    };
+    schema
+        .client()
+        .await
+        .batch_execute(&format!(
+            "REINDEX INDEX CONCURRENTLY {}.events_pkey",
+            schema.name()
+        ))
+        .await
+        .unwrap();
+    let room = room_id("r1");
+    store.create_room(Room::new(room.clone())).await.unwrap();
+    let held = store
+        .commit_event(&room, event("r1", "x"), CommitEventOptions::default())
+        .await
+        .unwrap();
+    let second = store.add_event(held.clone()).await;
+    assert!(
+        matches!(second, Err(StoreError::Unavailable(_))),
+        "{second:?}"
+    );
+    let mut other = event("r1", "y");
+    other.index = held.index;
+    let taken = store.add_event(other).await;
+    assert!(
+        matches!(&taken, Err(StoreError::EventIndexTaken { room_id, index })
+            if *room_id == room && *index == held.index),
+        "{taken:?}"
+    );
+    let stored = store
+        .list_events(&room, roomkit::store::ListEventsOptions::default())
+        .await
+        .unwrap();
+    let ids: Vec<_> = stored.iter().map(|event| event.id.clone()).collect();
+    assert_eq!(ids, vec![held.id]);
+}
+
 /// Python: `test_patch_room_metadata_concurrent_with_commits`,
 /// `test_patch_room_metadata_does_not_touch_counters`: one partial update, so
 /// neither loses the other's write, across connections.

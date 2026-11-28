@@ -20,6 +20,9 @@ use crate::values::{Instant, execute, integer, jsonb_read, name, query, query_op
 /// The unique index of a key per room and source channel (RFC §13.4, §14.3).
 const KEY_INDEX: &str = "idx_events_idempotency_channel";
 
+/// The unique index of an event's index in its room (RFC §8.1, §14.3).
+const ROOM_INDEX: &str = "idx_events_room_index";
+
 /// The non-column members of an event's source, as Python's `_source_extra`
 /// writes them.
 fn source_extra(source: &EventSource) -> Result<Value, Failure> {
@@ -113,24 +116,35 @@ async fn insert(transaction: &Transaction<'_>, event: &RoomEvent) -> Result<(), 
     }
 }
 
-/// What a refused insert of `event` means: a key its channel holds, read by
-/// the unique violation on the key's index; a room the store lacks, the
-/// foreign key's violation; else the driver's own error.
+/// What a refused insert of `event` means, as Python's `_insert_event`
+/// reads it: a key its channel holds, read by the unique violation on the
+/// key's index; an index another event holds in the room, on the room's
+/// index; a room the store lacks, the foreign key's violation; else the
+/// driver's own error.
 fn refused_row(error: tokio_postgres::Error, event: &RoomEvent) -> Failure {
     let (code, constraint) = error
         .as_db_error()
         .map_or((None, None), |db| (Some(db.code()), db.constraint()));
-    if code == Some(&SqlState::UNIQUE_VIOLATION) && constraint == Some(KEY_INDEX) {
-        return Failure::KeyRefused {
+    let taken = match constraint {
+        _ if code != Some(&SqlState::UNIQUE_VIOLATION) => None,
+        Some(KEY_INDEX) => Some(StoreError::IdempotencyKeyTaken {
+            room_id: event.room_id.clone(),
+            channel_id: event.source.channel_id.clone(),
+            key: event.idempotency_key.clone().unwrap_or_default(),
+        }),
+        Some(ROOM_INDEX) => Some(StoreError::EventIndexTaken {
+            room_id: event.room_id.clone(),
+            index: event.index,
+        }),
+        _ => None,
+    };
+    match taken {
+        Some(taken) => Failure::UniqueRefused {
             driver: error,
-            taken: StoreError::IdempotencyKeyTaken {
-                room_id: event.room_id.clone(),
-                channel_id: event.source.channel_id.clone(),
-                key: event.idempotency_key.clone().unwrap_or_default(),
-            },
-        };
+            taken,
+        },
+        None => room_gone(error, &event.room_id),
     }
-    room_gone(error, &event.room_id)
 }
 
 /// A foreign key's violation as the room it names missing (RFC §14.3): every
@@ -143,16 +157,16 @@ pub(crate) fn room_gone(error: tokio_postgres::Error, room_id: &RoomId) -> Failu
     error.into()
 }
 
-/// `outcome` of an event's insert, its transaction over: a key refused for an
-/// event whose id the store holds is a second write of that event, which
-/// stays the driver's refusal of the id (RFC §14.3), whichever unique index
-/// Postgres reported first (Python's `_a_held_id_as_such`).
+/// `outcome` of an event's insert, its transaction over: a key or an index
+/// refused for an event whose id the store holds is a second write of that
+/// event, which stays the driver's refusal of the id (RFC §14.3), whichever
+/// unique index Postgres reported first (Python's `_a_held_id_as_such`).
 async fn a_held_id_as_such(
     client: &Object,
     event_id: &EventId,
     outcome: Result<RoomEvent, Failure>,
 ) -> Result<RoomEvent, Failure> {
-    let Err(Failure::KeyRefused { driver, taken }) = outcome else {
+    let Err(Failure::UniqueRefused { driver, taken }) = outcome else {
         return outcome;
     };
     let held = query_opt(

@@ -9,6 +9,11 @@ nothing has been released yet.
 
 - The managed llama.cpp provider sends the per-request reasoning token limit
   to the server. Omitting the limit preserves the server default.
+- The SQLite and Postgres stores refuse an event added at an index another
+  event holds in its room with `StoreError::EventIndexTaken`, nothing
+  written, as RoomKit's Python stores raise `EventIndexTakenError` (RFC
+  §8.1); a second add of a stored event stays the database's refusal of
+  its id. They pass the core's store contract on roomkit-rs 654b4298.
 
 ### Added
 

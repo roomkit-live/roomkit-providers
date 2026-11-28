@@ -140,8 +140,41 @@ pub(crate) fn add(connection: &Connection, mut event: RoomEvent) -> Result<RoomE
     event.idempotency_key = idempotency::key(event.idempotency_key);
     rooms::check(connection, &event.room_id)?;
     check_key(connection, &event)?;
-    write_row(connection, &event, None)?;
-    Ok(event)
+    match write_row(connection, &event, None) {
+        Err(Failure::Database(error)) => Err(refused_index(connection, &event, error)?),
+        written => written.map(|()| event),
+    }
+}
+
+/// What the database's refusal `error` of `event`'s row means, as Python's
+/// `_index_taken` reads it: an index another event holds in the room is
+/// [`StoreError::EventIndexTaken`] (RFC §8.1, §14.3), nothing written; an id
+/// the store holds, a second write of the event, stays the database's own
+/// refusal, as does anything else.
+fn refused_index(
+    connection: &Connection,
+    event: &RoomEvent,
+    error: rusqlite::Error,
+) -> Result<Failure, Failure> {
+    let held = |sql: &str, params: &[&dyn rusqlite::ToSql]| {
+        connection.query_row(sql, params, |_| Ok(())).optional()
+    };
+    if held("SELECT 1 FROM events WHERE id = ?", &[&event.id.as_str()])?.is_some() {
+        return Ok(Failure::Database(error));
+    }
+    let index = i64::try_from(event.index).map_err(|_| Failure::OutOfRange("index"))?;
+    let taken = held(
+        "SELECT 1 FROM events WHERE room_id = ? AND idx = ?",
+        &[&event.room_id.as_str(), &index],
+    )?;
+    Ok(match taken {
+        Some(()) => StoreError::EventIndexTaken {
+            room_id: event.room_id.clone(),
+            index: event.index,
+        }
+        .into(),
+        None => Failure::Database(error),
+    })
 }
 
 /// Stores `event` at `room_id`'s next index, which the file reserves, the
@@ -321,7 +354,8 @@ mod tests {
 
     /// Python: `tests/test_store_sqlite.py::TestPersistence::test_duplicate_index_is_rejected_by_database`:
     /// an event added at an index the room holds is refused by the file's
-    /// `UNIQUE(room_id, idx)` index, nothing written.
+    /// `UNIQUE(room_id, idx)` index, nothing written: `EventIndexTaken`, as
+    /// Python's store raises `EventIndexTakenError` (RFC §8.1).
     #[test]
     fn duplicate_index_is_rejected_by_database() {
         let mut connection = Connection::open_in_memory().unwrap();
@@ -336,7 +370,14 @@ mod tests {
         add(&connection, first.clone()).unwrap();
         let refused = add(&connection, second.clone());
 
-        assert!(matches!(refused, Err(Failure::Database(_))), "{refused:?}");
+        assert!(
+            matches!(
+                &refused,
+                Err(Failure::Refused(StoreError::EventIndexTaken { room_id, index }))
+                    if *room_id == second.room_id && *index == second.index
+            ),
+            "{refused:?}"
+        );
         assert!(get(&connection, &second.id).unwrap().is_none());
     }
 }

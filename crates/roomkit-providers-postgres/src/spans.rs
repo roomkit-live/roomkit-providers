@@ -177,6 +177,7 @@ fn class_of(error: &StoreError) -> &'static str {
         StoreError::EventNotFound(_) => "EventNotFoundError",
         StoreError::TaskNotFound(_) => "TaskNotFoundError",
         StoreError::IdempotencyKeyTaken { .. } => "IdempotencyKeyTakenError",
+        StoreError::EventIndexTaken { .. } => "EventIndexTakenError",
         StoreError::Value(_) => "ValueError",
         StoreError::Unavailable(cause) => failure_class(&**cause),
         _ => "RuntimeError",

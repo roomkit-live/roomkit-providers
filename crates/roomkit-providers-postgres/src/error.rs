@@ -47,10 +47,10 @@ pub(crate) enum Failure {
     Refused(StoreError),
     /// The database failed.
     Database(tokio_postgres::Error),
-    /// The database refused an event's key: the event's id may be held, which
-    /// is a second write of the event rather than a key taken (Python's
-    /// `_a_held_id_as_such`).
-    KeyRefused {
+    /// The database refused an event's key or its index: the event's id may
+    /// be held, which is a second write of the event rather than a key or an
+    /// index taken (Python's `_a_held_id_as_such`).
+    UniqueRefused {
         driver: tokio_postgres::Error,
         taken: StoreError,
     },
@@ -93,7 +93,7 @@ impl From<Failure> for StoreError {
         match failure {
             Failure::Refused(error) => error,
             Failure::Database(error) => Self::unavailable(error),
-            Failure::KeyRefused { taken, .. } => taken,
+            Failure::UniqueRefused { taken, .. } => taken,
             Failure::Json(error) => Self::unavailable(error),
             Failure::OutOfRange(what) => Self::unavailable(format!("{what} is out of range")),
             // Python's `ValueError`, its text the same as `SqliteStore`'s.
