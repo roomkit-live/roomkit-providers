@@ -10,12 +10,11 @@
 //! generation, whose attempts in flight are then told unknown, through the
 //! same call, which Python reads to its end.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::error::Error as _;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -267,17 +266,60 @@ async fn generated(provider: HeldImages, asked: Asked, items: Sender<Item>, labe
     );
 }
 
+/// What a call sent Python and Python has not done with: each item from
+/// the moment it left the generation until Python says it took it, so that
+/// an item a cancelled crossing carried is given again; each attempt told
+/// until the host answered it.
+#[derive(Default)]
+struct Ledger {
+    /// The items Python has not taken, as JSON, by their token, in order.
+    untaken: BTreeMap<u64, String>,
+    /// Where each attempt told waits for the host's answer, by its token.
+    answers: HashMap<u64, Answer>,
+    /// The token the next item is given.
+    next: u64,
+}
+
+impl Ledger {
+    /// Files `item`, which left the generation, under a token of its own.
+    fn file(&mut self, item: Item) {
+        let token = self.next;
+        self.next = self.next.saturating_add(1);
+        let written = match item {
+            Item::Told(told, answer) => {
+                self.answers.insert(token, answer);
+                format!(r#"{{"told":{told},"token":{token}}}"#)
+            }
+            Item::Outcome(outcome) => format!(r#"{{"outcome":{outcome},"token":{token}}}"#),
+        };
+        self.untaken.insert(token, written);
+    }
+
+    /// The first item Python has not taken.
+    fn first_untaken(&self) -> Option<String> {
+        self.untaken.first_key_value().map(|(_, item)| item.clone())
+    }
+}
+
 /// What a call holds of the bridge's.
 struct Generation {
     /// What the first crossing begins: nothing is sent before.
     unbegun: Mutex<Option<Held<'static, ()>>>,
     items: Arc<TaskMutex<Receiver<Item>>>,
-    /// Where each attempt told waits for the host's answer, by its token.
-    answers: Arc<Mutex<HashMap<u64, Answer>>>,
-    tokens: Arc<AtomicU64>,
+    ledger: Arc<Mutex<Ledger>>,
     /// Cancelled when Python closes the call, or no longer holds it.
     closed: CancellationToken,
     label: String,
+}
+
+impl Generation {
+    fn ledger(&self) -> MutexGuard<'_, Ledger> {
+        locked(&self.ledger)
+    }
+}
+
+fn locked(ledger: &Mutex<Ledger>) -> MutexGuard<'_, Ledger> {
+    ledger.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 #[pyclass(name = "_ImageCall", frozen, module = "roomkit_providers._native")]
@@ -309,7 +351,8 @@ impl PythonImageCall {
     fn of(provider: HeldImages, label: &str, request_json: &str) -> Result<Self, Failure> {
         let asked: Asked = serde_json::from_str(request_json)
             .map_err(|error| Failure::refused(&error.to_string(), label))?;
-        // As many attempts told at once as a generation makes, at the most.
+        // The items a generation is ahead of Python by: past them, it waits
+        // for Python to take some.
         let (sender, receiver) = mpsc::channel(64);
         let closed = CancellationToken::new();
         let work = generated(provider, asked, sender, label.to_owned());
@@ -323,8 +366,7 @@ impl PythonImageCall {
             generation: Kept::new(Generation {
                 unbegun: Mutex::new(Some(unbegun)),
                 items: Arc::new(TaskMutex::new(receiver)),
-                answers: Arc::new(Mutex::new(HashMap::new())),
-                tokens: Arc::new(AtomicU64::new(0)),
+                ledger: Arc::new(Mutex::new(Ledger::default())),
                 closed,
                 label: label.to_owned(),
             }),
@@ -339,9 +381,11 @@ impl PythonImageCall {
 
 #[pymethods]
 impl PythonImageCall {
-    /// The next item of the call, as JSON: an attempt told, with the token
-    /// its answer goes back with, then the outcome; None once the call has
-    /// nothing more. The first call begins the generation.
+    /// The first item of the call Python has not taken, as JSON, with its
+    /// token: an attempt told, which the host's answer goes back with, or
+    /// the outcome; None once the call has nothing more. An item stays the
+    /// first until Python takes it (`taken`): one a cancelled crossing
+    /// carried is given again. The first call begins the generation.
     fn next<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         fork::ensure_unforked()?;
         let generation = self.generation()?;
@@ -355,21 +399,35 @@ impl PythonImageCall {
                 runtime::spawn(work)?;
             }
             let items = Arc::clone(&generation.items);
-            let answers = Arc::clone(&generation.answers);
-            let tokens = Arc::clone(&generation.tokens);
+            let ledger = Arc::clone(&generation.ledger);
             runtime::call(py, &generation.label, async move {
-                let mut items = items.lock().await;
-                Ok(match items.recv().await {
-                    Some(Item::Told(told, answer)) => {
-                        let token = tokens.fetch_add(1, Ordering::Relaxed);
-                        let mut waiting = answers.lock().unwrap_or_else(PoisonError::into_inner);
-                        waiting.insert(token, answer);
-                        Some(format!(r#"{{"told":{told},"token":{token}}}"#))
+                loop {
+                    if let Some(item) = locked(&ledger).first_untaken() {
+                        return Ok(Some(item));
                     }
-                    Some(Item::Outcome(outcome)) => Some(outcome),
-                    None => None,
-                })
+                    let mut items = items.lock().await;
+                    // Another crossing may have filed one meanwhile.
+                    if let Some(item) = locked(&ledger).first_untaken() {
+                        return Ok(Some(item));
+                    }
+                    // Received and filed in one step: a crossing dropped
+                    // here loses nothing.
+                    match items.recv().await {
+                        Some(item) => locked(&ledger).file(item),
+                        None => return Ok(None),
+                    }
+                }
             })
+        })
+    }
+
+    /// Python took the item of `token`: it is given no more.
+    fn taken(&self, py: Python<'_>, token: u64) -> PyResult<()> {
+        fork::ensure_unforked()?;
+        let generation = self.generation()?;
+        guarded(py, &generation.label, || {
+            generation.ledger().untaken.remove(&token);
+            Ok(())
         })
     }
 
@@ -378,13 +436,11 @@ impl PythonImageCall {
     /// raised.
     #[pyo3(signature = (token, failed))]
     fn reply(&self, py: Python<'_>, token: u64, failed: Option<String>) -> PyResult<()> {
+        fork::ensure_unforked()?;
         let generation = self.generation()?;
         guarded(py, &generation.label, || {
-            let mut waiting = generation
-                .answers
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner);
-            if let Some(answer) = waiting.remove(&token) {
+            let answer = generation.ledger().answers.remove(&token);
+            if let Some(answer) = answer {
                 // The attempt dropped meanwhile waits for nothing.
                 drop(answer.send(failed.map_or(Ok(()), Err)));
             }

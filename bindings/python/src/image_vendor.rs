@@ -136,11 +136,12 @@ fn replaying_of<V: ImageVendor>(
 /// The entries of the image vendor named `vendor`.
 fn entries(vendor: &str) -> PyResult<&'static ImageEntries> {
     let held = vendors::IMAGE_VENDORS.iter();
-    held.into_iter()
-        .find(|entries| entries.name == vendor)
-        .ok_or_else(|| {
-            PyValueError::new_err("the native module holds no image provider of that name")
-        })
+    #[cfg(feature = "testing")]
+    let held = held.chain(std::iter::once(&super::testing_image::IMAGE_VENDOR));
+    let mut held = held;
+    held.find(|entries| entries.name == vendor).ok_or_else(|| {
+        PyValueError::new_err("the native module holds no image provider of that name")
+    })
 }
 
 /// The image provider of `vendor` that the configuration `config_json`

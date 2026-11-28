@@ -72,10 +72,15 @@ SHARED_MODULES = {
     "bindings/python/src/runtime.rs",
     "bindings/python/src/stream.rs",
     "bindings/python/src/testing.rs",
+    "bindings/python/src/testing_image.rs",
     "bindings/python/src/vendor.rs",
 }
 # The tests of the shared part, which run with no vendor.
-SHARED_TESTS = {"tests/python/test_generic.py", "tests/python/test_provider.py"}
+SHARED_TESTS = {
+    "tests/python/test_generic.py",
+    "tests/python/test_provider.py",
+    "tests/python/test_image_provider.py",
+}
 # The one shared file a provider adds a line to: the list of the vendors.
 VENDOR_LIST = "bindings/python/src/vendors/mod.rs"
 
@@ -140,7 +145,10 @@ def binding_modules() -> dict[str, Path]:
 
 
 def vendors() -> set[str]:
-    return set(package_modules()) | set(binding_modules())
+    """Every vendor's name as the shared part must not hold it: as the
+    binding names it, and as its module of the package does."""
+    stems = {module.stem for module in package_modules().values()}
+    return set(package_modules()) | set(binding_modules()) | stems
 
 
 def found_shared() -> set[str]:
@@ -362,9 +370,12 @@ class GenericTests(unittest.TestCase):
     def test_the_search_finds_a_vendor_s_name_however_it_is_written(self) -> None:
         """The search bites: on each vendor's own modules, on the list of
         the vendors, and on a name written in pieces or in another case."""
-        for vendor in sorted(vendors()):
-            own = [package_modules()[vendor], binding_modules()[vendor], ROOT / VENDOR_LIST]
+        for vendor, module in sorted(package_modules().items()):
+            own = [module, binding_modules()[vendor], ROOT / VENDOR_LIST]
             self.assertEqual(len(named_in(own, {vendor})), 3, vendor)
+        # Each name a vendor goes by, its module's own among them: an image
+        # vendor named in the shared part as its module is named is found.
+        for vendor in sorted(vendors()):
             half = len(vendor) // 2
             written = [
                 f'if label == "{vendor}":',

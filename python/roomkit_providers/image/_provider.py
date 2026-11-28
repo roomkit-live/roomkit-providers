@@ -20,7 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 from contextlib import suppress
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, TypeAdapter
 from roomkit.providers.ai import AIImagePart, ModelInfo, ProviderError
@@ -61,32 +61,68 @@ def _part(part: AIImagePart) -> dict[str, Any]:
 
 class _Generation:
     """One generation as Python reads it: the attempts told, then its
-    outcome."""
+    outcome.
+
+    Each attempt told is told to the host's callback in a task of its own,
+    as RoomKit's provider tells its attempts from tasks made at once: a
+    callback that waits for another attempt's waits for it, and the
+    provider waits for each callback's answer. An item the provider gives
+    stays its first until it is taken: one a cancellation met on its way is
+    given again."""
 
     def __init__(self, call: _native._ImageCall, callback: ImageProgressCallback | None) -> None:
         self._call = call
         self._callback = callback
-        # The failure of the host's callback, which a generation it failed
-        # is raised from.
-        self._cause: Exception | None = None
+        self._telling: set[asyncio.Task[None]] = set()
+        # The failure of the host's callback, by the index of its attempt:
+        # what a generation that attempt failed is raised from.
+        self._causes: dict[int, Exception] = {}
+        # The failures of the callback while the generation is cancelled.
+        self._unreported: list[Exception] = []
+        self._stopping = False
 
     async def _next(self) -> dict[str, Any] | None:
         _process.enter()
         with failing_as_roomkit():
             crossed = await self._call.next()
-        return None if crossed is None else json.loads(crossed)
+        if crossed is None:
+            return None
+        item = json.loads(crossed)
+        # Nothing awaits between the crossing and this: taken, the item is
+        # given no more.
+        self._call.taken(item["token"])
+        return item
 
-    async def _tell(self, item: dict[str, Any]) -> None:
-        """Tells the host's callback the attempt `item` holds, and answers
-        the provider with how it went."""
+    def _tell(self, item: dict[str, Any]) -> None:
+        """Tells the host's callback, in a task of its own, the attempt
+        `item` holds, and answers the provider with how it went."""
+        task = asyncio.get_running_loop().create_task(self._told(item))
+        self._telling.add(task)
+        task.add_done_callback(self._telling.discard)
+
+    async def _told(self, item: dict[str, Any]) -> None:
+        attempt = ImageAttempt.model_validate(item["told"])
         failed: str | None = None
-        if self._callback is not None:
-            try:
-                await self._callback(ImageAttempt.model_validate(item["told"]))
-            except Exception as exc:
-                self._cause = exc
-                failed = str(exc)
+        try:
+            if self._callback is not None:
+                await self._callback(attempt)
+        except Exception as exc:
+            if self._stopping:
+                self._unreported.append(exc)
+            else:
+                self._causes.setdefault(attempt.index, exc)
+            failed = str(exc)
+        except BaseException:
+            # A callback that leaves otherwise fails its attempt, unless the
+            # generation is being cancelled, which drops the attempt.
+            if not self._stopping:
+                self._call.reply(item["token"], "the progress callback did not return")
+            raise
+        _process.enter()
         self._call.reply(item["token"], failed)
+
+    async def _told_all(self) -> None:
+        await asyncio.gather(*self._telling, return_exceptions=True)
 
     async def outcome(self, label: str) -> list[ImageResult]:
         while True:
@@ -98,26 +134,35 @@ class _Generation:
                     provider=label,
                 )
             if "told" in item:
-                await self._tell(item)
+                self._tell(item)
                 continue
-            return self._ended(item)
+            # The provider ended once every callback answered.
+            await self._told_all()
+            return self._ended(item["outcome"])
 
-    def _ended(self, item: dict[str, Any]) -> list[ImageResult]:
-        if "images" in item:
-            return _RESULTS.validate_python(item["images"])
-        if "refused" in item:
-            raise ValueError(item["refused"])
-        if "failed" in item:
-            failed = item["failed"]
+    def _cause_of(self, attempts: list[ImageAttempt]) -> Exception | None:
+        """What a failed generation is raised from: the callback's failure
+        where it failed the first attempt that failed, as RoomKit's
+        provider raises it."""
+        failing = [
+            attempt.index
+            for attempt in attempts
+            if attempt.status in ("failed", "unknown") or attempt.index in self._causes
+        ]
+        return self._causes.get(min(failing)) if failing else None
+
+    def _ended(self, outcome: dict[str, Any]) -> list[ImageResult]:
+        if "images" in outcome:
+            return _RESULTS.validate_python(outcome["images"])
+        if "refused" in outcome:
+            raise ValueError(outcome["refused"])
+        if "failed" in outcome:
+            failed = outcome["failed"]
             attempts = [ImageAttempt.model_validate(attempt) for attempt in failed["attempts"]]
-            # Raised from the host's callback where its failure is the one
-            # that failed the generation, as RoomKit's provider raises it.
-            cause = self._cause
-            by_the_callback = f"Image progress callback failed: {cause}"
             raise ImageGenerationError(
                 failed["message"], provider=failed["provider"], attempts=attempts
-            ) from (cause if cause is not None and by_the_callback in failed["message"] else None)
-        error = item["error"]
+            ) from self._cause_of(attempts)
+        error = outcome["error"]
         raise ProviderError(
             error["message"],
             retryable=error["retryable"],
@@ -127,15 +172,30 @@ class _Generation:
             before_request=error["before_request"],
         )
 
-    async def cancelled(self) -> None:
+    async def cancelled(self) -> list[str]:
         """Stops the generation, then tells the host's callback each attempt
-        it left in flight, unknown: the vendor may still bill it."""
+        it left in flight, unknown: the vendor may still bill it. An attempt
+        the callback was being told of is dropped with its telling, and one
+        told started is no more. Gives the notes the cancellation carries:
+        each failure of the callback then, and a crossing that failed."""
         if _process.forked():
-            return
+            return []
+        self._stopping = True
         self._call.close()
-        while (item := await self._next()) is not None:
-            if "told" in item:
-                await self._tell(item)
+        for task in self._telling:
+            task.cancel()
+        await self._told_all()
+        notes: list[str] = []
+        try:
+            while (item := await self._next()) is not None:
+                told = item.get("told")
+                if told is not None and told["status"] != "started":
+                    self._tell(item)
+        except Exception as exc:
+            notes.append(f"Failed to report unknown image outcome: {exc}")
+        await self._told_all()
+        notes += [f"Failed to report unknown image outcome: {exc}" for exc in self._unreported]
+        return notes
 
     def close(self) -> None:
         if not _process.forked():
@@ -185,6 +245,14 @@ class Provider[C: BaseModel](RoomKitImageProvider):
             native = config.native_image()
         self._config = config.held()
         self._hold(native)
+
+    @classmethod
+    def _over(cls, native: _native._ImageProvider) -> Self:
+        """A provider over a native provider already built: for the tests of
+        the crossing, which script one."""
+        provider = cls.__new__(cls)
+        provider._hold(native)
+        return provider
 
     def _hold(self, native: _native._ImageProvider) -> None:
         """Hold `native`, and what it says of itself."""
@@ -277,8 +345,9 @@ class Provider[C: BaseModel](RoomKitImageProvider):
         generation = _Generation(call, callback)
         try:
             return await generation.outcome(self._label)
-        except asyncio.CancelledError:
-            await generation.cancelled()
+        except asyncio.CancelledError as cancelled:
+            for note in await generation.cancelled():
+                cancelled.add_note(note)
             raise
         finally:
             generation.close()

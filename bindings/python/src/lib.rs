@@ -24,6 +24,8 @@ mod runtime;
 mod stream;
 #[cfg(feature = "testing")]
 mod testing;
+#[cfg(feature = "testing")]
+mod testing_image;
 mod vendor;
 mod vendors;
 

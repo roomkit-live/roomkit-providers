@@ -494,12 +494,20 @@ drawn = await images.generate_with_options("an origami fox", n=2, on_progress=to
 | `roomkit_providers.image.gemini` | `GeminiImage`, `GeminiImageConfig` | `GeminiImageProvider` |
 
 - **Each attempt is told** to the progress callback as it moves, and the
-  provider waits for the callback before it goes on, as RoomKit's do. A
-  callback that raises fails the generation: an `ImageGenerationError` that
-  keeps the images drawn, raised from the callback's exception.
+  provider waits for the callback before it goes on, as RoomKit's do. The
+  callbacks of attempts made at once run at once, each in a task of its
+  own. A callback that raises fails the generation: an
+  `ImageGenerationError` that keeps the images drawn, raised from the
+  callback's exception where it is what failed the generation.
 - **Cancelling the task** that awaits a generation stops its requests. Each
   attempt then in flight is told to the callback as `unknown` (the vendor may
   still bill it) before the cancellation goes on.
+- **A failed generation no callback failed** is raised from nothing, where
+  RoomKit's is raised from its provider's own failure: its attributes and
+  its attempts are RoomKit's.
+- **There is no `transport` parameter**, as for the providers of language
+  models: the provider builds its own HTTP client. Nor has `GeminiImage`
+  RoomKit's `resolve_size`: a size is translated on each request.
 - **Failures** are RoomKit's: a `ValueError` for a request the model cannot
   serve, refused before anything is sent; an `ImageGenerationError`, with
   every attempt and the images kept, once a request was made; a

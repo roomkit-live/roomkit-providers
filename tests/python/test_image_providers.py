@@ -7,10 +7,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 import unittest
 from typing import Any
 
-from fake_endpoint import Fake, Silent, Whole
+from fake_endpoint import Fake, Silent, ThreadedFake, Whole
 from replay_cases import CLOCK
 from roomkit.providers.gemini import GeminiImageConfig as RoomKitGeminiImageConfig
 from roomkit.providers.image import ImageAttempt, ImageGenerationError, ImageModelInfo
@@ -120,6 +121,59 @@ class CancellationTests(unittest.IsolatedAsyncioTestCase):
         error = raised.exception
         self.assertEqual(error.status_code, 429)
         self.assertNotIsInstance(error.__cause__, RuntimeError)
+
+
+class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
+    # The callbacks of attempts made at once run at once, as RoomKit's
+    # provider runs them: a callback that waits for another attempt's is
+    # answered.
+    async def test_callbacks_of_attempts_made_at_once_run_at_once(self) -> None:
+        barrier = asyncio.Barrier(2)
+
+        async def waiting(attempt: ImageAttempt) -> None:
+            if attempt.status == "started":
+                await barrier.wait()
+
+        json_headers = {"content-type": "application/json"}
+        async with Fake() as fake:
+            provider = GeminiImage(GeminiImageConfig(api_key=KEY, model="gemini-3-pro-image"))
+            replaying(provider, "gemini", fake)
+            fake.answer(*(Whole(200, json_headers, interaction()) for _ in range(2)))
+            async with asyncio.timeout(5):
+                images = await provider.generate_with_options("a fox", n=2, on_progress=waiting)
+        self.assertEqual(len(images), 2)
+
+    # A cancellation that finds an attempt's telling on its way to Python
+    # still tells it: the item stays the call's first until it is taken.
+    async def test_a_telling_a_cancellation_meets_is_told(self) -> None:
+        told: list[tuple[int, str]] = []
+        started = asyncio.Event()
+
+        async def recorded(attempt: ImageAttempt) -> None:
+            told.append((attempt.index, attempt.status))
+            if attempt.status == "started":
+                started.set()
+
+        fake = ThreadedFake()
+        try:
+            provider = GeminiImage(GeminiImageConfig(api_key=KEY, model="gemini-3-pro-image"))
+            replaying(provider, "gemini", fake)
+            fake.answer(Whole(200, {"content-type": "application/json"}, interaction()))
+            generating = asyncio.create_task(
+                provider.generate_with_options("a fox", on_progress=recorded)
+            )
+            await started.wait()
+            # The loop busy while the fake, on its own thread, answers: the
+            # provider tells the attempt succeeded meanwhile.
+            time.sleep(0.5)  # noqa: ASYNC251
+            generating.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await generating
+        finally:
+            fake.stop()
+        self.assertEqual(told[0], (0, "started"))
+        self.assertEqual(len(told), 2, told)
+        self.assertIn(told[1], [(0, "succeeded"), (0, "unknown")])
 
 
 class ConfigurationTests(unittest.TestCase):
