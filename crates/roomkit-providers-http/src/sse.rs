@@ -55,13 +55,25 @@ pub struct Events {
     read: usize,
     /// The most bytes the answer may send.
     limit: usize,
+    /// The most bytes a line may hold.
+    line_limit: usize,
+    /// The most bytes an event's data may hold.
+    event_limit: usize,
     /// Why the reading stopped, once it did.
     failed: Option<SseError>,
 }
 
 impl Events {
-    /// The events of an answer of at most `limit` bytes.
+    /// The events of an answer of at most `limit` bytes, a line within
+    /// [`LINE_LIMIT`] and an event within [`EVENT_LIMIT`].
     pub fn new(limit: usize) -> Self {
+        Self::bounded(limit, LINE_LIMIT, EVENT_LIMIT)
+    }
+
+    /// The events of an answer of at most `limit` bytes, a line of at most
+    /// `line_limit` and an event's data of at most `event_limit`: for an
+    /// answer whose events carry an image.
+    pub fn bounded(limit: usize, line_limit: usize, event_limit: usize) -> Self {
         Self {
             line: Vec::new(),
             started: false,
@@ -69,6 +81,8 @@ impl Events {
             after_carriage_return: false,
             read: 0,
             limit,
+            line_limit,
+            event_limit,
             failed: None,
         }
     }
@@ -156,8 +170,10 @@ impl Events {
     }
 
     fn grow_line(&mut self, bytes: &[u8]) -> Result<(), SseError> {
-        if self.line.len().saturating_add(bytes.len()) > LINE_LIMIT {
-            return Err(SseError::StreamLineTooLong { limit: LINE_LIMIT });
+        if self.line.len().saturating_add(bytes.len()) > self.line_limit {
+            return Err(SseError::StreamLineTooLong {
+                limit: self.line_limit,
+            });
         }
         self.line.extend_from_slice(bytes);
         Ok(())
@@ -184,8 +200,10 @@ impl Events {
         })?;
         let data = self.data.get_or_insert_with(String::new);
         let joined = data.len() + value.len() + usize::from(!data.is_empty());
-        if joined > EVENT_LIMIT {
-            return Err(SseError::StreamEventTooLong { limit: EVENT_LIMIT });
+        if joined > self.event_limit {
+            return Err(SseError::StreamEventTooLong {
+                limit: self.event_limit,
+            });
         }
         if !data.is_empty() {
             data.push('\n');

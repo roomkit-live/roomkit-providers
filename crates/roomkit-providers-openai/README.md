@@ -691,16 +691,27 @@ capabilities.
 - One try: a paid generation is never tried again on its own. Each outcome
   is an attempt, told to the callback as it moves. A failure once the
   request started is an `ImageGenerationError` that keeps the images and
-  the usage it got: its attempt is failed where the vendor ran nothing (a
-  status it answered, a connection that could not be made), unknown where
-  it may have run and billed it (a connection lost once sent).
+  the usage it got: its attempt is unknown where the request was lost once
+  sent, which the vendor may have run and billed; failed where it never
+  left, or where the vendor answered with a status, a 500, 502 or 504 of
+  which may still follow a run it billed (RFC §25.2): the host decides.
+- A generation cancelled while its request is in flight (its future
+  dropped) tells its callback the attempt unknown, as Python's provider
+  does from its `CancelledError`: the callback is told on the runtime the
+  generation ran on.
+- An answer is read to 512 MiB, an event of a stream to 64 MiB: ten images
+  of the largest size, one in an event. Python's client reads any length.
 - The usage is split as Python splits it: the image share of the input
   apart from the text's, every output token an image's, no counter made up
   for one the answer does not report.
 
 A failure's text is the provider's own words, as the conversational
-provider's: Python's repeats the server's whole body in Python's `repr`.
+provider's, a server's message cleaned of the key and the configured
+headers' values: Python's repeats the server's whole body in Python's
+`repr`. A multipart header that holds a control character is refused, as
+Python's client refuses it, and a body's boundary is drawn at random.
 
+## The wire cases
 
 `tests/fixtures/python_chat_cases.json` is written by
 `scripts/generate_openai_chat_cases.py`, which runs RoomKit's Python
@@ -748,8 +759,9 @@ prompt, the size, the count, the references, the controls, the mask, and a
 progress callback that records each attempt or fails), the requests sent, a
 multipart body as its parts, and what Python gave: the images, or the error
 with its attempts and its images, and every attempt the callback was told
-of. The replay compares each, an attempt's id by the order it comes in. One
-case is named: a connection the fake refuses is one it accepted then closed,
+of. The replay compares each, an attempt's id by the order it comes in, and
+an attempt's error by its words where the case compares the message, else by
+whether it has one. One case is named: a connection the fake refuses is one it accepted then closed,
 which the client reads as lost once sent.
 
 `tests/fixtures/named_cases.json` holds the named cases as data, written

@@ -145,10 +145,7 @@ async fn a_transport_failure_says_whether_its_request_left() {
         token: None,
     };
     let lost = client.send(call(&url)).await.unwrap_err();
-    let left = crate::Transport {
-        unsent: false,
-        timed_out: false,
-    };
+    let left = crate::Transport { unsent: false };
     assert_eq!(lost.transport_of(), Some(left));
     // A port nothing listens on refuses the connection.
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
@@ -156,9 +153,6 @@ async fn a_transport_failure_says_whether_its_request_left() {
     drop(listener);
     let refused_url = reqwest::Url::parse(&format!("http://{closed}{PATH}")).unwrap();
     let refused = client.send(call(&refused_url)).await.unwrap_err();
-    let unsent = crate::Transport {
-        unsent: true,
-        timed_out: false,
-    };
+    let unsent = crate::Transport { unsent: true };
     assert_eq!(refused.transport_of(), Some(unsent));
 }

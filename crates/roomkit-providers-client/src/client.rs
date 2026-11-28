@@ -141,6 +141,11 @@ pub struct Client {
     pub(crate) tried_again: fn(u32, Duration),
     pub(crate) pace: Pace,
     stream_limit: usize,
+    /// The most bytes a whole answer is read to.
+    pub(crate) answer_limit: usize,
+    /// The most bytes an event of a streamed answer, and each of its lines,
+    /// is read to.
+    pub(crate) event_limit: usize,
     /// The proxies the environment named when the client was built, and
     /// whether the client still sends through them.
     route: Arc<Route>,
@@ -222,8 +227,19 @@ impl Client {
             tried_again: settings.tried_again,
             pace: Pace::default(),
             stream_limit: STREAM_LIMIT,
+            answer_limit: crate::ANSWER_LIMIT,
+            event_limit: roomkit_providers_http::sse::EVENT_LIMIT,
             route,
         })
+    }
+
+    /// Reads a whole answer to `answer` bytes at most, and an event of a
+    /// streamed answer, and each of its lines, to `event` bytes at most: for
+    /// a provider whose answers carry images, which the bounds of a model's
+    /// answer do not hold (a generated image is megabytes of base64).
+    pub fn read_up_to(&mut self, answer: usize, event: usize) {
+        self.answer_limit = answer;
+        self.event_limit = event;
     }
 
     /// The timeouts the client was built with.

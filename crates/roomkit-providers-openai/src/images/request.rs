@@ -91,8 +91,10 @@ pub(crate) struct Checked {
     pub(crate) stream: bool,
     /// The options it runs with, as Python's attempt writes them.
     pub(crate) effective: Metadata,
-    /// Its body's content type, and its body.
-    pub(crate) body: (String, Vec<u8>),
+    /// Its body's content type, and its body, or why it cannot be
+    /// written: a failure of the request once it starts, as Python's
+    /// client refuses one as it writes it.
+    pub(crate) body: Result<(String, Vec<u8>), multipart::Unwritable>,
 }
 
 /// A request's size as the images API takes it: `auto`, or two whole
@@ -215,7 +217,7 @@ pub(crate) fn checked(
     let body = if edit {
         edit_body(asked.prompt, &effective, stream, &uploads, mask)
     } else {
-        generation_body(asked.prompt, &effective, stream)
+        Ok(generation_body(asked.prompt, &effective, stream))
     };
     Ok(Checked {
         edit,
@@ -271,7 +273,7 @@ fn edit_body(
     stream: bool,
     uploads: &[(String, Vec<u8>, String)],
     mask: Option<(String, Vec<u8>, String)>,
-) -> (String, Vec<u8>) {
+) -> Result<(String, Vec<u8>), multipart::Unwritable> {
     let mut parts = Vec::new();
     for name in EDIT_ORDER {
         let value = match name {

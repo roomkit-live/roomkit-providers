@@ -4,7 +4,10 @@
 //! with the `Content-Type` it names; a replay reads a body back into its
 //! parts.
 
+use std::collections::hash_map::RandomState;
 use std::fmt::Write as _;
+use std::hash::BuildHasher as _;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// One part of a body: a field, or a file with its name and its media type.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -47,13 +50,43 @@ impl Part {
     }
 }
 
+/// Why a body cannot be written: a part's name, file name or media type
+/// holds a control character, which would end its header and start
+/// another, as Python's client refuses one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Unwritable;
+
+impl std::fmt::Display for Unwritable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("a part of the body holds a control character in its header")
+    }
+}
+
+impl std::error::Error for Unwritable {}
+
 /// The `Content-Type` of a multipart body, and the body of `parts`, in
-/// order. Its boundary is one no part holds.
-#[must_use]
-pub fn encoded(parts: &[Part]) -> (String, Vec<u8>) {
-    let boundary = boundary_of(parts);
+/// order, under a boundary drawn at random, as Python's client draws one.
+///
+/// # Errors
+///
+/// [`Unwritable`] for a part whose name, file name or media type holds a
+/// control character.
+pub fn encoded(parts: &[Part]) -> Result<(String, Vec<u8>), Unwritable> {
+    let boundary = boundary();
     let mut body = Vec::new();
     for part in parts {
+        let values = [
+            Some(&part.name),
+            part.filename.as_ref(),
+            part.content_type.as_ref(),
+        ];
+        if values
+            .into_iter()
+            .flatten()
+            .any(|value| value.chars().any(char::is_control))
+        {
+            return Err(Unwritable);
+        }
         let mut head = format!("--{boundary}\r\n");
         let _ = write!(
             head,
@@ -73,45 +106,30 @@ pub fn encoded(parts: &[Part]) -> (String, Vec<u8>) {
         body.extend_from_slice(b"\r\n");
     }
     body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
-    (format!("multipart/form-data; boundary={boundary}"), body)
+    Ok((format!("multipart/form-data; boundary={boundary}"), body))
 }
 
-/// A name within its quotes: a quote and a line break escaped as HTML
-/// forms escape them (RFC 7578 §4.2).
+/// A name within its quotes: a quote escaped as HTML forms escape it (RFC
+/// 7578 §4.2).
 fn quoted(name: &str) -> String {
     name.replace('"', "%22")
-        .replace('\r', "%0D")
-        .replace('\n', "%0A")
 }
 
-/// The first boundary of a series none of `parts` holds: of as many
-/// boundaries as the parts have bytes and one more, one is held by none,
-/// each place of a part's bytes starting one boundary at most.
-fn boundary_of(parts: &[Part]) -> String {
-    let holds = |boundary: &str| {
-        let needle = boundary.as_bytes();
-        parts.iter().any(|part| {
-            let filename = part.filename.as_deref().unwrap_or("").as_bytes();
-            [part.name.as_bytes(), filename, part.data.as_slice()]
-                .into_iter()
-                .any(|haystack| find(haystack, needle).is_some())
-        })
-    };
-    let bytes: usize = parts
-        .iter()
-        .map(|part| {
-            let filename = part.filename.as_ref().map_or(0, String::len);
-            part.name.len() + filename + part.data.len()
-        })
-        .sum();
-    (0..=bytes)
-        .map(|at| format!("roomkit-providers-{at:08x}"))
-        .find(|boundary| !holds(boundary))
-        .unwrap_or_default()
+/// A boundary of 128 bits drawn at random, as Python's client draws one
+/// (`os.urandom(16)`): the hashes of a counter under keys the process
+/// draws from the system, which no part's bytes can foresee.
+fn boundary() -> String {
+    static DRAWN: AtomicU64 = AtomicU64::new(0);
+    let drawn = DRAWN.fetch_add(1, Ordering::Relaxed);
+    let keys = RandomState::new();
+    let [high, low] = [0_u64, 1].map(|half| keys.hash_one((drawn, half)));
+    format!("{high:016x}{low:016x}")
 }
 
 /// The parts of `body`, a body whose `Content-Type` is `content_type`, in
-/// order; `None` for a body that is not one.
+/// order; `None` for a body that is not one: what a replay reads of a body
+/// sent.
+#[cfg(any(test, feature = "harness"))]
 #[must_use]
 pub fn parsed(body: &[u8], content_type: &str) -> Option<Vec<Part>> {
     let boundary = content_type
@@ -135,6 +153,7 @@ pub fn parsed(body: &[u8], content_type: &str) -> Option<Vec<Part>> {
 }
 
 /// One part, its headers then its value.
+#[cfg(any(test, feature = "harness"))]
 fn part_of(raw: &[u8]) -> Option<Part> {
     let split = find(raw, b"\r\n\r\n")?;
     let headers = std::str::from_utf8(raw.get(..split)?).ok()?;
@@ -160,6 +179,7 @@ fn part_of(raw: &[u8]) -> Option<Part> {
 }
 
 /// The quoted parameter `wanted` of a `Content-Disposition`.
+#[cfg(any(test, feature = "harness"))]
 fn parameter(value: &str, wanted: &str) -> Option<String> {
     value.split(';').map(str::trim).find_map(|parameter| {
         let (key, quoted) = parameter.split_once('=')?;
@@ -168,6 +188,7 @@ fn parameter(value: &str, wanted: &str) -> Option<String> {
 }
 
 /// Where `needle` first starts in `haystack`.
+#[cfg(any(test, feature = "harness"))]
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
         .windows(needle.len())
@@ -190,18 +211,32 @@ mod tests {
                 b"\x89PNG\r\n--".to_vec(),
             ),
         ];
-        let (content_type, body) = encoded(&parts);
+        let (content_type, body) = encoded(&parts).unwrap();
         assert!(content_type.starts_with("multipart/form-data; boundary="));
         assert_eq!(parsed(&body, &content_type), Some(parts));
     }
 
     #[test]
-    fn the_boundary_is_one_no_part_holds() {
-        let held = "roomkit-providers-00000000";
-        let parts = vec![Part::field("text", held)];
-        let (content_type, body) = encoded(&parts);
-        assert!(!content_type.ends_with(held), "{content_type}");
-        assert_eq!(parsed(&body, &content_type), Some(parts));
+    fn each_body_draws_its_own_boundary() {
+        let parts = [Part::field("n", "1")];
+        let (first, _) = encoded(&parts).unwrap();
+        let (second, _) = encoded(&parts).unwrap();
+        assert_ne!(first, second);
+    }
+
+    // A header value that would end its line and start another is refused,
+    // as Python's client refuses it.
+    #[test]
+    fn a_control_character_in_a_header_is_refused() {
+        let injected =
+            "image/png\r\n\r\nx\r\n--boundary\r\nContent-Disposition: form-data; name=\"n\"";
+        for part in [
+            Part::file("image[]", "reference-0.png", injected, b"x".to_vec()),
+            Part::file("image[]", "a\nb.png", "image/png", b"x".to_vec()),
+            Part::field("a\rb", "1"),
+        ] {
+            assert_eq!(encoded(&[part]), Err(Unwritable));
+        }
     }
 
     #[test]

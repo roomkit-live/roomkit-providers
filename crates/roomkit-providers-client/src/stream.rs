@@ -106,7 +106,8 @@ impl Client {
     /// The failure that ended the request, as [`send`](Self::send) gives
     /// it, but for an answer's length: a stream is bounded as it is read.
     pub async fn stream(&self, call: Call<'_>) -> Result<Streamed, Failure> {
-        let framing = Framing::Events(Events::new(self.stream_limit()));
+        let events = Events::bounded(self.stream_limit(), self.event_limit, self.event_limit);
+        let framing = Framing::Events(events);
         self.streamed(call, framing).await
     }
 

@@ -34,6 +34,9 @@ roomkit-providers-client = { workspace = true }
 reqwest = { workspace = true, features = ["rustls-no-provider"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+# The runtime an image generation ran on, which tells a cancelled
+# generation's callback its attempt unknown once its future is dropped.
+tokio = { workspace = true, features = ["rt"] }
 tracing = { workspace = true }
 
 [dev-dependencies]

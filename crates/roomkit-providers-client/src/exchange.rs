@@ -310,11 +310,12 @@ impl Client {
         let Opened { response, hidden } = self.head(call, retries_taken, true).await?;
         let json = is_json(response.headers());
         let headers = response.headers().clone();
-        match read_body(response).await {
+        match read_body(response, self.answer_limit).await {
             Ok(body) => Ok((hidden.bytes(body), json, headers)),
             Err(Unread::Lost(error)) => Err(self.lost(&error, retries_taken)),
             Err(Unread::TooLong) => {
-                let said = format!("the provider's answer is longer than {ANSWER_LIMIT} bytes");
+                let limit = self.answer_limit;
+                let said = format!("the provider's answer is longer than {limit} bytes");
                 Err(Failed::Final(Failure::unreadable(said)))
             }
         }
@@ -368,7 +369,7 @@ impl Client {
         }
         // An error body past what a request reads still keeps its status,
         // as Python's client reads the status whatever the body.
-        let body = match read_body(response).await {
+        let body = match read_body(response, self.answer_limit).await {
             Ok(body) => body,
             Err(Unread::TooLong) => Vec::new(),
             Err(Unread::Lost(error)) if whole => return Err(self.lost(&error, retries_taken)),
@@ -392,15 +393,16 @@ pub fn is_json(headers: &HeaderMap) -> bool {
     kind.is_some_and(|value| value.trim_start().starts_with("application/json"))
 }
 
-/// The body of an answer, within [`ANSWER_LIMIT`].
-async fn read_body(mut response: reqwest::Response) -> Result<Vec<u8>, Unread> {
+/// The body of an answer, within `limit` bytes: [`ANSWER_LIMIT`] unless
+/// the provider reads larger answers.
+async fn read_body(mut response: reqwest::Response, limit: usize) -> Result<Vec<u8>, Unread> {
     let declared = response.content_length().unwrap_or_default();
-    if usize::try_from(declared).map_or(true, |declared| declared > ANSWER_LIMIT) {
+    if usize::try_from(declared).map_or(true, |declared| declared > limit) {
         return Err(Unread::TooLong);
     }
     let mut body = Vec::new();
     while let Some(chunk) = response.chunk().await.map_err(Unread::Lost)? {
-        if body.len().saturating_add(chunk.len()) > ANSWER_LIMIT {
+        if body.len().saturating_add(chunk.len()) > limit {
             return Err(Unread::TooLong);
         }
         body.extend_from_slice(&chunk);

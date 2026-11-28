@@ -5,8 +5,10 @@
 //! A paid generation is never tried again on its own: the client makes one
 //! try. Every outcome is an attempt, told to a progress callback as it
 //! moves; a failure once the request started keeps the images and the
-//! usage it got, marked unknown where the vendor may have run and billed
-//! it (a connection lost once sent), failed where it did not.
+//! usage it got, marked unknown where the request was lost once sent, which
+//! the vendor may have run and billed, failed where it never left or the
+//! vendor answered with a status (a 500, 502 or 504 may still follow a run
+//! it billed: the host decides, RFC §25.2).
 
 mod answer;
 mod config;
@@ -32,6 +34,13 @@ use self::answer::{Event, PROVIDER, Previews};
 pub use self::config::OpenAiImageConfig;
 use self::request::{Asked, Checked};
 use crate::endpoint::OPENAI_BASE_URL;
+
+/// The most bytes of a whole answer read: ten images of the largest size.
+const ANSWER_LIMIT: usize = 512 * 1024 * 1024;
+
+/// The most bytes of an event of a stream read: one image of the largest
+/// size.
+const EVENT_LIMIT: usize = 64 * 1024 * 1024;
 
 /// No answer is waited for again: the provider makes one try.
 const RETRY: Rule = Rule {
@@ -93,7 +102,10 @@ impl OpenAiImage {
             refused: crate::failure::status,
             tried_again: tried_again!("roomkit::providers::openai"),
         };
-        let client = Client::new(settings)?;
+        let mut client = Client::new(settings)?;
+        // A generated image is megabytes of base64: up to ten of them in an
+        // answer, one in an event of a stream.
+        client.read_up_to(ANSWER_LIMIT, EVENT_LIMIT);
         let configured = config.default_headers.iter().flatten();
         let values = configured.map(|(_, value)| value.as_str());
         let exit = client.exit(PROVIDER, [config.api_key.clone()], values, &generations);
@@ -116,8 +128,8 @@ impl OpenAiImage {
         assert!(moved, "the endpoint is pointed at the fake");
     }
 
-    /// The call of `checked`, to the endpoint it asks.
-    fn call<'a>(&'a self, checked: &'a Checked, headers: &'a HeaderMap) -> Call<'a> {
+    /// The call of `body`, to the endpoint `checked` asks.
+    fn call<'a>(&'a self, checked: &Checked, body: &'a [u8], headers: &'a HeaderMap) -> Call<'a> {
         Call {
             url: if checked.edit {
                 &self.edits
@@ -125,7 +137,7 @@ impl OpenAiImage {
                 &self.generations
             },
             headers,
-            body: Some(&checked.body.1),
+            body: Some(body),
             token: None,
         }
     }
@@ -138,13 +150,12 @@ impl OpenAiImage {
         attempt: &mut ImageAttempt,
         callback: Option<&ImageProgressCallback>,
     ) -> Result<(), Failed> {
+        let unwritten = || Failed::own("a reference image's media type holds a control character");
+        let (content_type, body) = checked.body.as_ref().map_err(|_| unwritten())?;
         let mut headers = self.headers.clone();
-        let content_type = HeaderValue::from_str(&checked.body.0);
-        headers.insert(
-            CONTENT_TYPE,
-            content_type.map_err(|_| Failed::own("its body has no type"))?,
-        );
-        let call = self.call(checked, &headers);
+        let content_type = HeaderValue::from_str(content_type);
+        headers.insert(CONTENT_TYPE, content_type.map_err(|_| unwritten())?);
+        let call = self.call(checked, body, &headers);
         let answer = if checked.stream {
             self.streamed(call, attempt, callback).await?
         } else {
@@ -184,16 +195,12 @@ impl OpenAiImage {
             .await
             .map_err(|failure| self.failed(&failure))?
         {
-            let Ok(event) = serde_json::from_str::<Value>(&data) else {
-                continue;
-            };
-            match previews
-                .read(&event, attempt, callback.is_some())
-                .map_err(Failed::of)?
-            {
+            let event = previews.read(&data, attempt, callback.is_some());
+            match event.map_err(|failure| self.failed(&failure))? {
                 Event::Preview(told) => {
                     answer::preview(callback, *told).await.map_err(Failed::of)?;
                 }
+                Event::Done => break,
                 Event::Read => {}
             }
         }
@@ -234,15 +241,17 @@ impl OpenAiImage {
             told: callback.is_some(),
         };
         let checked = request::checked(&self.config, &asked, self.catalog_entry().as_ref())?;
-        let mut attempt = ImageAttempt {
+        let attempt = ImageAttempt {
             effective_options: checked.effective.clone(),
             ..ImageAttempt::default()
         };
-        notify_image_progress(callback, &attempt, PROVIDER).await?;
-        if let Err(failed) = self
-            .attempted(&checked, options.n, &mut attempt, callback)
-            .await
-        {
+        let mut in_flight = InFlight::new(attempt, callback);
+        notify_image_progress(callback, &in_flight.attempt, PROVIDER).await?;
+        let attempted = self
+            .attempted(&checked, options.n, &mut in_flight.attempt, callback)
+            .await;
+        let mut attempt = in_flight.settled();
+        if let Err(failed) = attempted {
             attempt.status = failed.status;
             attempt.error = Some(failed.error.message.clone());
             attempt.status_code = failed.error.status_code;
@@ -254,6 +263,51 @@ impl OpenAiImage {
         attempt.status = ImageAttemptStatus::Succeeded;
         notify_image_progress(callback, &attempt, PROVIDER).await?;
         Ok(attempt.results)
+    }
+}
+
+/// The attempt of a generation while its request is in flight: a
+/// generation dropped then, the call cancelled, tells its callback the
+/// attempt unknown, as Python's provider does from its `CancelledError`
+/// (RFC §25.2): the vendor may still bill the request. The callback is
+/// told on the runtime the generation ran on, which a dropped future
+/// cannot await.
+struct InFlight {
+    attempt: ImageAttempt,
+    callback: Option<ImageProgressCallback>,
+}
+
+/// What a cancelled attempt says, as Python's.
+const CANCELLED: &str = "Cancelled locally; the provider may still bill this request";
+
+impl InFlight {
+    fn new(attempt: ImageAttempt, callback: Option<&ImageProgressCallback>) -> Self {
+        Self {
+            attempt,
+            callback: callback.cloned(),
+        }
+    }
+
+    /// The attempt, its request settled: nothing to tell on a drop.
+    fn settled(mut self) -> ImageAttempt {
+        self.callback = None;
+        std::mem::take(&mut self.attempt)
+    }
+}
+
+impl Drop for InFlight {
+    fn drop(&mut self) {
+        let Some(callback) = self.callback.take() else {
+            return;
+        };
+        let Ok(runtime) = tokio::runtime::Handle::try_current() else {
+            return;
+        };
+        let mut attempt = std::mem::take(&mut self.attempt);
+        attempt.status = ImageAttemptStatus::Unknown;
+        attempt.error = Some(CANCELLED.to_owned());
+        // The callback's failure has no caller left to fail.
+        drop(runtime.spawn(async move { callback(attempt).await }));
     }
 }
 
@@ -349,3 +403,5 @@ impl ImageProvider for OpenAiImage {
 
 #[cfg(test)]
 mod replay;
+#[cfg(test)]
+mod tests;

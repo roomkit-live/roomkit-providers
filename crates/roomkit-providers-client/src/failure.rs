@@ -121,8 +121,6 @@ enum Built {
 pub struct Transport {
     /// Whether the request never left: the connection could not be made.
     pub unsent: bool,
-    /// Whether a time ran out: to connect, or to read.
-    pub timed_out: bool,
 }
 
 /// A failure inside a provider. It becomes the contract's error only where
@@ -364,7 +362,6 @@ impl Failure {
         if let Built::Here { transport, .. } = &mut failure.0 {
             *transport = Some(Transport {
                 unsent: error.is_connect(),
-                timed_out: error.is_timeout(),
             });
         }
         failure

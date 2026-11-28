@@ -103,9 +103,13 @@ NOTES = {
     "compare": (
         "On a call that fails, how a replay compares the failure. exactly lists what it "
         "reproduces as written. message says whose words the message holds: roomkit "
-        "(RoomKit's own: compared), python_repr (RoomKit's text of the server's body, "
-        "'Error code: <status> - ' and Python's repr of the JSON: compared as Python writes "
-        "it), sdk (the SDK's words: not compared)."
+        "(RoomKit's own: compared), server (the text the server sent, handed on: compared), "
+        "python_repr (RoomKit's text of the server's body, 'Error code: <status> - ' and "
+        "Python's repr of the JSON: not compared), python_json (what Python's JSON reader "
+        "says of a text: not compared), transport (the HTTP client's words for a request it "
+        "would not write: not compared), sdk (the SDK's words: not compared). An attempt's "
+        "error holds the failure's message: where the message is not compared, whether the "
+        "attempt has one is."
     ),
 }
 
@@ -137,9 +141,14 @@ def sent(request: httpx2.Request) -> dict[str, Any]:
 
 def words_of(error: dict[str, Any], replies: list[str]) -> str:
     """Whose words the message of ``error`` holds (``NOTES["compare"]``)."""
-    message = error["message"]
-    if error["raised_from"] in SDK_ERRORS - {"APIStatusError"}:
+    message, cause = error["message"], error["raised_from"]
+    if cause in SDK_ERRORS - {"APIStatusError"}:
         return "sdk"
+    if cause == "JSONDecodeError":
+        return "python_json"
+    if error["class"] == "ImageGenerationError" and cause == "ValueError":
+        # A refusal of the HTTP client, raised as the request was written.
+        return "transport"
     if message.startswith("Error code: "):
         return "python_repr" if " - " in message else "sdk"
     if message in replies:

@@ -299,12 +299,14 @@ fn message_compared(case: &Case) -> bool {
     compare.is_some_and(|compare| matches!(compare.message.as_str(), "roomkit" | "server"))
 }
 
-/// `value` with every attempt's error left out.
+/// `value` with the words of every attempt's error left out: whether the
+/// attempt has an error is still compared.
 fn unworded(value: &mut Value) {
     match value {
         Value::Object(members) => {
-            if members.contains_key("status") && members.contains_key("error") {
-                members.insert("error".to_owned(), Value::Null);
+            let worded = members.get("error").is_some_and(Value::is_string);
+            if members.contains_key("status") && worded {
+                members.insert("error".to_owned(), Value::from("<an error>"));
             }
             members.values_mut().for_each(unworded);
         }
@@ -327,6 +329,9 @@ fn failure_differs(
     let Some(compare) = &case.compare else {
         return found.push("a failure with no rule to compare it".to_owned());
     };
+    if compare.exactly.is_empty() {
+        return found.push(format!("a {} no provider reproduces", failure.class));
+    }
     let (class, provider, message) = match error {
         ImageError::Value(refused) => ("ValueError", None, refused.to_string()),
         ImageError::Provider(error) if generation_of(error).is_some() => {
@@ -435,9 +440,17 @@ pub const TOLD: [Wrong; 2] = [
     }),
 ];
 
-/// A failed generation that is not Python's: another status, retried, its
-/// attempt standing otherwise, an image more.
-pub const GENERATION: [Wrong; 4] = [
+/// A failed generation that is not Python's: another status, its attempt
+/// standing otherwise, an attempt more, an attempt that says no error, an
+/// image more.
+pub const GENERATION: [Wrong; 5] = [
+    (
+        "an attempt that says no error",
+        "the failure's attempts",
+        |r| {
+            generation_changed(r, |generation| generation.attempts[0].error = None);
+        },
+    ),
     ("another status", "status_code", |r| {
         generation_changed(r, |generation| {
             generation.attempts[0].status_code = Some(500);

@@ -297,6 +297,68 @@ case(
     stream(previews("image_generation", 1), cut=LOST),
 )
 
+STREAMED = {"content-type": "text/event-stream", **REQUEST_ID}
+case(
+    "a_stream_error_after_its_image",
+    "stream failure progress",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"partial_images": 1}, progress="record"),
+    Reply(
+        status=200,
+        headers=STREAMED,
+        chunks=[*previews("image_generation", 1), "data: " + json.dumps({"error": {"message": "boom from the stream"}}) + "\n\n"],
+    ),
+)
+case(
+    "a_stream_error_before_any_image",
+    "stream failure progress",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"partial_images": 1}, progress="record"),
+    Reply(status=200, headers=STREAMED, chunks=["data: " + json.dumps({"error": {"message": "boom from the stream"}}) + "\n\n"]),
+)
+case(
+    "a_typed_stream_error",
+    "stream failure progress",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"partial_images": 1}, progress="record"),
+    Reply(status=200, headers=STREAMED, chunks=[sse("error", message="the image could not be drawn")]),
+)
+case(
+    "an_event_that_is_no_json",
+    "stream failure progress",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"partial_images": 1}, progress="record"),
+    Reply(status=200, headers=STREAMED, chunks=[*previews("image_generation", 1)[:1], "data: not json\n\n"]),
+)
+case(
+    "done_before_its_image",
+    "stream failure progress",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"partial_images": 1}, progress="record"),
+    Reply(status=200, headers=STREAMED, chunks=["data: [DONE]\n\n", *previews("image_generation", 1)]),
+)
+case(
+    "a_completed_image_with_no_bytes",
+    "stream failure progress",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"partial_images": 1}, progress="record"),
+    Reply(status=200, headers=STREAMED, chunks=[sse("image_generation.completed", output_format="png", usage=USAGE)]),
+)
+case(
+    "an_empty_revised_prompt",
+    "generate answer",
+    IMAGE_GENERATE,
+    CONFIG,
+    asked(),
+    answer(drawn(image(revised_prompt="")), **REQUEST_ID),
+)
+
 # -- Refused before any request --------------------------------------------------------
 
 case("too_many_images", "refused", IMAGE_GENERATE, CONFIG, asked(n=11))
@@ -344,6 +406,13 @@ case(
     IMAGE_WITH_OPTIONS,
     CONFIG,
     asked("paint the sky", reference_images=[part()], mask=part(JPEG, "image/jpeg")),
+)
+case(
+    "a_media_type_with_line_breaks",
+    "refused multipart",
+    IMAGE_GENERATE,
+    CONFIG,
+    asked("make it blue", reference_images=[{"url": f"data:;base64,{PNG}", "mime_type": "image/png\r\nX-Injected: 1"}]),
 )
 case(
     "a_remote_reference",
