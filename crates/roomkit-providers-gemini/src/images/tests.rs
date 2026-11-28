@@ -323,3 +323,16 @@ fn an_attempt_dropped_after_its_runtime_ended_is_told_unknown() {
     let expected = [ImageAttemptStatus::Started, ImageAttemptStatus::Unknown];
     assert_eq!(statuses, expected);
 }
+
+// A replay sends nothing off the machine: a fake that is no loopback
+// address is refused, and the refusal repeats no key.
+#[cfg(feature = "replay")]
+#[test]
+fn a_replay_off_the_machine_is_refused() {
+    let provider = GeminiImage::new(GeminiImageConfig::new("placeholder-not-a-key")).unwrap();
+    let refused = provider
+        .replaying("192.0.2.1:443".parse().unwrap(), 0.0)
+        .unwrap_err();
+    assert!(refused.message.contains("loopback"), "{}", refused.message);
+    assert!(!refused.to_string().contains("placeholder-not-a-key"));
+}
