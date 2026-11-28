@@ -1969,7 +1969,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "base64 0.23.1",
  "futures-core",
- "jiff 0.2.46",
+ "jiff 1.0.3",
  "rcgen",
  "reqwest",
  "roomkit-ai",
@@ -2094,7 +2094,7 @@ dependencies = [
 name = "roomkit-providers-openai"
 version = "0.1.0-alpha.1"
 dependencies = [
- "jiff 0.2.46",
+ "jiff 1.0.3",
  "reqwest",
  "roomkit",
  "roomkit-ai",
