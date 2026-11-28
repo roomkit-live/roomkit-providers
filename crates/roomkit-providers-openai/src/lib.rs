@@ -77,7 +77,7 @@ pub use azure::{AzureAi, AzureAiConfig};
 pub use cerebras::{Cerebras, CerebrasConfig, CerebrasReasoningFormat};
 pub use config::{OpenAiApi, OpenAiConfig};
 pub use deepseek::{DeepSeek, DeepSeekConfig};
-pub use images::{OpenAiImage, OpenAiImageConfig};
+pub use images::{OpenAiImage, OpenAiImageConfig, OpenRouterImage, OpenRouterImageConfig};
 pub use kimi::{Kimi, KimiConfig};
 pub use litellm::{LiteLlm, LiteLlmConfig};
 pub use meta::{Meta, MetaConfig};

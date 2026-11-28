@@ -1,0 +1,78 @@
+{
+ "generator": "scripts/generate_openai_catalogue.py",
+ "roomkit_version": "0.117.0.dev0",
+ "models": [
+  {
+   "id": "google/gemini-3.1-flash-image",
+   "display_name": "Gemini 3.1 Flash Image (Nano Banana 2)",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "google/gemini-3-pro-image",
+   "display_name": "Gemini 3 Pro Image (Nano Banana Pro)",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "openai/gpt-image-2",
+   "display_name": "GPT Image 2",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "x-ai/grok-imagine-image-2.0",
+   "display_name": "Grok Imagine Image 2.0",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "bytedance-seed/seedream-5-0-pro",
+   "display_name": "Seedream 5.0 Pro",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": null
+  },
+  {
+   "id": "black-forest-labs/flux.2-pro",
+   "display_name": "FLUX.2 Pro",
+   "context_window": null,
+   "supports_vision": true,
+   "deprecated": false,
+   "capabilities": [
+    "image_gen",
+    "edit"
+   ],
+   "pricing": null
+  }
+ ]
+}

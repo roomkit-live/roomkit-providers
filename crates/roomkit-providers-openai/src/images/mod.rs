@@ -12,6 +12,7 @@
 
 mod answer;
 mod config;
+mod openrouter;
 mod request;
 
 use std::sync::{Arc, LazyLock};
@@ -32,6 +33,7 @@ use serde_json::Value;
 
 use self::answer::{Event, PROVIDER, Previews};
 pub use self::config::OpenAiImageConfig;
+pub use self::openrouter::{OpenRouterImage, OpenRouterImageConfig};
 use self::request::{Asked, Checked};
 use crate::endpoint::OPENAI_BASE_URL;
 

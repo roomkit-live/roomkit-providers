@@ -1,0 +1,4076 @@
+{
+ "generator": "scripts/generate_openrouter_image_cases.py",
+ "roomkit_version": "0.117.0.dev0",
+ "roomkit_commit": "7f25b8f52767d4e799092b28940f6ac430719151",
+ "roomkit_dirty": false,
+ "httpx_version": "0.29.0",
+ "pydantic_version": "2.14.4",
+ "python_version": "3.13.3",
+ "clock": "2026-01-01T00:00:00Z",
+ "notes": {
+  "environment": "Every OPENROUTER_* variable of the environment is removed before a case runs.",
+  "versions": "The versions the fixture was written from.",
+  "provenance": "roomkit_commit is the commit roomkit was imported at, and roomkit_dirty whether the package's files had changes not committed then.",
+  "config": "The keyword arguments of OpenRouterImageConfig. The key is a placeholder.",
+  "request": "What the image surface was asked: prompt, size, n, reference_images and mask (AIImagePart dumps), options (ImageOptions keywords, null for none) and progress: null for no callback, record for one that records each attempt it is told of, fail for one that records it, then raises RuntimeError('storage unavailable') when told of a succeeded one. image_generate calls generate, image_generate_with_options calls generate_with_options.",
+  "exchanges.request": "What Python sent: the method, the whole URL, the body as JSON with its members in the order sent, and the headers the provider decides: authorization, the key replaced by <config key>, content-type, accept, http-referer, x-title and x-team, each null where it was not sent. The n requests of a request are n requests, in the order they started. timeouts holds, in seconds, how long the request may wait to connect, for a read, for a write and for a connection of the pool.",
+  "exchanges.response": "What the fake answered: status and headers with a body under json, or under chunks for a body read in several reads, and then, how the reads end after them. A failure in place of a response is under failure: no answer came.",
+  "expected": "What Python returned: results, each ImageResult dumped, or error: its class, its message, its text, the attributes of a ProviderError, raised_from, the class of the error it was raised from, and for an ImageGenerationError its attempts and results, dumped. progress lists, in order, every attempt the callback was told of, dumped. An attempt's id is drawn in order from 00000000-0000-4000-8000-000000000001.",
+  "compare": "On a call that fails, how a replay compares the failure. exactly lists what it reproduces as written. message says whose words the message holds: roomkit (RoomKit's own: compared), server (the text the server sent, handed on: compared), python_repr (RoomKit's text of the server's body, 'Error code: <status> - ' and Python's repr of the JSON: not compared), python_json (what Python's JSON reader says of a text: not compared), transport (the HTTP client's words for a request it would not write: not compared), sdk (the SDK's words: not compared). An attempt's error holds the failure's message: where the message is not compared, whether the attempt has one is."
+ },
+ "questioned": [],
+ "cases": [
+  {
+   "name": "one_image",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_size",
+   "kinds": [
+    "answer",
+    "generate",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": "1536x1024",
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox",
+       "size": "1536x1024"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_size_written_loosely",
+   "kinds": [
+    "answer",
+    "generate",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": " 1024X1024 ",
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox",
+       "size": "1024x1024"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_size_that_is_no_size",
+   "kinds": [
+    "refused",
+    "size"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": "large",
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "size must be 'WIDTHxHEIGHT' (e.g. '1024x1024'), got 'large'",
+     "text": "size must be 'WIDTHxHEIGHT' (e.g. '1024x1024'), got 'large'",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "the_configuration_s_controls",
+   "kinds": [
+    "answer",
+    "generate",
+    "options"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2",
+    "quality": "high",
+    "background": "transparent",
+    "output_format": "webp"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox",
+       "quality": "high",
+       "background": "transparent",
+       "output_format": "webp"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+         "media_type": "image/webp"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/webp;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+      "mime_type": "image/webp",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "attribution_headers",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2",
+    "site_url": "https://example.com/app",
+    "app_name": "An App"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": "https://example.com/app",
+       "x-title": "An App",
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "default_headers_over_attribution",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2",
+    "site_url": "https://example.com/app",
+    "app_name": "An App",
+    "default_headers": {
+     "X-Title": "Another App",
+     "X-Team": "imaging"
+    }
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": "https://example.com/app",
+       "x-title": "Another App",
+       "x-team": "imaging"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_empty_attribution",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2",
+    "site_url": "",
+    "app_name": ""
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "another_endpoint",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2",
+    "base_url": "https://gateway.example/api/v1/"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://gateway.example/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "two_images",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 2,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+         "media_type": "image/jpeg",
+         "revised_prompt": "a paper fox"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/jpeg;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+      "mime_type": "image/jpeg",
+      "revised_prompt": "a paper fox",
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "no_image",
+   "kinds": [
+    "refused"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 0,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "n must be between 1 and 10, got 0",
+     "text": "n must be between 1 and 10, got 0",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "too_many_images",
+   "kinds": [
+    "refused"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 11,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "n must be between 1 and 10, got 11",
+     "text": "n must be between 1 and 10, got 11",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "ten_images",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 10,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     },
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "the_controls_of_another_entry",
+   "kinds": [
+    "options",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "quality": "low"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "OpenRouterImageProvider does not support advanced image options",
+     "text": "OpenRouterImageProvider does not support advanced image options",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_mask",
+   "kinds": [
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": null,
+    "mask": {
+     "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+     "mime_type": "image/png"
+    },
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "OpenRouterImageProvider does not support advanced image options",
+     "text": "OpenRouterImageProvider does not support advanced image options",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_progress_callback",
+   "kinds": [
+    "progress",
+    "refused"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": "record"
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "OpenRouterImageProvider does not support image progress callbacks",
+     "text": "OpenRouterImageProvider does not support image progress callbacks",
+     "raised_from": null
+    },
+    "progress": []
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "with_options_and_none_given",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_undeclared_type",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc="
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/jpeg;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+      "mime_type": "image/jpeg",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "no_usage_said",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {},
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_usage_with_no_cost",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_usage_written_as_fractions",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12.7,
+        "completion_tokens": 4160.2,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_usage_that_is_no_object",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": [
+        1,
+        2
+       ]
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {},
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_revised_prompt",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png",
+         "revised_prompt": "a paper fox"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": "a paper fox",
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "no_image_answered",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1,
+       "data": []
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter returned 0 image(s) for a request of 1",
+     "text": "OpenRouter returned 0 image(s) for a request of 1",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "two_images_answered",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        },
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter returned 2 image(s) for a request of 1",
+     "text": "OpenRouter returned 2 image(s) for a request of 1",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "an_image_without_bytes",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter returned an image without inline bytes; the Image API answers in base64, so an empty payload is a failed generation",
+     "text": "OpenRouter returned an image without inline bytes; the Image API answers in base64, so an empty payload is a failed generation",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "an_answer_that_is_no_object",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": [
+       1,
+       2
+      ]
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned a non-object payload",
+     "text": "OpenRouter images API returned a non-object payload",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "an_answer_that_is_no_json",
+   "kinds": [
+    "answer",
+    "failure"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "not json"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "Expecting value: line 1 column 1 (char 0)",
+     "text": "openrouter: Expecting value: line 1 column 1 (char 0)",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "JSONDecodeError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "python_json"
+   }
+  },
+  {
+   "name": "an_edit_of_inline_references",
+   "kinds": [
+    "answer",
+    "edit"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     },
+     {
+      "url": "data:image/jpeg;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc=",
+      "mime_type": "image/jpeg"
+     }
+    ],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "make it blue",
+       "input_references": [
+        {
+         "type": "image_url",
+         "image_url": {
+          "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+         }
+        },
+        {
+         "type": "image_url",
+         "image_url": {
+          "url": "data:image/jpeg;base64,/9j/4CB0aGUgcmVzdCBvZiBhIGpwZWc="
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_reference_of_wrapped_base64",
+   "kinds": [
+    "answer",
+    "edit"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhE\nUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "make it blue",
+       "input_references": [
+        {
+         "type": "image_url",
+         "image_url": {
+          "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_remote_reference",
+   "kinds": [
+    "answer",
+    "edit"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "https://example.com/fox.png",
+      "mime_type": null
+     }
+    ],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "make it blue",
+       "input_references": [
+        {
+         "type": "image_url",
+         "image_url": {
+          "url": "https://example.com/fox.png"
+         }
+        }
+       ]
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_reference_that_is_no_base64",
+   "kinds": [
+    "refused"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "make it blue",
+    "size": null,
+    "n": 1,
+    "reference_images": [
+     {
+      "url": "data:image/png;base64,not*base64",
+      "mime_type": "image/png"
+     }
+    ],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "reference image 0: data URI payload is not valid base64",
+     "text": "reference image 0: data URI payload is not valid base64",
+     "raised_from": "ValueError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "refused_with_400",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "{\"error\": {\"code\": 400, \"message\": \"The routed model refused the request.\"}}"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 400: {\"error\": {\"code\": 400, \"message\": \"The routed model refused the request.\"}}",
+     "text": "OpenRouter images API returned 400: {\"error\": {\"code\": 400, \"message\": \"The routed model refused the request.\"}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": 400,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "refused_with_402",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 402,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "{\"error\": {\"code\": 402, \"message\": \"The routed model refused the request.\"}}"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 402: {\"error\": {\"code\": 402, \"message\": \"The routed model refused the request.\"}}",
+     "text": "OpenRouter images API returned 402: {\"error\": {\"code\": 402, \"message\": \"The routed model refused the request.\"}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": 402,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "refused_with_429",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 429,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "{\"error\": {\"code\": 429, \"message\": \"The routed model refused the request.\"}}"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 429: {\"error\": {\"code\": 429, \"message\": \"The routed model refused the request.\"}}",
+     "text": "OpenRouter images API returned 429: {\"error\": {\"code\": 429, \"message\": \"The routed model refused the request.\"}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": true,
+     "status_code": 429,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "refused_with_500",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 500,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "{\"error\": {\"code\": 500, \"message\": \"The routed model refused the request.\"}}"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 500: {\"error\": {\"code\": 500, \"message\": \"The routed model refused the request.\"}}",
+     "text": "OpenRouter images API returned 500: {\"error\": {\"code\": 500, \"message\": \"The routed model refused the request.\"}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": 500,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "refused_with_502",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 502,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "{\"error\": {\"code\": 502, \"message\": \"The routed model refused the request.\"}}"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 502: {\"error\": {\"code\": 502, \"message\": \"The routed model refused the request.\"}}",
+     "text": "OpenRouter images API returned 502: {\"error\": {\"code\": 502, \"message\": \"The routed model refused the request.\"}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": 502,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "refused_with_503",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 503,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "{\"error\": {\"code\": 503, \"message\": \"The routed model refused the request.\"}}"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 503: {\"error\": {\"code\": 503, \"message\": \"The routed model refused the request.\"}}",
+     "text": "OpenRouter images API returned 503: {\"error\": {\"code\": 503, \"message\": \"The routed model refused the request.\"}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": true,
+     "status_code": 503,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "a_refusal_of_a_long_body",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "content-type": "text/plain"
+      },
+      "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 400: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "text": "OpenRouter images API returned 400: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": 400,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "never_connected",
+   "kinds": [
+    "failure",
+    "transport"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "failure": "connection refused"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "All connection attempts failed",
+     "text": "openrouter: All connection attempts failed",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": true,
+     "status_code": null,
+     "raised_from": "ConnectError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "transport"
+   }
+  },
+  {
+   "name": "lost_once_sent",
+   "kinds": [
+    "failure",
+    "transport"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "chunks": [
+       "{\"created\": 1767225600, \"data\": [{\"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5"
+      ],
+      "then": "the connection is lost"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "peer closed connection without sending complete message body",
+     "text": "openrouter: peer closed connection without sending complete message body",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "RemoteProtocolError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "transport"
+   }
+  },
+  {
+   "name": "timed_out_once_sent",
+   "kinds": [
+    "failure",
+    "transport"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "chunks": [
+       "{\"created\": 1767225600, \"data\": [{\"b64_json\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5"
+      ],
+      "then": "the read times out"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "The read operation timed out",
+     "text": "openrouter: The read operation timed out",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": false,
+     "status_code": null,
+     "raised_from": "ReadTimeout"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "transport"
+   }
+  },
+  {
+   "name": "the_second_of_two_fails",
+   "kinds": [
+    "failure",
+    "status"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 2,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    },
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 429,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "text": "{\"error\": {\"code\": 429, \"message\": \"Rate limit exceeded.\"}}"
+     }
+    }
+   ],
+   "expected": {
+    "error": {
+     "class": "ProviderError",
+     "message": "OpenRouter images API returned 429: {\"error\": {\"code\": 429, \"message\": \"Rate limit exceeded.\"}}",
+     "text": "OpenRouter images API returned 429: {\"error\": {\"code\": 429, \"message\": \"Rate limit exceeded.\"}}",
+     "before_request": false,
+     "context_overflow": null,
+     "provider": "openrouter",
+     "retryable": true,
+     "status_code": 429,
+     "raised_from": "HTTPStatusError"
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class",
+     "status_code",
+     "retryable",
+     "provider",
+     "context_overflow",
+     "before_request"
+    ],
+    "message": "roomkit"
+   }
+  }
+ ]
+}

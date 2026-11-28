@@ -15,6 +15,7 @@ import unittest
 from image_replay import IMAGE_GENERATE, IMAGE_WITH_OPTIONS, ImageReplays, every_case, made_wrong
 from roomkit_providers.image.gemini import GeminiImage, GeminiImageConfig
 from roomkit_providers.image.openai import OpenAIImage, OpenAIImageConfig
+from roomkit_providers.image.openrouter import OpenRouterImage, OpenRouterImageConfig
 
 OPENAI = ImageReplays(
     vendor="openai",
@@ -25,6 +26,18 @@ OPENAI = ImageReplays(
     named={"never_connected": ["the failure's attempts differs"]},
 )
 GEMINI = ImageReplays(vendor="gemini", provider=GeminiImage, config=GeminiImageConfig)
+OPENROUTER = ImageReplays(
+    vendor="openrouter",
+    provider=OpenRouterImage,
+    config=OpenRouterImageConfig,
+    fixture_name="python_openrouter_image_cases.json",
+    crate="openai",
+    # As the Rust replay names them.
+    named={
+        "never_connected": ["the failure's retryable differs"],
+        "a_refusal_of_a_long_body": ["the failure says"],
+    },
+)
 
 
 class ReplayTests(unittest.IsolatedAsyncioTestCase):
@@ -42,6 +55,16 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
         counts, wrong = await every_case(GEMINI)
         self.assertEqual(wrong, [], "\n".join(wrong))
         expected = {(IMAGE_GENERATE, "as Python"): 44, (IMAGE_WITH_OPTIONS, "as Python"): 19}
+        self.assertEqual(counts, expected)
+
+    async def test_every_openrouter_image_case_replays_as_python(self) -> None:
+        counts, wrong = await every_case(OPENROUTER)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+        expected = {
+            (IMAGE_GENERATE, "as Python"): 37,
+            (IMAGE_GENERATE, "named"): 2,
+            (IMAGE_WITH_OPTIONS, "as Python"): 4,
+        }
         self.assertEqual(counts, expected)
 
     # The replay compares what it says it compares: each wrong refused.

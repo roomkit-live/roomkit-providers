@@ -111,7 +111,14 @@ class _Generation:
         task = asyncio.Task(self._told(item), loop=loop, eager_start=True)
         self._telling.add(task)
         task.add_done_callback(self._telling.discard)
-        task.add_done_callback(lambda _: self._answer(token, "the progress callback did not run"))
+        task.add_done_callback(lambda ended: self._telling_ended(ended, token))
+
+    def _telling_ended(self, task: asyncio.Task[None], token: int) -> None:
+        """A telling ended: its failure taken, which the provider was told
+        of, and its attempt answered if it was not."""
+        if not task.cancelled():
+            task.exception()
+        self._answer(token, "the progress callback did not run")
 
     def _answer(self, token: int, failed: str | None) -> None:
         """Answers the attempt told with `token`, once."""

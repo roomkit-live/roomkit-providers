@@ -33,6 +33,23 @@
     "__init__": ["def", "*", "api_key", "base_url=None", "model", "quality=None", "background=None", "output_format=None", "timeout=120.0", "connect_timeout=5.0", "default_headers=None"],
     "model_post_init": ["def", "context", "/"]
   },
+  "roomkit_providers.image.openrouter.OpenRouterImage": {
+    "__bases__": ["bases", "roomkit.providers.image.base.ImageProvider"],
+    "__init__": ["def", "config"],
+    "available_models": ["classmethod"],
+    "catalog_entry": ["def"],
+    "close": ["async def"],
+    "generate": ["async def", "prompt", "*", "size=None", "n=1", "reference_images=None"],
+    "generate_with_options": ["async def", "prompt", "*", "size=None", "n=1", "reference_images=None", "options=None", "mask=None", "on_progress=None"],
+    "model_name": ["property"],
+    "name": ["property"],
+    "supports_editing": ["property"]
+  },
+  "roomkit_providers.image.openrouter.OpenRouterImageConfig": {
+    "__bases__": ["bases", "pydantic.main.BaseModel"],
+    "__init__": ["def", "*", "api_key", "base_url='https://openrouter.ai/api/v1'", "model", "quality=None", "background=None", "output_format=None", "timeout=120.0", "connect_timeout=5.0", "default_headers=None", "site_url=None", "app_name=None"],
+    "model_post_init": ["def", "context", "/"]
+  },
   "roomkit_providers.llm.anthropic.Anthropic": {
     "__bases__": ["bases", "roomkit.providers.ai.base.AIProvider"],
     "__init__": ["def", "config"],

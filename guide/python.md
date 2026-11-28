@@ -492,6 +492,7 @@ drawn = await images.generate_with_options("an origami fox", n=2, on_progress=to
 | --- | --- | --- |
 | `roomkit_providers.image.openai` | `OpenAIImage`, `OpenAIImageConfig` | `OpenAIImageProvider` |
 | `roomkit_providers.image.gemini` | `GeminiImage`, `GeminiImageConfig` | `GeminiImageProvider` |
+| `roomkit_providers.image.openrouter` | `OpenRouterImage`, `OpenRouterImageConfig` | `OpenRouterImageProvider` |
 
 - **Each attempt is told** to the progress callback as it moves, and the
   provider waits for the callback before it goes on, as RoomKit's do. The
