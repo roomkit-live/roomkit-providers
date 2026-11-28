@@ -21,9 +21,10 @@ use roomkit_ai::{AiImagePart, ProviderError};
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::compare::result_differs;
+use super::compare::{differences, result_differs};
 use super::fake::Door;
 use super::named::Named;
+use super::self_test::Wrong;
 use super::{
     Called, Caller, Case, Failure, Fixture, Outcome, Replayed, Replays, judged, reply_of, served,
 };
@@ -356,3 +357,123 @@ fn failure_differs(
         found.push(format!("the failure says {message:?}"));
     }
 }
+
+/// Replays the image case `name` of `fixture`, requires that it is as
+/// Python, then requires the replay to refuse each of `wrongs`, with its
+/// word in what is said: the self-test of what an image replay compares.
+pub async fn refuses<P: Replays + ImageProvider>(fixture: &Fixture, name: &str, wrongs: &[Wrong]) {
+    let case = fixture.case(name);
+    let door = Door::open().await;
+    for (what, word, wrong) in wrongs {
+        let mut replayed = replay::<P>(fixture, case, &door).await;
+        assert_eq!(differences(case, &replayed), Vec::<String>::new(), "{name}");
+        wrong(&mut replayed);
+        let found = differences(case, &replayed);
+        let said = found.iter().any(|difference| difference.contains(word));
+        assert!(said, "{name}, {what}: {found:?}");
+    }
+}
+
+/// The images and the attempts a replayed image case gave.
+fn given_mut(
+    replayed: &mut Replayed,
+) -> (
+    &mut Result<Vec<ImageResult>, ImageError>,
+    &mut Vec<ImageAttempt>,
+) {
+    match replayed.outcome.as_mut().unwrap() {
+        Outcome::Images(given, told) => (given, told),
+        other @ (Outcome::Response(_)
+        | Outcome::Events(..)
+        | Outcome::Text(..)
+        | Outcome::Models(_)) => panic!("no images: {other:?}"),
+    }
+}
+
+/// The images a replayed image case gave.
+fn images_mut(replayed: &mut Replayed) -> &mut Vec<ImageResult> {
+    match given_mut(replayed).0 {
+        Ok(images) => images,
+        Err(error) => panic!("no images: {error:?}"),
+    }
+}
+
+/// The failed generation a replayed image case ended with, changed by
+/// `change`.
+fn generation_changed(replayed: &mut Replayed, change: fn(&mut ImageGenerationError)) {
+    let (given, _) = given_mut(replayed);
+    let Err(ImageError::Provider(error)) = given else {
+        panic!("no generation failed: {given:?}");
+    };
+    let mut generation = generation_of(error).cloned().expect("a generation failed");
+    change(&mut generation);
+    *error = generation.into();
+}
+
+/// Images that are not Python's: another image, one less, another usage.
+pub const IMAGES: [Wrong; 3] = [
+    ("another image", "the images", |r| {
+        "data:image/png;base64,QUJD".clone_into(&mut images_mut(r)[0].data);
+    }),
+    ("an image less", "the images", |r| {
+        images_mut(r).pop();
+    }),
+    ("another usage", "the images", |r| {
+        images_mut(r)[0]
+            .usage
+            .insert("output_tokens".to_owned(), 1.into());
+    }),
+];
+
+/// Attempts told that are not Python's: one less, another status.
+pub const TOLD: [Wrong; 2] = [
+    ("an attempt told less", "the attempts told", |r| {
+        given_mut(r).1.pop();
+    }),
+    ("another status told", "the attempts told", |r| {
+        given_mut(r).1[0].status = ImageAttemptStatus::Unknown;
+    }),
+];
+
+/// A failed generation that is not Python's: another status, retried, its
+/// attempt standing otherwise, an image more.
+pub const GENERATION: [Wrong; 4] = [
+    ("another status", "status_code", |r| {
+        generation_changed(r, |generation| {
+            generation.attempts[0].status_code = Some(500);
+        });
+    }),
+    (
+        "an attempt standing otherwise",
+        "the failure's attempts",
+        |r| {
+            generation_changed(r, |generation| {
+                generation.attempts[0].status = ImageAttemptStatus::Unknown;
+            });
+        },
+    ),
+    ("an attempt more", "the failure's attempts", |r| {
+        generation_changed(r, |generation| {
+            generation.attempts.push(ImageAttempt::default());
+        });
+    }),
+    ("an image more", "the failure's results", |r| {
+        generation_changed(r, |generation| {
+            let image = ImageResult::new("data:image/png;base64,QUJD", "image/png").unwrap();
+            generation.results.push(image);
+        });
+    }),
+];
+
+/// A refusal before any request that is not Python's: another class,
+/// other words.
+pub const REFUSAL: [Wrong; 2] = [
+    ("another class", "the failure's class", |r| {
+        let failure = ProviderError::new("no", roomkit_ai::ProviderErrorOptions::default());
+        *given_mut(r).0 = Err(ImageError::Provider(failure));
+    }),
+    ("other words", "the failure says", |r| {
+        let refused = roomkit_ai::image::ImageRequestError::new("other words");
+        *given_mut(r).0 = Err(ImageError::Value(refused));
+    }),
+];

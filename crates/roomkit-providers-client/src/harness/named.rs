@@ -13,6 +13,8 @@ use std::collections::BTreeMap;
 
 use roomkit_ai::{FinishReason, ProviderError, StreamDone, StreamEvent};
 
+use roomkit_ai::image::ImageError;
+
 use super::{Fixture, Outcome, Replayed, Replays, text_of};
 
 /// What a failure says.
@@ -158,7 +160,8 @@ impl Instead {
                     Outcome::Response(Err(error))
                     | Outcome::Models(Err(error))
                     | Outcome::Events(_, Some(error))
-                    | Outcome::Text(_, Some(error)),
+                    | Outcome::Text(_, Some(error))
+                    | Outcome::Images(Err(ImageError::Provider(error)), _),
                 ),
             ) => failed(error, self.does),
             (
