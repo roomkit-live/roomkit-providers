@@ -245,17 +245,18 @@ class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(_tellings(), [])
 
     # Cancelled again while the callbacks it cancelled clean up, a generation
-    # cancels them again, as RoomKit's cancels its attempts again, and waits
-    # for them to end: none is left running.
+    # cancels them again, as RoomKit's cancels its attempts again, waits for
+    # them to end, and still tells the attempt it left in flight.
     async def test_a_cancellation_during_the_clean_up_waits_for_it(self) -> None:
-        entered: list[int] = []
-        both, cleaning = asyncio.Event(), asyncio.Event()
+        entered, cleaning = asyncio.Event(), asyncio.Event()
         ended: list[int] = []
+        told: list[tuple[int, str]] = []
 
-        async def hanging(attempt: ImageAttempt) -> None:
-            entered.append(attempt.index)
-            if len(entered) == 2:
-                both.set()
+        async def second_hangs(attempt: ImageAttempt) -> None:
+            told.append((attempt.index, attempt.status))
+            if (attempt.index, attempt.status) != (1, "started"):
+                return
+            entered.set()
             try:
                 await asyncio.Event().wait()
             except asyncio.CancelledError:
@@ -268,17 +269,20 @@ class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
         async with Fake() as fake:
             provider = GeminiImage(GeminiImageConfig(api_key=KEY, model="gemini-3-pro-image"))
             replaying(provider, "gemini", fake)
+            fake.answer(Silent())
             generating = asyncio.create_task(
-                provider.generate_with_options("a fox", n=2, on_progress=hanging)
+                provider.generate_with_options("a fox", n=2, on_progress=second_hangs)
             )
             async with asyncio.timeout(5):
-                await both.wait()
+                await fake.received()
+                await entered.wait()
                 generating.cancel()
                 await cleaning.wait()
             generating.cancel()
             await asyncio.wait({generating}, timeout=2)
             self.assertTrue(generating.cancelled(), "the cancelled generation did not end")
-            self.assertEqual(sorted(ended), [0, 1])
+            self.assertEqual(ended, [1])
+            self.assertIn((0, "unknown"), told)
             self.assertEqual(_tellings(), [])
 
     # Cancelled again while it waits for what to tell, a generation still

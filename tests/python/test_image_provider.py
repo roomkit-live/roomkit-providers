@@ -144,6 +144,31 @@ class CrossingTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("the request is refused", str(raised.exception))
 
 
+class TellingTests(unittest.IsolatedAsyncioTestCase):
+    # A telling cancelled as soon as it is made still answers its attempt:
+    # the provider waits for that answer, so a generation whose tellings a
+    # shutdown cancels still ends.
+    async def test_a_telling_cancelled_at_once_still_answers(self) -> None:
+        class Call:
+            def __init__(self) -> None:
+                self.answers: list[tuple[int, str | None]] = []
+
+            def reply(self, token: int, failed: str | None) -> None:
+                self.answers.append((token, failed))
+
+        async def waiting(attempt: ImageAttempt) -> None:
+            await asyncio.Event().wait()
+
+        call = Call()
+        generation = _provider._Generation(call, waiting, "scripted")  # type: ignore[arg-type]
+        generation._tell({"told": {"index": 0, "status": "unknown"}, "token": 7})
+        for task in list(generation._telling):
+            task.cancel()
+        async with asyncio.timeout(5):
+            await generation._settle(cancel=False)
+        self.assertEqual([token for token, _ in call.answers], [7])
+
+
 class ForkTests(unittest.TestCase):
     # A forked child answers no attempt of its parent's generation and
     # takes none of its items: their locks may be held by a parent thread.

@@ -77,6 +77,8 @@ class _Generation:
         self._callback = callback
         self._label = label
         self._telling: set[asyncio.Task[None]] = set()
+        # The tokens of the attempts told that were answered.
+        self._answered: set[int] = set()
         # The failure of the host's callback, by the index of its attempt:
         # what a generation that attempt failed is raised from.
         self._causes: dict[int, Exception] = {}
@@ -98,10 +100,25 @@ class _Generation:
 
     def _tell(self, item: dict[str, Any]) -> None:
         """Tells the host's callback, in a task of its own, the attempt
-        `item` holds, and answers the provider with how it went."""
-        task = asyncio.get_running_loop().create_task(self._told(item))
+        `item` holds, and answers the provider with how it went.
+
+        The task starts at once, as RoomKit's attempts call their callback
+        at once: a cancellation can only meet it inside the callback, whose
+        answer it then is. One that ended without answering all the same
+        is answered as it ends: the provider waits for an answer."""
+        token = item["token"]
+        loop = asyncio.get_running_loop()
+        task = asyncio.Task(self._told(item), loop=loop, eager_start=True)
         self._telling.add(task)
         task.add_done_callback(self._telling.discard)
+        task.add_done_callback(lambda _: self._answer(token, "the progress callback did not run"))
+
+    def _answer(self, token: int, failed: str | None) -> None:
+        """Answers the attempt told with `token`, once."""
+        if token in self._answered or _process.forked():
+            return
+        self._answered.add(token)
+        self._call.reply(token, failed)
 
     async def _told(self, item: dict[str, Any]) -> None:
         index = item["told"].get("index", 0)
@@ -123,11 +140,10 @@ class _Generation:
             # provider, which waits for an answer, has one, also when the
             # generation is cancelled (an attempt in flight told unknown
             # waits for it).
-            if not _process.forked():
-                self._call.reply(item["token"], "the progress callback did not return")
+            self._answer(item["token"], "the progress callback did not return")
             raise
         _process.enter()
-        self._call.reply(item["token"], failed)
+        self._answer(item["token"], failed)
 
     async def outcome(self) -> list[ImageResult]:
         while True:
@@ -228,11 +244,10 @@ class _Generation:
             for task in self._telling:
                 task.cancel()
         while running := [task for task in self._telling if not task.done()]:
-            try:
+            # Cancelled, the wait cancels the callbacks it waits for, and
+            # ends once they did: the next round waits for what is left.
+            with suppress(asyncio.CancelledError):
                 await asyncio.gather(*running, return_exceptions=True)
-            except asyncio.CancelledError:
-                for task in running:
-                    task.cancel()
 
     def close(self) -> None:
         if not _process.forked():
