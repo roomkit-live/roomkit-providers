@@ -17,6 +17,14 @@ nothing has been released yet.
 
 ### Added
 
+- `OpenAI`'s image provider, in Rust: `OpenAiImage` and `OpenAiImageConfig`
+  in the `roomkit-providers-openai` crate, RoomKit's Python
+  `OpenAIImageProvider` on the contract's `ImageProvider` (RFC §25):
+  generations and edits (multipart), whole or as a stream of previews, its
+  catalogue Python's. It is held to 44 cases captured on RoomKit's Python
+  provider, 43 replayed as Python and one named. The replay harness learns
+  the image surface, and the shared client multipart bodies, the headers of
+  an answer, and whether a request that failed in transport had left.
 - Gemini on Vertex AI, in Rust and in Python: `GeminiVertex` and
   `GeminiVertexConfig` in the `roomkit-providers-gemini` crate, and
   `roomkit_providers.llm.vertex` (`GeminiVertex`, `GeminiVertexConfig`) as a

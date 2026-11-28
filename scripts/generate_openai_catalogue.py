@@ -8,7 +8,8 @@ Completions serves it, whether it takes function tools there and what
 reasoning effort a turn with tools carries; for every vendor, the least
 effort a model takes and whether it reads images. A file is each model of
 the vendor's ``MODELS`` dumped with ``model_dump(mode="json")``, read by the
-contract's ``ModelInfo``.
+contract's ``ModelInfo``; ``images.json`` holds OpenAI's image models, read
+by the contract's ``ImageCatalogEntry``.
 
 Run it with a Python interpreter that has ``roomkit`` installed
 (``make python-openai-catalogue``).
@@ -25,6 +26,7 @@ from roomkit.providers.deepseek.models import MODELS as DEEPSEEK
 from roomkit.providers.kimi.models import MODELS as KIMI
 from roomkit.providers.meta.models import MODELS as META
 from roomkit.providers.minimax.models import MODELS as MINIMAX
+from roomkit.providers.openai.image_models import MODELS as OPENAI_IMAGES
 from roomkit.providers.openai.models import MODELS as OPENAI
 from roomkit.providers.openrouter.models import MODELS as OPENROUTER
 from roomkit.providers.qwen.models import MODELS as QWEN
@@ -45,6 +47,9 @@ FILES = {
     "qwen.json": QWEN,
     "meta.json": META,
     "openrouter.json": OPENROUTER,
+    # OpenAI's image models, disjoint from its conversational ones (RFC
+    # §25.6): each an ImageModelInfo, its image capabilities with it.
+    "images.json": OPENAI_IMAGES,
 }
 
 

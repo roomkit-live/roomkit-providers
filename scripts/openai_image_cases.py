@@ -205,6 +205,22 @@ case(
     answer(drawn(usage={"input_tokens": 30, "output_tokens": 1056, "total_tokens": 1086})),
 )
 case(
+    "a_usage_with_no_text_count",
+    "generate answer usage",
+    IMAGE_GENERATE,
+    CONFIG,
+    asked(),
+    answer(drawn(usage={"input_tokens": 50, "input_tokens_details": {"image_tokens": 40}, "output_tokens": 1056})),
+)
+case(
+    "a_format_asked_not_said",
+    "generate answer options",
+    IMAGE_WITH_OPTIONS,
+    CONFIG,
+    asked(options={"output_format": "webp"}),
+    answer({key: value for key, value in drawn().items() if key != "output_format"}, **REQUEST_ID),
+)
+case(
     "progress_told",
     "generate answer progress",
     IMAGE_WITH_OPTIONS,
@@ -343,6 +359,7 @@ case(
     UNKNOWN,
     asked(options={"moderation": "low"}),
 )
+case("too_many_images_of_an_unknown_model", "refused", IMAGE_GENERATE, UNKNOWN, asked(n=11))
 case(
     "an_unknown_model_keeps_its_defaults",
     "generate answer options",

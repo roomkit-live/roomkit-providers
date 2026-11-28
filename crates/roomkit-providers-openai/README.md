@@ -670,7 +670,37 @@ origin the HTTP client dials, read as the client reads it. The JSON form is
 not for showing: like Python's, it masks the key alone, and writes a
 default header's value and the credentials a base URL carries whole.
 
-## The wire cases
+## Image generation
+
+`OpenAiImage` is `OpenAI`'s image provider (RFC §25), RoomKit's Python
+`OpenAIImageProvider`, on the contract's `roomkit_ai::image::ImageProvider`.
+Its configuration, `OpenAiImageConfig`, is apart from the conversational one,
+as Python's `OpenAIImageConfig` is: another endpoint, of models disjoint from
+the conversational ones, two minutes to answer and five seconds to connect
+unless given. Its catalogue, `catalog/images.json`, is Python's
+(`scripts/generate_openai_catalogue.py`): each model with its image
+capabilities.
+
+- A generation is sent to `images/generations` as JSON; a request with
+  reference images is an edit, sent to `images/edits` as multipart, the
+  references as `image[]` and the mask after them, as Python's SDK writes
+  them. The request's controls are merged over the configuration's, and the
+  model's capabilities refuse what it cannot serve before anything is sent.
+- `partial_images` asks a stream of previews, each told to the progress
+  callback, then the final image.
+- One try: a paid generation is never tried again on its own. Each outcome
+  is an attempt, told to the callback as it moves. A failure once the
+  request started is an `ImageGenerationError` that keeps the images and
+  the usage it got: its attempt is failed where the vendor ran nothing (a
+  status it answered, a connection that could not be made), unknown where
+  it may have run and billed it (a connection lost once sent).
+- The usage is split as Python splits it: the image share of the input
+  apart from the text's, every output token an image's, no counter made up
+  for one the answer does not report.
+
+A failure's text is the provider's own words, as the conversational
+provider's: Python's repeats the server's whole body in Python's `repr`.
+
 
 `tests/fixtures/python_chat_cases.json` is written by
 `scripts/generate_openai_chat_cases.py`, which runs RoomKit's Python
@@ -710,6 +740,17 @@ differences from Python its replay shows and what the provider does: the
 replay must differ in those and in nothing else, and the provider must do
 that and nothing else. A named case that starts to replay as Python fails
 the test.
+
+`tests/fixtures/python_image_cases.json` is written the same way by
+`scripts/generate_openai_image_cases.py`, on RoomKit's Python
+`OpenAIImageProvider`: a case holds what the image surface was asked (the
+prompt, the size, the count, the references, the controls, the mask, and a
+progress callback that records each attempt or fails), the requests sent, a
+multipart body as its parts, and what Python gave: the images, or the error
+with its attempts and its images, and every attempt the callback was told
+of. The replay compares each, an attempt's id by the order it comes in. One
+case is named: a connection the fake refuses is one it accepted then closed,
+which the client reads as lost once sent.
 
 `tests/fixtures/named_cases.json` holds the named cases as data, written
 from the test's own list and kept equal to it by a test: a replay outside

@@ -1149,6 +1149,225 @@
    }
   },
   {
+   "name": "a_usage_with_no_text_count",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "output_format": "png",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40
+        },
+        "output_tokens": 1056
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": null,
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40
+       },
+       "output_tokens": 1056
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque",
+       "output_format": "png"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_format_asked_not_said",
+   "kinds": [
+    "answer",
+    "generate",
+    "options"
+   ],
+   "call": "image_generate_with_options",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": {
+     "output_format": "webp"
+    },
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/images/generations",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "application/json"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "gpt-image-2",
+       "prompt": "an origami fox",
+       "n": 1,
+       "output_format": "webp"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json",
+       "x-request-id": "req_image_1"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+       ],
+       "background": "opaque",
+       "quality": "high",
+       "size": "1024x1024",
+       "usage": {
+        "input_tokens": 50,
+        "input_tokens_details": {
+         "image_tokens": 40,
+         "text_tokens": 10
+        },
+        "output_tokens": 1056,
+        "total_tokens": 1106
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/webp;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/webp",
+      "revised_prompt": null,
+      "usage": {
+       "input_image_tokens": 40,
+       "input_tokens": 10,
+       "output_tokens": 0,
+       "output_image_tokens": 1056
+      },
+      "attempt_id": "00000000-0000-4000-8000-000000000001",
+      "provider_request_id": "req_image_1",
+      "raw_usage": {
+       "input_tokens": 50,
+       "input_tokens_details": {
+        "image_tokens": 40,
+        "text_tokens": 10
+       },
+       "output_tokens": 1056,
+       "total_tokens": 1106
+      },
+      "effective_options": {
+       "model": "gpt-image-2",
+       "n": 1,
+       "output_format": "webp",
+       "size": "1024x1024",
+       "quality": "high",
+       "background": "opaque"
+      },
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
    "name": "progress_told",
    "kinds": [
     "answer",
@@ -3148,6 +3367,41 @@
      "class": "ValueError",
      "message": "Advanced controls require a model with known image capabilities",
      "text": "Advanced controls require a model with known image capabilities",
+     "raised_from": null
+    }
+   },
+   "compare": {
+    "exactly": [
+     "class"
+    ],
+    "message": "roomkit"
+   }
+  },
+  {
+   "name": "too_many_images_of_an_unknown_model",
+   "kinds": [
+    "refused"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "my-image-deployment"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 11,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [],
+   "expected": {
+    "error": {
+     "class": "ValueError",
+     "message": "n must be at least 1 and at most 10",
+     "text": "n must be at least 1 and at most 10",
      "raised_from": null
     }
    },
