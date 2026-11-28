@@ -1,5 +1,6 @@
 //! What the replay of Python's cases cannot show: a connection that cannot
-//! be made, the first failure of several requests stopping the others.
+//! be made, the first failure of several requests stopping the others, an
+//! answer of the size a real image makes.
 
 use std::time::Duration;
 
@@ -51,4 +52,17 @@ async fn the_first_failure_stops_the_other_requests() {
     let error = failure(failed.await.expect("the refusal ends it").unwrap_err());
     assert_eq!(error.status_code, Some(429));
     assert!(error.retryable);
+}
+
+// An image of the largest sizes is megabytes of base64: an answer past the
+// shared client's few megabytes is read whole.
+#[tokio::test]
+async fn an_answer_of_megabytes_is_read_whole() {
+    let payload = "A".repeat(5 << 20);
+    let drawn = serde_json::json!({ "data": [{ "b64_json": payload, "media_type": "image/png" }] });
+    let fake = Fake::serving(vec![Reply::json(200, drawn.to_string())]).await;
+    let provider = provider(format!("http://{}/api/v1", fake.address));
+    let images = provider.generate("a fox", GenerateOptions::default()).await;
+    let [image] = images.unwrap().try_into().unwrap();
+    assert_eq!(image.data.len(), "data:image/png;base64,".len() + (5 << 20));
 }

@@ -73,7 +73,7 @@ async fn every_generation_replays_as_python() {
     let fixture = Fixture::read(FIXTURE);
     let (as_python, named) =
         replayed_or_named::<OpenRouterImage>(&fixture, &NAMED, IMAGE_GENERATE).await;
-    assert_eq!((as_python, named), (35, 2));
+    assert_eq!((as_python, named), (37, 2));
 }
 
 #[tokio::test]

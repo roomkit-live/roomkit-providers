@@ -61,7 +61,7 @@ class ReplayTests(unittest.IsolatedAsyncioTestCase):
         counts, wrong = await every_case(OPENROUTER)
         self.assertEqual(wrong, [], "\n".join(wrong))
         expected = {
-            (IMAGE_GENERATE, "as Python"): 35,
+            (IMAGE_GENERATE, "as Python"): 37,
             (IMAGE_GENERATE, "named"): 2,
             (IMAGE_WITH_OPTIONS, "as Python"): 4,
         }

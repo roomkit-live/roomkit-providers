@@ -34,7 +34,9 @@ case = registrar(CASES)
 CONFIG = {"api_key": KEY, "model": "openai/gpt-image-2"}
 ATTRIBUTED = {**CONFIG, "site_url": "https://example.com/app", "app_name": "An App"}
 DEFAULTS = {**CONFIG, "quality": "high", "background": "transparent", "output_format": "webp"}
-HEADERS = {**CONFIG, "default_headers": {"X-Title": "Another App", "X-Team": "imaging"}}
+# The configured headers replace the attribution of the same name.
+HEADERS = {**ATTRIBUTED, "default_headers": {"X-Title": "Another App", "X-Team": "imaging"}}
+UNATTRIBUTED = {**CONFIG, "site_url": "", "app_name": ""}
 ELSEWHERE = {**CONFIG, "base_url": "https://gateway.example/api/v1/"}
 
 USAGE = {"prompt_tokens": 12, "completion_tokens": 4160, "total_tokens": 4172, "cost": 0.04}
@@ -87,6 +89,7 @@ case(
 )
 case("attribution_headers", "generate answer", IMAGE_GENERATE, ATTRIBUTED, asked(), answer(drawn()))
 case("default_headers_over_attribution", "generate answer", IMAGE_GENERATE, HEADERS, asked(), answer(drawn()))
+case("an_empty_attribution", "generate answer", IMAGE_GENERATE, UNATTRIBUTED, asked(), answer(drawn()))
 case("another_endpoint", "generate answer", IMAGE_GENERATE, ELSEWHERE, asked(), answer(drawn()))
 case(
     "two_images",
@@ -139,6 +142,14 @@ case(
     CONFIG,
     asked(),
     answer(drawn(usage={"prompt_tokens": 12, "completion_tokens": 4160})),
+)
+case(
+    "a_usage_written_as_fractions",
+    "generate answer usage",
+    IMAGE_GENERATE,
+    CONFIG,
+    asked(),
+    answer(drawn(usage={"prompt_tokens": 12.7, "completion_tokens": 4160.2, "cost": 0.04})),
 )
 case(
     "a_usage_that_is_no_object",

@@ -524,6 +524,8 @@
    "config": {
     "api_key": "placeholder-not-a-key",
     "model": "openai/gpt-image-2",
+    "site_url": "https://example.com/app",
+    "app_name": "An App",
     "default_headers": {
      "X-Title": "Another App",
      "X-Team": "imaging"
@@ -547,9 +549,100 @@
        "authorization": "Bearer <config key>",
        "content-type": "application/json",
        "accept": "*/*",
-       "http-referer": null,
+       "http-referer": "https://example.com/app",
        "x-title": "Another App",
        "x-team": "imaging"
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 4160,
+        "total_tokens": 4172,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_empty_attribution",
+   "kinds": [
+    "answer",
+    "generate"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2",
+    "site_url": "",
+    "app_name": ""
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
       },
       "timeouts": {
        "connect": 5.0,
@@ -2016,6 +2109,95 @@
       "usage": {
        "input_tokens": 12,
        "output_image_tokens": 4160
+      },
+      "attempt_id": null,
+      "provider_request_id": null,
+      "raw_usage": {},
+      "effective_options": {},
+      "metadata": {},
+      "width": null,
+      "height": null
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_usage_written_as_fractions",
+   "kinds": [
+    "answer",
+    "generate",
+    "usage"
+   ],
+   "call": "image_generate",
+   "config": {
+    "api_key": "placeholder-not-a-key",
+    "model": "openai/gpt-image-2"
+   },
+   "request": {
+    "prompt": "an origami fox",
+    "size": null,
+    "n": 1,
+    "reference_images": [],
+    "options": null,
+    "mask": null,
+    "progress": null
+   },
+   "exchanges": [
+    {
+     "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/images",
+      "headers": {
+       "authorization": "Bearer <config key>",
+       "content-type": "application/json",
+       "accept": "*/*",
+       "http-referer": null,
+       "x-title": null,
+       "x-team": null
+      },
+      "timeouts": {
+       "connect": 5.0,
+       "read": 120.0,
+       "write": 120.0,
+       "pool": 120.0
+      },
+      "body": {
+       "model": "openai/gpt-image-2",
+       "prompt": "an origami fox"
+      }
+     },
+     "response": {
+      "status": 200,
+      "headers": {
+       "content-type": "application/json"
+      },
+      "json": {
+       "created": 1767225600,
+       "data": [
+        {
+         "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+         "media_type": "image/png"
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 12.7,
+        "completion_tokens": 4160.2,
+        "cost": 0.04
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "results": [
+     {
+      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "revised_prompt": null,
+      "usage": {
+       "input_tokens": 12,
+       "output_image_tokens": 4160,
+       "cost": 0.04
       },
       "attempt_id": null,
       "provider_request_id": null,
