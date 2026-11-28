@@ -236,6 +236,76 @@ case(
     answer(interaction(image(None, "image/png", "https://example.com/fox.png"))),
 )
 
+# -- An interaction continued ----------------------------------------------------------
+#
+# An interaction cut at the decode limit answers ``requires_continuation`` with a
+# token: the SDK continues it on its own, one hop after another, and merges the hops
+# into one interaction.
+
+USER_INPUT = {"type": "user_input", "content": [{"type": "text", "text": "an origami fox"}]}
+FIRST_HOP_USAGE = {
+    "total_input_tokens": 12,
+    "input_tokens_by_modality": [{"modality": "text", "tokens": 12}],
+    "total_output_tokens": 40,
+    "output_tokens_by_modality": [{"modality": "text", "tokens": 40}],
+}
+
+
+def first_hop(token: str = "tok_1") -> dict[str, Any]:
+    """The first hop of an interaction cut at the decode limit."""
+    return {
+        "id": "int_1",
+        "status": "requires_continuation",
+        "continuation_token": token,
+        "steps": [USER_INPUT, {"type": "model_output", "content": [{"type": "text", "text": "drawing"}]}],
+        "usage": FIRST_HOP_USAGE,
+    }
+
+
+def last_hop() -> dict[str, Any]:
+    """The hop that completes it, repeating the input step."""
+    body = interaction(id="int_2")
+    body["steps"] = [USER_INPUT, *body["steps"]]
+    return body
+
+
+case(
+    "a_generation_in_two_hops",
+    "generate answer continuation",
+    IMAGE_GENERATE,
+    PRO,
+    asked(),
+    answer(first_hop()),
+    answer(last_hop()),
+)
+case(
+    "an_unstored_generation_in_two_hops",
+    "generate answer continuation options",
+    IMAGE_WITH_OPTIONS,
+    PRO,
+    asked(options={"store": False}),
+    answer(first_hop()),
+    answer(last_hop()),
+)
+case(
+    "a_hop_that_hands_back_its_token",
+    "failure answer continuation",
+    IMAGE_GENERATE,
+    PRO,
+    asked(),
+    answer(first_hop()),
+    answer({**first_hop(), "id": "int_2"}),
+)
+case(
+    "a_second_hop_refused",
+    "failure status continuation progress",
+    IMAGE_WITH_OPTIONS,
+    PRO,
+    asked(progress="record"),
+    answer(first_hop()),
+    refused(429, "Resource has been exhausted.", "RESOURCE_EXHAUSTED"),
+)
+
 # -- An edit ---------------------------------------------------------------------------
 
 case(
